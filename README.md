@@ -1,6 +1,8 @@
 # Architech 🏗️
 
-[svg](https://github.com/acm-projects/Architech#architech-)
+<img width="400" height="305" alt="ezgif-1eec739d30787784" src="https://github.com/user-attachments/assets/cf28c13e-ec35-46fb-96c3-9abc60bec640" />
+
+---
 
 > Build systems. Break systems. Learn to think like an architect.
 
@@ -14,7 +16,7 @@ Instead of memorizing the "right" architecture, Architech gives users a space to
 
 # ✨ Why Architech?
 
-[svg](https://github.com/acm-projects/Architech#-why-architech)
+---
 
 System design is difficult to learn because most resources are passive. Students can watch lectures, read case studies, or practice interview questions, but rarely get to actually **build and break systems themselves**.
 
@@ -32,11 +34,8 @@ Architech solves this by:
 
 # 🧩 MVP Features
 
-[svg](https://github.com/acm-projects/Architech#-mvp-features)
-
 ## 1️⃣ Interactive Architecture Canvas
-
-[svg](https://github.com/acm-projects/Architech#1%EF%B8%8F%E2%83%A3-interactive-architecture-canvas)
+---
 
 * Drag and drop architecture components onto a visual canvas
 * Connect components to define system flow
@@ -54,8 +53,7 @@ Architech solves this by:
 * Save and load architecture designs
 
 ## 2️⃣ Live Architecture Metrics
-
-[svg](https://github.com/acm-projects/Architech#2%EF%B8%8F%E2%83%A3-live-architecture-metrics)
+---
 
 * Display real-time architecture metrics
 * Track:
@@ -68,8 +66,7 @@ Architech solves this by:
 * Highlight potential bottlenecks and risks directly on the architecture
 
 ## 3️⃣ Technology Swapping
-
-[svg](https://github.com/acm-projects/Architech#3%EF%B8%8F%E2%83%A3-technology-swapping)
+---
 
 * Swap the implementation behind any architecture component
 * Compare different technologies and their tradeoffs
@@ -81,8 +78,7 @@ Architech solves this by:
 * Help users understand that architectural decisions involve tradeoffs rather than universally "correct" answers
 
 ## 4️⃣ AI Architect
-
-[svg](https://github.com/acm-projects/Architech#4%EF%B8%8F-ai-architect)
+---
 
 * AI-powered chat sidebar
 * Analyze the current architecture and its metrics
@@ -97,8 +93,7 @@ Example:
 > ⚠️ **Risk:** Payments have no fallback if Stripe becomes unavailable.
 
 ## 5️⃣ Architecture Review
-
-[svg](https://github.com/acm-projects/Architech#5%EF%B8%8F-architecture-review)
+---
 
 * Generate a summary of the completed architecture
 * Highlight major design decisions
@@ -110,8 +105,7 @@ Example:
 ---
 
 # 🌱 Stretch Goals
-
-[svg](https://github.com/acm-projects/Architech#-stretch-goals)
+---
 
 ## Challenge Mode
 
@@ -131,7 +125,6 @@ This simulates a real system design interview where users must determine the arc
 
 # 🗺️ Development Timeline
 
-[svg](https://github.com/acm-projects/Architech#-development-timeline)
 
 | **Week**   | **Frontend**                                                                                                                                 | **Backend**                                                                                                                    |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -149,11 +142,11 @@ This simulates a real system design interview where users must determine the arc
 
 # 🛠️ Tech Stack
 
-[svg](https://github.com/acm-projects/Architech#%EF%B8%8F-tech-stack)
+---
 
 ## Frontend
 
-[svg](https://github.com/acm-projects/Architech#frontend)
+---
 
 * Next.js
 * React
@@ -164,7 +157,7 @@ This simulates a real system design interview where users must determine the arc
 
 ## Backend
 
-[svg](https://github.com/acm-projects/Architech#backend)
+---
 
 * Node.js
 * PostgreSQL
@@ -172,14 +165,14 @@ This simulates a real system design interview where users must determine the arc
 
 ## AI & APIs
 
-[svg](https://github.com/acm-projects/Architech#ai--apis)
+---
 
 * OpenAI API or Anthropic API
 * GitHub REST API *(Reverse Mode)*
 
 ## Tools
 
-[svg](https://github.com/acm-projects/Architech#tools)
+---
 
 * GitHub
 * VS Code
@@ -189,11 +182,11 @@ This simulates a real system design interview where users must determine the arc
 
 # 🚧 Roadblocks & Possible Solutions
 
-[svg](https://github.com/acm-projects/Architech#-roadblocks--possible-solutions)
+---
 
 ## 1️⃣ Modeling Architecture Metrics
 
-[svg](https://github.com/acm-projects/Architech#1%EF%B8%8F%E2%83%A3-modeling-architecture-metrics)
+---
 
 Real-world architecture tradeoffs are highly context-dependent, making it difficult to produce perfectly accurate cost, scalability, reliability, and latency estimates.
 
@@ -205,7 +198,7 @@ The goal is not perfect real-world accuracy, but **directionally correct and exp
 
 ## 2️⃣ AI Critique Quality
 
-[svg](https://github.com/acm-projects/Architech#2%EF%B8%8F%E2%83%A3-ai-critique-quality)
+---
 
 Generic LLM responses can be vague or fail to identify the specific architectural problem in a user's design.
 
@@ -223,7 +216,7 @@ The AI receives these structured results alongside the architecture graph and me
 
 ## 3️⃣ Canvas & Real-Time Performance
 
-[svg](https://github.com/acm-projects/Architech#3%EF%B8%8F%E2%83%A3-canvas--real-time-performance)
+---
 
 Metrics need to update quickly as users drag, connect, and modify components.
 
@@ -239,15 +232,14 @@ Metrics need to update quickly as users drag, connect, and modify components.
 
 # 📚 Architech Learning Resources
 
-[svg](https://github.com/acm-projects/Architech#-architech-learning-resources)
+---
 
 To go from zero to building Architech.
 
 ---
 
 ## Frontend (Next.js, React, TypeScript, Tailwind)
-
-[svg](https://github.com/acm-projects/Architech#frontend-nextjs-react-typescript-tailwind)
+---
 
 * [React JS Crash Course](https://www.youtube.com/watch?v=w7ejDZ8SWv8) – Components, state, props, and building interactive UIs.
 * [TypeScript React Tutorial](https://www.youtube.com/watch?v=WBPrJSw7yQA) – TypeScript fundamentals and integration with React.
@@ -258,8 +250,7 @@ To go from zero to building Architech.
 ---
 
 ## Backend (Node.js, PostgreSQL)
-
-[svg](https://github.com/acm-projects/Architech#backend-nodejs-postgresql)
+---
 
 * [Node.js Tutorial](https://www.youtube.com/watch?v=TlB_eWDSMt4) – Backend fundamentals, modules, and server-side JavaScript.
 * [PostgreSQL Full Course](https://www.youtube.com/watch?v=qw--VYLpxG4) – Tables, queries, relationships, and CRUD operations.
@@ -269,8 +260,7 @@ To go from zero to building Architech.
 ---
 
 ## System Design & Architecture
-
-[svg](https://github.com/acm-projects/Architech#system-design--architecture)
+---
 
 * Learn the fundamentals of distributed systems
 * Study common architecture patterns
@@ -283,8 +273,7 @@ To go from zero to building Architech.
 ---
 
 ## AI / LLM Integration
-
-[svg](https://github.com/acm-projects/Architech#ai--llm-integration)
+---
 
 * [OpenAI API Tutorial](https://www.youtube.com/watch?v=Cpfat3o6eSs) – Learn how to integrate an LLM into an application.
 * Learn structured prompting and JSON-based model outputs
@@ -294,8 +283,7 @@ To go from zero to building Architech.
 ---
 
 ## Git & GitHub
-
-[svg](https://github.com/acm-projects/Architech#git--github)
+---
 
 * [Git & GitHub Crash Course](https://www.youtube.com/watch?v=RGOj5yH7evk) – Version control, branches, commits, and pull requests.
 * [Git Tutorial](https://www.youtube.com/watch?v=mJ-qvsxPHpY) – Git fundamentals and collaborative workflows.
@@ -303,8 +291,7 @@ To go from zero to building Architech.
 ---
 
 ## ✅ Suggested Learning Path
-
-[svg](https://github.com/acm-projects/Architech#-suggested-learning-path)
+---
 
 1. HTML → CSS → JavaScript
 2. React → TypeScript → Tailwind → Next.js
@@ -319,7 +306,6 @@ To go from zero to building Architech.
 ---
 
 # 👥 Meet the Team
-
-[svg](https://github.com/acm-projects/Architech#-meet-the-team)
+---
 
 Built by students through **ACM Projects at UT Dallas**.
