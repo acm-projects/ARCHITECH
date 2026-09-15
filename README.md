@@ -1,6 +1,6 @@
 # Architech 🏗️
 
-<img width="400" height="305" alt="ezgif-1eec739d30787784" src="https://github.com/user-attachments/assets/cf28c13e-ec35-46fb-96c3-9abc60bec640" />
+<p align="center"><img width="400" height="305" alt="ezgif-1eec739d30787784" src="https://github.com/user-attachments/assets/cf28c13e-ec35-46fb-96c3-9abc60bec640" /></p>
 
 ---
 
