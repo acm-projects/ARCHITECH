@@ -307,5 +307,5 @@ To go from zero to building Architech.
 
 # 👥 Meet the Team
 ---
-Juan C. Sanchez
+* Juan C. Sanchez - Full-stack
 Built by students through **ACM Projects at UT Dallas**.
