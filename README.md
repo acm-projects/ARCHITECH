@@ -309,4 +309,3 @@ To go from zero to building Architech.
 ---
 
 Built by students through **ACM Projects at UT Dallas**.
-* Shivam Singh (full stack)
