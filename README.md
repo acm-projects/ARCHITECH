@@ -309,4 +309,4 @@ To go from zero to building Architech.
 ---
 
 Built by students through **ACM Projects at UT Dallas**.
-* Jie Cheong - Full Stack Development
+* Jie Cheong - Full-Stack
