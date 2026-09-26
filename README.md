@@ -307,5 +307,8 @@ To go from zero to building Architech.
 
 # 👥 Meet the Team
 ---
-Joshua Zamora - Full Stack
 Built by students through **ACM Projects at UT Dallas**.
+* Joshua Zamora - Full-stack
+* Juan C. Sanchez - Full-stack
+* Jie Cheong - Full-stack
+* Shivam Singh - Full-stack
