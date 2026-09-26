@@ -13,7 +13,7 @@ Users build software systems on a visual drag-and-drop canvas, connect component
 Instead of memorizing the "right" architecture, Architech gives users a space to **experiment, make mistakes, and understand why architectural decisions matter.**
 
 ---
-
+;
 # ✨ Why Architech?
 
 ---
@@ -307,7 +307,8 @@ To go from zero to building Architech.
 
 # 👥 Meet the Team
 ---
-* Juan C. Sanchez - Full-stack
 Built by students through **ACM Projects at UT Dallas**.
-* Jie Cheong - Full-Stack
-* Shivam Singh (full stack)
+* Joshua Zamora - Full-stack
+* Juan C. Sanchez - Full-stack
+* Jie Cheong - Full-stack
+* Shivam Singh - Full-stack
