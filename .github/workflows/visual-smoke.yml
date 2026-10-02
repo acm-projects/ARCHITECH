@@ -1,0 +1,50 @@
+name: Browser visual smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/visual-consistency.spec.cjs"
+      - ".github/workflows/visual-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  visual-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install browser test runtime
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start app
+        run: |
+          npm run dev -- --host 127.0.0.1 > /tmp/architech-vite.log 2>&1 &
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:5173 >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/architech-vite.log
+          exit 1
+      - name: Test desktop, tablet, and mobile routes
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:5173
+        run: npx playwright test tests/visual-consistency.spec.cjs --reporter=line
+      - name: Upload viewport screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: architech-visual-smoke
+          path: test-results/screens
+          if-no-files-found: ignore
