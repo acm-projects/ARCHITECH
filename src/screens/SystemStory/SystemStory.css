@@ -1,0 +1,831 @@
+/* =========================================================
+   ARCHITECT — SYSTEM STORY
+   ========================================================= */
+
+.system-story {
+  position: relative;
+
+  width: 100%;
+
+  padding:
+    120px
+    5vw
+    160px;
+}
+
+
+/* =========================================================
+   INTRO
+   ========================================================= */
+
+.system-story-intro {
+  width: min(720px, 100%);
+
+  margin:
+    0
+    auto
+    70px;
+
+  text-align: center;
+}
+
+.system-story-step {
+  display: inline-block;
+
+  margin-bottom: 18px;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+
+  opacity: 0.45;
+}
+
+.system-story-intro h2 {
+  margin: 0;
+
+  font-size: clamp(
+    56px,
+    7vw,
+    104px
+  );
+
+  font-weight: 500;
+
+  line-height: 0.9;
+
+  letter-spacing: -0.06em;
+}
+
+.system-story-intro p {
+  max-width: 440px;
+
+  margin:
+    26px
+    auto
+    0;
+
+  font-size: 15px;
+
+  line-height: 1.6;
+
+  opacity: 0.55;
+}
+
+
+/* =========================================================
+   DEMO WRAPPER
+   ========================================================= */
+
+.story-demo {
+  width: min(1180px, 100%);
+
+  margin: 0 auto;
+}
+
+
+/* =========================================================
+   STORY PROGRESS
+   ========================================================= */
+
+.story-demo-progress {
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  gap: clamp(
+    18px,
+    3vw,
+    42px
+  );
+
+  margin-bottom: 18px;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  letter-spacing: 0.08em;
+}
+
+.story-demo-progress span {
+  position: relative;
+
+  padding-bottom: 8px;
+
+  white-space: nowrap;
+
+  opacity: 0.25;
+}
+
+.story-demo-progress span::after {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 1px;
+
+  background: currentColor;
+
+  transform: scaleX(0);
+
+  transform-origin: left;
+}
+
+.story-demo-progress .active {
+  opacity: 1;
+}
+
+.story-demo-progress .active::after {
+  transform: scaleX(1);
+}
+
+
+/* =========================================================
+   SQUARE CANVAS
+   ========================================================= */
+
+.story-demo-canvas {
+  position: relative;
+
+  width: 100%;
+
+  height: min(
+    690px,
+    calc(100vh - 80px)
+  );
+
+  min-height: 600px;
+
+  overflow: hidden;
+
+  /*
+   * Canvas intentionally stays square.
+   * Internal components use rounded corners.
+   */
+
+  border-radius: 0;
+
+  border:
+    1px solid
+    rgba(10, 10, 10, 0.16);
+
+  background-color: #f7f7f3;
+
+  background-image:
+    radial-gradient(
+      rgba(10, 10, 10, 0.12)
+      0.8px,
+      transparent
+      0.8px
+    );
+
+  background-size:
+    20px
+    20px;
+}
+
+
+/* =========================================================
+   CANVAS HEADER
+   ========================================================= */
+
+.story-canvas-header {
+  position: absolute;
+
+  z-index: 10;
+
+  top: 0;
+  left: 0;
+  right: 0;
+
+  height: 56px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  padding:
+    0
+    20px;
+
+  background:
+    rgba(
+      247,
+      247,
+      243,
+      0.92
+    );
+
+  border-bottom:
+    1px solid
+    rgba(10, 10, 10, 0.12);
+
+  backdrop-filter:
+    blur(8px);
+}
+
+.story-canvas-header > div:first-child {
+  display: flex;
+
+  align-items: baseline;
+
+  gap: 10px;
+}
+
+.story-canvas-eyebrow {
+  font-size: 8px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+
+  opacity: 0.4;
+}
+
+.story-canvas-header strong {
+  font-size: 12px;
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   LIVE STATUS
+   ========================================================= */
+
+.story-canvas-status {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  font-size: 8px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.1em;
+
+  opacity: 0.55;
+}
+
+.story-canvas-status > span {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: #0a0a0a;
+}
+
+
+/* =========================================================
+   BUILD AREA
+   ========================================================= */
+
+.story-build-area {
+  position: absolute;
+
+  inset:
+    56px
+    0
+    48px;
+}
+
+
+/* =========================================================
+   COMPONENT POSITIONS
+   ========================================================= */
+
+.story-node-position {
+  position: absolute;
+
+  z-index: 5;
+
+  left: 50%;
+
+  transform:
+    translateX(-50%);
+}
+
+.story-user {
+  top: 58px;
+}
+
+.story-server {
+  top: 244px;
+}
+
+.story-database {
+  top: 430px;
+}
+
+
+/* =========================================================
+   COMPONENT
+   ========================================================= */
+
+.story-node {
+  position: relative;
+
+  width: 150px;
+  min-height: 74px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  padding:
+    13px
+    14px;
+
+  color: #0a0a0a;
+
+  background: #ffffff;
+
+  border:
+    1px solid
+    rgba(10, 10, 10, 0.16);
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 1px 2px
+      rgba(10, 10, 10, 0.04),
+    0 8px 24px
+      rgba(10, 10, 10, 0.04);
+}
+
+
+/* =========================================================
+   COMPONENT ICON
+   ========================================================= */
+
+.story-node-icon {
+  width: 36px;
+  height: 36px;
+
+  flex-shrink: 0;
+
+  display: grid;
+
+  place-items: center;
+
+  /*
+   * White instead of ARCHITECT yellow.
+   */
+
+  background: #ffffff;
+
+  color: #0a0a0a;
+
+  border:
+    1px solid
+    rgba(10, 10, 10, 0.1);
+
+  border-radius: 9px;
+}
+
+
+/* =========================================================
+   COMPONENT COPY
+   ========================================================= */
+
+.story-node-copy {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.story-node-copy span {
+  font-size: 7px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+
+  opacity: 0.4;
+}
+
+.story-node-copy strong {
+  font-size: 12px;
+
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   COMPONENT STATUS
+   ========================================================= */
+
+.story-node-status {
+  position: absolute;
+
+  top: 10px;
+  right: 10px;
+
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background: #0a0a0a;
+
+  opacity: 0.3;
+}
+
+
+/* =========================================================
+   CONNECTIONS
+   ========================================================= */
+
+.story-connector {
+  position: absolute;
+
+  z-index: 2;
+
+  left: 50%;
+
+  width: 1px;
+
+  transform:
+    translateX(-50%);
+}
+
+.connector-user-server {
+  top: 132px;
+
+  height: 112px;
+}
+
+.connector-server-db {
+  top: 318px;
+
+  height: 112px;
+}
+
+.story-connector-line {
+  position: absolute;
+
+  inset: 0;
+
+  width: 1px;
+
+  background:
+    rgba(
+      10,
+      10,
+      10,
+      0.3
+    );
+}
+
+.story-connector-arrow {
+  position: absolute;
+
+  left: 50%;
+  bottom: -4px;
+
+  transform:
+    translateX(-50%);
+
+  padding:
+    2px;
+
+  background: #f7f7f3;
+
+  font-size: 11px;
+
+  line-height: 1;
+}
+
+
+/* =========================================================
+   TRAFFIC PARTICLES
+   ========================================================= */
+
+.traffic-dot {
+  position: absolute;
+
+  z-index: 3;
+
+  left: 50%;
+  top: 10%;
+
+  width: 6px;
+  height: 6px;
+
+  transform:
+    translateX(-50%);
+
+  border-radius: 50%;
+
+  background: #0a0a0a;
+
+  box-shadow:
+    0 0 0
+    3px
+    #f7f7f3;
+}
+
+.traffic-dot-two {
+  top: 55%;
+}
+
+
+/* =========================================================
+   TEACHING PROMPTS
+   ========================================================= */
+
+.story-teaching-prompt {
+  position: absolute;
+
+  z-index: 6;
+
+  width: 270px;
+
+  display: flex;
+
+  gap: 12px;
+
+  padding:
+    16px
+    17px;
+
+  color: #0a0a0a;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.94
+    );
+
+  border:
+    1px solid
+    rgba(10, 10, 10, 0.13);
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 12px 32px
+    rgba(
+      10,
+      10,
+      10,
+      0.045
+    );
+}
+
+
+/* SERVER PROMPT */
+
+.prompt-server {
+  top: 226px;
+
+  left:
+    calc(
+      50% - 390px
+    );
+}
+
+
+/* DATABASE PROMPT */
+
+.prompt-database {
+  top: 412px;
+
+  left:
+    calc(
+      50% + 120px
+    );
+}
+
+
+/* =========================================================
+   PROMPT CONTENT
+   ========================================================= */
+
+.story-prompt-number {
+  flex-shrink: 0;
+
+  width: 26px;
+  height: 26px;
+
+  display: grid;
+
+  place-items: center;
+
+  background: #ffffff;
+
+  border:
+    1px solid
+    rgba(10, 10, 10, 0.12);
+
+  border-radius: 7px;
+
+  font-size: 8px;
+
+  font-weight: 700;
+}
+
+.story-teaching-prompt strong {
+  display: block;
+
+  margin:
+    1px
+    0
+    6px;
+
+  font-size: 11px;
+
+  font-weight: 600;
+}
+
+.story-teaching-prompt p {
+  margin: 0;
+
+  font-size: 9px;
+
+  line-height: 1.55;
+
+  opacity: 0.5;
+}
+
+.story-concept {
+  display: inline-block;
+
+  margin-top: 10px;
+
+  padding:
+    5px
+    8px;
+
+  border:
+    1px solid
+    rgba(10, 10, 10, 0.12);
+
+  border-radius: 6px;
+
+  font-size: 8px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.05em;
+}
+
+
+/* =========================================================
+   CANVAS FOOTER
+   ========================================================= */
+
+.story-canvas-footer {
+  position: absolute;
+
+  z-index: 10;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 48px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  padding:
+    0
+    18px;
+
+  background:
+    rgba(
+      247,
+      247,
+      243,
+      0.94
+    );
+
+  border-top:
+    1px solid
+    rgba(10, 10, 10, 0.12);
+}
+
+.story-canvas-footer > div {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+}
+
+.story-canvas-footer span {
+  font-size: 7px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.1em;
+
+  opacity: 0.4;
+}
+
+.story-canvas-footer strong {
+  font-size: 10px;
+
+  font-weight: 600;
+}
+
+.story-build-complete {
+  font-size: 8px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.08em;
+
+  opacity: 0.5;
+}
+
+.story-build-complete > span {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: #0a0a0a;
+
+  opacity: 1;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .system-story {
+    padding:
+      100px
+      24px
+      120px;
+  }
+
+  .story-demo-progress {
+    justify-content: flex-start;
+
+    overflow-x: auto;
+  }
+
+  .story-demo-canvas {
+    min-height: 620px;
+  }
+
+  .story-teaching-prompt {
+    width: 220px;
+  }
+
+  .prompt-server {
+    left: 30px;
+  }
+
+  .prompt-database {
+    left: auto;
+    right: 30px;
+  }
+}
+
+
+@media (max-width: 700px) {
+
+  .system-story-intro {
+    text-align: left;
+  }
+
+  .system-story-intro p {
+    margin-left: 0;
+  }
+
+  .story-teaching-prompt {
+    display: none;
+  }
+
+  .story-demo-canvas {
+    min-height: 620px;
+  }
+}
