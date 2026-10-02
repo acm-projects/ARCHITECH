@@ -10,9 +10,7 @@
   overflow: hidden;
 }
 
-/* =========================================================
-   INTRO
-========================================================= */
+/* INTRO */
 
 .system-story-intro {
   width: min(760px, calc(100% - 48px));
@@ -23,17 +21,14 @@
 .system-story-step {
   display: inline-block;
   margin-bottom: 18px;
-
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.13em;
-
   opacity: 0.42;
 }
 
 .system-story-intro h2 {
   margin: 0;
-
   font-size: clamp(56px, 7vw, 104px);
   font-weight: 500;
   line-height: 0.9;
@@ -43,10 +38,8 @@
 .system-story-intro p {
   max-width: 440px;
   margin: 26px auto 0;
-
   font-size: 15px;
   line-height: 1.6;
-
   opacity: 0.55;
 }
 
@@ -56,15 +49,11 @@
 
 .story-demo {
   position: relative;
-
   width: 100%;
   min-height: 790px;
-
   padding: 30px clamp(24px, 4vw, 68px) 52px;
-
   box-sizing: border-box;
-
-  color: #ffffff;
+  color: #fff;
   background:
     radial-gradient(
       circle at 50% 35%,
@@ -81,49 +70,39 @@
 .story-demo-progress {
   position: relative;
   z-index: 100;
-
   width: min(1180px, 100%);
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   gap: clamp(30px, 4vw, 62px);
-
   margin: 0 auto 28px;
-
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-
-  color: #ffffff;
+  letter-spacing: 0.11em;
+  color: #fff;
 }
 
 .story-demo-progress span {
   position: relative;
-
   padding-bottom: 9px;
-
   white-space: nowrap;
-
-  opacity: 0.25;
+  opacity: 0.44;
+  transition:
+    opacity 180ms ease,
+    color 180ms ease;
 }
 
 .story-demo-progress span::after {
   content: "";
-
   position: absolute;
-
   left: 0;
   right: 0;
   bottom: 0;
-
   height: 1px;
-
-  background: #ffffff;
-
+  background: rgba(255, 255, 255, 0.9);
   transform: scaleX(0);
   transform-origin: left center;
+  transition: transform 180ms ease;
 }
 
 .story-demo-progress .active {
@@ -136,76 +115,56 @@
 
 /* =========================================================
    MAIN PRODUCT WORKSPACE
-
-   Left panel | white canvas | right panel
 ========================================================= */
 
 .story-workspace {
   position: relative;
-
   width: min(1390px, 100%);
   height: min(690px, calc(100vh - 125px));
   min-height: 620px;
-
   display: grid;
-
   grid-template-columns:
     minmax(180px, 0.82fr)
     minmax(620px, 3.5fr)
     minmax(200px, 0.9fr);
-
   gap: clamp(20px, 2.2vw, 36px);
-
   margin: 0 auto;
 }
 
-/* =========================================================
-   CENTER WORKSPACE
-========================================================= */
+/* CENTER */
 
 .story-workspace-center {
   position: relative;
-
   min-width: 0;
   height: 100%;
-
   display: flex;
   flex-direction: column;
-
-  padding-top: 38px;
-  padding-bottom: 44px;
-
+  padding-top: 54px;
+  padding-bottom: 60px;
   box-sizing: border-box;
 }
 
 /* =========================================================
-   SMALL TOOLBAR ABOVE CANVAS
+   CANVAS TOOLBAR
 ========================================================= */
 
 .learn-canvas-toolbar {
   position: absolute;
-
   z-index: 40;
-
   top: 0;
   left: 0;
   right: 0;
-
   height: 30px;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   color: rgba(255, 255, 255, 0.76);
 }
 
 .learn-project-name {
   display: flex;
   align-items: center;
-
   gap: 7px;
-
   font-size: 8px;
   font-weight: 600;
 }
@@ -213,9 +172,7 @@
 .learn-project-dot {
   width: 5px;
   height: 5px;
-
   border-radius: 50%;
-
   background: #f7f7f3;
 }
 
@@ -223,19 +180,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   min-height: 24px;
-
   padding: 0 10px;
-
   color: rgba(255, 255, 255, 0.78);
   background: rgba(255, 255, 255, 0.04);
-
-  border:
-    1px solid rgba(255, 255, 255, 0.12);
-
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-
   font-size: 6px;
   font-weight: 700;
   letter-spacing: 0.11em;
@@ -247,40 +197,23 @@
 
 .story-demo-canvas {
   position: relative;
-
   z-index: 10;
-
   width: 100%;
   height: 100%;
-
   min-height: 0;
-
   overflow: hidden;
-
   color: #0a0a0a;
-
-  background-color: #ffffff;
-
+  background-color: #fff;
   background-image:
     radial-gradient(
       rgba(10, 10, 10, 0.11) 0.75px,
       transparent 0.75px
     );
-
   background-size: 20px 20px;
-
-  border:
-    1px solid rgba(255, 255, 255, 0.14);
-
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 0;
-
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
 }
-
-/* =========================================================
-   BUILD AREA
-========================================================= */
 
 .story-build-area {
   position: absolute;
@@ -293,12 +226,17 @@
 
 .story-node-position {
   position: absolute;
-
   z-index: 8;
-
   left: 50%;
-
   transform: translateX(-50%);
+}
+
+.story-connector {
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-50%);    
 }
 
 .story-user {
@@ -313,33 +251,19 @@
   top: 442px;
 }
 
-/* =========================================================
-   NODE
-========================================================= */
-
 .story-node {
   position: relative;
-
   width: 150px;
   min-height: 72px;
-
   display: flex;
   align-items: center;
-
   gap: 11px;
-
   padding: 12px 13px;
-
   box-sizing: border-box;
-
   color: #0a0a0a;
-  background: #ffffff;
-
-  border:
-    1px solid rgba(10, 10, 10, 0.16);
-
+  background: #fff;
+  border: 1px solid rgba(10, 10, 10, 0.16);
   border-radius: 12px;
-
   box-shadow:
     0 1px 2px rgba(10, 10, 10, 0.04),
     0 8px 24px rgba(10, 10, 10, 0.04);
@@ -348,27 +272,19 @@
 .story-node-icon {
   width: 35px;
   height: 35px;
-
   flex: 0 0 35px;
-
   display: grid;
   place-items: center;
-
   color: #0a0a0a;
-  background: #ffffff;
-
-  border:
-    1px solid rgba(10, 10, 10, 0.11);
-
+  background: #fff;
+  border: 1px solid rgba(10, 10, 10, 0.11);
   border-radius: 9px;
 }
 
 .story-node-copy {
   min-width: 0;
-
   display: flex;
   flex-direction: column;
-
   gap: 3px;
 }
 
@@ -376,30 +292,23 @@
   font-size: 6px;
   font-weight: 700;
   letter-spacing: 0.12em;
-
   opacity: 0.38;
 }
 
 .story-node-copy strong {
   font-size: 11px;
   font-weight: 600;
-
   white-space: nowrap;
 }
 
 .story-node-status {
   position: absolute;
-
   top: 9px;
   right: 9px;
-
   width: 5px;
   height: 5px;
-
   border-radius: 50%;
-
   background: #0a0a0a;
-
   opacity: 0.3;
 }
 
@@ -409,162 +318,49 @@
 
 .story-connector {
   position: absolute;
-
   z-index: 3;
-
   left: 50%;
-
   width: 1px;
-
   transform: translateX(-50%);
 }
 
 .connector-user-server {
-  top: 146px;
-  height: 112px;
+  top: 148px;
+  height: 110px;
 }
 
 .connector-server-db {
-  top: 330px;
+  top: 332px;
   height: 112px;
 }
 
 .story-connector-line {
   position: absolute;
-
   inset: 0;
-
   width: 1px;
-
   background: rgba(10, 10, 10, 0.3);
 }
 
 .story-connector-arrow {
   position: absolute;
-
   left: 50%;
   bottom: -4px;
-
   padding: 2px;
-
-  background: #ffffff;
-
+  background: #fff;
   font-size: 10px;
-
   transform: translateX(-50%);
 }
 
 .traffic-dot {
   position: absolute;
-
   z-index: 5;
-
   left: 50%;
-
   width: 6px;
   height: 6px;
-
   border-radius: 50%;
-
   background: #0a0a0a;
-
   transform: translateX(-50%);
-
-  box-shadow:
-    0 0 0 3px #ffffff;
-}
-
-/* =========================================================
-   TEACHING PROMPTS
-========================================================= */
-
-.story-teaching-prompt {
-  position: absolute;
-
-  z-index: 18;
-
-  width: 220px;
-
-  display: flex;
-
-  gap: 10px;
-
-  padding: 13px;
-
-  box-sizing: border-box;
-
-  color: #0a0a0a;
-  background: rgba(255, 255, 255, 0.98);
-
-  border:
-    1px solid rgba(10, 10, 10, 0.12);
-
-  border-radius: 10px;
-
-  box-shadow:
-    0 12px 32px rgba(10, 10, 10, 0.055);
-}
-
-.prompt-server {
-  top: 232px;
-  left: 24px;
-}
-
-.prompt-database {
-  top: 416px;
-  right: 24px;
-}
-
-.story-prompt-number {
-  width: 24px;
-  height: 24px;
-
-  flex: 0 0 24px;
-
-  display: grid;
-  place-items: center;
-
-  border:
-    1px solid rgba(10, 10, 10, 0.12);
-
-  border-radius: 6px;
-
-  font-size: 7px;
-  font-weight: 700;
-}
-
-.story-teaching-prompt strong {
-  display: block;
-
-  margin: 1px 0 5px;
-
-  font-size: 9px;
-  font-weight: 600;
-}
-
-.story-teaching-prompt p {
-  margin: 0;
-
-  font-size: 7px;
-  line-height: 1.5;
-
-  opacity: 0.48;
-}
-
-.story-concept {
-  display: inline-block;
-
-  margin-top: 8px;
-  padding: 4px 7px;
-
-  border:
-    1px solid rgba(10, 10, 10, 0.11);
-
-  border-radius: 5px;
-
-  font-size: 6px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  box-shadow: 0 0 0 3px #fff;
 }
 
 /* =========================================================
@@ -573,47 +369,33 @@
 
 .learn-toolbox {
   position: relative;
-
   align-self: stretch;
-
   width: 100%;
   height: calc(100% - 20px);
-
   margin-top: 10px;
   margin-bottom: 10px;
-
   padding: 16px 13px 18px;
-
   box-sizing: border-box;
-
   color: rgba(255, 255, 255, 0.88);
   background: #151515;
-
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 11px;
-
-  box-shadow:
-    0 18px 48px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
 }
 
 .learn-panel-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 8px;
-
   margin-bottom: 15px;
   padding: 0 3px 12px;
-
-  border-bottom:
-    1px solid rgba(255, 255, 255, 0.075);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
 }
 
 .learn-panel-heading > div {
   display: flex;
   flex-direction: column;
-
   gap: 3px;
 }
 
@@ -621,7 +403,6 @@
   font-size: 5px;
   font-weight: 700;
   letter-spacing: 0.13em;
-
   opacity: 0.35;
 }
 
@@ -634,77 +415,100 @@
   opacity: 0.35;
 }
 
-/* =========================================================
-   TOOLBOX ITEMS
-========================================================= */
+/* TOOLBOX */
 
 .learn-toolbox-list {
   display: flex;
   flex-direction: column;
-
   gap: 4px;
 }
 
 .learn-toolbox-item {
   min-height: 40px;
-
   display: flex;
   align-items: center;
-
   gap: 9px;
-
   padding: 4px 6px;
-
   box-sizing: border-box;
-
-  border:
-    1px solid transparent;
-
+  border: 1px solid transparent;
   border-radius: 8px;
 }
 
 .learn-toolbox-item:hover {
   background: rgba(255, 255, 255, 0.04);
-
-  border-color:
-    rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.07);
 }
 
 .learn-toolbox-icon {
   width: 29px;
   height: 29px;
-
   flex: 0 0 29px;
-
   display: grid;
   place-items: center;
-
   color: #0a0a0a;
   background: #f7f7f3;
-
   border-radius: 7px;
 }
 
 .learn-toolbox-item > span {
   min-width: 0;
-
   overflow: hidden;
-
   font-size: 7px;
   font-weight: 500;
-
   color: rgba(255, 255, 255, 0.74);
-
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .learn-toolbox-plus {
   margin-left: auto;
-
   flex-shrink: 0;
-
   opacity: 0.28;
+}
+
+/* =========================================================
+   BUILD — PRODUCT-DRIVEN LEARNING
+========================================================= */
+
+.toolbox-server,
+.toolbox-database {
+  border-radius: 8px;
+}
+
+.toolbox-server .learn-toolbox-item,
+.toolbox-database .learn-toolbox-item {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.build-complete-flow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.build-complete-flow span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 23px;
+  padding: 0 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 5px;
+  font-weight: 600;
+}
+
+.build-complete-flow i {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 7px;
+  font-style: normal;
 }
 
 /* =========================================================
@@ -713,647 +517,474 @@
 
 .learn-inspector {
   position: relative;
-
   align-self: stretch;
-
   width: 100%;
   height: calc(100% - 20px);
-
   margin-top: 10px;
   margin-bottom: 10px;
-
   overflow: hidden;
-
   color: rgba(255, 255, 255, 0.9);
   background: #151515;
-
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 11px;
-
-  box-shadow:
-    0 18px 48px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
 }
-
-/* =========================================================
-   INSPECTOR TABS
-========================================================= */
 
 .learn-inspector-tabs {
   height: 41px;
-
   display: flex;
   align-items: stretch;
-
   padding: 0 12px;
-
-  border-bottom:
-    1px solid rgba(255, 255, 255, 0.075);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
 }
 
 .learn-inspector-tab {
   position: relative;
-
   padding: 0 8px;
-
-  color: rgba(255, 255, 255, 0.34);
+  color: rgba(255, 255, 255, 0.3);
   background: transparent;
-
   border: 0;
-
   font: inherit;
-
   font-size: 6px;
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .learn-inspector-tab.active {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .learn-inspector-tab.active::after {
   content: "";
-
   position: absolute;
-
   left: 8px;
   right: 8px;
   bottom: -1px;
-
   height: 1px;
-
-  background: #ffffff;
+  background: #fff;
 }
 
 /* =========================================================
-   INSPECTOR HEALTH
+   HEALTH
 ========================================================= */
 
 .learn-score-section {
-  padding: 16px 14px 18px;
-
-  border-bottom:
-    1px solid rgba(255, 255, 255, 0.075);
+  padding: 17px 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
 }
 
 .learn-panel-kicker {
-  margin-bottom: 9px;
-
+  display: block;
+  margin-bottom: 10px;
   font-size: 5px;
   font-weight: 700;
-  letter-spacing: 0.13em;
-
-  opacity: 0.33;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.34);
 }
 
 .learn-total-score {
   display: flex;
-  align-items: baseline;
-
-  margin-bottom: 4px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 19px;
 }
 
 .learn-total-score strong {
-  font-size: 34px;
-  font-weight: 500;
-  line-height: 1;
-
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 0.92;
   letter-spacing: -0.055em;
+  color: rgba(255, 255, 255, 0.96);
 }
 
-.learn-total-score > span {
-  margin-left: 3px;
-
-  font-size: 7px;
-
-  opacity: 0.3;
-}
-
-.learn-health-status {
+.learn-total-score div {
   display: flex;
-  align-items: center;
-
+  flex-direction: column;
+  align-items: flex-end;
   gap: 5px;
+  padding-top: 3px;
+}
 
-  margin-bottom: 17px;
+.learn-total-score div span:first-child {
+  font-size: 5px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  color: rgba(255, 255, 255, 0.27);
+}
 
+.learn-total-score div span:last-child {
   font-size: 5px;
   font-weight: 700;
   letter-spacing: 0.1em;
-
-  opacity: 0.4;
+  color: rgba(255, 255, 255, 0.72);
 }
-
-.learn-health-status > span:first-child {
-  width: 4px;
-  height: 4px;
-
-  border-radius: 50%;
-
-  background: #f7f7f3;
-}
-
-/* =========================================================
-   SCORE ROWS
-========================================================= */
 
 .learn-score-list {
   display: flex;
   flex-direction: column;
-
-  gap: 11px;
+  gap: 10px;
 }
 
-.learn-score-row > div:first-child {
+.learn-score-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.72;
+}
+
+.learn-score-row > span {
+  font-size: 5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.learn-score-row > div {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-
-  gap: 8px;
-
-  margin-bottom: 5px;
-}
-
-.learn-score-row span {
-  font-size: 5px;
-
-  opacity: 0.42;
-}
-
-.learn-score-row strong {
-  font-size: 5px;
-  font-weight: 600;
-
-  opacity: 0.68;
+  gap: 5px;
 }
 
 .learn-score-track {
   position: relative;
-
+  width: 100%;
   height: 1px;
-
   overflow: hidden;
-
-  background:
-    rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .learn-score-fill {
-  position: absolute;
+  display: block;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.48);
+}
 
-  inset: 0 auto 0 0;
-
-  background:
-    rgba(255, 255, 255, 0.6);
+.learn-score-row strong {
+  width: 16px;
+  text-align: right;
+  font-size: 5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* =========================================================
    INSPECTOR GUIDE
 ========================================================= */
 
-.inspector-guide {
+.learn-guide-stack {
   position: relative;
+  padding-top: 3px;
+}
 
-  padding: 17px 14px 18px;
+.inspector-guide {
+  padding: 19px 14px 17px;
 }
 
 .learn-guide-heading {
   display: flex;
   align-items: center;
-
-  gap: 8px;
-
-  margin-bottom: 15px;
+  gap: 9px;
+  margin-bottom: 14px;
 }
 
 .learn-guide-icon {
   width: 29px;
   height: 29px;
-
   flex: 0 0 29px;
-
   display: grid;
   place-items: center;
-
   color: #0a0a0a;
   background: #f7f7f3;
-
   border-radius: 7px;
 }
 
 .learn-guide-heading > div:last-child {
-  min-width: 0;
-
   display: flex;
   flex-direction: column;
-
-  gap: 2px;
+  gap: 3px;
 }
 
-.learn-guide-heading span {
-  font-size: 5px;
+.learn-guide-heading > div:last-child span {
+  font-size: 4.5px;
   font-weight: 700;
-  letter-spacing: 0.11em;
-
-  opacity: 0.32;
+  letter-spacing: 0.13em;
+  color: rgba(255, 255, 255, 0.3);
 }
 
-.learn-guide-heading strong {
-  overflow: hidden;
-
+.learn-guide-heading > div:last-child strong {
   font-size: 8px;
-  font-weight: 500;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+}
 
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.inspector-guide > p {
+  margin: 0;
+  font-size: 6px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.42);
 }
 
 .learn-guide-component {
   display: flex;
   align-items: center;
-
   gap: 7px;
-
-  padding-top: 13px;
-  margin-bottom: 9px;
-
-  border-top:
-    1px solid rgba(255, 255, 255, 0.075);
+  margin-bottom: 11px;
+  padding: 8px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.022);
 }
 
 .learn-guide-component svg {
-  flex-shrink: 0;
-
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 .learn-guide-component strong {
   font-size: 7px;
   font-weight: 600;
-}
-
-.inspector-guide > p {
-  margin: 0;
-
-  color: rgba(255, 255, 255, 0.45);
-
-  font-size: 6px;
-  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .learn-guide-action {
   width: 100%;
-  min-height: 31px;
-
+  min-height: 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   gap: 8px;
-
   margin-top: 13px;
   padding: 0 9px;
-
-  color: rgba(255, 255, 255, 0.7);
-  background: transparent;
-
-  border:
-    1px solid rgba(255, 255, 255, 0.1);
-
+  box-sizing: border-box;
+  color: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.075);
   border-radius: 6px;
-
   font: inherit;
-
-  font-size: 6px;
-  font-weight: 500;
+  font-size: 5px;
+  font-weight: 600;
 }
 
 /* =========================================================
-   BOTTOM WORKSPACE CONTROLS
+   BOTTOM CONTROLS
 ========================================================= */
 
 .learn-bottom-controls {
   position: absolute;
-
   z-index: 40;
-
   left: 0;
   right: 0;
   bottom: 0;
-
-  height: 34px;
-
+  height: 35px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  color: rgba(255, 255, 255, 0.72);
 }
 
 .learn-mode-control {
   display: flex;
   align-items: center;
-
-  gap: 6px;
-
+  gap: 7px;
+  color: rgba(255, 255, 255, 0.5);
   font-size: 6px;
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
 }
 
 .learn-mode-dot {
   width: 5px;
   height: 5px;
-
   border-radius: 50%;
-
-  background: #fbf494;
+  background: #f7f7f3;
 }
 
 .learn-run-button {
-  min-height: 29px;
-
+  min-height: 27px;
   display: inline-flex;
   align-items: center;
-
   gap: 6px;
-
-  padding: 0 10px;
-
+  padding: 0 11px;
   color: #0a0a0a;
   background: #f7f7f3;
-
   border: 0;
-  border-radius: 7px;
-
+  border-radius: 6px;
   font: inherit;
-
-  font-size: 7px;
-  font-weight: 600;
+  font-size: 6px;
+  font-weight: 700;
 }
 
 /* =========================================================
-   BREAK — TRAFFIC PANEL
+   BREAK TRAFFIC
 ========================================================= */
 
 .break-traffic-panel {
   position: absolute;
-
   z-index: 20;
-
   top: 22px;
-  left: 22px;
-
+  right: 22px;
   width: 185px;
-
   padding: 13px 14px;
-
   box-sizing: border-box;
-
   color: #0a0a0a;
-  background: rgba(255, 255, 255, 0.98);
-
-  border:
-    1px solid rgba(10, 10, 10, 0.13);
-
-  border-radius: 10px;
-
-  box-shadow:
-    0 10px 30px rgba(10, 10, 10, 0.05);
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(10, 10, 10, 0.12);
+  border-radius: 9px;
+  box-shadow: 0 10px 28px rgba(10, 10, 10, 0.05);
 }
 
 .break-panel-heading {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
-.break-panel-heading > span {
+.break-panel-heading span {
   font-size: 6px;
   font-weight: 700;
   letter-spacing: 0.12em;
-
   opacity: 0.38;
 }
 
-.traffic-value {
-  font-size: 19px;
+.break-panel-heading strong {
+  font-size: 16px;
   font-weight: 500;
-  line-height: 1;
-
-  letter-spacing: -0.04em;
 }
 
 .traffic-scale-track {
   position: relative;
-
-  width: 100%;
   height: 2px;
-
-  margin-bottom: 9px;
-
-  background: rgba(10, 10, 10, 0.1);
+  margin: 6px 4px 7px;
+  background: rgba(10, 10, 10, 0.12);
 }
 
 .traffic-scale-fill {
   position: absolute;
-
-  inset: 0 auto 0 0;
-
-  width: 100%;
-
+  inset: 0;
   background: #0a0a0a;
-
-  transform-origin: left center;
 }
 
 .traffic-scale-thumb {
   position: absolute;
-
   top: 50%;
-  left: 0;
-
-  width: 8px;
-  height: 8px;
-
-  border:
-    2px solid #0a0a0a;
-
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-
-  background: #ffffff;
-
+  background: #0a0a0a;
   transform: translate(-50%, -50%);
 }
 
 .traffic-scale-labels {
   display: flex;
   justify-content: space-between;
-
   font-size: 5px;
-  font-weight: 600;
-
-  opacity: 0.34;
+  opacity: 0.38;
 }
-
-/* =========================================================
-   BREAK PARTICLES
-========================================================= */
 
 .break-particle {
   position: absolute;
-
-  z-index: 5;
-
+  z-index: 4;
   left: 50%;
-
   width: 5px;
   height: 5px;
-
   border-radius: 50%;
-
   background: #0a0a0a;
-
   transform: translateX(-50%);
-
-  box-shadow:
-    0 0 0 2px #ffffff;
+  box-shadow: 0 0 0 2px #fff;
 }
 
 .break-particle-1 {
-  margin-left: -11px;
+  margin-left: -18px;
 }
 
 .break-particle-2 {
-  margin-left: 9px;
+  margin-left: 16px;
 }
 
 .break-particle-3 {
-  margin-left: -6px;
+  margin-left: -11px;
 }
 
 .break-particle-4 {
-  margin-left: 6px;
+  margin-left: 10px;
 }
 
 .break-particle-5 {
-  margin-left: -14px;
+  margin-left: -26px;
 }
 
 .break-particle-6 {
-  margin-left: 14px;
+  margin-left: 25px;
 }
-
-/* =========================================================
-   SERVER WARNING
-========================================================= */
 
 .server-warning {
   position: absolute;
-
-  left: 50%;
-  top: calc(100% + 8px);
-
+  z-index: 12;
+  left: calc(100% + 11px);
+  top: 50%;
   display: flex;
   align-items: center;
-
   gap: 5px;
-
-  padding: 5px 8px;
-
-  white-space: nowrap;
-
+  padding: 5px 7px;
   color: #0a0a0a;
-  background: #ffffff;
-
-  border:
-    1px solid rgba(10, 10, 10, 0.17);
-
-  border-radius: 6px;
-
-  font-size: 6px;
+  background: #fff;
+  border: 1px solid rgba(10, 10, 10, 0.16);
+  border-radius: 5px;
+  font-size: 5px;
   font-weight: 700;
-  letter-spacing: 0.09em;
-
-  transform: translateX(-50%);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  transform: translateY(-50%);
 }
 
-.server-warning > span {
-  width: 14px;
-  height: 14px;
-
+.server-warning span {
   display: grid;
   place-items: center;
-
-  border:
-    1px solid #0a0a0a;
-
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
-
+  color: #fff;
+  background: #0a0a0a;
   font-size: 8px;
 }
 
-/* =========================================================
-   BREAK RESULT
-========================================================= */
-
 .break-result {
   position: absolute;
-
   z-index: 25;
-
   left: 22px;
   bottom: 22px;
-
-  width: 220px;
-
+  width: 225px;
   padding: 17px 18px;
-
   box-sizing: border-box;
-
   color: #0a0a0a;
   background: rgba(255, 255, 255, 0.985);
-
-  border:
-    1px solid rgba(10, 10, 10, 0.14);
-
+  border: 1px solid rgba(10, 10, 10, 0.14);
   border-radius: 11px;
-
-  box-shadow:
-    0 14px 38px rgba(10, 10, 10, 0.07);
+  box-shadow: 0 14px 38px rgba(10, 10, 10, 0.07);
 }
 
 .break-result-eyebrow {
   display: block;
-
   margin-bottom: 6px;
-
   font-size: 6px;
   font-weight: 700;
   letter-spacing: 0.13em;
-
   opacity: 0.38;
 }
 
-.break-result strong {
+.break-result > strong {
   display: block;
-
   margin-bottom: 7px;
-
   font-size: 21px;
   font-weight: 500;
-  line-height: 1;
-
   letter-spacing: -0.04em;
 }
 
-.break-result p {
+.break-result > p {
   margin: 0;
-
   font-size: 7px;
   line-height: 1.5;
-
   opacity: 0.45;
 }
 
@@ -1363,200 +994,141 @@
 
 .solve-panel {
   position: absolute;
-
   z-index: 25;
-
   left: 22px;
-  top: 100px;
-
+  top: 120px;
   width: 235px;
-
   padding: 18px;
-
   box-sizing: border-box;
-
   color: #0a0a0a;
   background: rgba(255, 255, 255, 0.985);
-
-  border:
-    1px solid rgba(10, 10, 10, 0.14);
-
+  border: 1px solid rgba(10, 10, 10, 0.14);
   border-radius: 12px;
-
-  box-shadow:
-    0 16px 44px rgba(10, 10, 10, 0.07);
+  box-shadow: 0 16px 44px rgba(10, 10, 10, 0.07);
 }
 
 .solve-eyebrow {
   display: block;
-
   margin-bottom: 8px;
-
   font-size: 6px;
   font-weight: 700;
   letter-spacing: 0.13em;
-
   opacity: 0.38;
 }
 
 .solve-panel h3 {
   margin: 0;
-
   font-size: 25px;
   font-weight: 500;
   line-height: 0.98;
-
   letter-spacing: -0.045em;
 }
 
 .solve-panel > p {
-  margin: 11px 0 15px;
-
+  margin: 10px 0 14px;
   font-size: 7px;
   line-height: 1.5;
-
-  opacity: 0.46;
+  opacity: 0.45;
 }
 
 .solve-options {
   display: flex;
   flex-direction: column;
-
   gap: 6px;
 }
 
 .solve-option {
   display: flex;
   align-items: center;
-
-  gap: 8px;
-
+  gap: 9px;
   min-height: 52px;
-
   padding: 8px;
-
-  background: #ffffff;
-
-  border:
-    1px solid rgba(10, 10, 10, 0.1);
-
+  box-sizing: border-box;
+  border: 1px solid rgba(10, 10, 10, 0.1);
   border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .solve-option-icon {
-  width: 30px;
-  height: 30px;
-
-  flex: 0 0 30px;
-
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
   display: grid;
   place-items: center;
-
-  border:
-    1px solid rgba(10, 10, 10, 0.1);
-
+  border: 1px solid rgba(10, 10, 10, 0.1);
   border-radius: 7px;
-
-  background: #ffffff;
+  background: #fff;
 }
 
 .solve-option strong {
   display: block;
-
   margin-bottom: 3px;
-
   font-size: 8px;
   font-weight: 600;
 }
 
 .solve-option span {
   display: block;
-
   font-size: 6px;
   line-height: 1.4;
-
   opacity: 0.4;
 }
 
 /* =========================================================
-   SOLVE CONCEPT CARD
+   SOLVE CONCEPT
 ========================================================= */
 
 .solve-concept-card {
   position: absolute;
-
   z-index: 25;
-
   left: 22px;
   top: 170px;
-
   width: 225px;
-
   padding: 18px;
-
   box-sizing: border-box;
-
   color: #0a0a0a;
   background: rgba(255, 255, 255, 0.985);
-
-  border:
-    1px solid rgba(10, 10, 10, 0.14);
-
+  border: 1px solid rgba(10, 10, 10, 0.14);
   border-radius: 12px;
-
-  box-shadow:
-    0 16px 44px rgba(10, 10, 10, 0.07);
+  box-shadow: 0 16px 44px rgba(10, 10, 10, 0.07);
 }
 
 .solve-concept-eyebrow {
   display: block;
-
   margin-bottom: 7px;
-
   font-size: 6px;
   font-weight: 700;
   letter-spacing: 0.13em;
-
   opacity: 0.38;
 }
 
 .solve-concept-card > strong {
   display: block;
-
   margin-bottom: 7px;
-
   font-size: 20px;
   font-weight: 500;
-
   letter-spacing: -0.04em;
 }
 
 .solve-concept-card > p {
   margin: 0;
-
   font-size: 7px;
   line-height: 1.5;
-
   opacity: 0.45;
 }
 
 .solve-term {
   display: flex;
   align-items: center;
-
   gap: 8px;
-
   margin-top: 14px;
   padding-top: 12px;
-
-  border-top:
-    1px solid rgba(10, 10, 10, 0.09);
+  border-top: 1px solid rgba(10, 10, 10, 0.09);
 }
 
 .solve-term > div {
   display: flex;
   flex-direction: column;
-
   gap: 2px;
 }
 
@@ -1564,7 +1136,6 @@
   font-size: 5px;
   font-weight: 700;
   letter-spacing: 0.11em;
-
   opacity: 0.32;
 }
 
@@ -1579,33 +1150,26 @@
 
 .solve-architecture {
   position: absolute;
-
   z-index: 10;
-
   left: 50%;
   top: 145px;
-
   width: 520px;
   height: 310px;
-
   transform: translateX(-50%);
-
   pointer-events: none;
 }
 
 .solve-line-user-lb {
   position: absolute;
-
   z-index: 1;
 
-  top: -58px;
+  /* Only occupy the empty gap between User and Load Balancer */
+  top: -1px;
   left: 50%;
-
   width: 1px;
-  height: 80px;
+  height: 38px;
 
-  background:
-    rgba(10, 10, 10, 0.32);
+  background: rgba(10, 10, 10, 0.32);
 
   transform: translateX(-50%);
   transform-origin: top center;
@@ -1613,12 +1177,9 @@
 
 .solve-load-balancer {
   position: absolute;
-
   z-index: 7;
-
   top: 20px;
   left: 50%;
-
   transform: translateX(-50%);
 }
 
@@ -1628,37 +1189,25 @@
 
 .solve-routing-lines {
   position: absolute;
-
   z-index: 2;
-
   top: 94px;
   left: 0;
-
   width: 100%;
   height: 132px;
-
   overflow: visible;
-
   pointer-events: none;
 }
 
 .solve-route {
   fill: none;
-
-  stroke:
-    rgba(10, 10, 10, 0.32);
-
+  stroke: rgba(10, 10, 10, 0.32);
   stroke-width: 1;
-
-  vector-effect:
-    non-scaling-stroke;
+  vector-effect: non-scaling-stroke;
 }
 
 .solve-server {
   position: absolute;
-
   z-index: 7;
-
   top: 218px;
 }
 
@@ -1673,7 +1222,6 @@
 
 .solve-server-two {
   left: 50%;
-
   transform: translateX(-50%);
 }
 
@@ -1683,23 +1231,15 @@
 
 .solve-request {
   position: absolute;
-
   z-index: 6;
-
   top: 101px;
   left: 50%;
-
   width: 6px;
   height: 6px;
-
   margin-left: -3px;
-
   border-radius: 50%;
-
   background: #0a0a0a;
-
-  box-shadow:
-    0 0 0 3px #ffffff;
+  box-shadow: 0 0 0 3px #fff;
 }
 
 /* =========================================================
@@ -1708,128 +1248,88 @@
 
 .solve-success {
   position: absolute;
-
   z-index: 25;
-
   left: 22px;
   bottom: 22px;
-
   width: 230px;
-
   padding: 17px 18px;
-
   box-sizing: border-box;
-
   color: #0a0a0a;
   background: rgba(255, 255, 255, 0.985);
-
-  border:
-    1px solid rgba(10, 10, 10, 0.14);
-
+  border: 1px solid rgba(10, 10, 10, 0.14);
   border-radius: 11px;
-
-  box-shadow:
-    0 14px 38px rgba(10, 10, 10, 0.07);
+  box-shadow: 0 14px 38px rgba(10, 10, 10, 0.07);
 }
 
 .solve-success-eyebrow {
   display: block;
-
   margin-bottom: 6px;
-
   font-size: 6px;
   font-weight: 700;
   letter-spacing: 0.13em;
-
   opacity: 0.38;
 }
 
 .solve-success > strong {
   display: block;
-
   margin-bottom: 7px;
-
   font-size: 18px;
   font-weight: 500;
   line-height: 1.05;
-
   letter-spacing: -0.04em;
 }
 
 .solve-success > p {
   margin: 0;
-
   font-size: 7px;
   line-height: 1.5;
-
   opacity: 0.45;
 }
 
 /* =========================================================
-   04 LEARN — CANVAS EXPLANATION
-
-   This is intentionally small. The right inspector is the
-   main teaching surface.
+   LEARN CANVAS FOCUS
 ========================================================= */
 
 .learn-canvas-focus {
   position: absolute;
-
   z-index: 22;
-
   right: 22px;
   bottom: 22px;
-
   width: 190px;
-
   padding: 13px 14px;
-
   box-sizing: border-box;
-
   color: #0a0a0a;
   background: rgba(255, 255, 255, 0.97);
-
-  border:
-    1px solid rgba(10, 10, 10, 0.12);
-
+  border: 1px solid rgba(10, 10, 10, 0.12);
   border-radius: 9px;
-
-  box-shadow:
-    0 10px 28px rgba(10, 10, 10, 0.05);
+  box-shadow: 0 10px 28px rgba(10, 10, 10, 0.05);
 }
 
 .learn-canvas-focus > span {
   display: block;
-
   margin-bottom: 4px;
-
   font-size: 5px;
   font-weight: 700;
   letter-spacing: 0.11em;
-
   opacity: 0.32;
 }
 
 .learn-canvas-focus > strong {
   display: block;
-
   margin-bottom: 5px;
-
   font-size: 9px;
   font-weight: 600;
 }
 
 .learn-canvas-focus > p {
   margin: 0;
-
   font-size: 6px;
   line-height: 1.5;
-
   opacity: 0.44;
 }
 
 /* =========================================================
-   RESPONSIVE — DESKTOP
+   RESPONSIVE
 ========================================================= */
 
 @media (max-width: 1250px) {
@@ -1838,7 +1338,6 @@
       165px
       minmax(570px, 1fr)
       185px;
-
     gap: 22px;
   }
 
@@ -1863,10 +1362,6 @@
   }
 }
 
-/* =========================================================
-   RESPONSIVE — SMALL LAPTOP
-========================================================= */
-
 @media (max-width: 1050px) {
   .story-demo {
     padding-left: 24px;
@@ -1878,7 +1373,6 @@
       130px
       minmax(520px, 1fr)
       155px;
-
     gap: 16px;
   }
 
@@ -1898,7 +1392,6 @@
   .learn-toolbox-icon {
     width: 27px;
     height: 27px;
-
     flex-basis: 27px;
   }
 
@@ -1920,18 +1413,10 @@
     font-size: 5.5px;
   }
 
-  .story-teaching-prompt {
-    width: 190px;
-  }
-
   .solve-architecture {
     width: 440px;
   }
 }
-
-/* =========================================================
-   RESPONSIVE — TABLET
-========================================================= */
 
 @media (max-width: 900px) {
   .system-story {
@@ -1940,9 +1425,7 @@
 
   .story-demo-progress {
     justify-content: flex-start;
-
     overflow-x: auto;
-
     scrollbar-width: none;
   }
 
@@ -1955,14 +1438,11 @@
       64px
       minmax(480px, 1fr)
       125px;
-
     gap: 12px;
   }
 
   .learn-toolbox {
-    padding:
-      12px
-      7px;
+    padding: 12px 7px;
   }
 
   .learn-panel-heading {
@@ -1971,9 +1451,7 @@
 
   .learn-toolbox-item {
     justify-content: center;
-
     min-height: 39px;
-
     padding: 4px;
   }
 
@@ -1985,12 +1463,11 @@
   .learn-toolbox-icon {
     width: 29px;
     height: 29px;
-
     flex: 0 0 29px;
   }
 
   .learn-total-score strong {
-    font-size: 27px;
+    font-size: 29px;
   }
 
   .learn-score-row span {
@@ -2001,24 +1478,15 @@
     display: none;
   }
 
-  .story-teaching-prompt {
-    display: none;
-  }
-
   .solve-panel {
     width: 210px;
   }
 
   .solve-architecture {
     left: 58%;
-
     width: 420px;
   }
 }
-
-/* =========================================================
-   MOBILE
-========================================================= */
 
 @media (max-width: 700px) {
   .system-story-intro {
@@ -2031,61 +1499,43 @@
 
   .story-demo {
     min-height: 720px;
-
-    padding:
-      28px
-      12px
-      44px;
+    padding: 28px 12px 44px;
   }
 
   .story-workspace {
     height: 620px;
-
     grid-template-columns:
       48px
       minmax(390px, 1fr);
-
     gap: 9px;
-
     overflow-x: visible;
   }
 
- .story-workspace-center {
-  position: relative;
-
-  min-width: 0;
-  height: 100%;
-
-  display: flex;
-  flex-direction: column;
-
-  padding-top: 54px;
-  padding-bottom: 60px;
-
-  box-sizing: border-box;
-}
+  .story-workspace-center {
+    position: relative;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding-top: 54px;
+    padding-bottom: 60px;
+    box-sizing: border-box;
+  }
 
   .learn-inspector {
     position: absolute;
-
     z-index: 80;
-
     top: 34px;
     right: 8px;
-
     width: 115px;
-
+    height: auto;
     margin: 0;
-
     opacity: 0.94;
   }
 
   .learn-toolbox {
     margin-top: 34px;
-
-    padding:
-      8px
-      5px;
+    padding: 8px 5px;
   }
 
   .learn-toolbox-item {
@@ -2095,7 +1545,6 @@
   .learn-toolbox-icon {
     width: 27px;
     height: 27px;
-
     flex-basis: 27px;
   }
 
@@ -2104,9 +1553,7 @@
   }
 
   .learn-score-section {
-    padding:
-      10px
-      8px;
+    padding: 10px 8px;
   }
 
   .learn-panel-kicker {
@@ -2114,7 +1561,7 @@
   }
 
   .learn-total-score strong {
-    font-size: 22px;
+    font-size: 24px;
   }
 
   .learn-score-row > div:first-child span {
@@ -2126,15 +1573,12 @@
   }
 
   .inspector-guide {
-    padding:
-      10px
-      8px;
+    padding: 10px 8px;
   }
 
   .learn-guide-icon {
     width: 25px;
     height: 25px;
-
     flex-basis: 25px;
   }
 
@@ -2160,7 +1604,6 @@
   .solve-architecture {
     left: 50%;
     top: 230px;
-
     width: calc(100% - 28px);
   }
 }

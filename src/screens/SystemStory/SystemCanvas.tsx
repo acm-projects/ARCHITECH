@@ -124,25 +124,29 @@ export default function SystemCanvas() {
               }
             />
 
+            <div className="toolbox-server">
             <ToolboxItem
-              name="Server"
-              icon={
+                name="Server"
+                icon={
                 <Server
-                  size={16}
-                  strokeWidth={1.6}
+                    size={16}
+                    strokeWidth={1.6}
                 />
-              }
+                }
             />
+            </div>
 
+            <div className="toolbox-database">
             <ToolboxItem
-              name="Database"
-              icon={
+                name="Database"
+                icon={
                 <Database
-                  size={16}
-                  strokeWidth={1.6}
+                    size={16}
+                    strokeWidth={1.6}
                 />
-              }
+                }
             />
+            </div>
 
             <ToolboxItem
               name="Load Balancer"
@@ -258,26 +262,6 @@ export default function SystemCanvas() {
                   SERVER LESSON
               ============================================= */}
 
-              <div className="story-teaching-prompt prompt-server">
-                <span className="story-prompt-number">
-                  01
-                </span>
-
-                <div>
-                  <strong>
-                    Who handles the request?
-                  </strong>
-
-                  <p>
-                    Something needs to receive what the user
-                    sends and decide what happens next.
-                  </p>
-
-                  <span className="story-concept">
-                    Server
-                  </span>
-                </div>
-              </div>
 
               {/* =============================================
                   ORIGINAL SERVER
@@ -319,26 +303,7 @@ export default function SystemCanvas() {
                   DATABASE LESSON
               ============================================= */}
 
-              <div className="story-teaching-prompt prompt-database">
-                <span className="story-prompt-number">
-                  02
-                </span>
-
-                <div>
-                  <strong>
-                    Where do the posts live?
-                  </strong>
-
-                  <p>
-                    Instagram needs somewhere to remember
-                    users, posts, comments, and likes.
-                  </p>
-
-                  <span className="story-concept">
-                    Database
-                  </span>
-                </div>
-              </div>
+              
 
               {/* =============================================
                   DATABASE
@@ -859,6 +824,44 @@ export default function SystemCanvas() {
                 <strong>Remember the data</strong>
               </div>
             </div>
+
+            <div className="inspector-guide inspector-guide-built">
+  <div className="learn-guide-heading">
+    <div className="learn-guide-icon">
+      <Layers3
+        size={15}
+        strokeWidth={1.6}
+      />
+    </div>
+
+    <div>
+      <span>ARCHITECT GUIDE</span>
+      <strong>Your first system</strong>
+    </div>
+  </div>
+
+  <div className="learn-guide-component">
+    <Activity
+      size={14}
+      strokeWidth={1.6}
+    />
+
+    <strong>User → Server → Database</strong>
+  </div>
+
+  <p>
+    A user makes a request. The server processes it.
+    The database stores the information that needs to persist.
+  </p>
+
+  <div className="build-complete-flow">
+    <span>User</span>
+    <i>→</i>
+    <span>Server</span>
+    <i>→</i>
+    <span>Database</span>
+  </div>
+</div>
 
             <div className="learn-guide-component">
               <Database

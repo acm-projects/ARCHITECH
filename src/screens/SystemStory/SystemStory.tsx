@@ -36,9 +36,6 @@ export default function SystemStory() {
           ".story-database",
           ".connector-user-server",
           ".connector-server-db",
-          ".prompt-server",
-          ".prompt-database",
-          ".story-build-complete",
         ],
         {
           autoAlpha: 0,
@@ -54,13 +51,6 @@ export default function SystemStory() {
         y: 16,
         scale: 0.96,
       });
-
-      gsap.set(
-        [".prompt-server", ".prompt-database"],
-        {
-          y: 10,
-        }
-      );
 
       gsap.set(
         [
@@ -81,6 +71,42 @@ export default function SystemStory() {
         ],
         {
           autoAlpha: 0,
+        }
+      );
+
+      /* =====================================================
+         INITIAL TOOLBOX STATE
+      ===================================================== */
+
+      gsap.set(
+        [
+          ".toolbox-server .learn-toolbox-item",
+          ".toolbox-database .learn-toolbox-item",
+        ],
+        {
+          backgroundColor: "rgba(255, 255, 255, 0)",
+          borderColor: "rgba(255, 255, 255, 0)",
+        }
+      );
+
+      gsap.set(
+        [
+          ".toolbox-server .learn-toolbox-icon",
+          ".toolbox-database .learn-toolbox-icon",
+        ],
+        {
+          scale: 1,
+        }
+      );
+
+      gsap.set(
+        [
+          ".toolbox-server .learn-toolbox-plus",
+          ".toolbox-database .learn-toolbox-plus",
+        ],
+        {
+          rotation: 0,
+          opacity: 0.28,
         }
       );
 
@@ -192,8 +218,8 @@ export default function SystemStory() {
       });
 
       /*
-       * Workspace shell itself is visible from frame one.
-       * No LEARN reveal animation anymore.
+       * Workspace shell is visible from frame one.
+       * BUILD, BREAK, SOLVE and LEARN all happen inside it.
        */
 
       gsap.set(
@@ -209,7 +235,7 @@ export default function SystemStory() {
       );
 
       /* =====================================================
-         HELPER TIMELINE
+         MAIN SCROLL TIMELINE
       ===================================================== */
 
       const timeline = gsap.timeline({
@@ -260,18 +286,18 @@ export default function SystemStory() {
         "<"
       );
 
+      timeline.to({}, {
+        duration: 0.25,
+      });
+
       /* =====================================================
          GUIDE → SERVER
       ===================================================== */
 
-      timeline.to(
-        ".inspector-guide-build",
-        {
-          autoAlpha: 0,
-          duration: 0.25,
-        },
-        "+=0.25"
-      );
+      timeline.to(".inspector-guide-build", {
+        autoAlpha: 0,
+        duration: 0.25,
+      });
 
       timeline.set(".inspector-guide-build", {
         display: "none",
@@ -287,27 +313,43 @@ export default function SystemStory() {
       });
 
       /* =====================================================
-         TEACH SERVER
+         TOOLBOX → SERVER
+
+         The product itself teaches what component is needed.
       ===================================================== */
 
       timeline.to(
-        ".prompt-server",
+        ".toolbox-server .learn-toolbox-item",
         {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.65,
+          backgroundColor: "rgba(255, 255, 255, 0.075)",
+          borderColor: "rgba(255, 255, 255, 0.15)",
+          duration: 0.35,
         },
         "<"
       );
 
       timeline.to(
-        ".connector-user-server",
+        ".toolbox-server .learn-toolbox-icon",
         {
-          autoAlpha: 1,
-          duration: 0.1,
+          scale: 1.08,
+          duration: 0.25,
+          ease: "power2.out",
         },
-        "+=0.15"
+        "<"
       );
+
+      timeline.to({}, {
+        duration: 0.25,
+      });
+
+      /* =====================================================
+         BUILD USER → SERVER CONNECTION
+      ===================================================== */
+
+      timeline.to(".connector-user-server", {
+        autoAlpha: 1,
+        duration: 0.1,
+      });
 
       timeline.to(
         ".connector-user-server .story-connector-line",
@@ -333,6 +375,39 @@ export default function SystemStory() {
         duration: 0.7,
         ease: "power2.out",
       });
+
+      /* =====================================================
+         SERVER ADDED → TOOLBOX CONFIRMS
+      ===================================================== */
+
+      timeline.to(
+        ".toolbox-server .learn-toolbox-icon",
+        {
+          scale: 1,
+          duration: 0.25,
+        },
+        "<"
+      );
+
+      timeline.to(
+        ".toolbox-server .learn-toolbox-plus",
+        {
+          rotation: 45,
+          opacity: 0.7,
+          duration: 0.3,
+        },
+        "<"
+      );
+
+      timeline.to(
+        ".toolbox-server .learn-toolbox-item",
+        {
+          backgroundColor: "rgba(255, 255, 255, 0.035)",
+          borderColor: "rgba(255, 255, 255, 0.08)",
+          duration: 0.35,
+        },
+        "<"
+      );
 
       /* =====================================================
          REQUEST: USER → SERVER
@@ -390,15 +465,9 @@ export default function SystemStory() {
         duration: 0.15,
       });
 
-      timeline.to(
-        ".prompt-server",
-        {
-          autoAlpha: 0,
-          y: -8,
-          duration: 0.4,
-        },
-        "+=0.2"
-      );
+      timeline.to({}, {
+        duration: 0.25,
+      });
 
       /* =====================================================
          GUIDE → DATABASE
@@ -423,27 +492,41 @@ export default function SystemStory() {
       });
 
       /* =====================================================
-         TEACH DATABASE
+         TOOLBOX → DATABASE
       ===================================================== */
 
       timeline.to(
-        ".prompt-database",
+        ".toolbox-database .learn-toolbox-item",
         {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.65,
+          backgroundColor: "rgba(255, 255, 255, 0.075)",
+          borderColor: "rgba(255, 255, 255, 0.15)",
+          duration: 0.35,
         },
         "<"
       );
 
       timeline.to(
-        ".connector-server-db",
+        ".toolbox-database .learn-toolbox-icon",
         {
-          autoAlpha: 1,
-          duration: 0.1,
+          scale: 1.08,
+          duration: 0.25,
+          ease: "power2.out",
         },
-        "+=0.15"
+        "<"
       );
+
+      timeline.to({}, {
+        duration: 0.25,
+      });
+
+      /* =====================================================
+         BUILD SERVER → DATABASE CONNECTION
+      ===================================================== */
+
+      timeline.to(".connector-server-db", {
+        autoAlpha: 1,
+        duration: 0.1,
+      });
 
       timeline.to(
         ".connector-server-db .story-connector-line",
@@ -469,6 +552,39 @@ export default function SystemStory() {
         duration: 0.7,
         ease: "power2.out",
       });
+
+      /* =====================================================
+         DATABASE ADDED → TOOLBOX CONFIRMS
+      ===================================================== */
+
+      timeline.to(
+        ".toolbox-database .learn-toolbox-icon",
+        {
+          scale: 1,
+          duration: 0.25,
+        },
+        "<"
+      );
+
+      timeline.to(
+        ".toolbox-database .learn-toolbox-plus",
+        {
+          rotation: 45,
+          opacity: 0.7,
+          duration: 0.3,
+        },
+        "<"
+      );
+
+      timeline.to(
+        ".toolbox-database .learn-toolbox-item",
+        {
+          backgroundColor: "rgba(255, 255, 255, 0.035)",
+          borderColor: "rgba(255, 255, 255, 0.08)",
+          duration: 0.35,
+        },
+        "<"
+      );
 
       /* =====================================================
          REQUEST: SERVER → DATABASE
@@ -526,15 +642,12 @@ export default function SystemStory() {
         duration: 0.15,
       });
 
-      timeline.to(
-        ".prompt-database",
-        {
-          autoAlpha: 0,
-          y: -8,
-          duration: 0.4,
-        },
-        "+=0.2"
-      );
+      /* =====================================================
+         BUILD COMPLETE
+
+         The canvas stops teaching through overlays.
+         The Inspector summarizes what the visitor built.
+      ===================================================== */
 
       timeline.to(".story-database .story-node", {
         borderColor: "rgba(10, 10, 10, 0.16)",
@@ -552,8 +665,39 @@ export default function SystemStory() {
         "<"
       );
 
+      timeline.to(".inspector-guide-database", {
+        autoAlpha: 0,
+        duration: 0.25,
+      });
+
+      timeline.set(".inspector-guide-database", {
+        display: "none",
+      });
+
+      timeline.set(".inspector-guide-built", {
+        display: "block",
+      });
+
+      timeline.to(".inspector-guide-built", {
+        autoAlpha: 1,
+        duration: 0.4,
+      });
+
+      timeline.to(
+        [
+          ".story-user .story-node",
+          ".story-server .story-node",
+          ".story-database .story-node",
+        ],
+        {
+          borderColor: "rgba(10, 10, 10, 0.28)",
+          duration: 0.35,
+        },
+        "<"
+      );
+
       timeline.to({}, {
-        duration: 0.6,
+        duration: 0.9,
       });
 
       /* =====================================================
@@ -574,14 +718,16 @@ export default function SystemStory() {
         "<"
       );
 
-      /* GUIDE → BREAK */
+      /* =====================================================
+         GUIDE → BREAK
+      ===================================================== */
 
-      timeline.to(".inspector-guide-database", {
+      timeline.to(".inspector-guide-built", {
         autoAlpha: 0,
         duration: 0.25,
       });
 
-      timeline.set(".inspector-guide-database", {
+      timeline.set(".inspector-guide-built", {
         display: "none",
       });
 
@@ -594,7 +740,9 @@ export default function SystemStory() {
         duration: 0.35,
       });
 
-      /* TRAFFIC PANEL */
+      /* =====================================================
+         TRAFFIC PANEL
+      ===================================================== */
 
       timeline.to(
         ".break-traffic-panel",
@@ -632,10 +780,7 @@ export default function SystemStory() {
       });
 
       timeline.to(
-        [
-          ".break-particle-1",
-          ".break-particle-2",
-        ],
+        [".break-particle-1", ".break-particle-2"],
         {
           autoAlpha: 1,
           duration: 0.2,
@@ -643,10 +788,7 @@ export default function SystemStory() {
       );
 
       timeline.fromTo(
-        [
-          ".break-particle-1",
-          ".break-particle-2",
-        ],
+        [".break-particle-1", ".break-particle-2"],
         {
           top: "4%",
         },
@@ -684,10 +826,7 @@ export default function SystemStory() {
       });
 
       timeline.to(
-        [
-          ".break-particle-3",
-          ".break-particle-4",
-        ],
+        [".break-particle-3", ".break-particle-4"],
         {
           autoAlpha: 1,
           duration: 0.2,
@@ -695,10 +834,7 @@ export default function SystemStory() {
       );
 
       timeline.fromTo(
-        [
-          ".break-particle-3",
-          ".break-particle-4",
-        ],
+        [".break-particle-3", ".break-particle-4"],
         {
           top: "4%",
         },
@@ -710,19 +846,18 @@ export default function SystemStory() {
         }
       );
 
-      timeline.to(
-        ".story-server .story-node",
-        {
-          scale: 1.035,
-          borderColor: "rgba(10, 10, 10, 0.6)",
-          boxShadow: ACTIVE_NODE_SHADOW,
-          duration: 0.18,
-          repeat: 3,
-          yoyo: true,
-        }
-      );
+      timeline.to(".story-server .story-node", {
+        scale: 1.035,
+        borderColor: "rgba(10, 10, 10, 0.6)",
+        boxShadow: ACTIVE_NODE_SHADOW,
+        duration: 0.18,
+        repeat: 3,
+        yoyo: true,
+      });
 
-      /* Inspector health 92 → 68 */
+      /* =====================================================
+         HEALTH 92 → 68
+      ===================================================== */
 
       timeline.to(
         ".inspector-health-value",
@@ -767,13 +902,10 @@ export default function SystemStory() {
         duration: 0.1,
       });
 
-      timeline.to(
-        ".break-particle",
-        {
-          autoAlpha: 1,
-          duration: 0.15,
-        }
-      );
+      timeline.to(".break-particle", {
+        autoAlpha: 1,
+        duration: 0.15,
+      });
 
       timeline.fromTo(
         ".break-particle",
@@ -788,14 +920,11 @@ export default function SystemStory() {
         }
       );
 
-      timeline.to(
-        ".story-server .story-node",
-        {
-          borderColor: "rgba(10, 10, 10, 0.75)",
-          boxShadow: OVERLOADED_NODE_SHADOW,
-          duration: 0.35,
-        }
-      );
+      timeline.to(".story-server .story-node", {
+        borderColor: "rgba(10, 10, 10, 0.75)",
+        boxShadow: OVERLOADED_NODE_SHADOW,
+        duration: 0.35,
+      });
 
       timeline.to(
         ".story-server .story-node-status",
@@ -883,18 +1012,16 @@ export default function SystemStory() {
       );
 
       timeline.to(
-        [
-          ".break-result",
-          ".break-particle",
-          ".server-warning",
-        ],
+        [".break-result", ".break-particle", ".server-warning"],
         {
           autoAlpha: 0,
           duration: 0.35,
         }
       );
 
-      /* GUIDE → SOLVE */
+      /* =====================================================
+         GUIDE → SOLVE
+      ===================================================== */
 
       timeline.to(".inspector-guide-break", {
         autoAlpha: 0,
@@ -945,10 +1072,7 @@ export default function SystemStory() {
       });
 
       timeline.to(
-        [
-          ".solve-option-cache",
-          ".solve-option-data",
-        ],
+        [".solve-option-cache", ".solve-option-data"],
         {
           opacity: 0.28,
           duration: 0.4,
@@ -996,10 +1120,7 @@ export default function SystemStory() {
       });
 
       timeline.to(
-        [
-          ".connector-user-server",
-          ".connector-server-db",
-        ],
+        [".connector-user-server", ".connector-server-db"],
         {
           autoAlpha: 0,
           duration: 0.3,
@@ -1029,16 +1150,15 @@ export default function SystemStory() {
         ease: "power2.out",
       });
 
-      timeline.to(
-        ".solve-load-balancer .story-node",
-        {
-          borderColor: "rgba(10, 10, 10, 0.55)",
-          boxShadow: ACTIVE_NODE_SHADOW,
-          duration: 0.3,
-        }
-      );
+      timeline.to(".solve-load-balancer .story-node", {
+        borderColor: "rgba(10, 10, 10, 0.55)",
+        boxShadow: ACTIVE_NODE_SHADOW,
+        duration: 0.3,
+      });
 
-      /* FAN OUT */
+      /* =====================================================
+         FAN OUT
+      ===================================================== */
 
       timeline.to(".solve-route", {
         strokeDashoffset: 0,
@@ -1062,7 +1182,9 @@ export default function SystemStory() {
         }
       );
 
-      /* REQUESTS */
+      /* =====================================================
+         DISTRIBUTED REQUESTS
+      ===================================================== */
 
       timeline.to(".solve-request", {
         autoAlpha: 1,
@@ -1113,14 +1235,11 @@ export default function SystemStory() {
         "<+=0.08"
       );
 
-      timeline.to(
-        ".solve-server-one .story-node",
-        {
-          borderColor: "rgba(10, 10, 10, 0.5)",
-          boxShadow: ACTIVE_NODE_SHADOW,
-          duration: 0.3,
-        }
-      );
+      timeline.to(".solve-server-one .story-node", {
+        borderColor: "rgba(10, 10, 10, 0.5)",
+        boxShadow: ACTIVE_NODE_SHADOW,
+        duration: 0.3,
+      });
 
       timeline.to(
         ".solve-server-two .story-node",
@@ -1184,8 +1303,7 @@ export default function SystemStory() {
       /* =====================================================
          04 LEARN
 
-         No workspace transformation.
-         We simply demonstrate Learn Mode inside the same UI.
+         Same workspace. No fake product reveal.
       ===================================================== */
 
       timeline.to(".progress-solve", {
@@ -1203,17 +1321,16 @@ export default function SystemStory() {
       );
 
       timeline.to(
-        [
-          ".solve-success",
-          ".break-traffic-panel",
-        ],
+        [".solve-success", ".break-traffic-panel"],
         {
           autoAlpha: 0,
           duration: 0.4,
         }
       );
 
-      /* GUIDE → LEARN */
+      /* =====================================================
+         GUIDE → LEARN
+      ===================================================== */
 
       timeline.to(".inspector-guide-solve", {
         autoAlpha: 0,
@@ -1273,14 +1390,11 @@ export default function SystemStory() {
          EMPHASIZE ROUTING
       ===================================================== */
 
-      timeline.to(
-        ".solve-route",
-        {
-          strokeWidth: 1.6,
-          stroke: "rgba(10, 10, 10, 0.65)",
-          duration: 0.4,
-        }
-      );
+      timeline.to(".solve-route", {
+        strokeWidth: 1.6,
+        stroke: "rgba(10, 10, 10, 0.65)",
+        duration: 0.4,
+      });
 
       timeline.to(
         [
