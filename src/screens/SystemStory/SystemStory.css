@@ -1,35 +1,34 @@
 /* =========================================================
-   ARCHITECT — SYSTEM STORY
-   ========================================================= */
+   ARCHITECT — INTERACTIVE SYSTEM STORY
+   01 BUILD → 02 BREAK → 03 SOLVE → 04 LEARN
+========================================================= */
 
 .system-story {
   position: relative;
   width: 100%;
   padding: 120px 0 160px;
+  overflow: hidden;
 }
 
-
 /* =========================================================
-   STORY INTRO
-   ========================================================= */
+   INTRO
+========================================================= */
 
 .system-story-intro {
-  width: min(720px, calc(100% - 48px));
-  margin: 0 auto 70px;
-
+  width: min(760px, calc(100% - 48px));
+  margin: 0 auto 76px;
   text-align: center;
 }
 
 .system-story-step {
   display: inline-block;
-
   margin-bottom: 18px;
 
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.13em;
 
-  opacity: 0.45;
+  opacity: 0.42;
 }
 
 .system-story-intro h2 {
@@ -38,13 +37,11 @@
   font-size: clamp(56px, 7vw, 104px);
   font-weight: 500;
   line-height: 0.9;
-
   letter-spacing: -0.06em;
 }
 
 .system-story-intro p {
   max-width: 440px;
-
   margin: 26px auto 0;
 
   font-size: 15px;
@@ -53,48 +50,59 @@
   opacity: 0.55;
 }
 
-
 /* =========================================================
-   DEMO — BLACK OUTER STAGE
-   ========================================================= */
+   BLACK PRODUCT STAGE
+========================================================= */
 
 .story-demo {
+  position: relative;
+
   width: 100%;
+  min-height: 790px;
 
-  margin: 0 auto;
+  padding: 30px clamp(24px, 4vw, 68px) 52px;
 
-  padding: 46px 5vw 60px;
+  box-sizing: border-box;
 
-  background: #0a0a0a;
+  color: #ffffff;
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(255, 255, 255, 0.025),
+      transparent 44%
+    ),
+    #0a0a0a;
 }
-
 
 /* =========================================================
    STORY PROGRESS
-   ========================================================= */
+========================================================= */
 
 .story-demo-progress {
+  position: relative;
+  z-index: 100;
+
   width: min(1180px, 100%);
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  gap: clamp(18px, 3vw, 42px);
+  gap: clamp(30px, 4vw, 62px);
 
-  margin: 0 auto 22px;
+  margin: 0 auto 28px;
+
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
 
   color: #ffffff;
-
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
 }
 
 .story-demo-progress span {
   position: relative;
 
-  padding-bottom: 8px;
+  padding-bottom: 9px;
 
   white-space: nowrap;
 
@@ -112,10 +120,10 @@
 
   height: 1px;
 
-  background: currentColor;
+  background: #ffffff;
 
   transform: scaleX(0);
-  transform-origin: left;
+  transform-origin: left center;
 }
 
 .story-demo-progress .active {
@@ -126,147 +134,167 @@
   transform: scaleX(1);
 }
 
-
 /* =========================================================
-   WHITE SQUARE CANVAS
-   ========================================================= */
+   MAIN PRODUCT WORKSPACE
 
-.story-demo-canvas {
+   Left panel | white canvas | right panel
+========================================================= */
+
+.story-workspace {
   position: relative;
 
-  width: min(1180px, 100%);
-  height: min(690px, calc(100vh - 110px));
-  min-height: 600px;
+  width: min(1390px, 100%);
+  height: min(690px, calc(100vh - 125px));
+  min-height: 620px;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(180px, 0.82fr)
+    minmax(620px, 3.5fr)
+    minmax(200px, 0.9fr);
+
+  gap: clamp(20px, 2.2vw, 36px);
 
   margin: 0 auto;
-
-  overflow: hidden;
-
-  color: #0a0a0a;
-
-  /*
-   * Canvas itself remains square.
-   * UI elements inside are rounded.
-   */
-
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 0;
-
-  background-color: #ffffff;
-
-  background-image:
-    radial-gradient(
-      rgba(10, 10, 10, 0.11) 0.8px,
-      transparent 0.8px
-    );
-
-  background-size: 20px 20px;
-
-  box-shadow:
-    0 30px 80px rgba(0, 0, 0, 0.3);
 }
 
+/* =========================================================
+   CENTER WORKSPACE
+========================================================= */
+
+.story-workspace-center {
+  position: relative;
+
+  min-width: 0;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  padding-top: 38px;
+  padding-bottom: 44px;
+
+  box-sizing: border-box;
+}
 
 /* =========================================================
-   CANVAS HEADER
-   ========================================================= */
+   SMALL TOOLBAR ABOVE CANVAS
+========================================================= */
 
-.story-canvas-header {
+.learn-canvas-toolbar {
   position: absolute;
 
-  z-index: 20;
+  z-index: 40;
 
   top: 0;
   left: 0;
   right: 0;
 
-  height: 56px;
+  height: 30px;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
 
-  padding: 0 20px;
-
-  background: rgba(255, 255, 255, 0.94);
-
-  border-bottom:
-    1px solid rgba(10, 10, 10, 0.12);
-
-  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.76);
 }
 
-.story-canvas-header > div:first-child {
-  display: flex;
-  align-items: baseline;
-
-  gap: 10px;
-}
-
-.story-canvas-eyebrow {
-  font-size: 8px;
-  font-weight: 700;
-
-  letter-spacing: 0.12em;
-
-  opacity: 0.4;
-}
-
-.story-canvas-header strong {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-
-/* =========================================================
-   CANVAS STATUS
-   ========================================================= */
-
-.story-canvas-status {
+.learn-project-name {
   display: flex;
   align-items: center;
 
   gap: 7px;
 
   font-size: 8px;
-  font-weight: 700;
-
-  letter-spacing: 0.1em;
-
-  opacity: 0.55;
+  font-weight: 600;
 }
 
-.story-canvas-status > span:first-child {
-  width: 6px;
-  height: 6px;
-
-  flex-shrink: 0;
+.learn-project-dot {
+  width: 5px;
+  height: 5px;
 
   border-radius: 50%;
 
-  background: #0a0a0a;
+  background: #f7f7f3;
 }
 
+.learn-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 24px;
+
+  padding: 0 10px;
+
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.04);
+
+  border:
+    1px solid rgba(255, 255, 255, 0.12);
+
+  border-radius: 999px;
+
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+}
+
+/* =========================================================
+   WHITE SYSTEM CANVAS
+========================================================= */
+
+.story-demo-canvas {
+  position: relative;
+
+  z-index: 10;
+
+  width: 100%;
+  height: 100%;
+
+  min-height: 0;
+
+  overflow: hidden;
+
+  color: #0a0a0a;
+
+  background-color: #ffffff;
+
+  background-image:
+    radial-gradient(
+      rgba(10, 10, 10, 0.11) 0.75px,
+      transparent 0.75px
+    );
+
+  background-size: 20px 20px;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.14);
+
+  border-radius: 0;
+
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.3);
+}
 
 /* =========================================================
    BUILD AREA
-   ========================================================= */
+========================================================= */
 
 .story-build-area {
   position: absolute;
-
-  inset: 56px 0 48px;
+  inset: 0;
 }
 
-
 /* =========================================================
-   COMPONENT POSITIONS
-   ========================================================= */
+   ARCHITECTURE NODES
+========================================================= */
 
 .story-node-position {
   position: absolute;
 
-  z-index: 6;
+  z-index: 8;
 
   left: 50%;
 
@@ -274,34 +302,35 @@
 }
 
 .story-user {
-  top: 58px;
+  top: 74px;
 }
 
 .story-server {
-  top: 244px;
+  top: 258px;
 }
 
 .story-database {
-  top: 430px;
+  top: 442px;
 }
 
-
 /* =========================================================
-   COMPONENT
-   ========================================================= */
+   NODE
+========================================================= */
 
 .story-node {
   position: relative;
 
   width: 150px;
-  min-height: 74px;
+  min-height: 72px;
 
   display: flex;
   align-items: center;
 
-  gap: 12px;
+  gap: 11px;
 
-  padding: 13px 14px;
+  padding: 12px 13px;
+
+  box-sizing: border-box;
 
   color: #0a0a0a;
   background: #ffffff;
@@ -314,43 +343,25 @@
   box-shadow:
     0 1px 2px rgba(10, 10, 10, 0.04),
     0 8px 24px rgba(10, 10, 10, 0.04);
-
-  transition:
-    border-color 180ms ease,
-    box-shadow 180ms ease;
 }
 
-
-/* =========================================================
-   COMPONENT ICON
-   ========================================================= */
-
 .story-node-icon {
-  width: 36px;
-  height: 36px;
+  width: 35px;
+  height: 35px;
 
-  flex-shrink: 0;
+  flex: 0 0 35px;
 
   display: grid;
   place-items: center;
-
-  /*
-   * White rather than yellow, as requested.
-   */
 
   color: #0a0a0a;
   background: #ffffff;
 
   border:
-    1px solid rgba(10, 10, 10, 0.1);
+    1px solid rgba(10, 10, 10, 0.11);
 
   border-radius: 9px;
 }
-
-
-/* =========================================================
-   COMPONENT COPY
-   ========================================================= */
 
 .story-node-copy {
   min-width: 0;
@@ -362,29 +373,25 @@
 }
 
 .story-node-copy span {
-  font-size: 7px;
+  font-size: 6px;
   font-weight: 700;
-
   letter-spacing: 0.12em;
 
-  opacity: 0.4;
+  opacity: 0.38;
 }
 
 .story-node-copy strong {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
+
+  white-space: nowrap;
 }
-
-
-/* =========================================================
-   COMPONENT STATUS / PROCESSING LIGHT
-   ========================================================= */
 
 .story-node-status {
   position: absolute;
 
-  top: 10px;
-  right: 10px;
+  top: 9px;
+  right: 9px;
 
   width: 5px;
   height: 5px;
@@ -394,23 +401,16 @@
   background: #0a0a0a;
 
   opacity: 0.3;
-
-  transform-origin: center;
-
-  transition:
-    opacity 180ms ease,
-    transform 180ms ease;
 }
-
 
 /* =========================================================
    CONNECTIONS
-   ========================================================= */
+========================================================= */
 
 .story-connector {
   position: absolute;
 
-  z-index: 2;
+  z-index: 3;
 
   left: 50%;
 
@@ -420,14 +420,12 @@
 }
 
 .connector-user-server {
-  top: 132px;
-
+  top: 146px;
   height: 112px;
 }
 
 .connector-server-db {
-  top: 318px;
-
+  top: 330px;
   height: 112px;
 }
 
@@ -451,24 +449,17 @@
 
   background: #ffffff;
 
-  font-size: 11px;
-  line-height: 1;
+  font-size: 10px;
 
   transform: translateX(-50%);
 }
 
-
-/* =========================================================
-   BUILD TRAFFIC PARTICLES
-   ========================================================= */
-
 .traffic-dot {
   position: absolute;
 
-  z-index: 4;
+  z-index: 5;
 
   left: 50%;
-  top: 10%;
 
   width: 6px;
   height: 6px;
@@ -483,252 +474,675 @@
     0 0 0 3px #ffffff;
 }
 
-.traffic-dot-two {
-  top: 55%;
-}
-
-
 /* =========================================================
    TEACHING PROMPTS
-   ========================================================= */
+========================================================= */
 
 .story-teaching-prompt {
   position: absolute;
 
-  z-index: 9;
+  z-index: 18;
 
-  width: 270px;
+  width: 220px;
 
   display: flex;
 
-  gap: 12px;
+  gap: 10px;
 
-  padding: 16px 17px;
+  padding: 13px;
+
+  box-sizing: border-box;
 
   color: #0a0a0a;
-  background: rgba(255, 255, 255, 0.97);
-
-  border:
-    1px solid rgba(10, 10, 10, 0.13);
-
-  border-radius: 12px;
-
-  box-shadow:
-    0 12px 32px rgba(10, 10, 10, 0.045);
-}
-
-.prompt-server {
-  top: 226px;
-
-  left: calc(50% - 390px);
-}
-
-.prompt-database {
-  top: 412px;
-
-  left: calc(50% + 120px);
-}
-
-
-/* =========================================================
-   PROMPT CONTENT
-   ========================================================= */
-
-.story-prompt-number {
-  width: 26px;
-  height: 26px;
-
-  flex-shrink: 0;
-
-  display: grid;
-  place-items: center;
-
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.98);
 
   border:
     1px solid rgba(10, 10, 10, 0.12);
 
-  border-radius: 7px;
+  border-radius: 10px;
 
-  font-size: 8px;
-  font-weight: 700;
+  box-shadow:
+    0 12px 32px rgba(10, 10, 10, 0.055);
 }
 
-.story-teaching-prompt strong {
-  display: block;
-
-  margin: 1px 0 6px;
-
-  font-size: 11px;
-  font-weight: 600;
+.prompt-server {
+  top: 232px;
+  left: 24px;
 }
 
-.story-teaching-prompt p {
-  margin: 0;
-
-  font-size: 9px;
-  line-height: 1.55;
-
-  opacity: 0.5;
+.prompt-database {
+  top: 416px;
+  right: 24px;
 }
 
-.story-concept {
-  display: inline-block;
+.story-prompt-number {
+  width: 24px;
+  height: 24px;
 
-  margin-top: 10px;
+  flex: 0 0 24px;
 
-  padding: 5px 8px;
+  display: grid;
+  place-items: center;
 
   border:
     1px solid rgba(10, 10, 10, 0.12);
 
   border-radius: 6px;
 
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 700;
-
-  letter-spacing: 0.05em;
 }
 
+.story-teaching-prompt strong {
+  display: block;
+
+  margin: 1px 0 5px;
+
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.story-teaching-prompt p {
+  margin: 0;
+
+  font-size: 7px;
+  line-height: 1.5;
+
+  opacity: 0.48;
+}
+
+.story-concept {
+  display: inline-block;
+
+  margin-top: 8px;
+  padding: 4px 7px;
+
+  border:
+    1px solid rgba(10, 10, 10, 0.11);
+
+  border-radius: 5px;
+
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
 
 /* =========================================================
-   CANVAS FOOTER
-   ========================================================= */
+   LEFT COMPONENT PANEL
+========================================================= */
 
-.story-canvas-footer {
-  position: absolute;
+.learn-toolbox {
+  position: relative;
 
-  z-index: 20;
+  align-self: stretch;
 
-  left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: calc(100% - 20px);
 
-  height: 48px;
+  margin-top: 10px;
+  margin-bottom: 10px;
 
+  padding: 16px 13px 18px;
+
+  box-sizing: border-box;
+
+  color: rgba(255, 255, 255, 0.88);
+  background: #151515;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 11px;
+
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.3);
+}
+
+.learn-panel-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
 
-  padding: 0 18px;
+  gap: 8px;
 
-  background: rgba(255, 255, 255, 0.94);
+  margin-bottom: 15px;
+  padding: 0 3px 12px;
 
-  border-top:
-    1px solid rgba(10, 10, 10, 0.12);
-
-  backdrop-filter: blur(8px);
+  border-bottom:
+    1px solid rgba(255, 255, 255, 0.075);
 }
 
-.story-canvas-footer > div {
+.learn-panel-heading > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.learn-panel-heading span {
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+
+  opacity: 0.35;
+}
+
+.learn-panel-heading strong {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.learn-panel-heading > svg {
+  opacity: 0.35;
+}
+
+/* =========================================================
+   TOOLBOX ITEMS
+========================================================= */
+
+.learn-toolbox-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.learn-toolbox-item {
+  min-height: 40px;
+
   display: flex;
   align-items: center;
 
-  gap: 8px;
+  gap: 9px;
+
+  padding: 4px 6px;
+
+  box-sizing: border-box;
+
+  border:
+    1px solid transparent;
+
+  border-radius: 8px;
 }
 
-.story-canvas-footer span {
-  font-size: 7px;
-  font-weight: 700;
+.learn-toolbox-item:hover {
+  background: rgba(255, 255, 255, 0.04);
 
+  border-color:
+    rgba(255, 255, 255, 0.07);
+}
+
+.learn-toolbox-icon {
+  width: 29px;
+  height: 29px;
+
+  flex: 0 0 29px;
+
+  display: grid;
+  place-items: center;
+
+  color: #0a0a0a;
+  background: #f7f7f3;
+
+  border-radius: 7px;
+}
+
+.learn-toolbox-item > span {
+  min-width: 0;
+
+  overflow: hidden;
+
+  font-size: 7px;
+  font-weight: 500;
+
+  color: rgba(255, 255, 255, 0.74);
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.learn-toolbox-plus {
+  margin-left: auto;
+
+  flex-shrink: 0;
+
+  opacity: 0.28;
+}
+
+/* =========================================================
+   RIGHT INSPECTOR
+========================================================= */
+
+.learn-inspector {
+  position: relative;
+
+  align-self: stretch;
+
+  width: 100%;
+  height: calc(100% - 20px);
+
+  margin-top: 10px;
+  margin-bottom: 10px;
+
+  overflow: hidden;
+
+  color: rgba(255, 255, 255, 0.9);
+  background: #151515;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 11px;
+
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.3);
+}
+
+/* =========================================================
+   INSPECTOR TABS
+========================================================= */
+
+.learn-inspector-tabs {
+  height: 41px;
+
+  display: flex;
+  align-items: stretch;
+
+  padding: 0 12px;
+
+  border-bottom:
+    1px solid rgba(255, 255, 255, 0.075);
+}
+
+.learn-inspector-tab {
+  position: relative;
+
+  padding: 0 8px;
+
+  color: rgba(255, 255, 255, 0.34);
+  background: transparent;
+
+  border: 0;
+
+  font: inherit;
+
+  font-size: 6px;
+  font-weight: 600;
+}
+
+.learn-inspector-tab.active {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.learn-inspector-tab.active::after {
+  content: "";
+
+  position: absolute;
+
+  left: 8px;
+  right: 8px;
+  bottom: -1px;
+
+  height: 1px;
+
+  background: #ffffff;
+}
+
+/* =========================================================
+   INSPECTOR HEALTH
+========================================================= */
+
+.learn-score-section {
+  padding: 16px 14px 18px;
+
+  border-bottom:
+    1px solid rgba(255, 255, 255, 0.075);
+}
+
+.learn-panel-kicker {
+  margin-bottom: 9px;
+
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+
+  opacity: 0.33;
+}
+
+.learn-total-score {
+  display: flex;
+  align-items: baseline;
+
+  margin-bottom: 4px;
+}
+
+.learn-total-score strong {
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1;
+
+  letter-spacing: -0.055em;
+}
+
+.learn-total-score > span {
+  margin-left: 3px;
+
+  font-size: 7px;
+
+  opacity: 0.3;
+}
+
+.learn-health-status {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  margin-bottom: 17px;
+
+  font-size: 5px;
+  font-weight: 700;
   letter-spacing: 0.1em;
 
   opacity: 0.4;
 }
 
-.story-canvas-footer strong {
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.story-build-complete {
-  font-size: 8px;
-  font-weight: 700;
-
-  letter-spacing: 0.08em;
-
-  opacity: 0.5;
-}
-
-.story-build-complete > span {
-  width: 6px;
-  height: 6px;
+.learn-health-status > span:first-child {
+  width: 4px;
+  height: 4px;
 
   border-radius: 50%;
 
-  background: #0a0a0a;
-
-  opacity: 1;
+  background: #f7f7f3;
 }
 
+/* =========================================================
+   SCORE ROWS
+========================================================= */
+
+.learn-score-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 11px;
+}
+
+.learn-score-row > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  margin-bottom: 5px;
+}
+
+.learn-score-row span {
+  font-size: 5px;
+
+  opacity: 0.42;
+}
+
+.learn-score-row strong {
+  font-size: 5px;
+  font-weight: 600;
+
+  opacity: 0.68;
+}
+
+.learn-score-track {
+  position: relative;
+
+  height: 1px;
+
+  overflow: hidden;
+
+  background:
+    rgba(255, 255, 255, 0.09);
+}
+
+.learn-score-fill {
+  position: absolute;
+
+  inset: 0 auto 0 0;
+
+  background:
+    rgba(255, 255, 255, 0.6);
+}
 
 /* =========================================================
-   02 BREAK
-   ========================================================= */
+   INSPECTOR GUIDE
+========================================================= */
 
+.inspector-guide {
+  position: relative;
 
-/* ---------------------------------------------------------
-   TRAFFIC CONTROL
-   --------------------------------------------------------- */
+  padding: 17px 14px 18px;
+}
+
+.learn-guide-heading {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  margin-bottom: 15px;
+}
+
+.learn-guide-icon {
+  width: 29px;
+  height: 29px;
+
+  flex: 0 0 29px;
+
+  display: grid;
+  place-items: center;
+
+  color: #0a0a0a;
+  background: #f7f7f3;
+
+  border-radius: 7px;
+}
+
+.learn-guide-heading > div:last-child {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.learn-guide-heading span {
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+
+  opacity: 0.32;
+}
+
+.learn-guide-heading strong {
+  overflow: hidden;
+
+  font-size: 8px;
+  font-weight: 500;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.learn-guide-component {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  padding-top: 13px;
+  margin-bottom: 9px;
+
+  border-top:
+    1px solid rgba(255, 255, 255, 0.075);
+}
+
+.learn-guide-component svg {
+  flex-shrink: 0;
+
+  opacity: 0.55;
+}
+
+.learn-guide-component strong {
+  font-size: 7px;
+  font-weight: 600;
+}
+
+.inspector-guide > p {
+  margin: 0;
+
+  color: rgba(255, 255, 255, 0.45);
+
+  font-size: 6px;
+  line-height: 1.65;
+}
+
+.learn-guide-action {
+  width: 100%;
+  min-height: 31px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  margin-top: 13px;
+  padding: 0 9px;
+
+  color: rgba(255, 255, 255, 0.7);
+  background: transparent;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.1);
+
+  border-radius: 6px;
+
+  font: inherit;
+
+  font-size: 6px;
+  font-weight: 500;
+}
+
+/* =========================================================
+   BOTTOM WORKSPACE CONTROLS
+========================================================= */
+
+.learn-bottom-controls {
+  position: absolute;
+
+  z-index: 40;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.learn-mode-control {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+}
+
+.learn-mode-dot {
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background: #fbf494;
+}
+
+.learn-run-button {
+  min-height: 29px;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 0 10px;
+
+  color: #0a0a0a;
+  background: #f7f7f3;
+
+  border: 0;
+  border-radius: 7px;
+
+  font: inherit;
+
+  font-size: 7px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   BREAK — TRAFFIC PANEL
+========================================================= */
 
 .break-traffic-panel {
   position: absolute;
 
-  z-index: 10;
+  z-index: 20;
 
-  top: 34px;
-  left: 34px;
+  top: 22px;
+  left: 22px;
 
-  width: 230px;
+  width: 185px;
 
-  padding: 16px 17px 15px;
+  padding: 13px 14px;
+
+  box-sizing: border-box;
 
   color: #0a0a0a;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.98);
 
   border:
-    1px solid rgba(10, 10, 10, 0.14);
+    1px solid rgba(10, 10, 10, 0.13);
 
-  border-radius: 12px;
+  border-radius: 10px;
 
   box-shadow:
-    0 10px 30px rgba(10, 10, 10, 0.04);
+    0 10px 30px rgba(10, 10, 10, 0.05);
 }
 
 .break-panel-heading {
   display: flex;
-
   align-items: flex-end;
   justify-content: space-between;
 
-  margin-bottom: 17px;
+  margin-bottom: 14px;
 }
 
 .break-panel-heading > span {
-  font-size: 8px;
+  font-size: 6px;
   font-weight: 700;
-
   letter-spacing: 0.12em;
 
-  opacity: 0.4;
+  opacity: 0.38;
 }
 
 .traffic-value {
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 500;
-
   line-height: 1;
 
   letter-spacing: -0.04em;
-}
-
-
-/* ---------------------------------------------------------
-   TRAFFIC SCALE
-   --------------------------------------------------------- */
-
-.traffic-scale {
-  width: 100%;
 }
 
 .traffic-scale-track {
@@ -737,7 +1151,7 @@
   width: 100%;
   height: 2px;
 
-  margin-bottom: 11px;
+  margin-bottom: 9px;
 
   background: rgba(10, 10, 10, 0.1);
 }
@@ -760,10 +1174,12 @@
   top: 50%;
   left: 0;
 
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 
-  border: 2px solid #0a0a0a;
+  border:
+    2px solid #0a0a0a;
+
   border-radius: 50%;
 
   background: #ffffff;
@@ -773,126 +1189,22 @@
 
 .traffic-scale-labels {
   display: flex;
-
-  align-items: center;
   justify-content: space-between;
 
-  font-size: 7px;
+  font-size: 5px;
   font-weight: 600;
 
-  opacity: 0.38;
+  opacity: 0.34;
 }
 
-
-/* ---------------------------------------------------------
-   HEALTH PANEL
-   --------------------------------------------------------- */
-
-.break-health-panel {
-  position: absolute;
-
-  z-index: 10;
-
-  top: 34px;
-  right: 34px;
-
-  width: 190px;
-
-  padding: 16px 17px;
-
-  color: #0a0a0a;
-  background: #ffffff;
-
-  border:
-    1px solid rgba(10, 10, 10, 0.14);
-
-  border-radius: 12px;
-
-  box-shadow:
-    0 10px 30px rgba(10, 10, 10, 0.04);
-}
-
-.break-health-title {
-  display: flex;
-
-  align-items: center;
-
-  gap: 7px;
-
-  margin-bottom: 16px;
-}
-
-.break-health-title span {
-  font-size: 8px;
-  font-weight: 700;
-
-  letter-spacing: 0.1em;
-
-  opacity: 0.42;
-}
-
-.health-value {
-  display: block;
-
-  margin-bottom: 3px;
-
-  font-size: 36px;
-  font-weight: 500;
-
-  line-height: 1;
-
-  letter-spacing: -0.055em;
-}
-
-.health-label {
-  display: block;
-
-  margin-bottom: 14px;
-
-  font-size: 7px;
-  font-weight: 700;
-
-  letter-spacing: 0.12em;
-
-  opacity: 0.4;
-}
-
-.health-meter {
-  position: relative;
-
-  width: 100%;
-  height: 3px;
-
-  overflow: hidden;
-
-  border-radius: 999px;
-
-  background: rgba(10, 10, 10, 0.08);
-}
-
-.health-meter-fill {
-  position: absolute;
-
-  inset: 0 auto 0 0;
-
-  width: 100%;
-
-  border-radius: inherit;
-
-  background: #0a0a0a;
-
-  transform-origin: left center;
-}
-
-
-/* ---------------------------------------------------------
-   BREAK TRAFFIC PARTICLES
-   --------------------------------------------------------- */
+/* =========================================================
+   BREAK PARTICLES
+========================================================= */
 
 .break-particle {
   position: absolute;
 
-  z-index: 4;
+  z-index: 5;
 
   left: 50%;
 
@@ -933,23 +1245,22 @@
   margin-left: 14px;
 }
 
-
-/* ---------------------------------------------------------
-   OVERLOADED SERVER
-   --------------------------------------------------------- */
+/* =========================================================
+   SERVER WARNING
+========================================================= */
 
 .server-warning {
   position: absolute;
 
   left: 50%;
-  top: calc(100% + 9px);
+  top: calc(100% + 8px);
 
   display: flex;
   align-items: center;
 
-  gap: 6px;
+  gap: 5px;
 
-  padding: 6px 9px;
+  padding: 5px 8px;
 
   white-space: nowrap;
 
@@ -957,87 +1268,81 @@
   background: #ffffff;
 
   border:
-    1px solid rgba(10, 10, 10, 0.18);
+    1px solid rgba(10, 10, 10, 0.17);
 
-  border-radius: 7px;
+  border-radius: 6px;
 
-  font-size: 7px;
+  font-size: 6px;
   font-weight: 700;
-
-  letter-spacing: 0.1em;
+  letter-spacing: 0.09em;
 
   transform: translateX(-50%);
-
-  box-shadow:
-    0 5px 16px rgba(10, 10, 10, 0.04);
 }
 
 .server-warning > span {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
 
   display: grid;
   place-items: center;
 
-  border: 1px solid #0a0a0a;
+  border:
+    1px solid #0a0a0a;
+
   border-radius: 50%;
 
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 8px;
 }
 
-
-/* ---------------------------------------------------------
-   YOU BROKE IT
-   --------------------------------------------------------- */
+/* =========================================================
+   BREAK RESULT
+========================================================= */
 
 .break-result {
   position: absolute;
 
-  z-index: 12;
+  z-index: 25;
 
-  left: 34px;
-  bottom: 34px;
+  left: 22px;
+  bottom: 22px;
 
-  width: 250px;
+  width: 220px;
 
-  padding: 20px 21px;
+  padding: 17px 18px;
 
-  text-align: left;
+  box-sizing: border-box;
 
   color: #0a0a0a;
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.985);
 
   border:
-    1px solid rgba(10, 10, 10, 0.15);
+    1px solid rgba(10, 10, 10, 0.14);
 
-  border-radius: 12px;
+  border-radius: 11px;
 
   box-shadow:
-    0 14px 40px rgba(10, 10, 10, 0.06);
+    0 14px 38px rgba(10, 10, 10, 0.07);
 }
 
 .break-result-eyebrow {
   display: block;
 
-  margin-bottom: 7px;
+  margin-bottom: 6px;
 
-  font-size: 7px;
+  font-size: 6px;
   font-weight: 700;
+  letter-spacing: 0.13em;
 
-  letter-spacing: 0.14em;
-
-  opacity: 0.4;
+  opacity: 0.38;
 }
 
 .break-result strong {
   display: block;
 
-  margin-bottom: 8px;
+  margin-bottom: 7px;
 
-  font-size: 24px;
+  font-size: 21px;
   font-weight: 500;
-
   line-height: 1;
 
   letter-spacing: -0.04em;
@@ -1046,124 +1351,90 @@
 .break-result p {
   margin: 0;
 
-  font-size: 9px;
+  font-size: 7px;
   line-height: 1.5;
 
-  opacity: 0.48;
+  opacity: 0.45;
 }
 
-
 /* =========================================================
-   03 SOLVE
-   ========================================================= */
-
-
-/* ---------------------------------------------------------
-   SOLVE DECISION PANEL
-   --------------------------------------------------------- */
+   SOLVE PANEL
+========================================================= */
 
 .solve-panel {
   position: absolute;
 
-  z-index: 14;
+  z-index: 25;
 
-  left: 34px;
-  top: 128px;
+  left: 22px;
+  top: 100px;
 
-  width: 280px;
+  width: 235px;
 
-  padding: 22px;
+  padding: 18px;
+
+  box-sizing: border-box;
 
   color: #0a0a0a;
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.985);
 
   border:
-    1px solid rgba(10, 10, 10, 0.15);
+    1px solid rgba(10, 10, 10, 0.14);
 
-  border-radius: 14px;
+  border-radius: 12px;
 
   box-shadow:
-    0 18px 50px rgba(10, 10, 10, 0.08);
+    0 16px 44px rgba(10, 10, 10, 0.07);
 }
 
 .solve-eyebrow {
   display: block;
 
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 
-  font-size: 7px;
+  font-size: 6px;
   font-weight: 700;
+  letter-spacing: 0.13em;
 
-  letter-spacing: 0.14em;
-
-  opacity: 0.4;
+  opacity: 0.38;
 }
 
 .solve-panel h3 {
   margin: 0;
 
-  font-size: 29px;
+  font-size: 25px;
   font-weight: 500;
-
   line-height: 0.98;
 
   letter-spacing: -0.045em;
 }
 
 .solve-panel > p {
-  margin: 13px 0 19px;
+  margin: 11px 0 15px;
 
-  font-size: 9px;
-  line-height: 1.55;
+  font-size: 7px;
+  line-height: 1.5;
 
-  opacity: 0.48;
+  opacity: 0.46;
 }
-
-
-/* ---------------------------------------------------------
-   SOLVE OPTIONS
-   --------------------------------------------------------- */
 
 .solve-options {
   display: flex;
   flex-direction: column;
 
-  gap: 8px;
+  gap: 6px;
 }
 
 .solve-option {
   display: flex;
   align-items: center;
 
-  gap: 11px;
+  gap: 8px;
 
-  min-height: 62px;
+  min-height: 52px;
 
-  padding: 10px;
+  padding: 8px;
 
-  background: #ffffff;
-
-  border:
-    1px solid rgba(10, 10, 10, 0.11);
-
-  border-radius: 10px;
-
-  transition:
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    opacity 180ms ease;
-}
-
-.solve-option-icon {
-  width: 34px;
-  height: 34px;
-
-  flex: 0 0 34px;
-
-  display: grid;
-  place-items: center;
-
-  color: #0a0a0a;
   background: #ffffff;
 
   border:
@@ -1172,79 +1443,90 @@
   border-radius: 8px;
 }
 
-.solve-option > div:last-child {
-  min-width: 0;
+.solve-option-icon {
+  width: 30px;
+  height: 30px;
+
+  flex: 0 0 30px;
+
+  display: grid;
+  place-items: center;
+
+  border:
+    1px solid rgba(10, 10, 10, 0.1);
+
+  border-radius: 7px;
+
+  background: #ffffff;
 }
 
 .solve-option strong {
   display: block;
 
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 
-  font-size: 10px;
+  font-size: 8px;
   font-weight: 600;
 }
 
 .solve-option span {
   display: block;
 
-  font-size: 8px;
+  font-size: 6px;
   line-height: 1.4;
 
-  opacity: 0.43;
+  opacity: 0.4;
 }
 
-
-/* ---------------------------------------------------------
-   CONCEPT REVEAL
-   --------------------------------------------------------- */
+/* =========================================================
+   SOLVE CONCEPT CARD
+========================================================= */
 
 .solve-concept-card {
   position: absolute;
 
-  z-index: 14;
+  z-index: 25;
 
-  left: 34px;
-  top: 190px;
+  left: 22px;
+  top: 170px;
 
-  width: 270px;
+  width: 225px;
 
-  padding: 21px;
+  padding: 18px;
+
+  box-sizing: border-box;
 
   color: #0a0a0a;
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.985);
 
   border:
-    1px solid rgba(10, 10, 10, 0.15);
+    1px solid rgba(10, 10, 10, 0.14);
 
-  border-radius: 14px;
+  border-radius: 12px;
 
   box-shadow:
-    0 18px 50px rgba(10, 10, 10, 0.07);
+    0 16px 44px rgba(10, 10, 10, 0.07);
 }
 
 .solve-concept-eyebrow {
   display: block;
 
-  margin-bottom: 8px;
+  margin-bottom: 7px;
 
-  font-size: 7px;
+  font-size: 6px;
   font-weight: 700;
+  letter-spacing: 0.13em;
 
-  letter-spacing: 0.14em;
-
-  opacity: 0.4;
+  opacity: 0.38;
 }
 
 .solve-concept-card > strong {
   display: block;
 
-  margin-bottom: 8px;
+  margin-bottom: 7px;
 
-  font-size: 23px;
+  font-size: 20px;
   font-weight: 500;
-
-  line-height: 1;
 
   letter-spacing: -0.04em;
 }
@@ -1252,67 +1534,56 @@
 .solve-concept-card > p {
   margin: 0;
 
-  font-size: 9px;
-  line-height: 1.55;
+  font-size: 7px;
+  line-height: 1.5;
 
-  opacity: 0.48;
+  opacity: 0.45;
 }
-
-
-/* ---------------------------------------------------------
-   TECHNICAL TERM
-   --------------------------------------------------------- */
 
 .solve-term {
   display: flex;
   align-items: center;
 
-  gap: 11px;
+  gap: 8px;
 
-  margin-top: 18px;
-  padding-top: 15px;
+  margin-top: 14px;
+  padding-top: 12px;
 
   border-top:
-    1px solid rgba(10, 10, 10, 0.1);
+    1px solid rgba(10, 10, 10, 0.09);
 }
 
-.solve-term > svg {
-  flex-shrink: 0;
-}
-
-.solve-term div {
+.solve-term > div {
   display: flex;
   flex-direction: column;
 
-  gap: 3px;
+  gap: 2px;
 }
 
 .solve-term span {
-  font-size: 6px;
+  font-size: 5px;
   font-weight: 700;
+  letter-spacing: 0.11em;
 
-  letter-spacing: 0.12em;
-
-  opacity: 0.35;
+  opacity: 0.32;
 }
 
 .solve-term strong {
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 600;
 }
 
-
 /* =========================================================
    SOLVED ARCHITECTURE
-   ========================================================= */
+========================================================= */
 
 .solve-architecture {
   position: absolute;
 
-  z-index: 7;
+  z-index: 10;
 
   left: 50%;
-  top: 132px;
+  top: 145px;
 
   width: 520px;
   height: 310px;
@@ -1322,21 +1593,16 @@
   pointer-events: none;
 }
 
-
-/* ---------------------------------------------------------
-   USER → LOAD BALANCER
-   --------------------------------------------------------- */
-
 .solve-line-user-lb {
   position: absolute;
 
   z-index: 1;
 
-  top: -54px;
+  top: -58px;
   left: 50%;
 
   width: 1px;
-  height: 76px;
+  height: 80px;
 
   background:
     rgba(10, 10, 10, 0.32);
@@ -1345,15 +1611,10 @@
   transform-origin: top center;
 }
 
-
-/* ---------------------------------------------------------
-   LOAD BALANCER
-   --------------------------------------------------------- */
-
 .solve-load-balancer {
   position: absolute;
 
-  z-index: 6;
+  z-index: 7;
 
   top: 20px;
   left: 50%;
@@ -1365,15 +1626,10 @@
   width: 164px;
 }
 
-
-/* ---------------------------------------------------------
-   ROUTING LINES
-   --------------------------------------------------------- */
-
 .solve-routing-lines {
   position: absolute;
 
-  z-index: 1;
+  z-index: 2;
 
   top: 94px;
   left: 0;
@@ -1398,26 +1654,21 @@
     non-scaling-stroke;
 }
 
-
-/* ---------------------------------------------------------
-   THREE SERVERS
-   --------------------------------------------------------- */
-
 .solve-server {
   position: absolute;
 
-  z-index: 6;
+  z-index: 7;
 
   top: 218px;
 }
 
 .solve-server .story-node {
-  width: 138px;
-  min-height: 68px;
+  width: 128px;
+  min-height: 65px;
 }
 
 .solve-server-one {
-  left: 20px;
+  left: 25px;
 }
 
 .solve-server-two {
@@ -1427,18 +1678,13 @@
 }
 
 .solve-server-three {
-  right: 20px;
+  right: 25px;
 }
-
-
-/* ---------------------------------------------------------
-   DISTRIBUTED REQUESTS
-   --------------------------------------------------------- */
 
 .solve-request {
   position: absolute;
 
-  z-index: 5;
+  z-index: 6;
 
   top: 101px;
   left: 50%;
@@ -1456,56 +1702,55 @@
     0 0 0 3px #ffffff;
 }
 
-
 /* =========================================================
    SOLVE SUCCESS
-   ========================================================= */
+========================================================= */
 
 .solve-success {
   position: absolute;
 
-  z-index: 14;
+  z-index: 25;
 
-  left: 34px;
-  bottom: 34px;
+  left: 22px;
+  bottom: 22px;
 
-  width: 260px;
+  width: 230px;
 
-  padding: 20px 21px;
+  padding: 17px 18px;
+
+  box-sizing: border-box;
 
   color: #0a0a0a;
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.985);
 
   border:
-    1px solid rgba(10, 10, 10, 0.15);
+    1px solid rgba(10, 10, 10, 0.14);
 
-  border-radius: 14px;
+  border-radius: 11px;
 
   box-shadow:
-    0 18px 50px rgba(10, 10, 10, 0.07);
+    0 14px 38px rgba(10, 10, 10, 0.07);
 }
 
 .solve-success-eyebrow {
   display: block;
 
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 
-  font-size: 7px;
+  font-size: 6px;
   font-weight: 700;
+  letter-spacing: 0.13em;
 
-  letter-spacing: 0.14em;
-
-  opacity: 0.4;
+  opacity: 0.38;
 }
 
 .solve-success > strong {
   display: block;
 
-  margin-bottom: 9px;
+  margin-bottom: 7px;
 
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 500;
-
   line-height: 1.05;
 
   letter-spacing: -0.04em;
@@ -1514,114 +1759,99 @@
 .solve-success > p {
   margin: 0;
 
+  font-size: 7px;
+  line-height: 1.5;
+
+  opacity: 0.45;
+}
+
+/* =========================================================
+   04 LEARN — CANVAS EXPLANATION
+
+   This is intentionally small. The right inspector is the
+   main teaching surface.
+========================================================= */
+
+.learn-canvas-focus {
+  position: absolute;
+
+  z-index: 22;
+
+  right: 22px;
+  bottom: 22px;
+
+  width: 190px;
+
+  padding: 13px 14px;
+
+  box-sizing: border-box;
+
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.97);
+
+  border:
+    1px solid rgba(10, 10, 10, 0.12);
+
+  border-radius: 9px;
+
+  box-shadow:
+    0 10px 28px rgba(10, 10, 10, 0.05);
+}
+
+.learn-canvas-focus > span {
+  display: block;
+
+  margin-bottom: 4px;
+
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+
+  opacity: 0.32;
+}
+
+.learn-canvas-focus > strong {
+  display: block;
+
+  margin-bottom: 5px;
+
   font-size: 9px;
-  line-height: 1.55;
-
-  opacity: 0.48;
+  font-weight: 600;
 }
 
+.learn-canvas-focus > p {
+  margin: 0;
+
+  font-size: 6px;
+  line-height: 1.5;
+
+  opacity: 0.44;
+}
 
 /* =========================================================
-   RESPONSIVE — BASE
-   ========================================================= */
+   RESPONSIVE — DESKTOP
+========================================================= */
 
-@media (max-width: 1050px) {
-  .solve-panel,
-  .solve-concept-card,
-  .solve-success {
-    left: 22px;
+@media (max-width: 1250px) {
+  .story-workspace {
+    grid-template-columns:
+      165px
+      minmax(570px, 1fr)
+      185px;
+
+    gap: 22px;
   }
 
-  .solve-panel {
-    width: 245px;
+  .learn-toolbox-item {
+    gap: 7px;
   }
 
-  .solve-concept-card {
-    width: 240px;
+  .learn-toolbox-item > span {
+    font-size: 6px;
   }
 
   .solve-architecture {
-    left: 59%;
-
-    width: 480px;
-  }
-}
-
-
-@media (max-width: 900px) {
-  .system-story {
-    padding-top: 100px;
-  }
-
-  .story-demo {
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-
-  .story-demo-progress {
-    justify-content: flex-start;
-
-    overflow-x: auto;
-  }
-
-  .story-demo-canvas {
-    min-height: 620px;
-  }
-
-  .story-teaching-prompt {
-    width: 220px;
-  }
-
-  .prompt-server {
-    left: 30px;
-  }
-
-  .prompt-database {
-    left: auto;
-    right: 30px;
-  }
-}
-
-
-/* =========================================================
-   RESPONSIVE — BREAK / SOLVE
-   ========================================================= */
-
-@media (max-width: 800px) {
-  .break-traffic-panel {
-    top: 24px;
-    left: 20px;
-
-    width: 190px;
-  }
-
-  .break-health-panel {
-    top: 24px;
-    right: 20px;
-
-    width: 160px;
-  }
-
-  .solve-panel {
-    top: 120px;
-
-    width: 220px;
-  }
-
-  .solve-concept-card {
-    top: 180px;
-
-    width: 220px;
-  }
-
-  .solve-architecture {
-    left: 64%;
-
-    width: 420px;
-  }
-
-  .solve-server .story-node {
-    width: 115px;
+    width: 470px;
   }
 
   .solve-server-one {
@@ -1633,6 +1863,162 @@
   }
 }
 
+/* =========================================================
+   RESPONSIVE — SMALL LAPTOP
+========================================================= */
+
+@media (max-width: 1050px) {
+  .story-demo {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .story-workspace {
+    grid-template-columns:
+      130px
+      minmax(520px, 1fr)
+      155px;
+
+    gap: 16px;
+  }
+
+  .learn-toolbox {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .learn-panel-heading strong {
+    font-size: 8px;
+  }
+
+  .learn-toolbox-plus {
+    display: none;
+  }
+
+  .learn-toolbox-icon {
+    width: 27px;
+    height: 27px;
+
+    flex-basis: 27px;
+  }
+
+  .learn-inspector-tabs {
+    padding: 0 7px;
+  }
+
+  .learn-score-section,
+  .inspector-guide {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .learn-guide-heading > div:last-child strong {
+    font-size: 7px;
+  }
+
+  .inspector-guide > p {
+    font-size: 5.5px;
+  }
+
+  .story-teaching-prompt {
+    width: 190px;
+  }
+
+  .solve-architecture {
+    width: 440px;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE — TABLET
+========================================================= */
+
+@media (max-width: 900px) {
+  .system-story {
+    padding-top: 100px;
+  }
+
+  .story-demo-progress {
+    justify-content: flex-start;
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
+  }
+
+  .story-demo-progress::-webkit-scrollbar {
+    display: none;
+  }
+
+  .story-workspace {
+    grid-template-columns:
+      64px
+      minmax(480px, 1fr)
+      125px;
+
+    gap: 12px;
+  }
+
+  .learn-toolbox {
+    padding:
+      12px
+      7px;
+  }
+
+  .learn-panel-heading {
+    display: none;
+  }
+
+  .learn-toolbox-item {
+    justify-content: center;
+
+    min-height: 39px;
+
+    padding: 4px;
+  }
+
+  .learn-toolbox-item > span,
+  .learn-toolbox-plus {
+    display: none;
+  }
+
+  .learn-toolbox-icon {
+    width: 29px;
+    height: 29px;
+
+    flex: 0 0 29px;
+  }
+
+  .learn-total-score strong {
+    font-size: 27px;
+  }
+
+  .learn-score-row span {
+    font-size: 4.5px;
+  }
+
+  .learn-guide-heading > div:last-child {
+    display: none;
+  }
+
+  .story-teaching-prompt {
+    display: none;
+  }
+
+  .solve-panel {
+    width: 210px;
+  }
+
+  .solve-architecture {
+    left: 58%;
+
+    width: 420px;
+  }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
 
 @media (max-width: 700px) {
   .system-story-intro {
@@ -1643,75 +2029,138 @@
     margin-left: 0;
   }
 
-  .story-teaching-prompt {
+  .story-demo {
+    min-height: 720px;
+
+    padding:
+      28px
+      12px
+      44px;
+  }
+
+  .story-workspace {
+    height: 620px;
+
+    grid-template-columns:
+      48px
+      minmax(390px, 1fr);
+
+    gap: 9px;
+
+    overflow-x: visible;
+  }
+
+ .story-workspace-center {
+  position: relative;
+
+  min-width: 0;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  padding-top: 54px;
+  padding-bottom: 60px;
+
+  box-sizing: border-box;
+}
+
+  .learn-inspector {
+    position: absolute;
+
+    z-index: 80;
+
+    top: 34px;
+    right: 8px;
+
+    width: 115px;
+
+    margin: 0;
+
+    opacity: 0.94;
+  }
+
+  .learn-toolbox {
+    margin-top: 34px;
+
+    padding:
+      8px
+      5px;
+  }
+
+  .learn-toolbox-item {
+    min-height: 34px;
+  }
+
+  .learn-toolbox-icon {
+    width: 27px;
+    height: 27px;
+
+    flex-basis: 27px;
+  }
+
+  .learn-inspector-tabs {
+    height: 34px;
+  }
+
+  .learn-score-section {
+    padding:
+      10px
+      8px;
+  }
+
+  .learn-panel-kicker {
+    font-size: 4px;
+  }
+
+  .learn-total-score strong {
+    font-size: 22px;
+  }
+
+  .learn-score-row > div:first-child span {
     display: none;
   }
 
-  .story-demo {
+  .learn-score-row > div:first-child {
+    justify-content: flex-end;
+  }
+
+  .inspector-guide {
     padding:
-      32px
-      14px
-      40px;
+      10px
+      8px;
   }
 
-  .story-demo-canvas {
-    min-height: 620px;
+  .learn-guide-icon {
+    width: 25px;
+    height: 25px;
+
+    flex-basis: 25px;
   }
-}
 
+  .learn-guide-component strong {
+    font-size: 6px;
+  }
 
-@media (max-width: 650px) {
+  .inspector-guide > p,
+  .learn-guide-action {
+    display: none;
+  }
+
+  .break-traffic-panel {
+    width: 160px;
+  }
+
   .solve-panel,
   .solve-concept-card,
   .solve-success {
     left: 14px;
-    right: 14px;
-
-    width: auto;
-  }
-
-  .solve-panel {
-    top: 78px;
-  }
-
-  .solve-concept-card {
-    top: 120px;
   }
 
   .solve-architecture {
     left: 50%;
-    top: 250px;
+    top: 230px;
 
-    width: calc(100% - 30px);
-  }
-
-  .solve-success {
-    bottom: 20px;
-  }
-}
-
-
-@media (max-width: 600px) {
-  .break-traffic-panel {
-    left: 14px;
-
-    width: 165px;
-  }
-
-  .break-health-panel {
-    right: 14px;
-
-    width: 135px;
-  }
-
-  .health-value {
-    font-size: 28px;
-  }
-
-  .break-result {
-    left: 14px;
-    bottom: 18px;
-
-    width: 220px;
+    width: calc(100% - 28px);
   }
 }

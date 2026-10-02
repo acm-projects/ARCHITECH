@@ -28,7 +28,7 @@ export default function SystemStory() {
 
       /* =====================================================
          INITIAL BUILD STATE
-         ===================================================== */
+      ===================================================== */
 
       gsap.set(
         [
@@ -86,12 +86,11 @@ export default function SystemStory() {
 
       /* =====================================================
          INITIAL BREAK STATE
-         ===================================================== */
+      ===================================================== */
 
       gsap.set(
         [
           ".break-traffic-panel",
-          ".break-health-panel",
           ".break-result",
           ".server-warning",
           ".break-particle",
@@ -101,12 +100,9 @@ export default function SystemStory() {
         }
       );
 
-      gsap.set(
-        [".break-traffic-panel", ".break-health-panel"],
-        {
-          y: 12,
-        }
-      );
+      gsap.set(".break-traffic-panel", {
+        y: 12,
+      });
 
       gsap.set(".break-result", {
         y: 18,
@@ -121,14 +117,9 @@ export default function SystemStory() {
         left: "0%",
       });
 
-      gsap.set(".health-meter-fill", {
-        scaleX: 0.92,
-        transformOrigin: "left center",
-      });
-
       /* =====================================================
          INITIAL SOLVE STATE
-         ===================================================== */
+      ===================================================== */
 
       gsap.set(
         [
@@ -182,14 +173,50 @@ export default function SystemStory() {
       });
 
       /* =====================================================
-         MAIN STORY TIMELINE
-         ===================================================== */
+         INITIAL WORKSPACE / INSPECTOR STATE
+      ===================================================== */
+
+      gsap.set(".inspector-guide", {
+        autoAlpha: 0,
+        display: "none",
+      });
+
+      gsap.set(".inspector-guide-build", {
+        autoAlpha: 1,
+        display: "block",
+      });
+
+      gsap.set(".learn-canvas-focus", {
+        autoAlpha: 0,
+        y: 10,
+      });
+
+      /*
+       * Workspace shell itself is visible from frame one.
+       * No LEARN reveal animation anymore.
+       */
+
+      gsap.set(
+        [
+          ".learn-toolbox",
+          ".learn-inspector",
+          ".learn-canvas-toolbar",
+          ".learn-bottom-controls",
+        ],
+        {
+          autoAlpha: 1,
+        }
+      );
+
+      /* =====================================================
+         HELPER TIMELINE
+      ===================================================== */
 
       const timeline = gsap.timeline({
         scrollTrigger: {
           trigger: demoRef.current,
           start: "top 24px",
-          end: "+=8500",
+          end: "+=10800",
           scrub: 0.5,
           pin: true,
           pinSpacing: true,
@@ -199,7 +226,7 @@ export default function SystemStory() {
 
       /* =====================================================
          01 BUILD — USER
-         ===================================================== */
+      ===================================================== */
 
       timeline.fromTo(
         ".story-user",
@@ -216,10 +243,6 @@ export default function SystemStory() {
           ease: "power2.out",
         }
       );
-
-      /*
-       * USER ACTIVE
-       */
 
       timeline.to(".story-user .story-node", {
         borderColor: "rgba(10, 10, 10, 0.5)",
@@ -238,17 +261,43 @@ export default function SystemStory() {
       );
 
       /* =====================================================
+         GUIDE → SERVER
+      ===================================================== */
+
+      timeline.to(
+        ".inspector-guide-build",
+        {
+          autoAlpha: 0,
+          duration: 0.25,
+        },
+        "+=0.25"
+      );
+
+      timeline.set(".inspector-guide-build", {
+        display: "none",
+      });
+
+      timeline.set(".inspector-guide-server", {
+        display: "block",
+      });
+
+      timeline.to(".inspector-guide-server", {
+        autoAlpha: 1,
+        duration: 0.35,
+      });
+
+      /* =====================================================
          TEACH SERVER
-         ===================================================== */
+      ===================================================== */
 
       timeline.to(
         ".prompt-server",
         {
           autoAlpha: 1,
           y: 0,
-          duration: 0.7,
+          duration: 0.65,
         },
-        "+=0.35"
+        "<"
       );
 
       timeline.to(
@@ -257,7 +306,7 @@ export default function SystemStory() {
           autoAlpha: 1,
           duration: 0.1,
         },
-        "+=0.2"
+        "+=0.15"
       );
 
       timeline.to(
@@ -287,7 +336,7 @@ export default function SystemStory() {
 
       /* =====================================================
          REQUEST: USER → SERVER
-         ===================================================== */
+      ===================================================== */
 
       timeline.set(".traffic-dot-one", {
         autoAlpha: 1,
@@ -299,11 +348,6 @@ export default function SystemStory() {
         duration: 0.8,
         ease: "none",
       });
-
-      /*
-       * USER turns off.
-       * SERVER lights up.
-       */
 
       timeline.to(".story-user .story-node", {
         borderColor: "rgba(10, 10, 10, 0.16)",
@@ -351,20 +395,46 @@ export default function SystemStory() {
         {
           autoAlpha: 0,
           y: -8,
-          duration: 0.45,
+          duration: 0.4,
         },
-        "+=0.25"
+        "+=0.2"
       );
 
       /* =====================================================
-         TEACH DATABASE
-         ===================================================== */
+         GUIDE → DATABASE
+      ===================================================== */
 
-      timeline.to(".prompt-database", {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.7,
+      timeline.to(".inspector-guide-server", {
+        autoAlpha: 0,
+        duration: 0.25,
       });
+
+      timeline.set(".inspector-guide-server", {
+        display: "none",
+      });
+
+      timeline.set(".inspector-guide-database", {
+        display: "block",
+      });
+
+      timeline.to(".inspector-guide-database", {
+        autoAlpha: 1,
+        duration: 0.35,
+      });
+
+      /* =====================================================
+         TEACH DATABASE
+      ===================================================== */
+
+      timeline.to(
+        ".prompt-database",
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.65,
+        },
+        "<"
+      );
 
       timeline.to(
         ".connector-server-db",
@@ -372,7 +442,7 @@ export default function SystemStory() {
           autoAlpha: 1,
           duration: 0.1,
         },
-        "+=0.2"
+        "+=0.15"
       );
 
       timeline.to(
@@ -402,7 +472,7 @@ export default function SystemStory() {
 
       /* =====================================================
          REQUEST: SERVER → DATABASE
-         ===================================================== */
+      ===================================================== */
 
       timeline.set(".traffic-dot-two", {
         autoAlpha: 1,
@@ -414,11 +484,6 @@ export default function SystemStory() {
         duration: 0.8,
         ease: "none",
       });
-
-      /*
-       * SERVER turns off.
-       * DATABASE lights up.
-       */
 
       timeline.to(".story-server .story-node", {
         borderColor: "rgba(10, 10, 10, 0.16)",
@@ -466,14 +531,10 @@ export default function SystemStory() {
         {
           autoAlpha: 0,
           y: -8,
-          duration: 0.45,
+          duration: 0.4,
         },
-        "+=0.25"
+        "+=0.2"
       );
-
-      /*
-       * Database finished processing.
-       */
 
       timeline.to(".story-database .story-node", {
         borderColor: "rgba(10, 10, 10, 0.16)",
@@ -491,79 +552,63 @@ export default function SystemStory() {
         "<"
       );
 
-      /* =====================================================
-         BUILD COMPLETE
-         ===================================================== */
-
-      timeline.to(".story-build-complete", {
-        autoAlpha: 1,
+      timeline.to({}, {
         duration: 0.6,
       });
 
-      timeline.to({}, {
-        duration: 0.65,
-      });
-
       /* =====================================================
-         TRANSITION → 02 BREAK
-         ===================================================== */
+         02 BREAK
+      ===================================================== */
 
       timeline.to(".progress-build", {
         opacity: 0.25,
-        duration: 0.35,
+        duration: 0.3,
       });
 
       timeline.to(
         ".progress-break",
         {
           opacity: 1,
-          duration: 0.35,
+          duration: 0.3,
         },
         "<"
       );
 
-      timeline.to(".story-build-complete", {
+      /* GUIDE → BREAK */
+
+      timeline.to(".inspector-guide-database", {
         autoAlpha: 0,
+        duration: 0.25,
+      });
+
+      timeline.set(".inspector-guide-database", {
+        display: "none",
+      });
+
+      timeline.set(".inspector-guide-break", {
+        display: "block",
+      });
+
+      timeline.to(".inspector-guide-break", {
+        autoAlpha: 1,
         duration: 0.35,
       });
 
-      timeline.to(".canvas-status-text", {
-        opacity: 0,
-        duration: 0.2,
-      });
-
-      timeline.set(".canvas-status-text", {
-        textContent: "LOAD TEST",
-      });
-
-      timeline.to(".canvas-status-text", {
-        opacity: 1,
-        duration: 0.2,
-      });
-
-      /* =====================================================
-         BREAK CONTROLS
-         ===================================================== */
-
-      timeline.to(".break-traffic-panel", {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.6,
-      });
+      /* TRAFFIC PANEL */
 
       timeline.to(
-        ".break-health-panel",
+        ".break-traffic-panel",
         {
           autoAlpha: 1,
           y: 0,
-          duration: 0.6,
+          duration: 0.55,
         },
-        "<+=0.15"
+        "<"
       );
 
       /* =====================================================
-         TRAFFIC: 100 → 1K
-         ===================================================== */
+         100 → 1K
+      ===================================================== */
 
       timeline.to(".traffic-scale-fill", {
         scaleX: 0.33,
@@ -586,30 +631,6 @@ export default function SystemStory() {
         duration: 0.1,
       });
 
-      /*
-       * USER lights as requests enter.
-       */
-
-      timeline.to(
-        ".story-user .story-node",
-        {
-          borderColor: "rgba(10, 10, 10, 0.5)",
-          boxShadow: ACTIVE_NODE_SHADOW,
-          duration: 0.3,
-        },
-        "<"
-      );
-
-      timeline.to(
-        ".story-user .story-node-status",
-        {
-          opacity: 1,
-          scale: 1.4,
-          duration: 0.3,
-        },
-        "<"
-      );
-
       timeline.to(
         [
           ".break-particle-1",
@@ -617,7 +638,7 @@ export default function SystemStory() {
         ],
         {
           autoAlpha: 1,
-          duration: 0.25,
+          duration: 0.2,
         }
       );
 
@@ -637,49 +658,9 @@ export default function SystemStory() {
         }
       );
 
-      /*
-       * Requests reach SERVER.
-       */
-
-      timeline.to(".story-user .story-node", {
-        borderColor: "rgba(10, 10, 10, 0.16)",
-        boxShadow: NORMAL_NODE_SHADOW,
-        duration: 0.25,
-      });
-
-      timeline.to(
-        ".story-user .story-node-status",
-        {
-          opacity: 0.3,
-          scale: 1,
-          duration: 0.25,
-        },
-        "<"
-      );
-
-      timeline.to(
-        ".story-server .story-node",
-        {
-          borderColor: "rgba(10, 10, 10, 0.5)",
-          boxShadow: ACTIVE_NODE_SHADOW,
-          duration: 0.3,
-        },
-        "<"
-      );
-
-      timeline.to(
-        ".story-server .story-node-status",
-        {
-          opacity: 1,
-          scale: 1.45,
-          duration: 0.3,
-        },
-        "<"
-      );
-
       /* =====================================================
-         TRAFFIC: 1K → 10K
-         ===================================================== */
+         1K → 10K
+      ===================================================== */
 
       timeline.to(".traffic-scale-fill", {
         scaleX: 0.66,
@@ -729,10 +710,6 @@ export default function SystemStory() {
         }
       );
 
-      /*
-       * Server starts struggling.
-       */
-
       timeline.to(
         ".story-server .story-node",
         {
@@ -745,17 +722,10 @@ export default function SystemStory() {
         }
       );
 
-      timeline.to(
-        ".health-meter-fill",
-        {
-          scaleX: 0.68,
-          duration: 0.5,
-        },
-        "<"
-      );
+      /* Inspector health 92 → 68 */
 
       timeline.to(
-        ".health-value",
+        ".inspector-health-value",
         {
           textContent: "68",
           duration: 0.1,
@@ -764,7 +734,7 @@ export default function SystemStory() {
       );
 
       timeline.to(
-        ".health-label",
+        ".inspector-health-label",
         {
           textContent: "STRESSED",
           duration: 0.1,
@@ -773,8 +743,8 @@ export default function SystemStory() {
       );
 
       /* =====================================================
-         TRAFFIC: 10K → 100K
-         ===================================================== */
+         10K → 100K
+      ===================================================== */
 
       timeline.to(".traffic-scale-fill", {
         scaleX: 1,
@@ -797,39 +767,8 @@ export default function SystemStory() {
         duration: 0.1,
       });
 
-      /*
-       * Incoming traffic activates USER again.
-       */
-
       timeline.to(
-        ".story-user .story-node",
-        {
-          borderColor: "rgba(10, 10, 10, 0.5)",
-          boxShadow: ACTIVE_NODE_SHADOW,
-          duration: 0.25,
-        },
-        "<"
-      );
-
-      timeline.to(
-        ".story-user .story-node-status",
-        {
-          opacity: 1,
-          scale: 1.4,
-          duration: 0.25,
-        },
-        "<"
-      );
-
-      timeline.to(
-        [
-          ".break-particle-1",
-          ".break-particle-2",
-          ".break-particle-3",
-          ".break-particle-4",
-          ".break-particle-5",
-          ".break-particle-6",
-        ],
+        ".break-particle",
         {
           autoAlpha: 1,
           duration: 0.15,
@@ -849,35 +788,13 @@ export default function SystemStory() {
         }
       );
 
-      /*
-       * Load reaches server.
-       * Server remains lit because it is overwhelmed.
-       */
-
-      timeline.to(".story-user .story-node", {
-        borderColor: "rgba(10, 10, 10, 0.16)",
-        boxShadow: NORMAL_NODE_SHADOW,
-        duration: 0.25,
-      });
-
-      timeline.to(
-        ".story-user .story-node-status",
-        {
-          opacity: 0.3,
-          scale: 1,
-          duration: 0.25,
-        },
-        "<"
-      );
-
       timeline.to(
         ".story-server .story-node",
         {
           borderColor: "rgba(10, 10, 10, 0.75)",
           boxShadow: OVERLOADED_NODE_SHADOW,
           duration: 0.35,
-        },
-        "<"
+        }
       );
 
       timeline.to(
@@ -891,8 +808,8 @@ export default function SystemStory() {
       );
 
       /* =====================================================
-         SERVER OVERLOAD
-         ===================================================== */
+         OVERLOAD
+      ===================================================== */
 
       timeline.to(".story-server .story-node", {
         x: -4,
@@ -907,26 +824,20 @@ export default function SystemStory() {
 
       timeline.to(".server-warning", {
         autoAlpha: 1,
-        duration: 0.35,
-      });
-
-      timeline.to(".health-meter-fill", {
-        scaleX: 0.38,
-        duration: 0.7,
-        ease: "power2.out",
+        duration: 0.3,
       });
 
       timeline.to(
-        ".health-value",
+        ".inspector-health-value",
         {
           textContent: "38",
           duration: 0.1,
         },
-        "<+=0.3"
+        "<+=0.15"
       );
 
       timeline.to(
-        ".health-label",
+        ".inspector-health-label",
         {
           textContent: "OVERLOADED",
           duration: 0.1,
@@ -934,101 +845,97 @@ export default function SystemStory() {
         "<"
       );
 
-      timeline.to(
-        ".story-canvas-status > span:first-child",
-        {
-          scale: 1.8,
-          opacity: 1,
-          duration: 0.25,
-          repeat: 3,
-          yoyo: true,
-        }
-      );
-
       /* =====================================================
          YOU BROKE IT
-         ===================================================== */
+      ===================================================== */
 
       timeline.to(
         ".break-result",
         {
           autoAlpha: 1,
           y: 0,
-          duration: 0.7,
+          duration: 0.65,
           ease: "power2.out",
         },
-        "+=0.25"
+        "+=0.2"
       );
 
       timeline.to({}, {
-        duration: 1,
+        duration: 0.8,
       });
 
       /* =====================================================
-         TRANSITION → 03 SOLVE
-         ===================================================== */
+         03 SOLVE
+      ===================================================== */
 
       timeline.to(".progress-break", {
         opacity: 0.25,
-        duration: 0.35,
+        duration: 0.3,
       });
 
       timeline.to(
         ".progress-solve",
         {
           opacity: 1,
-          duration: 0.35,
+          duration: 0.3,
         },
         "<"
       );
 
-      timeline.to(".break-result", {
+      timeline.to(
+        [
+          ".break-result",
+          ".break-particle",
+          ".server-warning",
+        ],
+        {
+          autoAlpha: 0,
+          duration: 0.35,
+        }
+      );
+
+      /* GUIDE → SOLVE */
+
+      timeline.to(".inspector-guide-break", {
         autoAlpha: 0,
-        y: -10,
-        duration: 0.4,
+        duration: 0.25,
       });
 
-      /*
-       * Clear the load-test noise while keeping the
-       * broken architecture visible.
-       */
+      timeline.set(".inspector-guide-break", {
+        display: "none",
+      });
 
-      timeline.to(
-        ".break-particle",
-        {
-          autoAlpha: 0,
-          duration: 0.3,
-        },
-        "<"
-      );
+      timeline.set(".inspector-guide-solve", {
+        display: "block",
+      });
 
-      timeline.to(
-        ".server-warning",
-        {
-          autoAlpha: 0,
-          duration: 0.3,
-        },
-        "<"
-      );
+      timeline.to(".inspector-guide-solve", {
+        autoAlpha: 1,
+        duration: 0.35,
+      });
 
       /* =====================================================
-         ASK: HOW WOULD YOU FIX IT?
-         ===================================================== */
+         ASK FOR SOLUTION
+      ===================================================== */
 
-      timeline.to(".solve-panel", {
-        autoAlpha: 1,
-        x: 0,
-        duration: 0.65,
-        ease: "power2.out",
-      });
+      timeline.to(
+        ".solve-panel",
+        {
+          autoAlpha: 1,
+          x: 0,
+          duration: 0.65,
+          ease: "power2.out",
+        },
+        "<"
+      );
 
       timeline.to({}, {
-        duration: 0.7,
+        duration: 0.6,
       });
 
       /* =====================================================
-         SELECT: SPREAD TRAFFIC
-         ===================================================== */
+         SELECT SPREAD TRAFFIC
+      ===================================================== */
 
       timeline.to(".solve-option-load", {
         borderColor: "rgba(10, 10, 10, 0.65)",
@@ -1050,17 +957,17 @@ export default function SystemStory() {
       );
 
       timeline.to({}, {
-        duration: 0.45,
+        duration: 0.4,
       });
 
       /* =====================================================
-         REVEAL TECHNICAL CONCEPT
-         ===================================================== */
+         REVEAL LOAD BALANCER
+      ===================================================== */
 
       timeline.to(".solve-panel", {
         autoAlpha: 0,
         x: -12,
-        duration: 0.45,
+        duration: 0.4,
       });
 
       timeline.to(
@@ -1068,37 +975,31 @@ export default function SystemStory() {
         {
           autoAlpha: 1,
           x: 0,
-          duration: 0.6,
+          duration: 0.55,
           ease: "power2.out",
         },
         "-=0.1"
       );
 
       timeline.to({}, {
-        duration: 0.65,
+        duration: 0.55,
       });
 
       /* =====================================================
-         REMOVE BROKEN SERVER
-         ===================================================== */
+         REMOVE OLD SERVER PATH
+      ===================================================== */
 
       timeline.to(".story-server", {
         autoAlpha: 0,
         scale: 0.92,
-        duration: 0.45,
+        duration: 0.4,
       });
 
       timeline.to(
-        ".connector-user-server",
-        {
-          autoAlpha: 0,
-          duration: 0.3,
-        },
-        "<"
-      );
-
-      timeline.to(
-        ".connector-server-db",
+        [
+          ".connector-user-server",
+          ".connector-server-db",
+        ],
         {
           autoAlpha: 0,
           duration: 0.3,
@@ -1107,17 +1008,17 @@ export default function SystemStory() {
       );
 
       /* =====================================================
-         CREATE SOLVED ARCHITECTURE
-         ===================================================== */
+         SOLVED ARCHITECTURE
+      ===================================================== */
 
       timeline.to(".solve-architecture", {
         autoAlpha: 1,
-        duration: 0.2,
+        duration: 0.15,
       });
 
       timeline.to(".solve-line-user-lb", {
         scaleY: 1,
-        duration: 0.55,
+        duration: 0.5,
         ease: "none",
       });
 
@@ -1128,22 +1029,16 @@ export default function SystemStory() {
         ease: "power2.out",
       });
 
-      /*
-       * Load Balancer lights up first.
-       */
-
       timeline.to(
         ".solve-load-balancer .story-node",
         {
           borderColor: "rgba(10, 10, 10, 0.55)",
           boxShadow: ACTIVE_NODE_SHADOW,
-          duration: 0.35,
+          duration: 0.3,
         }
       );
 
-      /* =====================================================
-         FAN TRAFFIC OUT
-         ===================================================== */
+      /* FAN OUT */
 
       timeline.to(".solve-route", {
         strokeDashoffset: 0,
@@ -1161,15 +1056,13 @@ export default function SystemStory() {
         {
           autoAlpha: 1,
           scale: 1,
-          duration: 0.55,
-          stagger: 0.12,
+          duration: 0.5,
+          stagger: 0.1,
           ease: "power2.out",
         }
       );
 
-      /* =====================================================
-         DISTRIBUTE REQUESTS
-         ===================================================== */
+      /* REQUESTS */
 
       timeline.to(".solve-request", {
         autoAlpha: 1,
@@ -1220,11 +1113,6 @@ export default function SystemStory() {
         "<+=0.08"
       );
 
-      /*
-       * Traffic arrives at each server.
-       * Each server lights as it starts processing.
-       */
-
       timeline.to(
         ".solve-server-one .story-node",
         {
@@ -1241,7 +1129,7 @@ export default function SystemStory() {
           boxShadow: ACTIVE_NODE_SHADOW,
           duration: 0.3,
         },
-        "<+=0.1"
+        "<+=0.08"
       );
 
       timeline.to(
@@ -1251,59 +1139,26 @@ export default function SystemStory() {
           boxShadow: ACTIVE_NODE_SHADOW,
           duration: 0.3,
         },
-        "<+=0.1"
+        "<+=0.08"
       );
 
       /* =====================================================
-         HEALTH RECOVERS
-         ===================================================== */
+         SYSTEM RECOVERS
+      ===================================================== */
 
-      timeline.to(".health-meter-fill", {
-        scaleX: 0.91,
-        duration: 0.8,
-        ease: "power2.out",
+      timeline.to(".inspector-health-value", {
+        textContent: "91",
+        duration: 0.1,
       });
 
       timeline.to(
-        ".health-value",
-        {
-          textContent: "91",
-          duration: 0.1,
-        },
-        "<+=0.3"
-      );
-
-      timeline.to(
-        ".health-label",
+        ".inspector-health-label",
         {
           textContent: "HEALTHY",
           duration: 0.1,
         },
         "<"
       );
-
-      timeline.to(".canvas-status-text", {
-        opacity: 0,
-        duration: 0.2,
-      });
-
-      timeline.set(".canvas-status-text", {
-        textContent: "SYSTEM STABLE",
-      });
-
-      timeline.to(".canvas-status-text", {
-        opacity: 1,
-        duration: 0.2,
-      });
-
-      timeline.to(".component-count", {
-        textContent: "6",
-        duration: 0.1,
-      });
-
-      /* =====================================================
-         SOLVE SUCCESS
-         ===================================================== */
 
       timeline.to(".solve-concept-card", {
         autoAlpha: 0,
@@ -1316,14 +1171,132 @@ export default function SystemStory() {
         {
           autoAlpha: 1,
           x: 0,
-          duration: 0.65,
+          duration: 0.6,
           ease: "power2.out",
         },
         "-=0.1"
       );
 
       timeline.to({}, {
-        duration: 1,
+        duration: 0.8,
+      });
+
+      /* =====================================================
+         04 LEARN
+
+         No workspace transformation.
+         We simply demonstrate Learn Mode inside the same UI.
+      ===================================================== */
+
+      timeline.to(".progress-solve", {
+        opacity: 0.25,
+        duration: 0.3,
+      });
+
+      timeline.to(
+        ".progress-learn",
+        {
+          opacity: 1,
+          duration: 0.3,
+        },
+        "<"
+      );
+
+      timeline.to(
+        [
+          ".solve-success",
+          ".break-traffic-panel",
+        ],
+        {
+          autoAlpha: 0,
+          duration: 0.4,
+        }
+      );
+
+      /* GUIDE → LEARN */
+
+      timeline.to(".inspector-guide-solve", {
+        autoAlpha: 0,
+        duration: 0.25,
+      });
+
+      timeline.set(".inspector-guide-solve", {
+        display: "none",
+      });
+
+      timeline.set(".inspector-guide-learn", {
+        display: "block",
+      });
+
+      timeline.to(".inspector-guide-learn", {
+        autoAlpha: 1,
+        duration: 0.4,
+      });
+
+      /* =====================================================
+         SELECT LOAD BALANCER
+      ===================================================== */
+
+      timeline.to(
+        ".solve-load-balancer .story-node",
+        {
+          borderColor: "rgba(10, 10, 10, 0.78)",
+          boxShadow:
+            "0 0 0 3px #ffffff, 0 0 0 5px rgba(10,10,10,.16), 0 16px 38px rgba(10,10,10,.14)",
+          duration: 0.4,
+        },
+        "<"
+      );
+
+      timeline.to(
+        ".solve-load-balancer .story-node-status",
+        {
+          opacity: 1,
+          scale: 1.6,
+          duration: 0.35,
+        },
+        "<"
+      );
+
+      timeline.to(
+        ".learn-canvas-focus",
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.5,
+          ease: "power2.out",
+        },
+        "<+=0.15"
+      );
+
+      /* =====================================================
+         EMPHASIZE ROUTING
+      ===================================================== */
+
+      timeline.to(
+        ".solve-route",
+        {
+          strokeWidth: 1.6,
+          stroke: "rgba(10, 10, 10, 0.65)",
+          duration: 0.4,
+        }
+      );
+
+      timeline.to(
+        [
+          ".solve-server-one .story-node",
+          ".solve-server-two .story-node",
+          ".solve-server-three .story-node",
+        ],
+        {
+          borderColor: "rgba(10, 10, 10, 0.42)",
+          duration: 0.4,
+        },
+        "<"
+      );
+
+      timeline.to({}, {
+        duration: 1.3,
       });
     },
     {
@@ -1339,7 +1312,7 @@ export default function SystemStory() {
     >
       <header className="system-story-intro">
         <span className="system-story-step">
-          01 BUILD
+          BUILD A REAL SYSTEM
         </span>
 
         <h2>
