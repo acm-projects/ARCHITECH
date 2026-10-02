@@ -4,27 +4,18 @@
 
 .system-story {
   position: relative;
-
   width: 100%;
-
-  padding:
-    120px
-    5vw
-    160px;
+  padding: 120px 0 160px;
 }
 
 
 /* =========================================================
-   INTRO
+   STORY INTRO
    ========================================================= */
 
 .system-story-intro {
-  width: min(720px, 100%);
-
-  margin:
-    0
-    auto
-    70px;
+  width: min(720px, calc(100% - 48px));
+  margin: 0 auto 70px;
 
   text-align: center;
 }
@@ -36,7 +27,6 @@
 
   font-size: 10px;
   font-weight: 700;
-
   letter-spacing: 0.12em;
 
   opacity: 0.45;
@@ -45,14 +35,8 @@
 .system-story-intro h2 {
   margin: 0;
 
-  font-size: clamp(
-    56px,
-    7vw,
-    104px
-  );
-
+  font-size: clamp(56px, 7vw, 104px);
   font-weight: 500;
-
   line-height: 0.9;
 
   letter-spacing: -0.06em;
@@ -61,13 +45,9 @@
 .system-story-intro p {
   max-width: 440px;
 
-  margin:
-    26px
-    auto
-    0;
+  margin: 26px auto 0;
 
   font-size: 15px;
-
   line-height: 1.6;
 
   opacity: 0.55;
@@ -75,13 +55,17 @@
 
 
 /* =========================================================
-   DEMO WRAPPER
+   DEMO — BLACK OUTER STAGE
    ========================================================= */
 
 .story-demo {
-  width: min(1180px, 100%);
+  width: 100%;
 
   margin: 0 auto;
+
+  padding: 46px 5vw 60px;
+
+  background: #0a0a0a;
 }
 
 
@@ -90,22 +74,20 @@
    ========================================================= */
 
 .story-demo-progress {
+  width: min(1180px, 100%);
+
   display: flex;
-
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 
-  gap: clamp(
-    18px,
-    3vw,
-    42px
-  );
+  gap: clamp(18px, 3vw, 42px);
 
-  margin-bottom: 18px;
+  margin: 0 auto 22px;
+
+  color: #ffffff;
 
   font-size: 9px;
   font-weight: 700;
-
   letter-spacing: 0.08em;
 }
 
@@ -133,7 +115,6 @@
   background: currentColor;
 
   transform: scaleX(0);
-
   transform-origin: left;
 }
 
@@ -147,47 +128,42 @@
 
 
 /* =========================================================
-   SQUARE CANVAS
+   WHITE SQUARE CANVAS
    ========================================================= */
 
 .story-demo-canvas {
   position: relative;
 
-  width: 100%;
-
-  height: min(
-    690px,
-    calc(100vh - 80px)
-  );
-
+  width: min(1180px, 100%);
+  height: min(690px, calc(100vh - 110px));
   min-height: 600px;
+
+  margin: 0 auto;
 
   overflow: hidden;
 
+  color: #0a0a0a;
+
   /*
-   * Canvas intentionally stays square.
-   * Internal components use rounded corners.
+   * Canvas itself remains square.
+   * UI elements inside are rounded.
    */
 
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 0;
 
-  border:
-    1px solid
-    rgba(10, 10, 10, 0.16);
-
-  background-color: #f7f7f3;
+  background-color: #ffffff;
 
   background-image:
     radial-gradient(
-      rgba(10, 10, 10, 0.12)
-      0.8px,
-      transparent
-      0.8px
+      rgba(10, 10, 10, 0.11) 0.8px,
+      transparent 0.8px
     );
 
-  background-size:
-    20px
-    20px;
+  background-size: 20px 20px;
+
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.3);
 }
 
 
@@ -198,7 +174,7 @@
 .story-canvas-header {
   position: absolute;
 
-  z-index: 10;
+  z-index: 20;
 
   top: 0;
   left: 0;
@@ -207,33 +183,21 @@
   height: 56px;
 
   display: flex;
-
   align-items: center;
   justify-content: space-between;
 
-  padding:
-    0
-    20px;
+  padding: 0 20px;
 
-  background:
-    rgba(
-      247,
-      247,
-      243,
-      0.92
-    );
+  background: rgba(255, 255, 255, 0.94);
 
   border-bottom:
-    1px solid
-    rgba(10, 10, 10, 0.12);
+    1px solid rgba(10, 10, 10, 0.12);
 
-  backdrop-filter:
-    blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .story-canvas-header > div:first-child {
   display: flex;
-
   align-items: baseline;
 
   gap: 10px;
@@ -241,7 +205,6 @@
 
 .story-canvas-eyebrow {
   font-size: 8px;
-
   font-weight: 700;
 
   letter-spacing: 0.12em;
@@ -251,24 +214,21 @@
 
 .story-canvas-header strong {
   font-size: 12px;
-
   font-weight: 600;
 }
 
 
 /* =========================================================
-   LIVE STATUS
+   CANVAS STATUS
    ========================================================= */
 
 .story-canvas-status {
   display: flex;
-
   align-items: center;
 
   gap: 7px;
 
   font-size: 8px;
-
   font-weight: 700;
 
   letter-spacing: 0.1em;
@@ -276,9 +236,11 @@
   opacity: 0.55;
 }
 
-.story-canvas-status > span {
+.story-canvas-status > span:first-child {
   width: 6px;
   height: 6px;
+
+  flex-shrink: 0;
 
   border-radius: 50%;
 
@@ -293,10 +255,7 @@
 .story-build-area {
   position: absolute;
 
-  inset:
-    56px
-    0
-    48px;
+  inset: 56px 0 48px;
 }
 
 
@@ -307,12 +266,11 @@
 .story-node-position {
   position: absolute;
 
-  z-index: 5;
+  z-index: 6;
 
   left: 50%;
 
-  transform:
-    translateX(-50%);
+  transform: translateX(-50%);
 }
 
 .story-user {
@@ -339,30 +297,27 @@
   min-height: 74px;
 
   display: flex;
-
   align-items: center;
 
   gap: 12px;
 
-  padding:
-    13px
-    14px;
+  padding: 13px 14px;
 
   color: #0a0a0a;
-
   background: #ffffff;
 
   border:
-    1px solid
-    rgba(10, 10, 10, 0.16);
+    1px solid rgba(10, 10, 10, 0.16);
 
   border-radius: 12px;
 
   box-shadow:
-    0 1px 2px
-      rgba(10, 10, 10, 0.04),
-    0 8px 24px
-      rgba(10, 10, 10, 0.04);
+    0 1px 2px rgba(10, 10, 10, 0.04),
+    0 8px 24px rgba(10, 10, 10, 0.04);
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 
@@ -377,20 +332,17 @@
   flex-shrink: 0;
 
   display: grid;
-
   place-items: center;
 
   /*
-   * White instead of ARCHITECT yellow.
+   * White rather than yellow, as requested.
    */
 
+  color: #0a0a0a;
   background: #ffffff;
 
-  color: #0a0a0a;
-
   border:
-    1px solid
-    rgba(10, 10, 10, 0.1);
+    1px solid rgba(10, 10, 10, 0.1);
 
   border-radius: 9px;
 }
@@ -404,7 +356,6 @@
   min-width: 0;
 
   display: flex;
-
   flex-direction: column;
 
   gap: 3px;
@@ -412,7 +363,6 @@
 
 .story-node-copy span {
   font-size: 7px;
-
   font-weight: 700;
 
   letter-spacing: 0.12em;
@@ -422,13 +372,12 @@
 
 .story-node-copy strong {
   font-size: 12px;
-
   font-weight: 600;
 }
 
 
 /* =========================================================
-   COMPONENT STATUS
+   COMPONENT STATUS / PROCESSING LIGHT
    ========================================================= */
 
 .story-node-status {
@@ -445,6 +394,12 @@
   background: #0a0a0a;
 
   opacity: 0.3;
+
+  transform-origin: center;
+
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
 }
 
 
@@ -461,8 +416,7 @@
 
   width: 1px;
 
-  transform:
-    translateX(-50%);
+  transform: translateX(-50%);
 }
 
 .connector-user-server {
@@ -484,13 +438,7 @@
 
   width: 1px;
 
-  background:
-    rgba(
-      10,
-      10,
-      10,
-      0.3
-    );
+  background: rgba(10, 10, 10, 0.3);
 }
 
 .story-connector-arrow {
@@ -499,28 +447,25 @@
   left: 50%;
   bottom: -4px;
 
-  transform:
-    translateX(-50%);
+  padding: 2px;
 
-  padding:
-    2px;
-
-  background: #f7f7f3;
+  background: #ffffff;
 
   font-size: 11px;
-
   line-height: 1;
+
+  transform: translateX(-50%);
 }
 
 
 /* =========================================================
-   TRAFFIC PARTICLES
+   BUILD TRAFFIC PARTICLES
    ========================================================= */
 
 .traffic-dot {
   position: absolute;
 
-  z-index: 3;
+  z-index: 4;
 
   left: 50%;
   top: 10%;
@@ -528,17 +473,14 @@
   width: 6px;
   height: 6px;
 
-  transform:
-    translateX(-50%);
-
   border-radius: 50%;
 
   background: #0a0a0a;
 
+  transform: translateX(-50%);
+
   box-shadow:
-    0 0 0
-    3px
-    #f7f7f3;
+    0 0 0 3px #ffffff;
 }
 
 .traffic-dot-two {
@@ -553,7 +495,7 @@
 .story-teaching-prompt {
   position: absolute;
 
-  z-index: 6;
+  z-index: 9;
 
   width: 270px;
 
@@ -561,58 +503,30 @@
 
   gap: 12px;
 
-  padding:
-    16px
-    17px;
+  padding: 16px 17px;
 
   color: #0a0a0a;
-
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.94
-    );
+  background: rgba(255, 255, 255, 0.97);
 
   border:
-    1px solid
-    rgba(10, 10, 10, 0.13);
+    1px solid rgba(10, 10, 10, 0.13);
 
   border-radius: 12px;
 
   box-shadow:
-    0 12px 32px
-    rgba(
-      10,
-      10,
-      10,
-      0.045
-    );
+    0 12px 32px rgba(10, 10, 10, 0.045);
 }
-
-
-/* SERVER PROMPT */
 
 .prompt-server {
   top: 226px;
 
-  left:
-    calc(
-      50% - 390px
-    );
+  left: calc(50% - 390px);
 }
-
-
-/* DATABASE PROMPT */
 
 .prompt-database {
   top: 412px;
 
-  left:
-    calc(
-      50% + 120px
-    );
+  left: calc(50% + 120px);
 }
 
 
@@ -621,38 +535,31 @@
    ========================================================= */
 
 .story-prompt-number {
-  flex-shrink: 0;
-
   width: 26px;
   height: 26px;
 
-  display: grid;
+  flex-shrink: 0;
 
+  display: grid;
   place-items: center;
 
   background: #ffffff;
 
   border:
-    1px solid
-    rgba(10, 10, 10, 0.12);
+    1px solid rgba(10, 10, 10, 0.12);
 
   border-radius: 7px;
 
   font-size: 8px;
-
   font-weight: 700;
 }
 
 .story-teaching-prompt strong {
   display: block;
 
-  margin:
-    1px
-    0
-    6px;
+  margin: 1px 0 6px;
 
   font-size: 11px;
-
   font-weight: 600;
 }
 
@@ -660,7 +567,6 @@
   margin: 0;
 
   font-size: 9px;
-
   line-height: 1.55;
 
   opacity: 0.5;
@@ -671,18 +577,14 @@
 
   margin-top: 10px;
 
-  padding:
-    5px
-    8px;
+  padding: 5px 8px;
 
   border:
-    1px solid
-    rgba(10, 10, 10, 0.12);
+    1px solid rgba(10, 10, 10, 0.12);
 
   border-radius: 6px;
 
   font-size: 8px;
-
   font-weight: 700;
 
   letter-spacing: 0.05em;
@@ -696,7 +598,7 @@
 .story-canvas-footer {
   position: absolute;
 
-  z-index: 10;
+  z-index: 20;
 
   left: 0;
   right: 0;
@@ -705,31 +607,21 @@
   height: 48px;
 
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
 
-  padding:
-    0
-    18px;
+  padding: 0 18px;
 
-  background:
-    rgba(
-      247,
-      247,
-      243,
-      0.94
-    );
+  background: rgba(255, 255, 255, 0.94);
 
   border-top:
-    1px solid
-    rgba(10, 10, 10, 0.12);
+    1px solid rgba(10, 10, 10, 0.12);
+
+  backdrop-filter: blur(8px);
 }
 
 .story-canvas-footer > div {
   display: flex;
-
   align-items: center;
 
   gap: 8px;
@@ -737,7 +629,6 @@
 
 .story-canvas-footer span {
   font-size: 7px;
-
   font-weight: 700;
 
   letter-spacing: 0.1em;
@@ -747,13 +638,11 @@
 
 .story-canvas-footer strong {
   font-size: 10px;
-
   font-weight: 600;
 }
 
 .story-build-complete {
   font-size: 8px;
-
   font-weight: 700;
 
   letter-spacing: 0.08em;
@@ -774,16 +663,899 @@
 
 
 /* =========================================================
-   RESPONSIVE
+   02 BREAK
    ========================================================= */
 
-@media (max-width: 900px) {
 
+/* ---------------------------------------------------------
+   TRAFFIC CONTROL
+   --------------------------------------------------------- */
+
+.break-traffic-panel {
+  position: absolute;
+
+  z-index: 10;
+
+  top: 34px;
+  left: 34px;
+
+  width: 230px;
+
+  padding: 16px 17px 15px;
+
+  color: #0a0a0a;
+  background: #ffffff;
+
+  border:
+    1px solid rgba(10, 10, 10, 0.14);
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 10px 30px rgba(10, 10, 10, 0.04);
+}
+
+.break-panel-heading {
+  display: flex;
+
+  align-items: flex-end;
+  justify-content: space-between;
+
+  margin-bottom: 17px;
+}
+
+.break-panel-heading > span {
+  font-size: 8px;
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+
+  opacity: 0.4;
+}
+
+.traffic-value {
+  font-size: 22px;
+  font-weight: 500;
+
+  line-height: 1;
+
+  letter-spacing: -0.04em;
+}
+
+
+/* ---------------------------------------------------------
+   TRAFFIC SCALE
+   --------------------------------------------------------- */
+
+.traffic-scale {
+  width: 100%;
+}
+
+.traffic-scale-track {
+  position: relative;
+
+  width: 100%;
+  height: 2px;
+
+  margin-bottom: 11px;
+
+  background: rgba(10, 10, 10, 0.1);
+}
+
+.traffic-scale-fill {
+  position: absolute;
+
+  inset: 0 auto 0 0;
+
+  width: 100%;
+
+  background: #0a0a0a;
+
+  transform-origin: left center;
+}
+
+.traffic-scale-thumb {
+  position: absolute;
+
+  top: 50%;
+  left: 0;
+
+  width: 10px;
+  height: 10px;
+
+  border: 2px solid #0a0a0a;
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  transform: translate(-50%, -50%);
+}
+
+.traffic-scale-labels {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  font-size: 7px;
+  font-weight: 600;
+
+  opacity: 0.38;
+}
+
+
+/* ---------------------------------------------------------
+   HEALTH PANEL
+   --------------------------------------------------------- */
+
+.break-health-panel {
+  position: absolute;
+
+  z-index: 10;
+
+  top: 34px;
+  right: 34px;
+
+  width: 190px;
+
+  padding: 16px 17px;
+
+  color: #0a0a0a;
+  background: #ffffff;
+
+  border:
+    1px solid rgba(10, 10, 10, 0.14);
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 10px 30px rgba(10, 10, 10, 0.04);
+}
+
+.break-health-title {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  margin-bottom: 16px;
+}
+
+.break-health-title span {
+  font-size: 8px;
+  font-weight: 700;
+
+  letter-spacing: 0.1em;
+
+  opacity: 0.42;
+}
+
+.health-value {
+  display: block;
+
+  margin-bottom: 3px;
+
+  font-size: 36px;
+  font-weight: 500;
+
+  line-height: 1;
+
+  letter-spacing: -0.055em;
+}
+
+.health-label {
+  display: block;
+
+  margin-bottom: 14px;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+
+  opacity: 0.4;
+}
+
+.health-meter {
+  position: relative;
+
+  width: 100%;
+  height: 3px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background: rgba(10, 10, 10, 0.08);
+}
+
+.health-meter-fill {
+  position: absolute;
+
+  inset: 0 auto 0 0;
+
+  width: 100%;
+
+  border-radius: inherit;
+
+  background: #0a0a0a;
+
+  transform-origin: left center;
+}
+
+
+/* ---------------------------------------------------------
+   BREAK TRAFFIC PARTICLES
+   --------------------------------------------------------- */
+
+.break-particle {
+  position: absolute;
+
+  z-index: 4;
+
+  left: 50%;
+
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background: #0a0a0a;
+
+  transform: translateX(-50%);
+
+  box-shadow:
+    0 0 0 2px #ffffff;
+}
+
+.break-particle-1 {
+  margin-left: -11px;
+}
+
+.break-particle-2 {
+  margin-left: 9px;
+}
+
+.break-particle-3 {
+  margin-left: -6px;
+}
+
+.break-particle-4 {
+  margin-left: 6px;
+}
+
+.break-particle-5 {
+  margin-left: -14px;
+}
+
+.break-particle-6 {
+  margin-left: 14px;
+}
+
+
+/* ---------------------------------------------------------
+   OVERLOADED SERVER
+   --------------------------------------------------------- */
+
+.server-warning {
+  position: absolute;
+
+  left: 50%;
+  top: calc(100% + 9px);
+
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 6px 9px;
+
+  white-space: nowrap;
+
+  color: #0a0a0a;
+  background: #ffffff;
+
+  border:
+    1px solid rgba(10, 10, 10, 0.18);
+
+  border-radius: 7px;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  letter-spacing: 0.1em;
+
+  transform: translateX(-50%);
+
+  box-shadow:
+    0 5px 16px rgba(10, 10, 10, 0.04);
+}
+
+.server-warning > span {
+  width: 15px;
+  height: 15px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid #0a0a0a;
+  border-radius: 50%;
+
+  font-size: 9px;
+  font-weight: 700;
+}
+
+
+/* ---------------------------------------------------------
+   YOU BROKE IT
+   --------------------------------------------------------- */
+
+.break-result {
+  position: absolute;
+
+  z-index: 12;
+
+  left: 34px;
+  bottom: 34px;
+
+  width: 250px;
+
+  padding: 20px 21px;
+
+  text-align: left;
+
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.98);
+
+  border:
+    1px solid rgba(10, 10, 10, 0.15);
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 14px 40px rgba(10, 10, 10, 0.06);
+}
+
+.break-result-eyebrow {
+  display: block;
+
+  margin-bottom: 7px;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  letter-spacing: 0.14em;
+
+  opacity: 0.4;
+}
+
+.break-result strong {
+  display: block;
+
+  margin-bottom: 8px;
+
+  font-size: 24px;
+  font-weight: 500;
+
+  line-height: 1;
+
+  letter-spacing: -0.04em;
+}
+
+.break-result p {
+  margin: 0;
+
+  font-size: 9px;
+  line-height: 1.5;
+
+  opacity: 0.48;
+}
+
+
+/* =========================================================
+   03 SOLVE
+   ========================================================= */
+
+
+/* ---------------------------------------------------------
+   SOLVE DECISION PANEL
+   --------------------------------------------------------- */
+
+.solve-panel {
+  position: absolute;
+
+  z-index: 14;
+
+  left: 34px;
+  top: 128px;
+
+  width: 280px;
+
+  padding: 22px;
+
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.98);
+
+  border:
+    1px solid rgba(10, 10, 10, 0.15);
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 18px 50px rgba(10, 10, 10, 0.08);
+}
+
+.solve-eyebrow {
+  display: block;
+
+  margin-bottom: 10px;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  letter-spacing: 0.14em;
+
+  opacity: 0.4;
+}
+
+.solve-panel h3 {
+  margin: 0;
+
+  font-size: 29px;
+  font-weight: 500;
+
+  line-height: 0.98;
+
+  letter-spacing: -0.045em;
+}
+
+.solve-panel > p {
+  margin: 13px 0 19px;
+
+  font-size: 9px;
+  line-height: 1.55;
+
+  opacity: 0.48;
+}
+
+
+/* ---------------------------------------------------------
+   SOLVE OPTIONS
+   --------------------------------------------------------- */
+
+.solve-options {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.solve-option {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  min-height: 62px;
+
+  padding: 10px;
+
+  background: #ffffff;
+
+  border:
+    1px solid rgba(10, 10, 10, 0.11);
+
+  border-radius: 10px;
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+}
+
+.solve-option-icon {
+  width: 34px;
+  height: 34px;
+
+  flex: 0 0 34px;
+
+  display: grid;
+  place-items: center;
+
+  color: #0a0a0a;
+  background: #ffffff;
+
+  border:
+    1px solid rgba(10, 10, 10, 0.1);
+
+  border-radius: 8px;
+}
+
+.solve-option > div:last-child {
+  min-width: 0;
+}
+
+.solve-option strong {
+  display: block;
+
+  margin-bottom: 4px;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.solve-option span {
+  display: block;
+
+  font-size: 8px;
+  line-height: 1.4;
+
+  opacity: 0.43;
+}
+
+
+/* ---------------------------------------------------------
+   CONCEPT REVEAL
+   --------------------------------------------------------- */
+
+.solve-concept-card {
+  position: absolute;
+
+  z-index: 14;
+
+  left: 34px;
+  top: 190px;
+
+  width: 270px;
+
+  padding: 21px;
+
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.98);
+
+  border:
+    1px solid rgba(10, 10, 10, 0.15);
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 18px 50px rgba(10, 10, 10, 0.07);
+}
+
+.solve-concept-eyebrow {
+  display: block;
+
+  margin-bottom: 8px;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  letter-spacing: 0.14em;
+
+  opacity: 0.4;
+}
+
+.solve-concept-card > strong {
+  display: block;
+
+  margin-bottom: 8px;
+
+  font-size: 23px;
+  font-weight: 500;
+
+  line-height: 1;
+
+  letter-spacing: -0.04em;
+}
+
+.solve-concept-card > p {
+  margin: 0;
+
+  font-size: 9px;
+  line-height: 1.55;
+
+  opacity: 0.48;
+}
+
+
+/* ---------------------------------------------------------
+   TECHNICAL TERM
+   --------------------------------------------------------- */
+
+.solve-term {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  margin-top: 18px;
+  padding-top: 15px;
+
+  border-top:
+    1px solid rgba(10, 10, 10, 0.1);
+}
+
+.solve-term > svg {
+  flex-shrink: 0;
+}
+
+.solve-term div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.solve-term span {
+  font-size: 6px;
+  font-weight: 700;
+
+  letter-spacing: 0.12em;
+
+  opacity: 0.35;
+}
+
+.solve-term strong {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+
+/* =========================================================
+   SOLVED ARCHITECTURE
+   ========================================================= */
+
+.solve-architecture {
+  position: absolute;
+
+  z-index: 7;
+
+  left: 50%;
+  top: 132px;
+
+  width: 520px;
+  height: 310px;
+
+  transform: translateX(-50%);
+
+  pointer-events: none;
+}
+
+
+/* ---------------------------------------------------------
+   USER → LOAD BALANCER
+   --------------------------------------------------------- */
+
+.solve-line-user-lb {
+  position: absolute;
+
+  z-index: 1;
+
+  top: -54px;
+  left: 50%;
+
+  width: 1px;
+  height: 76px;
+
+  background:
+    rgba(10, 10, 10, 0.32);
+
+  transform: translateX(-50%);
+  transform-origin: top center;
+}
+
+
+/* ---------------------------------------------------------
+   LOAD BALANCER
+   --------------------------------------------------------- */
+
+.solve-load-balancer {
+  position: absolute;
+
+  z-index: 6;
+
+  top: 20px;
+  left: 50%;
+
+  transform: translateX(-50%);
+}
+
+.solve-load-balancer .story-node {
+  width: 164px;
+}
+
+
+/* ---------------------------------------------------------
+   ROUTING LINES
+   --------------------------------------------------------- */
+
+.solve-routing-lines {
+  position: absolute;
+
+  z-index: 1;
+
+  top: 94px;
+  left: 0;
+
+  width: 100%;
+  height: 132px;
+
+  overflow: visible;
+
+  pointer-events: none;
+}
+
+.solve-route {
+  fill: none;
+
+  stroke:
+    rgba(10, 10, 10, 0.32);
+
+  stroke-width: 1;
+
+  vector-effect:
+    non-scaling-stroke;
+}
+
+
+/* ---------------------------------------------------------
+   THREE SERVERS
+   --------------------------------------------------------- */
+
+.solve-server {
+  position: absolute;
+
+  z-index: 6;
+
+  top: 218px;
+}
+
+.solve-server .story-node {
+  width: 138px;
+  min-height: 68px;
+}
+
+.solve-server-one {
+  left: 20px;
+}
+
+.solve-server-two {
+  left: 50%;
+
+  transform: translateX(-50%);
+}
+
+.solve-server-three {
+  right: 20px;
+}
+
+
+/* ---------------------------------------------------------
+   DISTRIBUTED REQUESTS
+   --------------------------------------------------------- */
+
+.solve-request {
+  position: absolute;
+
+  z-index: 5;
+
+  top: 101px;
+  left: 50%;
+
+  width: 6px;
+  height: 6px;
+
+  margin-left: -3px;
+
+  border-radius: 50%;
+
+  background: #0a0a0a;
+
+  box-shadow:
+    0 0 0 3px #ffffff;
+}
+
+
+/* =========================================================
+   SOLVE SUCCESS
+   ========================================================= */
+
+.solve-success {
+  position: absolute;
+
+  z-index: 14;
+
+  left: 34px;
+  bottom: 34px;
+
+  width: 260px;
+
+  padding: 20px 21px;
+
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.98);
+
+  border:
+    1px solid rgba(10, 10, 10, 0.15);
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 18px 50px rgba(10, 10, 10, 0.07);
+}
+
+.solve-success-eyebrow {
+  display: block;
+
+  margin-bottom: 8px;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  letter-spacing: 0.14em;
+
+  opacity: 0.4;
+}
+
+.solve-success > strong {
+  display: block;
+
+  margin-bottom: 9px;
+
+  font-size: 21px;
+  font-weight: 500;
+
+  line-height: 1.05;
+
+  letter-spacing: -0.04em;
+}
+
+.solve-success > p {
+  margin: 0;
+
+  font-size: 9px;
+  line-height: 1.55;
+
+  opacity: 0.48;
+}
+
+
+/* =========================================================
+   RESPONSIVE — BASE
+   ========================================================= */
+
+@media (max-width: 1050px) {
+  .solve-panel,
+  .solve-concept-card,
+  .solve-success {
+    left: 22px;
+  }
+
+  .solve-panel {
+    width: 245px;
+  }
+
+  .solve-concept-card {
+    width: 240px;
+  }
+
+  .solve-architecture {
+    left: 59%;
+
+    width: 480px;
+  }
+}
+
+
+@media (max-width: 900px) {
   .system-story {
-    padding:
-      100px
-      24px
-      120px;
+    padding-top: 100px;
+  }
+
+  .story-demo {
+    padding-left: 24px;
+    padding-right: 24px;
   }
 
   .story-demo-progress {
@@ -811,8 +1583,58 @@
 }
 
 
-@media (max-width: 700px) {
+/* =========================================================
+   RESPONSIVE — BREAK / SOLVE
+   ========================================================= */
 
+@media (max-width: 800px) {
+  .break-traffic-panel {
+    top: 24px;
+    left: 20px;
+
+    width: 190px;
+  }
+
+  .break-health-panel {
+    top: 24px;
+    right: 20px;
+
+    width: 160px;
+  }
+
+  .solve-panel {
+    top: 120px;
+
+    width: 220px;
+  }
+
+  .solve-concept-card {
+    top: 180px;
+
+    width: 220px;
+  }
+
+  .solve-architecture {
+    left: 64%;
+
+    width: 420px;
+  }
+
+  .solve-server .story-node {
+    width: 115px;
+  }
+
+  .solve-server-one {
+    left: 10px;
+  }
+
+  .solve-server-three {
+    right: 10px;
+  }
+}
+
+
+@media (max-width: 700px) {
   .system-story-intro {
     text-align: left;
   }
@@ -825,7 +1647,71 @@
     display: none;
   }
 
+  .story-demo {
+    padding:
+      32px
+      14px
+      40px;
+  }
+
   .story-demo-canvas {
     min-height: 620px;
+  }
+}
+
+
+@media (max-width: 650px) {
+  .solve-panel,
+  .solve-concept-card,
+  .solve-success {
+    left: 14px;
+    right: 14px;
+
+    width: auto;
+  }
+
+  .solve-panel {
+    top: 78px;
+  }
+
+  .solve-concept-card {
+    top: 120px;
+  }
+
+  .solve-architecture {
+    left: 50%;
+    top: 250px;
+
+    width: calc(100% - 30px);
+  }
+
+  .solve-success {
+    bottom: 20px;
+  }
+}
+
+
+@media (max-width: 600px) {
+  .break-traffic-panel {
+    left: 14px;
+
+    width: 165px;
+  }
+
+  .break-health-panel {
+    right: 14px;
+
+    width: 135px;
+  }
+
+  .health-value {
+    font-size: 28px;
+  }
+
+  .break-result {
+    left: 14px;
+    bottom: 18px;
+
+    width: 220px;
   }
 }
