@@ -136,6 +136,67 @@ export default function SystemStory() {
   };
 };
       /* =====================================================
+         STORY PROGRESS INDICATOR
+         One underline. Its position is derived from a scrubbed
+         index (0 = BUILD … 4 = CHALLENGE) and the live label
+         geometry, so it follows the scroll in both directions
+         and stays aligned after resizes.
+      ===================================================== */
+
+      const PROGRESS_STEPS = [
+        ".progress-build",
+        ".progress-break",
+        ".progress-solve",
+        ".progress-learn",
+        ".progress-challenge",
+      ];
+
+      const progressState = { index: 0 };
+
+      const getProgressBox = (selector: string) => {
+        const label =
+          sectionRef.current?.querySelector(
+            selector
+          ) as HTMLElement | null;
+
+        return label
+          ? { x: label.offsetLeft, width: label.offsetWidth }
+          : { x: 0, width: 0 };
+      };
+
+      const renderProgressIndicator = () => {
+        const indicator =
+          sectionRef.current?.querySelector(
+            ".story-progress-indicator"
+          ) as HTMLElement | null;
+
+        if (!indicator) return;
+
+        const last = PROGRESS_STEPS.length - 1;
+        const index = gsap.utils.clamp(0, last, progressState.index);
+        const fromStep = Math.floor(index);
+        const toStep = Math.min(fromStep + 1, last);
+        const progress = index - fromStep;
+
+        const from = getProgressBox(PROGRESS_STEPS[fromStep]);
+        const to = getProgressBox(PROGRESS_STEPS[toStep]);
+
+        gsap.set(indicator, {
+          x: gsap.utils.interpolate(from.x, to.x, progress),
+          width: gsap.utils.interpolate(
+            from.width,
+            to.width,
+            progress
+          ),
+        });
+      };
+
+      renderProgressIndicator();
+
+      window.addEventListener("resize", renderProgressIndicator);
+      document.fonts?.ready.then(renderProgressIndicator);
+
+      /* =====================================================
          INITIAL BUILD STATE
       ===================================================== */
 
@@ -477,6 +538,21 @@ export default function SystemStory() {
           anticipatePin: 1,
         },
       });
+
+      /* Slides the shared progress underline alongside the
+         existing label-opacity transition (same start, same
+         duration, so story timing is unchanged). */
+      const moveProgressIndicator = (index: number) =>
+        timeline.to(
+          progressState,
+          {
+            index,
+            duration: 0.25,
+            ease: "power2.inOut",
+            onUpdate: renderProgressIndicator,
+          },
+          "<"
+        );
 
       /* =====================================================
          01 BUILD — USER
@@ -1226,6 +1302,8 @@ export default function SystemStory() {
         "<"
       );
 
+      moveProgressIndicator(1);
+
       timeline.to(".inspector-guide-built", {
         autoAlpha: 0,
         duration: 0.25,
@@ -1468,6 +1546,8 @@ export default function SystemStory() {
         },
         "<"
       );
+
+      moveProgressIndicator(2);
 
       timeline.to(".inspector-guide-break", {
         autoAlpha: 0,
@@ -1829,6 +1909,8 @@ timeline.to(
   },
   "<"
 );
+
+moveProgressIndicator(3);
 
 /* Remove SOLVE overlays */
 
@@ -2199,6 +2281,8 @@ timeline.to(
   },
   "<"
 );
+
+moveProgressIndicator(4);
 
 /* Mode labels: LEARN MODE → CHALLENGE MODE */
 
@@ -2996,6 +3080,13 @@ timeline.to(".repo-demo-cta", {
 /* Final hold */
 
 timeline.to({}, { duration: 1.5 });
+
+      return () => {
+        window.removeEventListener(
+          "resize",
+          renderProgressIndicator
+        );
+      };
     },
     {
       scope: sectionRef,

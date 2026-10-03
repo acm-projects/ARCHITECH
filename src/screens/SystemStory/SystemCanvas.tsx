@@ -216,6 +216,12 @@ export default function SystemCanvas() {
         <span className="progress-challenge">
           05 CHALLENGE
         </span>
+
+        {/* Single shared underline; GSAP moves it between items */}
+        <div
+          className="story-progress-indicator"
+          aria-hidden="true"
+        />
       </div>
 
       {/* =====================================================

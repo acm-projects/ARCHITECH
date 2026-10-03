@@ -92,25 +92,20 @@
     color 180ms ease;
 }
 
-.story-demo-progress span::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.9);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 180ms ease;
-}
-
 .story-demo-progress .active {
   opacity: 1;
 }
 
-.story-demo-progress .active::after {
-  transform: scaleX(1);
+/* One shared underline. x/width are set from the active
+   label's geometry by SystemStory.tsx. */
+.story-progress-indicator {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
 }
 
 /* =========================================================
