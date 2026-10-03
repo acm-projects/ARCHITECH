@@ -2,18 +2,145 @@ import type { ReactNode } from "react";
 
 import {
   Activity,
+  ArrowRight,
   Bot,
   Box,
+  Check,
   ChevronRight,
   Cloud,
+  Cpu,
   Database,
   GitFork,
+  Globe,
   Layers3,
+  Monitor,
   Play,
   Plus,
   Server,
   UserRound,
 } from "lucide-react";
+
+type ChallengeRequirement = {
+  label: string;
+  value: string;
+};
+
+const CHALLENGE_RESULT_ROWS: ChallengeRequirement[] = [
+  { label: "Target latency", value: "< 200 ms" },
+  { label: "Simulated latency", value: "142 ms" },
+];
+
+const CHALLENGE_REQUIREMENTS: ChallengeRequirement[] = [
+  { label: "Concurrent users", value: "500K" },
+  { label: "Request rate", value: "25K req/s" },
+  { label: "Target latency", value: "< 200 ms" },
+  { label: "Availability", value: "99.9%" },
+  { label: "Read / Write", value: "80 / 20" },
+];
+
+/* =========================================================
+   FINAL DEMO — REPOSITORY IMPORT (static demo content)
+========================================================= */
+
+const REPO_DEMO_URL = "github.com/jieCheong/studycast";
+
+const REPO_DEMO_FINDINGS = [
+  "API routes",
+  "PostgreSQL",
+  "Redis",
+  "Background workers",
+  "External AI services",
+];
+
+type RepoDemoComponent = {
+  id: string;
+  type: string;
+  name: string;
+  icon: ReactNode;
+};
+
+/* Order matches the build-up order in the timeline. */
+const REPO_DEMO_COMPONENTS: RepoDemoComponent[] = [
+  {
+    id: "user",
+    type: "CLIENT",
+    name: "User",
+    icon: <UserRound size={19} strokeWidth={1.7} />,
+  },
+  {
+    id: "web",
+    type: "FRONTEND",
+    name: "Web App",
+    icon: <Monitor size={19} strokeWidth={1.7} />,
+  },
+  {
+    id: "api",
+    type: "BACKEND",
+    name: "API Server",
+    icon: <Server size={19} strokeWidth={1.7} />,
+  },
+  {
+    id: "redis",
+    type: "CACHE",
+    name: "Redis",
+    icon: <Layers3 size={19} strokeWidth={1.7} />,
+  },
+  {
+    id: "postgres",
+    type: "DATA",
+    name: "PostgreSQL",
+    icon: <Database size={19} strokeWidth={1.7} />,
+  },
+  {
+    id: "ai",
+    type: "EXTERNAL",
+    name: "AI Services",
+    icon: <Globe size={19} strokeWidth={1.7} />,
+  },
+  {
+    id: "queue",
+    type: "QUEUE",
+    name: "Job Queue",
+    icon: <Box size={19} strokeWidth={1.7} />,
+  },
+  {
+    id: "worker",
+    type: "WORKER",
+    name: "Audio Worker",
+    icon: <Cpu size={19} strokeWidth={1.7} />,
+  },
+];
+
+/*
+ * Connection paths in the 560 × 538 architecture frame.
+ * Node frame: 148 × 62; columns centred at x = 80 / 280 / 480.
+ * Rows (top): 0 / 92 / 184 / 292 / 384 / 476. Lines run from a
+ * node's bottom edge to the next node's top edge.
+ */
+const REPO_DEMO_LINES = [
+  { id: "user-web", d: "M280 62 V92" },
+  { id: "web-api", d: "M280 154 V184" },
+  { id: "api-redis", d: "M280 246 C280 274 80 264 80 292" },
+  { id: "api-postgres", d: "M280 246 V292" },
+  { id: "api-ai", d: "M280 246 C280 274 480 264 480 292" },
+  { id: "redis-queue", d: "M80 354 V384" },
+  { id: "queue-worker", d: "M80 446 V476" },
+];
+
+function GitHubMark() {
+  return (
+    <svg
+      className="repo-demo-github"
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+    >
+      <path
+        fill="currentColor"
+        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+      />
+    </svg>
+  );
+}
 
 type StoryNodeProps = {
   type: string;
@@ -37,7 +164,6 @@ function StoryNode({
         <strong>{name}</strong>
       </div>
 
-      <span className="story-node-status" />
     </div>
   );
 }
@@ -158,15 +284,17 @@ export default function SystemCanvas() {
               }
             />
 
-            <ToolboxItem
-              name="Cache"
-              icon={
-                <Layers3
-                  size={16}
-                  strokeWidth={1.6}
-                />
-              }
-            />
+            <div className="toolbox-cache">
+              <ToolboxItem
+                name="Cache"
+                icon={
+                  <Layers3
+                    size={16}
+                    strokeWidth={1.6}
+                  />
+                }
+              />
+            </div>
 
             <ToolboxItem
               name="Queue"
@@ -592,17 +720,136 @@ export default function SystemCanvas() {
               </div>
 
               {/* =============================================
-                  04 LEARN — CANVAS HIGHLIGHT
+                  04 LEARN
               ============================================= */}
 
-              <div className="learn-canvas-focus">
-                <span>SELECTED COMPONENT</span>
+              {/* =============================================
+                  05 CHALLENGE — INSTAGRAM
+                  Reuses the solved architecture above; only a
+                  compact identifier is added to the canvas.
+              ============================================= */}
 
-                <strong>Load Balancer</strong>
+              <div className="challenge-canvas-tag">
+                <span>CHALLENGE</span>
+                <strong>Instagram · Scaling</strong>
+              </div>
 
-                <p>
-                  See why this component changed the system.
-                </p>
+              {/* Added by the challenge drag; hidden until dropped */}
+
+              <span className="challenge-cache-link" />
+
+              <div className="challenge-cache">
+                <StoryNode
+                  type="MEMORY"
+                  name="Cache"
+                  icon={
+                    <Layers3
+                      size={21}
+                      strokeWidth={1.7}
+                    />
+                  }
+                />
+              </div>
+            </div>
+
+            {/* ===============================================
+                FINAL DEMO — REPOSITORY IMPORT LAYER
+                Separate from the build area so the Instagram
+                exercise can fade out as one unit.
+            =============================================== */}
+
+            <div className="repo-demo-layer">
+              <div className="repo-demo-import">
+                <span className="repo-demo-kicker">
+                  IMPORT REPOSITORY
+                </span>
+
+                <strong className="repo-demo-title">
+                  Map your architecture
+                </strong>
+
+                <div className="repo-demo-input-row">
+                  <div className="repo-demo-field">
+                    <GitHubMark />
+
+                    <span className="repo-demo-field-value">
+                      <span className="repo-demo-placeholder">
+                        GitHub repository URL
+                      </span>
+
+                      <span className="repo-demo-url">
+                        {REPO_DEMO_URL}
+                      </span>
+                    </span>
+                  </div>
+
+                  <button
+                    className="repo-demo-import-button"
+                    type="button"
+                  >
+                    Import
+                  </button>
+                </div>
+              </div>
+
+              <div className="repo-demo-analysis">
+                <span className="repo-demo-kicker">
+                  ANALYZING REPOSITORY
+                </span>
+
+                <strong className="repo-demo-analysis-repo">
+                  jieCheong/studycast
+                </strong>
+
+                <span className="repo-demo-progress">
+                  <span className="repo-demo-progress-fill" />
+                </span>
+
+                <ul className="repo-demo-findings">
+                  {REPO_DEMO_FINDINGS.map((finding) => (
+                    <li
+                      key={finding}
+                      className="repo-demo-finding"
+                    >
+                      <Check
+                        size={10}
+                        strokeWidth={2}
+                      />
+
+                      <span>{finding}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="repo-demo-architecture">
+                <svg
+                  className="repo-demo-lines"
+                  viewBox="0 0 560 538"
+                  aria-hidden="true"
+                >
+                  {REPO_DEMO_LINES.map((line) => (
+                    <path
+                      key={line.id}
+                      className={`repo-demo-line repo-demo-line-${line.id}`}
+                      d={line.d}
+                      pathLength={1}
+                    />
+                  ))}
+                </svg>
+
+                {REPO_DEMO_COMPONENTS.map((component) => (
+                  <div
+                    key={component.id}
+                    className={`repo-demo-node repo-demo-node-${component.id}`}
+                  >
+                    <StoryNode
+                      type={component.type}
+                      name={component.name}
+                      icon={component.icon}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -627,8 +874,28 @@ export default function SystemCanvas() {
                 strokeWidth={1.5}
               />
 
-              Run system
+              <span className="learn-run-label">
+                Run system
+              </span>
             </button>
+
+            {/* Final demo CTA; replaces Run system at the end */}
+
+            <div className="repo-demo-cta">
+              <span>Map your own architecture.</span>
+
+              <button
+                className="repo-demo-cta-button"
+                type="button"
+              >
+                Get started
+
+                <ArrowRight
+                  size={11}
+                  strokeWidth={1.8}
+                />
+              </button>
+            </div>
           </div>
         </main>
 
@@ -995,7 +1262,176 @@ export default function SystemCanvas() {
               />
             </button>
           </div>
+
+          {/* =================================================
+              GUIDE — CHALLENGE
+          ================================================= */}
+
+          <div className="inspector-guide inspector-guide-challenge">
+            <div className="learn-guide-heading">
+              <div className="learn-guide-icon">
+                <Activity
+                  size={15}
+                  strokeWidth={1.6}
+                />
+              </div>
+
+              <div>
+                <span>CHALLENGE MODE</span>
+                <strong>Instagram</strong>
+                <em>Scaling Challenge</em>
+              </div>
+            </div>
+
+            <div className="challenge-spec-section">
+              <span className="challenge-spec-label">
+                REQUIREMENTS
+              </span>
+
+              <dl className="challenge-spec-list">
+                {CHALLENGE_REQUIREMENTS.map((requirement) => (
+                  <div key={requirement.label}>
+                    <dt>{requirement.label}</dt>
+                    <dd>{requirement.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <div className="challenge-spec-section">
+              <span className="challenge-spec-label">TASK</span>
+
+              <p className="challenge-spec-task">
+                Modify the architecture to satisfy the
+                requirements.
+              </p>
+            </div>
+          </div>
+
+          {/* =================================================
+              GUIDE — CHALLENGE RESULT
+          ================================================= */}
+
+          <div className="inspector-guide inspector-guide-challenge-result">
+            <div className="learn-guide-heading">
+              <div className="learn-guide-icon">
+                <Check
+                  size={15}
+                  strokeWidth={1.8}
+                />
+              </div>
+
+              <div>
+                <span>CHALLENGE RESULT</span>
+                <strong>Requirements met</strong>
+                <em>Instagram · Scaling Challenge</em>
+              </div>
+            </div>
+
+            <div className="challenge-spec-section">
+              <span className="challenge-spec-label">LATENCY</span>
+
+              <dl className="challenge-spec-list">
+                {CHALLENGE_RESULT_ROWS.map((row) => (
+                  <div key={row.label}>
+                    <dt>{row.label}</dt>
+                    <dd>{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+
+          {/* =================================================
+              GUIDE — IMPORTED PROJECT OVERVIEW
+          ================================================= */}
+
+          <div className="inspector-guide inspector-guide-repo">
+            <div className="learn-guide-heading">
+              <div className="learn-guide-icon">
+                <GitFork
+                  size={15}
+                  strokeWidth={1.6}
+                />
+              </div>
+
+              <div>
+                <span>SYSTEM OVERVIEW</span>
+                <strong>StudyCast</strong>
+                <em>
+                  {REPO_DEMO_COMPONENTS.length} components
+                  detected
+                </em>
+              </div>
+            </div>
+
+            <div className="challenge-spec-section">
+              <span className="challenge-spec-label">
+                COMPONENTS
+              </span>
+
+              <dl className="challenge-spec-list repo-demo-component-list">
+                {REPO_DEMO_COMPONENTS.map((component) => (
+                  <div key={component.id}>
+                    <dt>{component.name}</dt>
+                    <dd>{component.type}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <div className="repo-demo-mapped">
+              <Check
+                size={11}
+                strokeWidth={2}
+              />
+
+              <span>Architecture mapped</span>
+            </div>
+          </div>
         </aside>
+
+        {/* ===================================================
+            DEMO CURSOR
+            Single shared cursor. The layer stays hidden until
+            05 CHALLENGE, so 01 BUILD renders unchanged.
+        =================================================== */}
+
+        <div
+          className="challenge-cursor-layer"
+          aria-hidden="true"
+        >
+          <div className="story-drag-ghost story-drag-ghost-cache">
+            <div className="story-drag-ghost-icon">
+              <Layers3
+                size={15}
+                strokeWidth={1.7}
+              />
+            </div>
+
+            <div className="story-drag-ghost-copy">
+              <strong>Cache</strong>
+              <span>In-memory store</span>
+            </div>
+          </div>
+
+          <div className="story-demo-cursor">
+            <svg
+              className="story-demo-cursor-icon"
+              viewBox="0 0 20 24"
+            >
+              <path
+                d="M2 2 L2 19 L6.5 14.8 L9.6 21.6 L12.4 20.4 L9.3 13.7 L15.6 13.7 Z"
+                fill="#0a0a0a"
+                stroke="#ffffff"
+                strokeWidth="1.3"
+                strokeLinejoin="round"
+              />
+            </svg>
+
+            <span className="story-demo-cursor-label">DRAG</span>
+          </div>
+        </div>
       </div>
     </div>
   );
