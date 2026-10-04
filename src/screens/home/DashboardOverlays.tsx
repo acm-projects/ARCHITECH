@@ -29,7 +29,7 @@ export function SearchPalette({
         className="command-palette"
         role="dialog"
         aria-modal="true"
-        aria-label="Search ARCHITEch"
+        aria-label="Search ARCHITECT"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="command-input">

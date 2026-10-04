@@ -16,7 +16,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error("ARCHITEch render error", error, info);
+    console.error("ARCHITECT render error", error, info);
   }
 
   render() {
@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <span>ARCHITECH</span>
           <h1>Something went wrong.</h1>
           <p>Your saved workspace is still stored locally. Reload the app to try again.</p>
-          <button onClick={() => window.location.reload()}>Reload ARCHITEch</button>
+          <button onClick={() => window.location.reload()}>Reload ARCHITECT</button>
         </div>
       </main>
     );

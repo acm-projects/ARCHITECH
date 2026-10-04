@@ -1,6 +1,6 @@
-# ARCHITEch product and interface rules
+# ARCHITECT product and interface rules
 
-ARCHITEch is a systems-design workbench. It should look and behave like a purpose-built engineering tool, not a generic SaaS template or an AI chat product.
+ARCHITECT is a systems-design workbench. It should look and behave like a purpose-built engineering tool, not a generic SaaS template or an AI chat product.
 
 ## Product identity
 
@@ -22,7 +22,7 @@ ARCHITEch is a systems-design workbench. It should look and behave like a purpos
 - Avoid symmetrical "hero + three features + CTA" composition. Layout should follow the task.
 - Do not use generic bento grids as decoration.
 - Use whitespace to separate tasks, not to make screens look premium or sparse.
-- Keep controls compact. ARCHITEch should tolerate high information density.
+- Keep controls compact. ARCHITECT should tolerate high information density.
 
 ## Typography and copy
 
@@ -73,7 +73,7 @@ AI assistance is not permission to "accept all."
 
 Before shipping a UI change, ask:
 
-1. Does this look like ARCHITEch specifically, or could it belong to any AI SaaS?
+1. Does this look like ARCHITECT specifically, or could it belong to any AI SaaS?
 2. Is this surface necessary, or is it another card around existing content?
 3. Is the copy telling the user something useful, or narrating the interface?
 4. Is motion communicating system state, or decorating the page?

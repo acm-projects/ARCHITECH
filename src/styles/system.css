@@ -37,7 +37,6 @@
   --color-danger: #b42318;
   --color-focus: var(--neutral-950);
   --color-ink-deep: #0a0a0a;
-  --color-accent-yellow: #fbf494;
 
   --radius-xs: 1px;
   --radius-control: 2px;
@@ -203,7 +202,6 @@ pre { font-family: var(--font-mono); }
   .ai-panel,
   .project-list,
   .mode-card,
-  .level-card,
   .new-project-modal,
   .manage-repos-modal,
   .export-modal,

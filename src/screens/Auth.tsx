@@ -1,7 +1,7 @@
 // useState - lets page remember temporary values while user interacts
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { ArchieMark, Button, Icon, StatusMessage } from "../components/ui";
+import { ArchieMark, Icon, StatusMessage } from "../components/ui";
 
 // just for the frontend stage
 import {
@@ -366,6 +366,17 @@ export function AuthPage({
   );
 }
 
+// Step 1 rows; order and copy are presentation only, the value is the ExperienceLevel
+const EXPERIENCE_OPTIONS: ReadonlyArray<{
+  level: ExperienceLevel;
+  index: string;
+  description: string;
+}> = [
+  { level: "Beginner", index: "01", description: "I'm learning how systems fit together." },
+  { level: "Intermediate", index: "02", description: "I understand the basics and want to practice designing systems." },
+  { level: "Advanced", index: "03", description: "I'm comfortable with system design and want more challenging scenarios." },
+];
+
 /* BACKEND INTEGRATION:
    The final selected experience level should be saved to the authenticated
    user's profile on the backend.
@@ -390,6 +401,16 @@ export function Onboarding({
   // Message shown on the GitHub step.
   // For now this is only used to explain that OAuth is not connected yet.
   const [githubMessage, setGithubMessage] = useState("");
+
+  // Move focus to the new heading when the step changes so keyboard and
+  // screen-reader users land at the top of the new step (not on first render).
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const shownStep = useRef(step);
+  useEffect(() => {
+    if (shownStep.current === step) return;
+    shownStep.current = step;
+    headingRef.current?.focus();
+  }, [step]);
 
   /*
      BACKEND INTEGRATION — EXPERIENCE LEVEL
@@ -460,245 +481,154 @@ export function Onboarding({
 
   return (
     <main className="onboarding">
-      {/* ARCHITECT branding */}
-      <div className="onboarding-brand">
-        <ArchieMark size={30} />
-        <span>ARCHITECT</span>
-      </div>
+      <header className="onboarding-bar">
+        {/* ARCHITECT branding */}
+        <div className="onboarding-brand">
+          <ArchieMark size={24} />
+          <span>ARCHITECT</span>
+        </div>
+
+        {/* Step counter: 01 / 02 -> 02 / 02 */}
+        <span className="onboarding-step" aria-label={`Step ${step} of 2`}>
+          <b>0{step}</b> / 02
+        </span>
+      </header>
 
       <section className="onboarding-shell">
-        <div
-          className={`onboard-card ${
-            step === 1
-              ? "onboarding-level-card"
-              : "onboarding-github-card"
-          }`}
-        >
-          {/* Progress header */}
-          <div className="onboarding-progress-header">
-            <span>PERSONALIZE YOUR EXPERIENCE</span>
-            <span>{step} of 2</span>
-          </div>
-
-          {/* 
-            CSS will use the "complete" class to fill the progress bar
-            completely when the user reaches Step 2.
-          */}
-          <div
-            className={`onboarding-progress-track ${
-              step === 2 ? "complete" : ""
-            }`}
-          >
-            <span />
-          </div>
-
-          {/* STEP 1 — EXPERIENCE LEVEL     */}
-         
+        {/* key={step} remounts the panel so each step fades in at the same position */}
+        <div className="onboarding-panel" key={step}>
+          {/* STEP 1 — EXPERIENCE LEVEL */}
           {step === 1 && (
             <>
               <div className="onboarding-heading">
-                <h1>How comfortable are you with system design?</h1>
+                <h1 ref={headingRef} tabIndex={-1}>
+                  What best describes your <br />
+                  system design experience?
+                </h1>
 
-                <p>
-                  We'll adjust explanations, challenges, and architecture
-                  feedback to your experience.
-                </p>
+                <p>We'll tailor ARCHITECT to your experience.</p>
               </div>
 
-              <div className="level-grid level-grid-new">
-                {/* Beginner */}
-                <button
-                  type="button"
-                  className={`level-card-new ${
-                    level === "Beginner" ? "selected" : ""
-                  }`}
-                  onClick={() => setLevel("Beginner")}
-                >
-                  <div className="level-card-icon">
-                    <ArchieMark variant="beginner" size={46} />
-                  </div>
+              {/* native radios: one selection, arrow-key navigation */}
+              <fieldset className="onboarding-options">
+                <legend className="onboarding-sr-only">System design experience</legend>
 
-                  <div className="level-card-copy">
-                    <div className="level-card-title">
-                      <h3>Beginner</h3>
+                {EXPERIENCE_OPTIONS.map((option) => {
+                  const selected = level === option.level;
 
-                      {level === "Beginner" && (
-                        <span className="level-check">
-                          <Icon name="check" size={14} />
+                  return (
+                    <label
+                      key={option.level}
+                      className={`onboarding-option ${selected ? "is-selected" : ""}`}
+                    >
+                      <input
+                        type="radio"
+                        name="experience-level"
+                        className="onboarding-option-input"
+                        value={option.level}
+                        checked={selected}
+                        onChange={() => setLevel(option.level)}
+                      />
+
+                      <span className="onboarding-option-index" aria-hidden="true">
+                        {option.index}
+                      </span>
+
+                      <span className="onboarding-option-copy">
+                        <span className="onboarding-option-title">{option.level}</span>
+                        <span className="onboarding-option-description">
+                          {option.description}
                         </span>
-                      )}
-                    </div>
+                      </span>
 
-                    <p>I'm new to system design.</p>
+                      <span className="onboarding-option-radio" aria-hidden="true" />
+                    </label>
+                  );
+                })}
+              </fieldset>
 
-                    <ul>
-                      <li>Guided explanations</li>
-                      <li>More hints</li>
-                      <li>Fundamental challenges</li>
-                    </ul>
-                  </div>
-                </button>
+              <button
+                type="button"
+                className="onboarding-primary"
+                onClick={continueToGitHub}
+                disabled={!level}
+              >
+                Continue
+                <Icon name="arrow" size={16} />
+              </button>
 
-                {/* Intermediate */}
-                <button
-                  type="button"
-                  className={`level-card-new ${
-                    level === "Intermediate" ? "selected" : ""
-                  }`}
-                  onClick={() => setLevel("Intermediate")}
-                >
-                  <div className="level-card-icon">
-                    <ArchieMark variant="intermediate" size={46} />
-                  </div>
-
-                  <div className="level-card-copy">
-                    <div className="level-card-title">
-                      <h3>Intermediate</h3>
-
-                      {level === "Intermediate" && (
-                        <span className="level-check">
-                          <Icon name="check" size={14} />
-                        </span>
-                      )}
-                    </div>
-
-                    <p>I understand the core components.</p>
-
-                    <ul>
-                      <li>Balanced guidance</li>
-                      <li>Architecture trade-offs</li>
-                      <li>Realistic constraints</li>
-                    </ul>
-                  </div>
-                </button>
-
-                {/* Advanced */}
-                <button
-                  type="button"
-                  className={`level-card-new ${
-                    level === "Advanced" ? "selected" : ""
-                  }`}
-                  onClick={() => setLevel("Advanced")}
-                >
-                  <div className="level-card-icon">
-                    <ArchieMark variant="advanced" size={46} />
-                  </div>
-
-                  <div className="level-card-copy">
-                    <div className="level-card-title">
-                      <h3>Advanced</h3>
-
-                      {level === "Advanced" && (
-                        <span className="level-check">
-                          <Icon name="check" size={14} />
-                        </span>
-                      )}
-                    </div>
-
-                    <p>I'm comfortable designing systems.</p>
-
-                    <ul>
-                      <li>Minimal hints</li>
-                      <li>Harder constraints</li>
-                      <li>Deeper architecture review</li>
-                    </ul>
-                  </div>
-                </button>
-              </div>
-
-              <div className="onboard-foot onboarding-foot-new">
-                <span>You can change this later in settings.</span>
-
-                <Button onClick={continueToGitHub}>
-                  Continue
-                  <Icon name="arrow" size={16} />
-                </Button>
-              </div>
+              <p className="onboarding-note">You can change this later in settings.</p>
             </>
           )}
 
-          {/* STEP 2 — GITHUB CONNECTION    */}
-     
+          {/* STEP 2 — GITHUB CONNECTION */}
           {step === 2 && (
-            <div className="github-onboarding">
-              <div className="github-onboarding-icon">
-                <Icon name="git" size={32} />
-              </div>
+            <div className="onboarding-github">
+              <span className="onboarding-github-icon">
+                <GitHubMark />
+              </span>
 
-              <div className="onboarding-heading github-onboarding-heading">
-                <h1>Connect your GitHub</h1>
+              <div className="onboarding-heading">
+                <h1 ref={headingRef} tabIndex={-1}>
+                  Bring your work with you.
+                </h1>
 
                 <p>
-                  Connect GitHub to make your ARCHITECT experience more
-                  connected to the projects you're building.
+                  Connect GitHub to link your development workflow with
+                  ARCHITECT.
                 </p>
               </div>
 
-              <div className="github-benefits">
-                <div className="github-benefit">
-                  <span className="github-benefit-check">
-                    <Icon name="check" size={14} />
-                  </span>
-
-                  <div>
-                    <strong>Keep your work connected</strong>
-                    <p>
-                      Link your ARCHITECT experience with your development
-                      workflow.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="github-benefit">
-                  <span className="github-benefit-check">
-                    <Icon name="check" size={14} />
-                  </span>
-
-                  <div>
-                    <strong>Build your developer profile</strong>
-                    <p>
-                      Give ARCHITECT access to GitHub features we add in the
-                      future.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              {/* what GitHub will enable once OAuth exists - not a connected state */}
+              <ul className="onboarding-benefits">
+                <li>
+                  <Icon name="check" size={14} />
+                  Connect your repositories
+                </li>
+                <li>
+                  <Icon name="check" size={14} />
+                  Bring project context into ARCHITECT
+                </li>
+                <li>
+                  <Icon name="check" size={14} />
+                  Keep your development workflow connected
+                </li>
+              </ul>
 
               {githubMessage && (
-                <StatusMessage className="form-message auth-message">
+                <StatusMessage className="onboarding-message">
                   {githubMessage}
                 </StatusMessage>
               )}
 
-              <div className="github-onboarding-actions">
-                <Button
-                  type="button"
-                  className="github-connect-button"
-                  onClick={connectGitHub}
-                >
-                  <Icon name="git" size={18} />
-                  Connect GitHub
-                </Button>
-
-                <button
-                  type="button"
-                  className="github-skip-button"
-                  onClick={skipGitHub}
-                >
-                  Skip for now
-                  <Icon name="arrow" size={14} />
-                </button>
-              </div>
+              <button
+                type="button"
+                className="onboarding-primary"
+                onClick={connectGitHub}
+              >
+                <GitHubMark />
+                Connect GitHub
+                <Icon name="arrow" size={16} />
+              </button>
 
               <button
                 type="button"
-                className="github-back-button"
+                className="onboarding-text-button"
+                onClick={skipGitHub}
+              >
+                Skip for now
+              </button>
+
+              <button
+                type="button"
+                className="onboarding-back"
                 onClick={() => {
                   setGithubMessage("");
                   setStep(1);
                 }}
               >
-                Back to experience level
+                <Icon name="arrow" size={14} />
+                Back
               </button>
             </div>
           )}
