@@ -9,7 +9,7 @@ const routeLayers = [
 ];
 
 test("presentation CSS stays inside the four-layer design system", () => {
-  const index = readFileSync("src/index.css", "utf8").trim();
+  const index = readFileSync("src/index.css", "utf8").replace(/\r\n/g, "\n").trim();
   assert.equal(
     index,
     [
