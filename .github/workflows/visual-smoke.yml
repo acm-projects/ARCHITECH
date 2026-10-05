@@ -5,12 +5,15 @@ on:
   push:
     branches: [main]
     paths:
-      - "src/**"
-      - "tests/visual-consistency.spec.cjs"
+      - "frontend/**"
       - ".github/workflows/visual-smoke.yml"
 
 permissions:
   contents: read
+
+defaults:
+  run:
+    working-directory: frontend
 
 jobs:
   visual-smoke:
@@ -22,6 +25,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
       - name: Install browser test runtime
@@ -30,12 +34,12 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Start app
         run: |
-          npm run dev -- --host 127.0.0.1 > /tmp/architech-vite.log 2>&1 &
+          npm run start -- --hostname 127.0.0.1 --port 5173 > /tmp/architech-next.log 2>&1 &
           for i in {1..30}; do
             if curl --fail --silent http://127.0.0.1:5173 >/dev/null; then exit 0; fi
             sleep 1
           done
-          cat /tmp/architech-vite.log
+          cat /tmp/architech-next.log
           exit 1
       - name: Test desktop, tablet, and mobile routes
         env:
@@ -46,5 +50,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: architech-visual-smoke
-          path: test-results/screens
+          path: frontend/test-results/screens
           if-no-files-found: ignore

@@ -3847,8 +3847,8 @@ textarea {
   opacity: .4;
   background-image: radial-gradient(circle, var(--neutral-300) 1px, transparent 1px);
   background-size: 32px 32px;
-  -webkit-mask-image: radial-gradient(ellipse at center, transparent 0 18%, #000 54%, #000 100%);
-  mask-image: radial-gradient(ellipse at center, transparent 0 18%, #000 54%, #000 100%);
+  -webkit-mask-image: radial-gradient(ellipse at center, transparent 0 18%, black 54%, black 100%);
+  mask-image: radial-gradient(ellipse at center, transparent 0 18%, black 54%, black 100%);
 }
 .system-wires {
   position: absolute;
