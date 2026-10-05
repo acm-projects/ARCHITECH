@@ -1,0 +1,3234 @@
+/* =========================================================
+   ARCHITECT — INTERACTIVE SYSTEM STORY
+   01 BUILD → 02 BREAK → 03 SOLVE → 04 LEARN
+========================================================= */
+
+.system-story {
+  position: relative;
+  width: 100%;
+  padding: 120px 0 160px;
+  overflow: hidden;
+}
+
+/* INTRO */
+
+.system-story-intro {
+  width: min(760px, calc(100% - 48px));
+  margin: 0 auto 76px;
+  text-align: center;
+}
+
+.system-story-step {
+  display: inline-block;
+  margin-bottom: 18px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  opacity: 0.42;
+}
+
+.system-story-intro h2 {
+  margin: 0;
+  font-size: clamp(56px, 7vw, 104px);
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+}
+
+.system-story-intro p {
+  max-width: 440px;
+  margin: 26px auto 0;
+  font-size: 15px;
+  line-height: 1.6;
+  opacity: 0.55;
+}
+
+/* =========================================================
+   BLACK PRODUCT STAGE
+========================================================= */
+
+.story-demo {
+  position: relative;
+  width: 100%;
+  min-height: 790px;
+  padding: 30px clamp(24px, 4vw, 68px) 52px;
+  box-sizing: border-box;
+  color: #fff;
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(255, 255, 255, 0.025),
+      transparent 44%
+    ),
+    #0a0a0a;
+}
+
+/* =========================================================
+   STORY PROGRESS
+========================================================= */
+
+.story-demo-progress {
+  position: relative;
+  z-index: 100;
+  width: min(1180px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(30px, 4vw, 62px);
+  margin: 0 auto 28px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  color: #fff;
+}
+
+.story-demo-progress span {
+  position: relative;
+  padding-bottom: 9px;
+  white-space: nowrap;
+  opacity: 0.44;
+  transition:
+    opacity 180ms ease,
+    color 180ms ease;
+}
+
+.story-demo-progress .active {
+  opacity: 1;
+}
+
+/* One shared underline. x/width are set from the active
+   label's geometry by SystemStory.tsx. */
+.story-progress-indicator {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+}
+
+/* =========================================================
+   MAIN PRODUCT WORKSPACE
+========================================================= */
+
+.story-workspace {
+  position: relative;
+  width: min(1390px, 100%);
+  height: min(690px, calc(100vh - 125px));
+  min-height: 620px;
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 0.82fr)
+    minmax(620px, 3.5fr)
+    minmax(200px, 0.9fr);
+  gap: clamp(20px, 2.2vw, 36px);
+  margin: 0 auto;
+}
+
+/* CENTER */
+
+.story-workspace-center {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-top: 54px;
+  padding-bottom: 60px;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   CANVAS TOOLBAR
+========================================================= */
+
+.learn-canvas-toolbar {
+  position: absolute;
+  z-index: 40;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.learn-project-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.learn-project-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f7f7f3;
+}
+
+.learn-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 10px;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+}
+
+/* =========================================================
+   WHITE SYSTEM CANVAS
+========================================================= */
+
+.story-demo-canvas {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  color: #0a0a0a;
+  background-color: #fff;
+  background-image:
+    radial-gradient(
+      rgba(10, 10, 10, 0.11) 0.75px,
+      transparent 0.75px
+    );
+  background-size: 20px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+}
+
+.story-build-area {
+  position: absolute;
+  inset: 0;
+}
+
+/* =========================================================
+   ARCHITECTURE NODES
+========================================================= */
+
+.story-node-position {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.story-connector {
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-50%);    
+}
+
+.story-user {
+  top: 74px;
+}
+
+.story-server {
+  top: 258px;
+}
+
+.story-database {
+  top: 442px;
+}
+
+.story-node {
+  position: relative;
+  width: 150px;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 13px;
+  box-sizing: border-box;
+  color: #0a0a0a;
+  background: #fff;
+  border: 1px solid rgba(10, 10, 10, 0.16);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px rgba(10, 10, 10, 0.04),
+    0 8px 24px rgba(10, 10, 10, 0.04);
+}
+
+.story-node-icon {
+  width: 35px;
+  height: 35px;
+  flex: 0 0 35px;
+  display: grid;
+  place-items: center;
+  color: #0a0a0a;
+  background: #fff;
+  border: 1px solid rgba(10, 10, 10, 0.11);
+  border-radius: 9px;
+}
+
+.story-node-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.story-node-copy span {
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0.38;
+}
+
+.story-node-copy strong {
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   CONNECTIONS
+========================================================= */
+
+.story-connector {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.connector-user-server {
+  top: 148px;
+  height: 110px;
+}
+
+.connector-server-db {
+  top: 332px;
+  height: 112px;
+}
+
+.story-connector-line {
+  position: absolute;
+  inset: 0;
+  width: 1px;
+  background: rgba(10, 10, 10, 0.3);
+}
+
+.story-connector-arrow {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  padding: 2px;
+  background: #fff;
+  font-size: 10px;
+  transform: translateX(-50%);
+}
+
+.traffic-dot {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0a0a0a;
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 3px #fff;
+}
+
+/* =========================================================
+   LEFT COMPONENT PANEL
+========================================================= */
+
+.learn-toolbox {
+  position: relative;
+  align-self: stretch;
+  width: 100%;
+  height: calc(100% - 20px);
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding: 16px 13px 18px;
+  box-sizing: border-box;
+  color: rgba(255, 255, 255, 0.88);
+  background: #151515;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 11px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+}
+
+.learn-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 15px;
+  padding: 0 3px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.learn-panel-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.learn-panel-heading span {
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  opacity: 0.35;
+}
+
+.learn-panel-heading strong {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.learn-panel-heading > svg {
+  opacity: 0.35;
+}
+
+/* TOOLBOX */
+
+.learn-toolbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.learn-toolbox-item {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.learn-toolbox-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.learn-toolbox-icon {
+  width: 29px;
+  height: 29px;
+  flex: 0 0 29px;
+  display: grid;
+  place-items: center;
+  color: #0a0a0a;
+  background: #f7f7f3;
+  border-radius: 7px;
+}
+
+.learn-toolbox-item > span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 7px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.74);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.learn-toolbox-plus {
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.28;
+}
+
+/* =========================================================
+   BUILD — PRODUCT-DRIVEN LEARNING
+========================================================= */
+
+.toolbox-server,
+.toolbox-database {
+  border-radius: 8px;
+}
+
+.toolbox-server .learn-toolbox-item,
+.toolbox-database .learn-toolbox-item {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.build-complete-flow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.build-complete-flow span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 23px;
+  padding: 0 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 5px;
+  font-weight: 600;
+}
+
+.build-complete-flow i {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 7px;
+  font-style: normal;
+}
+
+/* =========================================================
+   RIGHT INSPECTOR
+========================================================= */
+
+.learn-inspector {
+  position: relative;
+  align-self: stretch;
+  width: 100%;
+  height: calc(100% - 20px);
+  margin-top: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.9);
+  background: #151515;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 11px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+}
+
+.learn-inspector-tabs {
+  height: 41px;
+  display: flex;
+  align-items: stretch;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.learn-inspector-tab {
+  position: relative;
+  padding: 0 8px;
+  color: rgba(255, 255, 255, 0.3);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 6px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.learn-inspector-tab.active {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.learn-inspector-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -1px;
+  height: 1px;
+  background: #fff;
+}
+
+/* =========================================================
+   HEALTH
+========================================================= */
+
+.learn-score-section {
+  padding: 17px 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.learn-panel-kicker {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.34);
+}
+
+.learn-total-score {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 19px;
+}
+
+.learn-total-score strong {
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: -0.055em;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.learn-total-score div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  padding-top: 3px;
+}
+
+.learn-total-score div span:first-child {
+  font-size: 5px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  color: rgba(255, 255, 255, 0.27);
+}
+
+.learn-total-score div span:last-child {
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.learn-score-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.learn-score-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.72;
+}
+
+.learn-score-row > span {
+  font-size: 5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.learn-score-row > div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.learn-score-track {
+  position: relative;
+  width: 100%;
+  height: 1px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.learn-score-fill {
+  display: block;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.learn-score-row strong {
+  width: 16px;
+  text-align: right;
+  font-size: 5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* =========================================================
+   INSPECTOR GUIDE
+========================================================= */
+
+.learn-guide-stack {
+  position: relative;
+  padding-top: 3px;
+}
+
+.inspector-guide {
+  padding: 19px 14px 17px;
+}
+
+.learn-guide-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.learn-guide-icon {
+  width: 29px;
+  height: 29px;
+  flex: 0 0 29px;
+  display: grid;
+  place-items: center;
+  color: #0a0a0a;
+  background: #f7f7f3;
+  border-radius: 7px;
+}
+
+.learn-guide-heading > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.learn-guide-heading > div:last-child span {
+  font-size: 4.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.learn-guide-heading > div:last-child strong {
+  font-size: 8px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.inspector-guide > p {
+  margin: 0;
+  font-size: 6px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.learn-guide-component {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 11px;
+  padding: 8px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.022);
+}
+
+.learn-guide-component svg {
+  opacity: 0.5;
+}
+
+.learn-guide-component strong {
+  font-size: 7px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.learn-guide-action {
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 13px;
+  padding: 0 9px;
+  box-sizing: border-box;
+  color: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 5px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   BOTTOM CONTROLS
+========================================================= */
+
+.learn-bottom-controls {
+  position: absolute;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.learn-mode-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.learn-mode-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f7f7f3;
+}
+
+.learn-run-button {
+  min-height: 27px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  color: #0a0a0a;
+  background: #f7f7f3;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 6px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   BREAK TRAFFIC
+========================================================= */
+
+.break-traffic-panel {
+  position: absolute;
+  z-index: 20;
+  top: 22px;
+  right: 22px;
+  width: 185px;
+  padding: 13px 14px;
+  box-sizing: border-box;
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(10, 10, 10, 0.12);
+  border-radius: 9px;
+  box-shadow: 0 10px 28px rgba(10, 10, 10, 0.05);
+}
+
+.break-panel-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.break-panel-heading span {
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0.38;
+}
+
+.break-panel-heading strong {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.traffic-scale-track {
+  position: relative;
+  height: 2px;
+  margin: 6px 4px 7px;
+  background: rgba(10, 10, 10, 0.12);
+}
+
+.traffic-scale-fill {
+  position: absolute;
+  inset: 0;
+  background: #0a0a0a;
+}
+
+.traffic-scale-thumb {
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #0a0a0a;
+  transform: translate(-50%, -50%);
+}
+
+.traffic-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 5px;
+  opacity: 0.38;
+}
+
+.break-particle {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #0a0a0a;
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.break-particle-1 {
+  margin-left: -18px;
+}
+
+.break-particle-2 {
+  margin-left: 16px;
+}
+
+.break-particle-3 {
+  margin-left: -11px;
+}
+
+.break-particle-4 {
+  margin-left: 10px;
+}
+
+.break-particle-5 {
+  margin-left: -26px;
+}
+
+.break-particle-6 {
+  margin-left: 25px;
+}
+
+.server-warning {
+  position: absolute;
+  z-index: 12;
+  left: calc(100% + 11px);
+  top: 50%;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 7px;
+  color: #0a0a0a;
+  background: #fff;
+  border: 1px solid rgba(10, 10, 10, 0.16);
+  border-radius: 5px;
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  transform: translateY(-50%);
+}
+
+.server-warning span {
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  color: #fff;
+  background: #0a0a0a;
+  font-size: 8px;
+}
+
+.break-result {
+  position: absolute;
+  z-index: 25;
+  left: 22px;
+  bottom: 22px;
+  width: 225px;
+  padding: 17px 18px;
+  box-sizing: border-box;
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.985);
+  border: 1px solid rgba(10, 10, 10, 0.14);
+  border-radius: 11px;
+  box-shadow: 0 14px 38px rgba(10, 10, 10, 0.07);
+}
+
+.break-result-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  opacity: 0.38;
+}
+
+.break-result > strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.break-result > p {
+  margin: 0;
+  font-size: 7px;
+  line-height: 1.5;
+  opacity: 0.45;
+}
+
+/* =========================================================
+   SOLVE PANEL
+========================================================= */
+
+.solve-panel {
+  position: absolute;
+  z-index: 25;
+  left: 22px;
+  top: 120px;
+  width: 235px;
+  padding: 18px;
+  box-sizing: border-box;
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.985);
+  border: 1px solid rgba(10, 10, 10, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 16px 44px rgba(10, 10, 10, 0.07);
+}
+
+.solve-eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  opacity: 0.38;
+}
+
+.solve-panel h3 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.solve-panel > p {
+  margin: 10px 0 14px;
+  font-size: 7px;
+  line-height: 1.5;
+  opacity: 0.45;
+}
+
+.solve-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solve-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 52px;
+  padding: 8px;
+  box-sizing: border-box;
+  border: 1px solid rgba(10, 10, 10, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.solve-option-icon {
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(10, 10, 10, 0.1);
+  border-radius: 7px;
+  background: #fff;
+}
+
+.solve-option strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.solve-option span {
+  display: block;
+  font-size: 6px;
+  line-height: 1.4;
+  opacity: 0.4;
+}
+
+/* =========================================================
+   SOLVE CONCEPT
+========================================================= */
+
+.solve-concept-card {
+  position: absolute;
+  z-index: 25;
+  left: 22px;
+  top: 170px;
+  width: 225px;
+  padding: 18px;
+  box-sizing: border-box;
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.985);
+  border: 1px solid rgba(10, 10, 10, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 16px 44px rgba(10, 10, 10, 0.07);
+}
+
+.solve-concept-eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  opacity: 0.38;
+}
+
+.solve-concept-card > strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.solve-concept-card > p {
+  margin: 0;
+  font-size: 7px;
+  line-height: 1.5;
+  opacity: 0.45;
+}
+
+.solve-term {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(10, 10, 10, 0.09);
+}
+
+.solve-term > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.solve-term span {
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  opacity: 0.32;
+}
+
+.solve-term strong {
+  font-size: 9px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   SOLVED ARCHITECTURE
+========================================================= */
+
+.solve-architecture {
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  top: 145px;
+  width: 520px;
+  height: 310px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.solve-line-user-lb {
+  position: absolute;
+  z-index: 1;
+
+  /* Only occupy the empty gap between User and Load Balancer */
+  top: -1px;
+  left: 50%;
+  width: 1px;
+  height: 38px;
+
+  background: rgba(10, 10, 10, 0.32);
+
+  transform: translateX(-50%);
+  transform-origin: top center;
+}
+
+.solve-load-balancer {
+  position: absolute;
+  z-index: 7;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.solve-load-balancer .story-node {
+  width: 164px;
+}
+
+.solve-routing-lines {
+  position: absolute;
+  z-index: 2;
+  top: 94px;
+  left: 0;
+  width: 100%;
+  height: 132px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.solve-route {
+  fill: none;
+  stroke: rgba(10, 10, 10, 0.32);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.solve-server {
+  position: absolute;
+  z-index: 7;
+  top: 218px;
+}
+
+.solve-server .story-node {
+  width: 128px;
+  min-height: 65px;
+}
+
+.solve-server-one {
+  left: 25px;
+}
+
+.solve-server-two {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.solve-server-three {
+  right: 25px;
+}
+
+.solve-request {
+  position: absolute;
+  z-index: 6;
+  top: 101px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: #0a0a0a;
+  box-shadow: 0 0 0 3px #fff;
+}
+
+/* =========================================================
+   SOLVE SUCCESS
+========================================================= */
+
+.solve-success {
+  position: absolute;
+  z-index: 25;
+  left: 22px;
+  bottom: 22px;
+  width: 230px;
+  padding: 17px 18px;
+  box-sizing: border-box;
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.985);
+  border: 1px solid rgba(10, 10, 10, 0.14);
+  border-radius: 11px;
+  box-shadow: 0 14px 38px rgba(10, 10, 10, 0.07);
+}
+
+.solve-success-eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  opacity: 0.38;
+}
+
+.solve-success > strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.solve-success > p {
+  margin: 0;
+  font-size: 7px;
+  line-height: 1.5;
+  opacity: 0.45;
+}
+
+/* =========================================================
+   LEARN CANVAS FOCUS
+========================================================= */
+
+.learn-canvas-focus {
+  position: absolute;
+  z-index: 22;
+  right: 22px;
+  bottom: 22px;
+  width: 190px;
+  padding: 13px 14px;
+  box-sizing: border-box;
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(10, 10, 10, 0.12);
+  border-radius: 9px;
+  box-shadow: 0 10px 28px rgba(10, 10, 10, 0.05);
+}
+
+.learn-canvas-focus > span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  opacity: 0.32;
+}
+
+.learn-canvas-focus > strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.learn-canvas-focus > p {
+  margin: 0;
+  font-size: 6px;
+  line-height: 1.5;
+  opacity: 0.44;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1250px) {
+  .story-workspace {
+    grid-template-columns:
+      165px
+      minmax(570px, 1fr)
+      185px;
+    gap: 22px;
+  }
+
+  .learn-toolbox-item {
+    gap: 7px;
+  }
+
+  .learn-toolbox-item > span {
+    font-size: 6px;
+  }
+
+  .solve-architecture {
+    width: 470px;
+  }
+
+  .solve-server-one {
+    left: 10px;
+  }
+
+  .solve-server-three {
+    right: 10px;
+  }
+}
+
+@media (max-width: 1050px) {
+  .story-demo {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .story-workspace {
+    grid-template-columns:
+      130px
+      minmax(520px, 1fr)
+      155px;
+    gap: 16px;
+  }
+
+  .learn-toolbox {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .learn-panel-heading strong {
+    font-size: 8px;
+  }
+
+  .learn-toolbox-plus {
+    display: none;
+  }
+
+  .learn-toolbox-icon {
+    width: 27px;
+    height: 27px;
+    flex-basis: 27px;
+  }
+
+  .learn-inspector-tabs {
+    padding: 0 7px;
+  }
+
+  .learn-score-section,
+  .inspector-guide {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .learn-guide-heading > div:last-child strong {
+    font-size: 7px;
+  }
+
+  .inspector-guide > p {
+    font-size: 5.5px;
+  }
+
+  .solve-architecture {
+    width: 440px;
+  }
+}
+
+@media (max-width: 900px) {
+  .system-story {
+    padding-top: 100px;
+  }
+
+  .story-demo-progress {
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .story-demo-progress::-webkit-scrollbar {
+    display: none;
+  }
+
+  .story-workspace {
+    grid-template-columns:
+      64px
+      minmax(480px, 1fr)
+      125px;
+    gap: 12px;
+  }
+
+  .learn-toolbox {
+    padding: 12px 7px;
+  }
+
+  .learn-panel-heading {
+    display: none;
+  }
+
+  .learn-toolbox-item {
+    justify-content: center;
+    min-height: 39px;
+    padding: 4px;
+  }
+
+  .learn-toolbox-item > span,
+  .learn-toolbox-plus {
+    display: none;
+  }
+
+  .learn-toolbox-icon {
+    width: 29px;
+    height: 29px;
+    flex: 0 0 29px;
+  }
+
+  .learn-total-score strong {
+    font-size: 29px;
+  }
+
+  .learn-score-row span {
+    font-size: 4.5px;
+  }
+
+  .learn-guide-heading > div:last-child {
+    display: none;
+  }
+
+  .solve-panel {
+    width: 210px;
+  }
+
+  .solve-architecture {
+    left: 58%;
+    width: 420px;
+  }
+}
+
+@media (max-width: 700px) {
+  .system-story-intro {
+    text-align: left;
+  }
+
+  .system-story-intro p {
+    margin-left: 0;
+  }
+
+  .story-demo {
+    min-height: 720px;
+    padding: 28px 12px 44px;
+  }
+
+  .story-workspace {
+    height: 620px;
+    grid-template-columns:
+      48px
+      minmax(390px, 1fr);
+    gap: 9px;
+    overflow-x: visible;
+  }
+
+  .story-workspace-center {
+    position: relative;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding-top: 54px;
+    padding-bottom: 60px;
+    box-sizing: border-box;
+  }
+
+  .learn-inspector {
+    position: absolute;
+    z-index: 80;
+    top: 34px;
+    right: 8px;
+    width: 115px;
+    height: auto;
+    margin: 0;
+    opacity: 0.94;
+  }
+
+  .learn-toolbox {
+    margin-top: 34px;
+    padding: 8px 5px;
+  }
+
+  .learn-toolbox-item {
+    min-height: 34px;
+  }
+
+  .learn-toolbox-icon {
+    width: 27px;
+    height: 27px;
+    flex-basis: 27px;
+  }
+
+  .learn-inspector-tabs {
+    height: 34px;
+  }
+
+  .learn-score-section {
+    padding: 10px 8px;
+  }
+
+  .learn-panel-kicker {
+    font-size: 4px;
+  }
+
+  .learn-total-score strong {
+    font-size: 24px;
+  }
+
+  .learn-score-row > div:first-child span {
+    display: none;
+  }
+
+  .learn-score-row > div:first-child {
+    justify-content: flex-end;
+  }
+
+  .inspector-guide {
+    padding: 10px 8px;
+  }
+
+  .learn-guide-icon {
+    width: 25px;
+    height: 25px;
+    flex-basis: 25px;
+  }
+
+  .learn-guide-component strong {
+    font-size: 6px;
+  }
+
+  .inspector-guide > p,
+  .learn-guide-action {
+    display: none;
+  }
+
+  .break-traffic-panel {
+    width: 160px;
+  }
+
+  .solve-panel,
+  .solve-concept-card,
+  .solve-success {
+    left: 14px;
+  }
+
+  .solve-architecture {
+    left: 50%;
+    top: 230px;
+    width: calc(100% - 28px);
+  }
+}
+/* =========================================================
+   04 LEARN — INSPECTOR POLISH
+   ========================================================= */
+
+.inspector-guide-learn-problem,
+.inspector-guide-learn-director,
+.inspector-guide-learn-watch,
+.inspector-guide-learn-share,
+.inspector-guide-learn-concept {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------
+   GUIDE HEADER
+   --------------------------------------------------------- */
+
+.inspector-guide-learn-problem .learn-guide-heading,
+.inspector-guide-learn-director .learn-guide-heading,
+.inspector-guide-learn-watch .learn-guide-heading,
+.inspector-guide-learn-share .learn-guide-heading,
+.inspector-guide-learn-concept .learn-guide-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  margin-bottom: 14px;
+}
+
+.inspector-guide-learn-problem .learn-guide-heading > div:last-child,
+.inspector-guide-learn-director .learn-guide-heading > div:last-child,
+.inspector-guide-learn-watch .learn-guide-heading > div:last-child,
+.inspector-guide-learn-share .learn-guide-heading > div:last-child,
+.inspector-guide-learn-concept .learn-guide-heading > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  min-width: 0;
+}
+
+/* tiny category label */
+
+.inspector-guide-learn-problem .learn-guide-heading span,
+.inspector-guide-learn-director .learn-guide-heading span,
+.inspector-guide-learn-watch .learn-guide-heading span,
+.inspector-guide-learn-share .learn-guide-heading span,
+.inspector-guide-learn-concept .learn-guide-heading span {
+  display: block;
+
+  font-size: 8px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+
+  opacity: 0.42;
+}
+
+/* main heading */
+
+.inspector-guide-learn-problem .learn-guide-heading strong,
+.inspector-guide-learn-director .learn-guide-heading strong,
+.inspector-guide-learn-watch .learn-guide-heading strong,
+.inspector-guide-learn-share .learn-guide-heading strong,
+.inspector-guide-learn-concept .learn-guide-heading strong {
+  display: block;
+
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 600;
+
+  color: rgba(255, 255, 255, 0.94);
+}
+
+/* ---------------------------------------------------------
+   GUIDE ICON
+   --------------------------------------------------------- */
+
+.inspector-guide-learn-problem .learn-guide-icon,
+.inspector-guide-learn-director .learn-guide-icon,
+.inspector-guide-learn-watch .learn-guide-icon,
+.inspector-guide-learn-share .learn-guide-icon,
+.inspector-guide-learn-concept .learn-guide-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+/* ---------------------------------------------------------
+   GUIDE BODY TEXT
+   --------------------------------------------------------- */
+
+.inspector-guide-learn-problem > p,
+.inspector-guide-learn-director > p,
+.inspector-guide-learn-watch > p,
+.inspector-guide-learn-share > p,
+.inspector-guide-learn-concept > p {
+  margin: 0 0 12px;
+
+  font-size: 10px;
+  line-height: 1.6;
+
+  color: rgba(255, 255, 255, 0.56);
+}
+
+/* ---------------------------------------------------------
+   COMPONENT CARD
+   --------------------------------------------------------- */
+
+.inspector-guide-learn-director .learn-guide-component,
+.inspector-guide-learn-concept .learn-guide-component {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  width: 100%;
+  box-sizing: border-box;
+
+  margin: 4px 0 12px;
+  padding: 9px 10px;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.inspector-guide-learn-director .learn-guide-component strong,
+.inspector-guide-learn-concept .learn-guide-component strong {
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 600;
+
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* ---------------------------------------------------------
+   CONCEPT LEARNED BUTTON
+   --------------------------------------------------------- */
+
+.inspector-guide-learn-concept .learn-guide-action {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  box-sizing: border-box;
+
+  margin-top: 12px;
+  padding: 9px 10px;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.72);
+
+  font: inherit;
+  font-size: 9px;
+  font-weight: 600;
+
+  cursor: default;
+}
+
+/* =========================================================
+   RIGHT INSPECTOR — GENERAL SPACING FIX
+   ========================================================= */
+
+.learn-inspector {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.learn-inspector-tabs {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 13px 14px 11px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  font-size: 9px;
+  line-height: 1;
+}
+
+.learn-inspector-tabs span {
+  opacity: 0.35;
+}
+
+.learn-inspector-tabs .active {
+  opacity: 1;
+}
+
+.learn-health {
+  padding: 15px 14px 16px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.learn-section-label {
+  display: block;
+
+  margin-bottom: 9px;
+
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+
+  opacity: 0.36;
+}
+
+.learn-health-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+
+  margin-bottom: 14px;
+}
+
+.inspector-health-value {
+  display: block;
+
+  font-size: 40px;
+  line-height: 0.9;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+}
+
+.inspector-health-label {
+  display: block;
+
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+
+  opacity: 0.46;
+}
+
+.learn-score-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 10px;
+}
+
+.learn-score-grid > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+
+  min-width: 0;
+
+  padding-top: 6px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.learn-score-grid span {
+  overflow: hidden;
+
+  font-size: 8px;
+  line-height: 1.2;
+
+  color: rgba(255, 255, 255, 0.38);
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.learn-score-grid strong {
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 600;
+
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* all guide states get consistent padding */
+
+.inspector-guide {
+  box-sizing: border-box;
+
+  padding: 16px 14px;
+}
+
+/* =========================================================
+   LEARN CANVAS EXPLANATION CARD
+   ========================================================= */
+
+.learn-canvas-focus {
+  box-sizing: border-box;
+}
+
+.learn-canvas-focus-label {
+  display: block;
+
+  margin-bottom: 5px;
+
+  font-size: 7px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+
+  opacity: 0.35;
+}
+
+.learn-canvas-focus > strong {
+  display: block;
+
+  margin-bottom: 8px;
+
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.learn-focus-copy {
+  margin: 0 0 5px;
+
+  font-size: 8px;
+  line-height: 1.45;
+
+  color: rgba(10, 10, 10, 0.55);
+}
+
+.learn-focus-concept {
+  margin-top: 8px;
+  padding-top: 8px;
+
+  border-top: 1px solid rgba(10, 10, 10, 0.1);
+
+  font-weight: 600;
+  color: rgba(10, 10, 10, 0.82);
+}
+
+/* =========================================================
+   ARCHITECT — PRODUCT DEMO CURSOR
+   ---------------------------------------------------------
+   Used during 01 BUILD to visually teach drag & drop.
+   ========================================================= */
+
+.story-workspace {
+  position: relative;
+}
+
+
+/* =========================================================
+   CURSOR
+   ========================================================= */
+
+.story-demo-cursor {
+  position: absolute;
+
+  z-index: 200;
+
+  top: 0;
+  left: 0;
+
+  width: 22px;
+  height: 28px;
+
+  opacity: 0;
+  visibility: hidden;
+
+  pointer-events: none;
+
+  transform-origin: 4px 4px;
+
+  filter:
+    drop-shadow(0 2px 3px rgba(0, 0, 0, 0.18));
+}
+
+
+.story-demo-cursor-icon {
+  display: block;
+
+  width: 20px;
+  height: 24px;
+}
+
+
+/* ---------------------------------------------------------
+   Small DRAG tooltip
+   --------------------------------------------------------- */
+
+.story-demo-cursor-label {
+  position: absolute;
+
+  top: 20px;
+  left: 17px;
+
+  display: block;
+
+  padding: 5px 7px;
+
+  border-radius: 5px;
+
+  background: #0a0a0a;
+  color: #ffffff;
+
+  font-size: 7px;
+  line-height: 1;
+  font-weight: 700;
+
+  letter-spacing: 0.09em;
+
+  white-space: nowrap;
+
+  opacity: 0;
+
+  transform: translateY(3px);
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.14);
+}
+
+
+/* =========================================================
+   DRAG GHOST
+   ---------------------------------------------------------
+   A lightweight copy of the component follows the cursor.
+   ========================================================= */
+
+.story-drag-ghost {
+  position: absolute;
+
+  z-index: 190;
+
+  top: 0;
+  left: 0;
+
+  width: 142px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  box-sizing: border-box;
+
+  padding: 9px 10px;
+
+  border:
+    1px solid rgba(10, 10, 10, 0.18);
+
+  border-radius: 9px;
+
+  background:
+    rgba(255, 255, 255, 0.96);
+
+  color: #0a0a0a;
+
+  box-shadow:
+    0 12px 30px rgba(10, 10, 10, 0.12),
+    0 2px 5px rgba(10, 10, 10, 0.06);
+
+  opacity: 0;
+  visibility: hidden;
+
+  pointer-events: none;
+
+  transform-origin: center center;
+}
+
+
+.story-drag-ghost-icon {
+  width: 28px;
+  height: 28px;
+
+  flex: 0 0 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border:
+    1px solid rgba(10, 10, 10, 0.1);
+
+  border-radius: 6px;
+
+  background: #ffffff;
+}
+
+
+.story-drag-ghost-copy {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+
+.story-drag-ghost-copy strong {
+  font-size: 9px;
+  line-height: 1.2;
+
+  font-weight: 600;
+
+  color: #0a0a0a;
+}
+
+
+.story-drag-ghost-copy span {
+  font-size: 7px;
+  line-height: 1.3;
+
+  color: rgba(10, 10, 10, 0.46);
+}
+
+
+/* =========================================================
+   TOOLBOX — PICKUP FEEDBACK
+   ========================================================= */
+
+.toolbox-server .learn-toolbox-item,
+.toolbox-database .learn-toolbox-item {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+
+/* =========================================================
+   DROP POSITION
+   ---------------------------------------------------------
+   Very subtle ring appears while a component approaches
+   its final position.
+   ========================================================= */
+
+.story-server.story-demo-drop-ready .story-node,
+.story-database.story-demo-drop-ready .story-node {
+  border-color:
+    rgba(10, 10, 10, 0.28);
+
+  box-shadow:
+    0 0 0 3px #ffffff,
+    0 0 0 5px rgba(10, 10, 10, 0.08);
+}
+/* =========================================================
+   DEMO ARTIFACT SAFETY
+   Keep BUILD demo pieces clean and isolated.
+   GSAP controls their visibility.
+   ========================================================= */
+
+.story-demo-cursor {
+  background: transparent !important;
+}
+
+.story-demo-cursor svg {
+  overflow: visible;
+  background: transparent;
+}
+
+.story-demo-cursor::before,
+.story-demo-cursor::after {
+  content: none !important;
+}
+
+.story-drag-ghost::before,
+.story-drag-ghost::after {
+  content: none !important;
+}
+
+/* LEARN card must never become a black overlay */
+.learn-canvas-focus {
+  background: #ffffff;
+  color: #0a0a0a;
+  overflow: hidden;
+}
+/* =========================================================
+   FIX — BREAK TRAFFIC SLIDER
+   Keeps the animated fill/thumb inside the slider itself.
+   ========================================================= */
+
+.traffic-scale {
+  position: relative;
+
+  width: 100%;
+  height: 10px;
+
+  margin: 7px 0 5px;
+}
+
+/* thin gray background line */
+.traffic-scale-track {
+  position: absolute;
+
+  top: 50%;
+  left: 0;
+
+  width: 100%;
+  height: 2px;
+
+  margin: 0;
+
+  background: rgba(10, 10, 10, 0.12);
+
+  transform: translateY(-50%);
+
+  overflow: hidden;
+}
+
+/* animated black progress line */
+.traffic-scale-fill {
+  position: absolute;
+
+  top: 50%;
+  left: 0;
+
+  width: 100%;
+  height: 2px;
+
+  background: #0a0a0a;
+
+  transform-origin: left center;
+
+  /* GSAP controls scaleX */
+}
+
+/* animated circular handle */
+.traffic-scale-thumb {
+  position: absolute;
+
+  top: 50%;
+  left: 0;
+
+  width: 7px;
+  height: 7px;
+
+  box-sizing: border-box;
+
+  border: 1.5px solid #0a0a0a;
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  transform: translate(-50%, -50%);
+
+  z-index: 2;
+}
+
+/* 100 / 1K / 10K / 100K */
+.traffic-scale-labels {
+  display: flex;
+  justify-content: space-between;
+
+  width: 100%;
+
+  margin-top: 3px;
+
+  font-size: 5px;
+  line-height: 1;
+
+  font-weight: 600;
+
+  color: rgba(10, 10, 10, 0.38);
+  opacity: 1;
+}
+/* =========================================================
+   DEMO CURSOR — COORDINATE ANCHOR
+   ========================================================= */
+
+.story-demo-cursor {
+  top: 0 !important;
+  left: 0 !important;
+
+  margin: 0 !important;
+
+  transform-origin: 2px 2px;
+}
+/* =========================================================
+   STORY DEMO — FAKE MOUSE / DRAG DEMONSTRATION
+   ========================================================= */
+
+.story-demo-cursor {
+  position: absolute;
+  z-index: 1000;
+
+  top: 0;
+  left: 0;
+
+  width: 18px;
+  height: 18px;
+
+  pointer-events: none;
+
+  color: #0a0a0a;
+
+  /* IMPORTANT:
+     GSAP controls x/y.
+     Do not center this with translate(-50%, -50%).
+  */
+  transform-origin: 0 0;
+}
+
+.story-demo-cursor svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+
+  fill: #0a0a0a;
+  stroke: #ffffff;
+  stroke-width: 1px;
+
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+}
+
+.story-demo-cursor-label {
+  position: absolute;
+
+  top: 16px;
+  left: 14px;
+
+  padding: 4px 6px;
+
+  color: #ffffff;
+  background: #0a0a0a;
+
+  border-radius: 5px;
+
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+
+  white-space: nowrap;
+
+  pointer-events: none;
+}
+
+/* Dragged copy of the component */
+
+.story-drag-ghost {
+  position: absolute;
+  z-index: 999;
+
+  top: 0;
+  left: 0;
+
+  pointer-events: none;
+
+  will-change: transform;
+}
+
+/* Make the canvas the coordinate system for the demo cursor */
+
+.story-demo-canvas {
+  position: relative;
+}
+
+.story-build-area {
+  position: absolute;
+  inset: 0;
+}
+/* =========================================================
+   04 LEARN — CONCEPT STORY
+   ========================================================= */
+
+.learn-canvas-focus {
+  position: absolute;
+  z-index: 30;
+
+  left: 18px;
+  bottom: 18px;
+
+  width: 210px;
+
+  padding: 12px;
+
+  background: rgba(255, 255, 255, 0.96);
+
+  border: 1px solid rgba(10, 10, 10, 0.12);
+  border-radius: 10px;
+
+  box-shadow:
+    0 8px 28px rgba(10, 10, 10, 0.08);
+
+  backdrop-filter: blur(10px);
+
+  pointer-events: none;
+}
+
+
+/* -----------------------------------------
+   TOP
+   ----------------------------------------- */
+
+.learn-focus-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  margin-bottom: 10px;
+}
+
+
+.learn-canvas-focus-label {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px 6px;
+
+  background: #0a0a0a;
+  color: #ffffff;
+
+  border-radius: 4px;
+
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+
+.learn-focus-step {
+  font-size: 6px;
+  font-weight: 700;
+
+  letter-spacing: 0.07em;
+
+  color: rgba(10, 10, 10, 0.42);
+}
+
+
+/* -----------------------------------------
+   EXPLANATION STEP
+   ----------------------------------------- */
+
+.learn-focus-copy {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 9px;
+
+  margin: 0;
+}
+
+
+.learn-focus-copy > div {
+  min-width: 0;
+}
+
+
+.learn-focus-number {
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 18px;
+  height: 18px;
+
+  border-radius: 50%;
+
+  background: #0a0a0a;
+  color: #ffffff;
+
+  font-size: 7px;
+  font-weight: 700;
+}
+
+
+.learn-focus-copy strong {
+  display: block;
+
+  margin-bottom: 4px;
+
+  font-size: 9px;
+  line-height: 1.3;
+
+  color: #0a0a0a;
+}
+
+
+.learn-focus-copy p {
+  margin: 0;
+
+  font-size: 7px;
+  line-height: 1.55;
+
+  color: rgba(10, 10, 10, 0.56);
+}
+
+
+/* -----------------------------------------
+   TERMINOLOGY
+   ----------------------------------------- */
+
+.learn-focus-term {
+  display: inline-flex;
+
+  margin-top: 7px;
+  padding: 4px 6px;
+
+  border: 1px solid rgba(10, 10, 10, 0.12);
+  border-radius: 5px;
+
+  background: #f7f7f3;
+
+  font-size: 7px;
+  font-weight: 700;
+
+  color: #0a0a0a;
+}
+
+
+.learn-focus-concept-eyebrow {
+  display: block;
+
+  margin-bottom: 4px;
+
+  font-size: 5px;
+  font-weight: 700;
+
+  letter-spacing: 0.08em;
+
+  color: rgba(10, 10, 10, 0.4);
+}
+
+
+/* =========================================================
+   LEARN — REQUEST EXPLANATION
+   ========================================================= */
+
+.learn-request-explanation {
+  margin-top: 10px;
+
+  padding-top: 10px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+.learn-request-step {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+}
+
+
+.learn-request-step > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 auto;
+
+  width: 16px;
+  height: 16px;
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.1);
+
+  font-size: 6px;
+  font-weight: 700;
+
+  color: rgba(255, 255, 255, 0.85);
+}
+
+
+.learn-request-step p {
+  margin: 0;
+}
+
+
+.learn-request-rule {
+  margin-top: 8px;
+  margin-left: 23px;
+
+  font-size: 6px;
+  line-height: 1.45;
+
+  color: rgba(255, 255, 255, 0.42);
+}
+
+/* =========================================================
+   05 CHALLENGE — INSTAGRAM
+   ========================================================= */
+
+/* Canvas identifier; hidden until the challenge timeline reveals it. */
+
+.challenge-canvas-tag {
+  position: absolute;
+  z-index: 25;
+  top: 14px;
+  right: 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 5px 7px;
+
+  color: #0a0a0a;
+  background: #ffffff;
+
+  border: 1px solid rgba(10, 10, 10, 0.14);
+  border-radius: 3px;
+
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.challenge-canvas-tag span {
+  font-size: 5px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+
+  color: rgba(10, 10, 10, 0.42);
+}
+
+.challenge-canvas-tag strong {
+  font-size: 7px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------
+   CHALLENGE INSPECTOR — PROBLEM SPECIFICATION
+   --------------------------------------------------------- */
+
+.inspector-guide-challenge .learn-guide-heading,
+.inspector-guide-challenge-result .learn-guide-heading,
+.inspector-guide-repo .learn-guide-heading {
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.inspector-guide-challenge .learn-guide-heading > div:last-child,
+.inspector-guide-challenge-result .learn-guide-heading > div:last-child,
+.inspector-guide-repo .learn-guide-heading > div:last-child {
+  min-width: 0;
+}
+
+.inspector-guide-challenge .learn-guide-heading span,
+.inspector-guide-challenge-result .learn-guide-heading span,
+.inspector-guide-repo .learn-guide-heading span {
+  font-size: 5px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.inspector-guide-challenge .learn-guide-heading strong,
+.inspector-guide-challenge-result .learn-guide-heading strong,
+.inspector-guide-repo .learn-guide-heading strong {
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 600;
+
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.inspector-guide-challenge .learn-guide-heading em,
+.inspector-guide-challenge-result .learn-guide-heading em,
+.inspector-guide-repo .learn-guide-heading em {
+  font-size: 7px;
+  line-height: 1.2;
+  font-style: normal;
+  font-weight: 500;
+
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.challenge-spec-section + .challenge-spec-section {
+  margin-top: 16px;
+}
+
+.challenge-spec-label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  font-size: 5px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.challenge-spec-list {
+  margin: 0;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.challenge-spec-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  min-height: 24px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.challenge-spec-list dt {
+  font-size: 6.5px;
+  line-height: 1;
+
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.challenge-spec-list dd {
+  margin: 0;
+
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 6.5px;
+  line-height: 1;
+  font-weight: 600;
+
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.challenge-spec-task {
+  margin: 0;
+
+  font-size: 7px;
+  line-height: 1.55;
+
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* ---------------------------------------------------------
+   CHALLENGE — CACHE NODE
+   Sits on the Database row, right of Database, clear of the
+   server routes. Hidden until the challenge drag drops it.
+   --------------------------------------------------------- */
+
+.challenge-cache {
+  position: absolute;
+  z-index: 8;
+  top: 442px;
+  left: calc(50% + 125px);
+
+  visibility: hidden;
+  opacity: 0;
+}
+
+.challenge-cache-link {
+  position: absolute;
+  z-index: 3;
+  top: 478px;
+  left: calc(50% + 75px);
+
+  width: 50px;
+  height: 1px;
+
+  background: rgba(10, 10, 10, 0.3);
+
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+/* ---------------------------------------------------------
+   CHALLENGE — DEMO CURSOR LAYER
+   --------------------------------------------------------- */
+
+.challenge-cursor-layer {
+  position: absolute;
+  z-index: 200;
+  inset: 0;
+
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 1050px) {
+  .challenge-cache {
+    left: calc(50% + 95px);
+  }
+
+  .challenge-cache .story-node {
+    width: 120px;
+  }
+
+  .challenge-cache-link {
+    width: 20px;
+  }
+}
+
+@media (max-width: 700px) {
+  .challenge-cache {
+    left: calc(50% + 85px);
+  }
+
+  .challenge-cache .story-node {
+    width: 100px;
+  }
+
+  .challenge-cache-link {
+    width: 10px;
+  }
+}
+
+/* =========================================================
+   FINAL DEMO — REPOSITORY IMPORT
+   Same workspace, new project. GSAP controls visibility;
+   everything starts hidden so 01–05 render unchanged.
+   ========================================================= */
+
+.repo-demo-layer {
+  position: absolute;
+  z-index: 40;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  pointer-events: none;
+}
+
+.repo-demo-import,
+.repo-demo-analysis {
+  grid-area: 1 / 1;
+
+  display: flex;
+  flex-direction: column;
+
+  box-sizing: border-box;
+
+  color: #0a0a0a;
+
+  visibility: hidden;
+  opacity: 0;
+}
+
+.repo-demo-kicker {
+  display: block;
+
+  margin-bottom: 6px;
+
+  font-size: 6px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+
+  color: rgba(10, 10, 10, 0.4);
+}
+
+/* ---------------------------------------------------------
+   IMPORT FIELD
+   --------------------------------------------------------- */
+
+.repo-demo-import {
+  width: 320px;
+}
+
+.repo-demo-title {
+  margin-bottom: 12px;
+
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.repo-demo-input-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.repo-demo-field {
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: 32px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 0 10px;
+  box-sizing: border-box;
+
+  background: #ffffff;
+  border: 1px solid rgba(10, 10, 10, 0.16);
+  border-radius: 3px;
+}
+
+.repo-demo-github {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+
+  color: #0a0a0a;
+}
+
+.repo-demo-field-value {
+  position: relative;
+
+  min-width: 0;
+  flex: 1 1 auto;
+
+  display: grid;
+
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 7.5px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.repo-demo-placeholder,
+.repo-demo-url {
+  grid-area: 1 / 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.repo-demo-placeholder {
+  color: rgba(10, 10, 10, 0.34);
+}
+
+.repo-demo-url {
+  color: #0a0a0a;
+
+  visibility: hidden;
+  opacity: 0;
+}
+
+.repo-demo-import-button {
+  flex: 0 0 auto;
+
+  padding: 0 13px;
+
+  color: #f7f7f3;
+  background: #0a0a0a;
+
+  border: 1px solid #0a0a0a;
+  border-radius: 3px;
+
+  font: inherit;
+  font-size: 7px;
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------
+   ANALYSIS
+   --------------------------------------------------------- */
+
+.repo-demo-analysis {
+  width: 220px;
+}
+
+.repo-demo-analysis-repo {
+  margin-bottom: 10px;
+
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 9px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.repo-demo-progress {
+  display: block;
+
+  height: 1px;
+  margin-bottom: 10px;
+
+  background: rgba(10, 10, 10, 0.1);
+}
+
+.repo-demo-progress-fill {
+  display: block;
+
+  height: 100%;
+
+  background: #0a0a0a;
+
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.repo-demo-findings {
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.repo-demo-finding {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  min-height: 20px;
+
+  font-size: 8px;
+  line-height: 1;
+
+  color: rgba(10, 10, 10, 0.78);
+
+  visibility: hidden;
+  opacity: 0;
+}
+
+.repo-demo-finding svg {
+  flex: 0 0 auto;
+}
+
+/* ---------------------------------------------------------
+   GENERATED ARCHITECTURE
+   Fixed 560 × 538 frame, centred in the canvas; node 148 × 62.
+   --------------------------------------------------------- */
+
+.repo-demo-architecture {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  width: 560px;
+  height: 538px;
+
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+}
+
+.repo-demo-lines {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: visible;
+}
+
+.repo-demo-line {
+  fill: none;
+  stroke: rgba(10, 10, 10, 0.32);
+  stroke-width: 1;
+
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.repo-demo-node {
+  position: absolute;
+  z-index: 2;
+
+  visibility: hidden;
+  opacity: 0;
+}
+
+.repo-demo-node .story-node {
+  width: 148px;
+  height: 62px;
+  min-height: 62px;
+}
+
+.repo-demo-node-user,
+.repo-demo-node-web,
+.repo-demo-node-api,
+.repo-demo-node-postgres {
+  left: 206px;
+}
+
+.repo-demo-node-redis,
+.repo-demo-node-queue,
+.repo-demo-node-worker {
+  left: 6px;
+}
+
+.repo-demo-node-ai {
+  left: 406px;
+}
+
+.repo-demo-node-user { top: 0; }
+.repo-demo-node-web { top: 92px; }
+.repo-demo-node-api { top: 184px; }
+
+.repo-demo-node-redis,
+.repo-demo-node-postgres,
+.repo-demo-node-ai {
+  top: 292px;
+}
+
+.repo-demo-node-queue { top: 384px; }
+.repo-demo-node-worker { top: 476px; }
+
+/* ---------------------------------------------------------
+   INSPECTOR — PROJECT OVERVIEW
+   --------------------------------------------------------- */
+
+.inspector-guide-repo .learn-guide-heading {
+  margin-bottom: 20px;
+}
+
+.inspector-guide-repo .learn-guide-heading strong {
+  font-size: 13px;
+}
+
+.inspector-guide-repo .learn-guide-heading em {
+  font-size: 7.5px;
+}
+
+.repo-demo-component-list > div {
+  min-height: 23px;
+}
+
+.repo-demo-component-list dt {
+  font-size: 7.5px;
+
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.repo-demo-component-list dd {
+  font-size: 5.5px;
+  letter-spacing: 0.1em;
+
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.repo-demo-mapped {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  margin-top: 18px;
+  padding-top: 12px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 600;
+
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* ---------------------------------------------------------
+   FINAL CTA — replaces Run system in the bottom controls
+   --------------------------------------------------------- */
+
+.repo-demo-cta {
+  display: none;
+  align-items: center;
+  gap: 12px;
+
+  visibility: hidden;
+  opacity: 0;
+}
+
+.repo-demo-cta > span {
+  font-size: 7px;
+  line-height: 1;
+
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.repo-demo-cta-button {
+  min-height: 27px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 0 12px 0 13px;
+  line-height: 1;
+
+  color: #0a0a0a;
+  background: #f7f7f3;
+
+  border: 1px solid #f7f7f3;
+  border-radius: 3px;
+
+  font: inherit;
+  font-size: 8px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.repo-demo-cta-button:hover {
+  background: #ffffff;
+}
+
+.repo-demo-cta-button:focus-visible {
+  outline: 1px solid #f7f7f3;
+  outline-offset: 2px;
+}
+
+/* Short viewports: canvas can be as short as ~506px. */
+
+@media (max-height: 800px) {
+  .repo-demo-architecture {
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+
+@media (max-width: 1050px) {
+  .repo-demo-architecture {
+    transform: translate(-50%, -50%) scale(0.86);
+  }
+}
+
+@media (max-width: 900px) {
+  .repo-demo-architecture {
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+}
+
+@media (max-width: 700px) {
+  .repo-demo-architecture {
+    transform: translate(-50%, -50%) scale(0.64);
+  }
+
+  .repo-demo-import {
+    width: calc(100% - 32px);
+  }
+
+  .repo-demo-cta > span {
+    display: none;
+  }
+}
