@@ -1,7 +1,7 @@
 // useState - lets page remember temporary values while user interacts
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { ArchieMark, Icon, Logo, StatusMessage } from "../components/ui";
+import { BrandWordmark, Icon, Logo, StatusMessage } from "../components/ui";
 
 // just for the frontend stage
 import {
@@ -479,9 +479,8 @@ export function Onboarding({
     <main className="onboarding">
       <header className="onboarding-bar">
         {/* ARCHITECT branding */}
-        <div className="onboarding-brand">
-          <ArchieMark size={24} />
-          <span>ARCHITECT</span>
+        <div className="onboarding-brand logo">
+          <BrandWordmark />
         </div>
 
         {/* Step counter: 01 / 02 -> 02 / 02 */}
