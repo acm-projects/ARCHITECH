@@ -81,7 +81,7 @@ interface ProfileMenuProps {
   initials: string;
   level: ExperienceLevel;
   dark: boolean;
-  onReplayTour: () => void;
+  onReplayTour?: () => void;
   onToggleTheme: () => void;
   onSignOut: () => void;
 }
@@ -104,7 +104,7 @@ export function ProfileMenu({
           <small>{level} workspace · local profile</small>
         </span>
       </div>
-      <MenuItem onClick={onReplayTour}>Replay tour</MenuItem>
+      {onReplayTour && <MenuItem onClick={onReplayTour}>Replay tour</MenuItem>}
       <MenuItem onClick={onToggleTheme}>
         Switch to {dark ? "light" : "dark"} theme
       </MenuItem>

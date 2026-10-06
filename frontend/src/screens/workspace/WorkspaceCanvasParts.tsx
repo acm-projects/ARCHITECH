@@ -1,11 +1,11 @@
-import { Button, Icon, IconButton } from "../../components/ui";
+import { useLayoutEffect, useRef, useState } from "react";
+
+import { Button, Icon } from "../../components/ui";
 import type { Mode } from "../../types";
 import {
   getConnectionLabel,
   getDefaultNodeProperties,
-  getNodeDefinition,
   getNodeKind,
-  getNodeSummary,
   type NodePropertyValues,
 } from "./workspaceData";
 import {
@@ -34,22 +34,36 @@ const CORE_INDEX: Record<CoreNodeId, number> = {
   db: 4,
 };
 
-function connectionPath(from: NodeOffset, to: NodeOffset): string {
+interface HalfSize {
+  w: number;
+  h: number;
+}
+
+const DEFAULT_HALF_SIZE: HalfSize = { w: 82, h: 41 };
+
+// Points are in canvas pixels and half sizes are the nodes' real half width / height, so a
+// line starts and ends exactly on the border of the nodes it connects.
+function connectionPath(
+  from: NodeOffset,
+  to: NodeOffset,
+  fromHalf: HalfSize,
+  toHalf: HalfSize,
+): string {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
 
   if (Math.abs(dx) >= Math.abs(dy)) {
     const direction = dx >= 0 ? 1 : -1;
-    const startX = from.x + direction * 82;
-    const endX = to.x - direction * 82;
+    const startX = from.x + direction * fromHalf.w;
+    const endX = to.x - direction * toHalf.w;
     const midpoint = (startX + endX) / 2;
 
     return `M${startX} ${from.y} C${midpoint} ${from.y} ${midpoint} ${to.y} ${endX} ${to.y}`;
   }
 
   const direction = dy >= 0 ? 1 : -1;
-  const startY = from.y + direction * 42;
-  const endY = to.y - direction * 42;
+  const startY = from.y + direction * fromHalf.h;
+  const endY = to.y - direction * toHalf.h;
   const midpoint = (startY + endY) / 2;
 
   return `M${from.x} ${startY} C${from.x} ${midpoint} ${to.x} ${midpoint} ${to.x} ${endY}`;
@@ -107,6 +121,7 @@ interface ConnectionLayerProps {
   showBottleneck: boolean;
   bottleneckId: Exclude<CoreNodeId, "client">;
   nodePoint: (id: string) => NodeOffset;
+  nodeOffset: (id: string) => NodeOffset;
   getNodeLabel: (id: string) => string;
   onSelectEdge: (edge: string | null) => void;
   onDeleteEdge: (edge: string) => void;
@@ -123,11 +138,71 @@ export function ConnectionLayer({
   showBottleneck,
   bottleneckId,
   nodePoint,
+  nodeOffset,
   getNodeLabel,
   onSelectEdge,
   onDeleteEdge,
   onClearNodeSelection,
 }: ConnectionLayerProps) {
+  // The lines are drawn in the canvas's real pixel size, not a stretched 1000x650 box, so
+  // they stay attached to nodes (which have fixed pixel sizes) at any canvas size.
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+
+  useLayoutEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const update = () =>
+      setSize((previous) =>
+        previous.w === svg.clientWidth && previous.h === svg.clientHeight
+          ? previous
+          : { w: svg.clientWidth, h: svg.clientHeight },
+      );
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, []);
+
+  // Node centers: the stored base point is in 1000x650 units, the drag offset is in pixels.
+  const pixelPoint = (id: string): NodeOffset => {
+    const point = nodePoint(id);
+    const shift = nodeOffset(id);
+    return {
+      x: ((point.x - shift.x) * size.w) / 1000 + shift.x,
+      y: ((point.y - shift.y) * size.h) / 650 + shift.y,
+    };
+  };
+
+  // Real rendered half size of each node, measured after layout.
+  const [halfSizes, setHalfSizes] = useState<Record<string, HalfSize>>({});
+  // Runs after every render on purpose (nodes can change size with their content); the
+  // state only updates when a measurement actually changed, so it cannot loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const parent = svgRef.current?.parentElement;
+    if (!parent) return;
+    const measured: Record<string, HalfSize> = {};
+    parent.querySelectorAll<HTMLElement>("[data-node-id]").forEach((element) => {
+      const id = element.dataset.nodeId;
+      if (id) {
+        measured[id] = { w: element.offsetWidth / 2, h: element.offsetHeight / 2 };
+      }
+    });
+    setHalfSizes((previous) =>
+      JSON.stringify(previous) === JSON.stringify(measured) ? previous : measured,
+    );
+  });
+  const halfSize = (id: string): HalfSize => halfSizes[id] ?? DEFAULT_HALF_SIZE;
+
+  const pathBetween = (fromId: string, toId: string) =>
+    connectionPath(
+      pixelPoint(fromId),
+      pixelPoint(toId),
+      halfSize(fromId),
+      halfSize(toId),
+    );
+
   const selectEdge = (edgeKey: string) => {
     onSelectEdge(selectedEdge === edgeKey ? null : edgeKey);
     onClearNodeSelection();
@@ -141,9 +216,9 @@ export function ConnectionLayer({
 
   return (
     <svg
+      ref={svgRef}
       className="canvas-lines architecture-lines"
-      viewBox="0 0 1000 650"
-      preserveAspectRatio="none"
+      viewBox={`0 0 ${size.w || 1000} ${size.h || 650}`}
       onClick={() => onSelectEdge(null)}
     >
       <defs>
@@ -170,9 +245,9 @@ export function ConnectionLayer({
           return null;
         }
 
-        const from = nodePoint(fromId);
-        const to = nodePoint(toId);
-        const path = connectionPath(from, to);
+        const from = pixelPoint(fromId);
+        const to = pixelPoint(toId);
+        const path = pathBetween(fromId, toId);
         const isSelected = selectedEdge === edgeKey;
         const isBottleneckEdge = showBottleneck && toId === bottleneckId;
         const label = getConnectionLabel(
@@ -210,9 +285,9 @@ export function ConnectionLayer({
         const edgeKey = `user-${connection.from}-${connection.to}-${index}`;
         if (deletedEdges.includes(edgeKey)) return null;
 
-        const from = nodePoint(connection.from);
-        const to = nodePoint(connection.to);
-        const path = connectionPath(from, to);
+        const from = pixelPoint(connection.from);
+        const to = pixelPoint(connection.to);
+        const path = pathBetween(connection.from, connection.to);
         const isSelected = selectedEdge === edgeKey;
         const label =
           connection.label ||
@@ -255,11 +330,11 @@ export function ConnectionLayer({
           const index = Number.parseInt(selectedEdge.split("-").at(-1) ?? "", 10);
           const connection = userConnections[index];
           if (!connection) return null;
-          point = midpoint(nodePoint(connection.from), nodePoint(connection.to));
+          point = midpoint(pixelPoint(connection.from), pixelPoint(connection.to));
           width = 112;
         } else if (CORE_EDGE_KEYS.includes(selectedEdge as CoreEdgeKey)) {
           const [fromId, toId] = selectedEdge.split("-") as [CoreNodeId, CoreNodeId];
-          point = midpoint(nodePoint(fromId), nodePoint(toId));
+          point = midpoint(pixelPoint(fromId), pixelPoint(toId));
         }
 
         if (!point) return null;
@@ -469,74 +544,53 @@ export function NodeLayer({
   );
 }
 
-interface ComponentPopoverProps {
-  selected: string;
-  properties: NodePropertyValues;
+interface NodeActionMenuProps {
+  // Node center in canvas units (percent-based) plus its drag offset in pixels.
+  base: NodeOffset;
+  shift: NodeOffset;
   aiEnabled: boolean;
-  onClose: () => void;
-  onExplain: () => void;
+  onAskArchie: () => void;
   onConfigure: () => void;
-  onDuplicate: () => void;
   onDelete: () => void;
 }
 
-function propertyLabel(key: string): string {
-  return key
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/[_-]/g, " ")
-    .replace(/^./, (letter) => letter.toUpperCase());
-}
-
-export function ComponentPopover({
-  selected,
-  properties,
+// A small menu attached above the selected component, with exactly three actions. It is
+// placed inside the canvas scene, so it moves and zooms with the node.
+export function NodeActionMenu({
+  base,
+  shift,
   aiEnabled,
-  onClose,
-  onExplain,
+  onAskArchie,
   onConfigure,
-  onDuplicate,
   onDelete,
-}: ComponentPopoverProps) {
-  const definition = getNodeDefinition(selected);
-  const visibleProperties = Object.entries(properties).slice(0, 2);
-
+}: NodeActionMenuProps) {
   return (
-    <div className="component-popover architecture-popover selected-component-panel" role="dialog" aria-label={`${selected} selected component`}>
-      <div className="selected-component-kicker">
-        <span>SELECTED COMPONENT</span>
-        <IconButton icon="close" label="Close selected component" tooltip="Close" size="sm" onClick={onClose} />
-      </div>
-
-      <div className="selected-component-title">
-        <span className="config-node-icon">
-          <Icon name={definition.icon} size={18} />
-        </span>
-        <div>
-          <small>{definition.category} · {definition.label}</small>
-          <h2>{selected}</h2>
-        </div>
-      </div>
-
-      <div className="selected-component-properties">
-        {visibleProperties.length > 0 ? visibleProperties.map(([key, value]) => (
-          <label key={key}>
-            <span>{propertyLabel(key)}</span>
-            <b>{String(value)}</b>
-          </label>
-        )) : (
-          <label>
-            <span>Configuration</span>
-            <b>{getNodeSummary(selected, properties)}</b>
-          </label>
-        )}
-      </div>
-
-      <div className="selected-component-actions">
-        <Button variant="run" onClick={onConfigure}>Edit properties</Button>
-        <Button variant="outline" onClick={onDuplicate}><Icon name="copy" size={13} /> Duplicate</Button>
-        {aiEnabled && <Button variant="outline" onClick={onExplain}><Icon name="brain" size={13} /> Ask Archie</Button>}
-        <Button variant="ghost" className="delete-action" onClick={onDelete}><Icon name="trash" size={13} /> Delete</Button>
-      </div>
+    <div
+      className="node-action-menu"
+      role="toolbar"
+      aria-label="Selected component actions"
+      style={{
+        left: `${base.x / 10}%`,
+        top: `${base.y / 6.5}%`,
+        transform: `translate(calc(-50% + ${shift.x}px), calc(-100% + ${shift.y}px - 52px))`,
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        onClick={onAskArchie}
+        disabled={!aiEnabled}
+        title={aiEnabled ? "Ask Archie about this component" : "Archie is not enabled"}
+      >
+        Ask Archie
+      </button>
+      <button type="button" onClick={onConfigure}>
+        Configure
+      </button>
+      <button type="button" className="is-danger" onClick={onDelete}>
+        Delete
+      </button>
     </div>
   );
 }

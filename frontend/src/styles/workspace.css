@@ -3892,7 +3892,7 @@
   top: 12px;
   left: 12px;
   bottom: 12px;
-  width: 88px;
+  width: 132px;
   max-height: none;
   padding: 12px 8px;
   border: 1px solid var(--canvas-line);
@@ -4177,16 +4177,16 @@
 
 @media (min-width: 1180px) {
   .workspace-main {
-    --resources-w: 112px;
+    --resources-w: 144px;
     --inspect-w: 324px;
   }
 
   .workspace-main > .toolbox {
-    width: 88px;
+    width: 132px;
   }
 
   .workspace-main .canvas-wrap {
-    margin-left: 100px;
+    margin-left: 144px;
     margin-right: 312px;
   }
 
