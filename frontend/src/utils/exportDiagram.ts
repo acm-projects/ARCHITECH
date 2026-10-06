@@ -35,7 +35,7 @@ function exportPng(): void {
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = "#17151d";
   context.font = "28px sans-serif";
-  context.fillText("ARCHITECT · E-commerce Checkout", 60, 70);
+  context.fillText("ARCHITECH · E-commerce Checkout", 60, 70);
 
   EXPORT_NODES.forEach((name, index) => {
     context.strokeStyle = "#7055c8";

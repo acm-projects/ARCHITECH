@@ -5395,7 +5395,7 @@ body,
   }
 }
 /* =========================================================
-   ARCHITECT — AUTHENTICATION (sign in / sign up)
+   ARCHITECH — AUTHENTICATION (sign in / sign up)
    Single source of auth styling. Everything is scoped under .auth-page
    so shared controls (.btn, .ui-input, .ui-status) stay untouched elsewhere.
    ========================================================= */
@@ -5772,7 +5772,7 @@ body,
 
 
 /* =========================================================
-   ARCHITECT — ONBOARDING (experience level, optional GitHub)
+   ARCHITECH — ONBOARDING (experience level, optional GitHub)
    Single source of onboarding styling, scoped under .onboarding.
    Monochrome: selection is carried by contrast, weight and shape.
    ========================================================= */
