@@ -107,7 +107,7 @@ export function Landing({
             </span>
           </h1>
           <p className={`landing-intro-description ${nunito.className}`}>
-            Think like an architech.
+            Think like an architect.
           </p>
           <div className="landing-intro-actions">
             <Button onClick={signUp}>
