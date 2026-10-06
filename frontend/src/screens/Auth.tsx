@@ -140,7 +140,7 @@ export function AuthPage({
     }
 
     /*
-      ARCHITECT currently uses a local browser profile rather than
+      ARCHITECH currently uses a local browser profile rather than
       a real authentication backend.
 
       For now, signup stores the profile locally and signin checks
@@ -170,7 +170,7 @@ export function AuthPage({
     */
     if (!existing.name) {
       setMessage(
-        "No ARCHITECT profile exists in this browser yet. Create an account first.",
+        "No ARCHITECH profile exists in this browser yet. Create an account first.",
       );
       return;
     }
@@ -194,7 +194,7 @@ export function AuthPage({
       <Logo
         className="auth-brand"
         onClick={back}
-        aria-label="Back to ARCHITECT home"
+        aria-label="Back to ARCHITECH home"
       />
 
       {/* authentication form section */}
@@ -206,8 +206,8 @@ export function AuthPage({
 
             <p>
               {isSignup
-                ? "Start building better systems with ARCHITECT."
-                : "Sign in to continue to ARCHITECT."}
+                ? "Start building better systems with ARCHITECH."
+                : "Sign in to continue to ARCHITECH."}
             </p>
           </div>
 
@@ -343,7 +343,7 @@ export function AuthPage({
           {/* Legal */}
           {isSignup && (
             <p className="auth-legal">
-              By creating an account, you agree to ARCHITECT's{" "}
+              By creating an account, you agree to ARCHITECH's{" "}
               <button type="button">Terms of Service</button> and{" "}
               <button type="button">Privacy Policy</button>.
             </p>
@@ -351,7 +351,7 @@ export function AuthPage({
 
           {/* Switch */}
           <p className="auth-switch">
-            {isSignup ? "Already have an account?" : "New to ARCHITECT?"}{" "}
+            {isSignup ? "Already have an account?" : "New to ARCHITECH?"}{" "}
             <button type="button" onClick={switchKind}>
               {isSignup ? "Sign in" : "Create account"}
             </button>
@@ -447,7 +447,7 @@ export function Onboarding({
             ↓
      Start GitHub OAuth
             ↓
-     User authorizes ARCHITECT
+     User authorizes ARCHITECH
             ↓
      Backend receives OAuth callback
             ↓
@@ -478,7 +478,7 @@ export function Onboarding({
   return (
     <main className="onboarding">
       <header className="onboarding-bar">
-        {/* ARCHITECT branding */}
+        {/* ARCHITECH branding */}
         <div className="onboarding-brand logo">
           <BrandWordmark />
         </div>
@@ -501,7 +501,7 @@ export function Onboarding({
                   system design experience?
                 </h1>
 
-                <p>We'll tailor ARCHITECT to your experience.</p>
+                <p>We'll tailor ARCHITECH to your experience.</p>
               </div>
 
               {/* native radios: one selection, arrow-key navigation */}
@@ -570,7 +570,7 @@ export function Onboarding({
 
                 <p>
                   Connect GitHub to link your development workflow with
-                  ARCHITECT.
+                  ARCHITECH.
                 </p>
               </div>
 
@@ -582,7 +582,7 @@ export function Onboarding({
                 </li>
                 <li>
                   <Icon name="check" size={14} />
-                  Bring project context into ARCHITECT
+                  Bring project context into ARCHITECH
                 </li>
                 <li>
                   <Icon name="check" size={14} />

@@ -225,7 +225,7 @@ export default function SystemCanvas() {
       </div>
 
       {/* =====================================================
-          ARCHITECT PRODUCT WORKSPACE
+          ARCHITECH PRODUCT WORKSPACE
 
           This shell exists from the very beginning.
       ===================================================== */}
@@ -1024,7 +1024,7 @@ export default function SystemCanvas() {
               </div>
 
               <div>
-                <span>ARCHITECT GUIDE</span>
+                <span>ARCHITECH GUIDE</span>
                 <strong>Build the basics</strong>
               </div>
             </div>
@@ -1059,7 +1059,7 @@ export default function SystemCanvas() {
               </div>
 
               <div>
-                <span>ARCHITECT GUIDE</span>
+                <span>ARCHITECH GUIDE</span>
                 <strong>Handle the request</strong>
               </div>
             </div>
@@ -1093,7 +1093,7 @@ export default function SystemCanvas() {
               </div>
 
               <div>
-                <span>ARCHITECT GUIDE</span>
+                <span>ARCHITECH GUIDE</span>
                 <strong>Remember the data</strong>
               </div>
             </div>
@@ -1108,7 +1108,7 @@ export default function SystemCanvas() {
     </div>
 
     <div>
-      <span>ARCHITECT GUIDE</span>
+      <span>ARCHITECH GUIDE</span>
       <strong>Your first system</strong>
     </div>
   </div>
@@ -1166,7 +1166,7 @@ export default function SystemCanvas() {
               </div>
 
               <div>
-                <span>ARCHITECT GUIDE</span>
+                <span>ARCHITECH GUIDE</span>
                 <strong>Watch the bottleneck</strong>
               </div>
             </div>
@@ -1201,7 +1201,7 @@ export default function SystemCanvas() {
               </div>
 
               <div>
-                <span>ARCHITECT GUIDE</span>
+                <span>ARCHITECH GUIDE</span>
                 <strong>Remove the bottleneck</strong>
               </div>
             </div>
@@ -1236,7 +1236,7 @@ export default function SystemCanvas() {
               </div>
 
               <div>
-                <span>ARCHITECT GUIDE</span>
+                <span>ARCHITECH GUIDE</span>
                 <strong>Why this works</strong>
               </div>
             </div>

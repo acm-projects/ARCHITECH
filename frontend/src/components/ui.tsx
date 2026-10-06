@@ -126,7 +126,7 @@ export function BrandWordmark() {
     <Image
       className="brand-wordmark"
       src="/logo.svg"
-      alt="ARCHITECT"
+      alt="ARCHITECH"
       width={1720}
       height={385}
     />
@@ -141,7 +141,7 @@ export function Logo({
     <button
       type="button"
       className={`logo ${className}`.trim()}
-      aria-label="ARCHITECT"
+      aria-label="ARCHITECH"
       {...buttonProps}
     >
       <BrandWordmark />
