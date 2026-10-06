@@ -1,7 +1,7 @@
 // useState - lets page remember temporary values while user interacts
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { ArchieMark, Icon, StatusMessage } from "../components/ui";
+import { ArchieMark, Icon, Logo, StatusMessage } from "../components/ui";
 
 // just for the frontend stage
 import {
@@ -191,15 +191,11 @@ export function AuthPage({
   return (
     <main className="auth-page">
       {/* logo works as back button to return to the home page */}
-      <button
-        type="button"
+      <Logo
         className="auth-brand"
         onClick={back}
         aria-label="Back to ARCHITECT home"
-      >
-        <ArchieMark size={24} />
-        <span>ARCHITECT</span>
-      </button>
+      />
 
       {/* authentication form section */}
       <section className="auth-shell">
