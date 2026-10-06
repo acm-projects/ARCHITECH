@@ -1,0 +1,33 @@
+// Prisma schema for the ARCHITECH auth backend (PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  name            String
+  email           String   @unique
+  passwordHash    String
+  experienceLevel String?
+  createdAt       DateTime @default(now())
+  sessions        Session[]
+}
+
+// One row per login. The browser cookie holds the raw token; only its SHA-256
+// hash is stored here, so a leaked database can't be used to impersonate anyone.
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
+}

@@ -2,25 +2,16 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { ArchieMark, Icon, StatusMessage } from "../components/ui";
-
-// just for the frontend stage
 import {
-  readJsonStorage,
-  STORAGE_KEYS, // ex) STORAGE_KEYS.user
-  writeJsonStorage,
-} from "../lib/storage";
+  AuthError,
+  signIn,
+  signUp,
+  updateExperienceLevel,
+  type AuthUser,
+} from "../lib/authApi";
 
 // "Beginner", "Intermediate", "Advanced" experience levels
 import type { ExperienceLevel } from "../types";
-
-/* BACKEND INTEGRATION:
-   Once authentication is connected, the backend should define the actual
-   user model returned by the authentication API
-*/
-interface LocalUser {
-  name?: string; // ? means property is optional
-  email?: string;
-}
 
 // Provider marks for the icon-only social buttons (aria-hidden; the button carries the label)
 function AppleMark() {
@@ -59,7 +50,7 @@ const SOCIAL_PROVIDERS = [
   AuthPage receives four props: 
   1. kind: "signin" | "signup" - tells this component which version it should display
   2. back: () => void - go back to the previous page
-  3. done: () => void - auth is done, move to next
+  3. done: (user: AuthUser) => void - auth is done, hand the account from the backend to App.tsx
   4. switchKind: () => void - switch between signin and signup
  */
 
@@ -71,23 +62,19 @@ export function AuthPage({
 }: {
   kind: "signin" | "signup";
   back: () => void;
-  done: () => void;
+  done: (user: AuthUser) => void;
   switchKind: () => void;
 }) {
 
   const isSignup = kind === "signup"; // if kind = "signup", true; otherwise, false
 
-  // BACKEND INTEGRATION:
-  // replace this as the source of authentication truth with the authenticated
-  // user/session returned by the backend
-  const existing = readJsonStorage<LocalUser>(STORAGE_KEYS.user, {}); // get existing user
-
-  const [name, setName] = useState(existing.name ?? ""); // if existing.name is dne, use ""
-  const [email, setEmail] = useState(existing.email ?? "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // to make password hidden by default
-  const [remember, setRemember] = useState(false); // for backend, not functioning yet
+  const [remember, setRemember] = useState(false); // sent to backend: 30-day session if checked
   const [message, setMessage] = useState(""); 
+  const [submitting, setSubmitting] = useState(false); // true while waiting on the backend
 
   // determines whether the main button should be enabled
   // have to meet requirements to enable the main button
@@ -98,35 +85,21 @@ export function AuthPage({
     : email.trim().length > 0 && password.length > 0;
 
   // runs when someone click main button (submit)
-  /* BACKED INTEGRATION - EMAIL AUTHENTICATION
-     This function currently simulates signup/signin using local storage.
-     
-     Sign up - frontend provides name, email, and password, which are stored locally.
-     Backend should:
-     1. validate the request
-     2. check whether the email already exists
-     3. securely hash the password
-     4. create the user
-     5. create/return an auth session
-     6. return the created user
+  /* EMAIL AUTHENTICATION (server/auth.js)
 
-     Expected frontend flow:
-     - post/api/auth/signup 
-     - success
-     - done
-     - onboarding
+     Sign up - POST /api/auth/signup { name, email, password }
+     The backend validates the request, rejects an email that already exists,
+     hashes the password, creates the user in the DB, opens a session, and returns the user.
 
-     Sign in - frontend provides email and password, which are checked against locally stored profile.
-     Backend should:
-     1. Find the user
-     2. validate the pwd
-     3. create/return an auth session
+     Sign in - POST /api/auth/signin { email, password, remember }
+     The backend finds the user, checks the password against the stored hash,
+     opens a session, and returns the user.
 
-     Error handling - backend errors should be returned in a form that the frontend can display to the user.    
-                      can display using setMessage()
+     Errors come back as { error: "..." } and are shown with setMessage().
   */
-  const submit = (event?: FormEvent) => {
+  const submit = async (event?: FormEvent) => {
     event?.preventDefault(); // prevent refresh, make user to stay on page
+    if (submitting) return; // ignore double-clicks while a request is in flight
     setMessage(""); // clear message before moving on to next 
 
     // show message if the form cannot be submitted
@@ -140,42 +113,26 @@ export function AuthPage({
     }
 
     /*
-      ARCHITECT currently uses a local browser profile rather than
-      a real authentication backend.
-
-      For now, signup stores the profile locally and signin checks
-      whether a local profile exists.
-
-      current: react -> browser local storage
-      after adding backend: react -> auth backend -> DB -> pwd handling
+      react -> auth backend (/api/auth) -> DB -> pwd handling
+      The backend sets an httpOnly session cookie on success.
+      Nothing about the account is stored in the browser; App.tsx keeps the
+      returned user in state and reloads it from GET /api/auth/me on refresh.
     */
+    setSubmitting(true);
+    try {
+      const user = isSignup
+        ? await signUp({ name: name.trim(), email: email.trim(), password, remember })
+        : await signIn({ email: email.trim(), password, remember });
 
-    // saves user's name and email but not store the password yet
-    /* Temp signup implementation
-      replace this localstorage write with the real signup api call
-    */
-    if (isSignup) {
-      writeJsonStorage(STORAGE_KEYS.user, {
-        name: name.trim(),
-        email: email.trim(),
-      });
-
-      done();
-      return;
-    }
-
-    // Currently doesnt check entered main = saved email? or entered password = saved password?
-    /*BACKEND INTEGRATION:
-      replace this local profile check with the real signin api call
-    */
-    if (!existing.name) {
+      done(user); // signup -> onboarding, signin -> home (set in App.tsx)
+    } catch (error) {
+      // backend errors come back as { error: "..." } and are shown here
       setMessage(
-        "No ARCHITECT profile exists in this browser yet. Create an account first.",
+        error instanceof AuthError ? error.message : "Something went wrong. Try again.",
       );
-      return;
+    } finally {
+      setSubmitting(false);
     }
-
-    done();
   };
 
   // handles Apple, Git, Google -> to sign in
@@ -339,8 +296,10 @@ export function AuthPage({
           )}
 
           {/* Main CTA */}
-          <button type="submit" className="auth-submit" disabled={!canSubmit}>
-            {isSignup ? "Create account" : "Sign in"}
+          <button type="submit" className="auth-submit" disabled={!canSubmit || submitting}>
+            {submitting
+              ? isSignup ? "Creating account…" : "Signing in…"
+              : isSignup ? "Create account" : "Sign in"}
             <Icon name="arrow" size={16} />
           </button>
 
@@ -377,20 +336,19 @@ const EXPERIENCE_OPTIONS: ReadonlyArray<{
   { level: "Advanced", index: "03", description: "I'm comfortable with system design and want more challenging scenarios." },
 ];
 
-/* BACKEND INTEGRATION:
-   The final selected experience level should be saved to the authenticated
-   user's profile on the backend.
-
-   level- what's selected
+/* level- what's selected
    setLevel - change selected level
+   onLevelSaved - the backend saved the level; gives App.tsx the updated user
    done - finish this onboarding step */
 export function Onboarding({
   level,
   setLevel,
+  onLevelSaved,
   done,
 }: {
   level: ExperienceLevel;
   setLevel: (value: ExperienceLevel) => void;
+  onLevelSaved: (user: AuthUser) => void;
   done: () => void;
 }) {
   // Keeps track of which onboarding screen the user is currently viewing.
@@ -401,6 +359,10 @@ export function Onboarding({
   // Message shown on the GitHub step.
   // For now this is only used to explain that OAuth is not connected yet.
   const [githubMessage, setGithubMessage] = useState("");
+
+  // Step 1: true while the level is being saved, and the error if saving failed.
+  const [savingLevel, setSavingLevel] = useState(false);
+  const [levelMessage, setLevelMessage] = useState("");
 
   // Move focus to the new heading when the step changes so keyboard and
   // screen-reader users land at the top of the new step (not on first render).
@@ -413,31 +375,28 @@ export function Onboarding({
   }, [step]);
 
   /*
-     BACKEND INTEGRATION — EXPERIENCE LEVEL
-    
-     The selected experience level should eventually be saved to the
-     authenticated user's profile before moving to Step 2.
-    
-     Frontend provides:
-     {
-       experienceLevel: level
-     }
-    
-     Example future flow:
-    
-     PATCH /api/users/me
+     EXPERIENCE LEVEL
+
+     PATCH /api/auth/me { experienceLevel }
             ↓
-     backend saves experience level
+     backend saves the level on the signed-in user's row
             ↓
-     success
-            ↓
-     setStep(2)
-    
-     For now, the level remains in frontend state and we immediately
-     continue to Step 2.
+     success -> setStep(2)   |   failure -> stay on Step 1 and show the error
    */
-  const continueToGitHub = () => {
-    setStep(2);
+  const continueToGitHub = async () => {
+    if (savingLevel) return;
+    setLevelMessage("");
+    setSavingLevel(true);
+    try {
+      onLevelSaved(await updateExperienceLevel(level));
+      setStep(2);
+    } catch (error) {
+      setLevelMessage(
+        error instanceof AuthError ? error.message : "Something went wrong. Try again.",
+      );
+    } finally {
+      setSavingLevel(false);
+    }
   };
 
   /*
@@ -547,13 +506,19 @@ export function Onboarding({
                 })}
               </fieldset>
 
+              {levelMessage && (
+                <StatusMessage tone="error" className="onboarding-message">
+                  {levelMessage}
+                </StatusMessage>
+              )}
+
               <button
                 type="button"
                 className="onboarding-primary"
                 onClick={continueToGitHub}
-                disabled={!level}
+                disabled={!level || savingLevel}
               >
-                Continue
+                {savingLevel ? "Saving…" : "Continue"}
                 <Icon name="arrow" size={16} />
               </button>
 

@@ -13,5 +13,9 @@ export default defineConfig({
   },
   server: {
     host: "0.0.0.0",
+    // Forward /api requests to the Express auth backend during development
+    proxy: {
+      "/api": "http://localhost:3001",
+    },
   },
 });

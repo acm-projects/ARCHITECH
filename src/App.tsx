@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { getCurrentUser, signOut as endSession, type AuthUser } from "./lib/authApi";
 import {
   createProject,
   ensureRecoveredProject,
@@ -17,6 +18,8 @@ import { Landing } from "./screens/Marketing";
 import { Workspace } from "./screens/Workspace";
 import type { ExperienceLevel, Mode, Page } from "./types";
 
+const DEFAULT_LEVEL: ExperienceLevel = "Intermediate"; // used until the account has a saved level
+
 export default function App() {
   const sharedImportHandled = useRef(false);
   const [page, setPage] = useState<Page>(() =>
@@ -25,9 +28,11 @@ export default function App() {
   const [mode, setMode] = useState<Mode>(() =>
     readStorageOption(STORAGE_KEYS.mode, ["learn", "challenge"] as const, "learn"),
   );
-  const [level, setLevel] = useState<ExperienceLevel>(() =>
-    readStorageOption(STORAGE_KEYS.level, ["Beginner", "Intermediate", "Advanced"] as const, "Intermediate"),
-  );
+  // The account lives in the database. `user` is only this tab's copy of what the
+  // backend returned; it is re-fetched from GET /api/auth/me on every load.
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [level, setLevel] = useState<ExperienceLevel>(DEFAULT_LEVEL);
   const [activeProjectId, setActiveProjectIdState] = useState(() => getActiveProjectId());
 
   useEffect(() => {
@@ -55,13 +60,27 @@ export default function App() {
     setPage("workspace");
   }, []);
 
+  // Ask the backend who is signed in (the session cookie is httpOnly, so JS can't read it).
+  useEffect(() => {
+    getCurrentUser()
+      .then((current) => {
+        if (!current) return;
+        setUser((signedIn) => signedIn ?? current); // keep a sign-in that finished first
+        if (current.experienceLevel) setLevel(current.experienceLevel);
+      })
+      .catch((error) => console.error("session check failed:", error))
+      .finally(() => setSessionChecked(true));
+  }, []);
+
+  // Home and onboarding belong to an account; without a session, go sign in.
+  const needsAccount = page === "home" || page === "onboarding";
+  useEffect(() => {
+    if (sessionChecked && !user && needsAccount) setPage("signin");
+  }, [sessionChecked, user, needsAccount]);
+
   useEffect(() => {
     writeStorage(STORAGE_KEYS.mode, mode);
   }, [mode]);
-
-  useEffect(() => {
-    writeStorage(STORAGE_KEYS.level, level);
-  }, [level]);
 
   useEffect(() => {
     if (page === "workspace" || page === "home") {
@@ -107,33 +126,56 @@ export default function App() {
     });
   };
 
-  const signOut = () => {
+  const signedIn = (account: AuthUser) => {
+    setUser(account);
+    setLevel(account.experienceLevel ?? DEFAULT_LEVEL);
+  };
+
+  const toLanding = () => {
     removeStorage(STORAGE_KEYS.lastPage);
     setPage("landing");
   };
 
+  // Ends the session on the backend (clears the cookie). If that request fails the
+  // session is still open, so the account stays loaded rather than pretending otherwise.
+  const signOut = async () => {
+    try {
+      await endSession();
+      setUser(null);
+      setLevel(DEFAULT_LEVEL);
+    } catch (error) {
+      console.error("signout failed:", error);
+    }
+    toLanding();
+  };
+
   if (page === "landing") {
-    return <Landing signIn={() => setPage("signin")} signUp={() => setPage("signup")} demo={demo} />;
+    return <Landing signIn={() => setPage(user ? "home" : "signin")} signUp={() => setPage("signup")} demo={demo} />;
   }
 
   if (page === "signin") {
-    return <AuthPage kind="signin" back={() => setPage("landing")} done={() => setPage("home")} switchKind={() => setPage("signup")} />;
+    return <AuthPage kind="signin" back={() => setPage("landing")} done={(account) => { signedIn(account); setPage("home"); }} switchKind={() => setPage("signup")} />;
   }
 
   if (page === "signup") {
-    return <AuthPage kind="signup" back={() => setPage("landing")} done={() => setPage("onboarding")} switchKind={() => setPage("signin")} />;
+    return <AuthPage kind="signup" back={() => setPage("landing")} done={(account) => { signedIn(account); setPage("onboarding"); }} switchKind={() => setPage("signin")} />;
   }
+
+  // Render nothing while the session check is in flight or the redirect above is pending.
+  if (needsAccount && !user) return null;
 
   if (page === "onboarding") {
-    return <Onboarding level={level} setLevel={setLevel} done={() => setPage("home")} />;
+    return <Onboarding level={level} setLevel={setLevel} onLevelSaved={signedIn} done={() => setPage("home")} />;
   }
 
-  if (page === "home") {
+  if (page === "home" && user) {
     return (
       <Home
         openNewProject={openNewProject}
         openProject={openExistingProject}
-        landing={signOut}
+        landing={toLanding}
+        signOut={signOut}
+        user={user}
         level={level}
       />
     );
@@ -148,7 +190,7 @@ export default function App() {
       mode={mode}
       onModeChange={setMode}
       home={() => setPage("home")}
-      landing={signOut}
+      landing={toLanding}
       level={level}
     />
   );

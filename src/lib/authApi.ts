@@ -1,6 +1,7 @@
 // Client for the auth backend (server/auth.js, mounted at /api/auth).
 // In dev, Vite proxies /api to the backend (see vite.config.ts).
-// The session lives in an httpOnly cookie, so every request sends credentials.
+// Logins are stored in the database; an httpOnly cookie carries the token for one,
+// so every request sends credentials.
 
 import type { ExperienceLevel } from "../types";
 
@@ -78,4 +79,13 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     if (error instanceof AuthError && error.status === 401) return null;
     throw error;
   }
+}
+
+// Saves the experience level on the signed-in user's account and returns the updated user.
+export async function updateExperienceLevel(experienceLevel: ExperienceLevel): Promise<AuthUser> {
+  const { user } = await request<{ user: AuthUser }>("/me", {
+    method: "PATCH",
+    body: JSON.stringify({ experienceLevel }),
+  });
+  return user;
 }

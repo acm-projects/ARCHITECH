@@ -108,7 +108,7 @@ export function ProfileMenu({
       <MenuItem onClick={onToggleTheme}>
         Switch to {dark ? "light" : "dark"} theme
       </MenuItem>
-      <MenuItem onClick={onSignOut}>Exit to landing</MenuItem>
+      <MenuItem onClick={onSignOut}>Sign out</MenuItem>
     </Menu>
   );
 }

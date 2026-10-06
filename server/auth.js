@@ -6,44 +6,35 @@
 //   POST /api/auth/signin   { email, password, remember? }        -> 200 { user }
 //   POST /api/auth/signout                                        -> 200 { ok: true }
 //   GET  /api/auth/me                                             -> 200 { user } | 401
+//   PATCH /api/auth/me      { experienceLevel }                   -> 200 { user } | 401
 //
 // Errors always come back as { error: "message" } so the frontend can pass
 // it straight to setMessage().
 //
-// Session: a signed JWT in an httpOnly cookie ("architect_session").
-// "remember" = 30-day cookie; otherwise a session cookie that ends when the browser closes.
+// Session: every login is a row in the Session table (see prisma/schema.prisma).
+// The httpOnly cookie ("architect_session") only carries a random token that points
+// at that row; the database decides whether the login is still valid.
+// "remember" = 30-day login; otherwise 1 day and the cookie ends when the browser closes.
+// Signing out deletes the row, so the token stops working everywhere immediately.
 //
-// Needs: npm install express bcrypt jsonwebtoken cookie-parser
-// Env:   JWT_SECRET=<long random string>   (in .env, never commit it)
-//
-// Prisma User model this expects (tell whoever owns schema.prisma):
-//   model User {
-//     id              String   @id @default(cuid())
-//     name            String
-//     email           String   @unique
-//     passwordHash    String
-//     experienceLevel String?
-//     createdAt       DateTime @default(now())
-//   }
+// Needs: npm install express bcrypt cookie-parser
+// Models: User and Session in prisma/schema.prisma
 
 import express from "express";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import crypto from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 
-// If your teammate already exports a shared client (e.g. db.js / lib/prisma.js),
-// import that instead of creating a new one here.
 const prisma = new PrismaClient();
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error("JWT_SECRET is not set");
-
 const COOKIE_NAME = "architect_session";
 const SALT_ROUNDS = 12;
 const REMEMBER_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const DEFAULT_SESSION_MS = 24 * 60 * 60 * 1000; // 1 day
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EXPERIENCE_LEVELS = ["Beginner", "Intermediate", "Advanced"]; // same as ExperienceLevel in src/types.ts
 
 // ---------- helpers ----------
 
@@ -57,10 +48,25 @@ function publicUser(user) {
   };
 }
 
-function setSessionCookie(res, userId, remember) {
-  const token = jwt.sign({ sub: userId }, JWT_SECRET, {
-    expiresIn: remember ? "30d" : "1d",
+// Only the hash is stored, so reading the Session table doesn't yield usable tokens.
+function hashToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+// Saves the login to the database and hands the browser the token for it.
+async function startSession(res, userId, remember) {
+  const token = crypto.randomBytes(32).toString("base64url");
+  const lifetime = remember ? REMEMBER_MS : DEFAULT_SESSION_MS;
+  await prisma.session.create({
+    data: {
+      tokenHash: hashToken(token),
+      userId,
+      expiresAt: new Date(Date.now() + lifetime),
+    },
   });
+  // Drop this user's expired logins while we're here so the table doesn't grow forever.
+  await prisma.session.deleteMany({ where: { userId, expiresAt: { lt: new Date() } } });
+
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true, // JS can't read it -> safer than localStorage
     secure: process.env.NODE_ENV === "production",
@@ -71,15 +77,21 @@ function setSessionCookie(res, userId, remember) {
 }
 
 // Middleware: protects any route. Sets req.userId or responds 401.
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const token = req.cookies?.[COOKIE_NAME];
   if (!token) return res.status(401).json({ error: "Not signed in." });
   try {
-    req.userId = jwt.verify(token, JWT_SECRET).sub;
+    const session = await prisma.session.findUnique({ where: { tokenHash: hashToken(token) } });
+    if (!session || session.expiresAt <= new Date()) {
+      if (session) await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
+      res.clearCookie(COOKIE_NAME, { path: "/" });
+      return res.status(401).json({ error: "Session expired. Sign in again." });
+    }
+    req.userId = session.userId;
     next();
-  } catch {
-    res.clearCookie(COOKIE_NAME, { path: "/" });
-    return res.status(401).json({ error: "Session expired. Sign in again." });
+  } catch (err) {
+    console.error("session lookup failed:", err);
+    return res.status(500).json({ error: "Something went wrong. Try again." });
   }
 }
 
@@ -104,7 +116,7 @@ router.post("/signup", async (req, res) => {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const user = await prisma.user.create({ data: { name, email, passwordHash } });
 
-    setSessionCookie(res, user.id, remember);
+    await startSession(res, user.id, remember);
     return res.status(201).json({ user: publicUser(user) });
   } catch (err) {
     // P2002 = unique constraint (two signups with same email at once)
@@ -130,7 +142,7 @@ router.post("/signin", async (req, res) => {
     const ok = user && (await bcrypt.compare(password, user.passwordHash));
     if (!ok) return res.status(401).json({ error: "Incorrect email or password." });
 
-    setSessionCookie(res, user.id, remember);
+    await startSession(res, user.id, remember);
     return res.json({ user: publicUser(user) });
   } catch (err) {
     console.error("signin failed:", err);
@@ -138,9 +150,17 @@ router.post("/signin", async (req, res) => {
   }
 });
 
-router.post("/signout", (req, res) => {
-  res.clearCookie(COOKIE_NAME, { path: "/" });
-  return res.json({ ok: true });
+// Sign out: delete the login from the database, then clear the cookie.
+router.post("/signout", async (req, res) => {
+  try {
+    const token = req.cookies?.[COOKIE_NAME];
+    if (token) await prisma.session.deleteMany({ where: { tokenHash: hashToken(token) } });
+    res.clearCookie(COOKIE_NAME, { path: "/" });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("signout failed:", err);
+    return res.status(500).json({ error: "Something went wrong. Try again." });
+  }
 });
 
 // Who am I? Replaces readJsonStorage(STORAGE_KEYS.user) as the source of truth.
@@ -151,6 +171,30 @@ router.get("/me", requireAuth, async (req, res) => {
     return res.json({ user: publicUser(user) });
   } catch (err) {
     console.error("me failed:", err);
+    return res.status(500).json({ error: "Something went wrong. Try again." });
+  }
+});
+
+// Update my profile. Onboarding uses this to save the experience level to the DB.
+router.patch("/me", requireAuth, async (req, res) => {
+  try {
+    const experienceLevel = req.body?.experienceLevel;
+    if (!EXPERIENCE_LEVELS.includes(experienceLevel)) {
+      return res.status(400).json({ error: "Choose Beginner, Intermediate, or Advanced." });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { experienceLevel },
+    });
+    return res.json({ user: publicUser(user) });
+  } catch (err) {
+    // P2025 = no row to update (account was deleted mid-request)
+    if (err?.code === "P2025") {
+      res.clearCookie(COOKIE_NAME, { path: "/" });
+      return res.status(401).json({ error: "Account not found." });
+    }
+    console.error("update me failed:", err);
     return res.status(500).json({ error: "Something went wrong. Try again." });
   }
 });

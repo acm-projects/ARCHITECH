@@ -1,8 +1,6 @@
 export const STORAGE_KEYS = {
   lastPage: "architech-last-page",
   mode: "architech-mode",
-  level: "architech-level",
-  user: "architech-user",
   githubConnected: "architech-github-connected",
   theme: "architech-theme",
   aiEnabled: "architech-ai-enabled",

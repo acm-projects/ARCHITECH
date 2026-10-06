@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { ProductHeader } from "../components/ProductShell";
 import { Button, IconButton, Tab, Tabs } from "../components/ui";
 import { useTheme } from "../hooks/useTheme";
+import type { AuthUser } from "../lib/authApi";
 import { isEditableTarget } from "../lib/dom";
 import type { CreateProjectInput } from "../lib/projects";
-import { readJsonStorage, STORAGE_KEYS } from "../lib/storage";
 import type { DashboardView, ExperienceLevel, Mode } from "../types";
 import { DashboardTour } from "./home/DashboardTour";
 import { ProfileMenu, SearchPalette } from "./home/DashboardOverlays";
@@ -16,11 +16,6 @@ import {
 } from "./home/DashboardSections";
 import { getDashboardSearchItems } from "./home/homeData";
 import { NewProjectModal } from "./home/ProjectModals";
-
-interface LocalUser {
-  name?: string;
-  email?: string;
-}
 
 function initialsFor(name: string): string {
   return (
@@ -37,11 +32,15 @@ export function Home({
   openNewProject,
   openProject,
   landing,
+  signOut,
+  user,
   level,
 }: {
   openNewProject: (input: CreateProjectInput) => void;
   openProject: (projectId: string) => void;
   landing: () => void;
+  signOut: () => void;
+  user: AuthUser; // the signed-in account, loaded from the backend in App.tsx
   level: ExperienceLevel;
 }) {
   const [tip, setTip] = useState(0);
@@ -52,8 +51,7 @@ export function Home({
   const [dark, setDark] = useTheme();
   const [profileOpen, setProfileOpen] = useState(false);
   const [showAllTutorials, setShowAllTutorials] = useState(false);
-  const localUser = readJsonStorage<LocalUser>(STORAGE_KEYS.user, {});
-  const displayName = localUser.name?.trim() || "Local user";
+  const displayName = user.name;
   const initials = initialsFor(displayName);
 
   useEffect(() => {
@@ -157,7 +155,7 @@ export function Home({
             setTip(0);
           }}
           onToggleTheme={() => setDark((value) => !value)}
-          onSignOut={landing}
+          onSignOut={signOut}
         />
       )}
     </main>
