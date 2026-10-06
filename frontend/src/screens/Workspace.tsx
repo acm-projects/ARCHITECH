@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button, Icon } from "../components/ui";
 import {
@@ -16,7 +16,6 @@ import {
   writeStorage,
 } from "../lib/storage";
 import type { ExperienceLevel, Mode } from "../types";
-import { createSharedProjectHash } from "../lib/share";
 import { downloadDiagram } from "../utils/exportDiagram";
 import {
   BASE_NODE_POINTS,
@@ -42,11 +41,7 @@ import {
   validatePortConnection,
   type NodePropertyValues,
 } from "./workspace/workspaceData";
-import { ArchitectureInspector } from "./workspace/ArchitectureInspector";
-import {
-  analyzeArchitecture,
-  type ArchitectureFinding,
-} from "./workspace/architectureAnalysis";
+import { analyzeArchitecture } from "./workspace/architectureAnalysis";
 import { useCanvasViewport } from "./workspace/useCanvasViewport";
 import { useDiagramHistory, type DiagramSnapshot } from "./workspace/useDiagramHistory";
 import { useDiagramTabs } from "./workspace/useDiagramTabs";
@@ -63,7 +58,7 @@ import {
   WorkspaceHeader,
 } from "./workspace/WorkspaceChrome";
 import {
-  ComponentPopover,
+  NodeActionMenu,
   ConnectionLayer,
   LiveMetrics,
   NodeLayer,
@@ -422,12 +417,6 @@ export function Workspace({
   };
 
   const selected = selectedNodeId ? getNodeLabel(selectedNodeId) : "";
-  const selectedProperties: NodePropertyValues = selectedNodeId
-    ? {
-        ...getDefaultNodeProperties(selected),
-        ...(nodeProperties[selectedNodeId] ?? {}),
-      }
-    : {};
 
   const diagramSnapshot: DiagramSnapshot = {
     addedComponents,
@@ -708,42 +697,6 @@ export function Workspace({
     setToast("Saved");
   };
 
-  const focusArchitectureFinding = (finding: ArchitectureFinding) => {
-    const alreadyFocused = activeAnalysisFinding === finding.id;
-    setActiveAnalysisFinding(alreadyFocused ? null : finding.id);
-    setAnalysisFocusIds(alreadyFocused ? [] : finding.nodeIds);
-    setSelectedNodeId(null);
-    setSelectedNodeIds([]);
-    setSelectedEdge(null);
-  };
-
-  const closeArchitectureInspector = () => {
-    setRightOpen(false);
-    setActiveAnalysisFinding(null);
-    setAnalysisFocusIds([]);
-  };
-
-  const shareProject = async () => {
-    const shareHash = createSharedProjectHash({
-      name: projectName,
-      mode,
-      state: persistedState,
-    });
-    const shareUrl = `${window.location.origin}${window.location.pathname}${shareHash}`;
-
-    if (shareUrl.length > 24000) {
-      setToast("Project is too large for a share link. Export JSON instead.");
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setToast("Share link copied");
-    } catch {
-      setToast("Could not copy share link");
-    }
-  };
-
   const connectSelectedNode = () => {
     if (!selectedNodeId) {
       setToast("Select a component first");
@@ -900,8 +853,6 @@ export function Workspace({
         : `${created.length} components duplicated`,
     );
   };
-
-  const duplicateNode = (sourceId: string) => duplicateNodes([sourceId]);
 
   const copySelection = () => {
     const nodeIds = selectedNodeIds.length
@@ -1113,10 +1064,40 @@ export function Workspace({
     setConfigNode(selectedNodeId);
   };
 
-  const addComponent = (name: string) => {
+  // Where a component was dropped, in the canvas scene's own pixels (pan and zoom removed),
+  // together with the scene's layout size.
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const sceneDropPoint = (clientX: number, clientY: number) => {
+    const scene = sceneRef.current;
+    if (!scene) return null;
+    const rect = scene.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) / zoom,
+      y: (clientY - rect.top) / zoom,
+      width: scene.offsetWidth,
+      height: scene.offsetHeight,
+    };
+  };
+
+  const addComponent = (
+    name: string,
+    drop?: { x: number; y: number; width: number; height: number } | null,
+  ) => {
     captureSnapshot();
     const component = createAddedComponent(name);
     setAddedComponents((current) => [...current, component]);
+    if (drop && drop.width > 0 && drop.height > 0) {
+      // Nodes sit at a base point (percent of the scene) plus a pixel offset, so the offset
+      // that centers the new node exactly on the drop point is drop - base.
+      const base = getAddedNodeBasePoint(addedComponents.length);
+      setNodeOffsets((current) => ({
+        ...current,
+        [component.id]: {
+          x: drop.x - (base.x / 1000) * drop.width,
+          y: drop.y - (base.y / 650) * drop.height,
+        },
+      }));
+    }
     setSelectedNodeId(component.id);
     setSelectedNodeIds([component.id]);
     setRightOpen(true);
@@ -1140,15 +1121,12 @@ export function Workspace({
         onHome={home}
         onLanding={landing}
         onSave={saveDiagram}
-        onShare={shareProject}
         onRun={runTest}
-        onAnalysis={() => setRightOpen(true)}
-        onReview={() => setHistoryOpen(true)}
-        onSettings={() => setControls((value) => !value)}
+        level={level}
       />
-      <div className={`workspace-main ${!leftOpen ? "left-collapsed" : ""} ${!rightOpen ? "right-collapsed" : ""}`}>
+      <div className={`workspace-main ${!leftOpen ? "left-collapsed" : ""} right-collapsed`}>
         <aside className="toolbox">
-          <Toolbox layer={layer} onLayer={setLayer} onAdd={addComponent} />
+          <Toolbox layer={layer} onLayer={setLayer} />
           <button className="collapse-handle left" aria-label="Collapse components panel" title="Collapse components" data-tooltip="Collapse components" onClick={() => setLeftOpen(!leftOpen)}><Icon name="chevron" size={14} /></button>
         </aside>
         {!leftOpen && <button className="reopen-panel reopen-left" onClick={() => setLeftOpen(true)}><Icon name="chevron" /><span>Components</span></button>}
@@ -1189,10 +1167,10 @@ export function Workspace({
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => {
               const name = event.dataTransfer.getData("component");
-              if (name) addComponent(name);
+              if (name) addComponent(name, sceneDropPoint(event.clientX, event.clientY));
             }}
           >
-            <div className="canvas-scene" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
+            <div ref={sceneRef} className="canvas-scene" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
             {dragging && <><span className="alignment-guide vertical" /><span className="alignment-guide horizontal" /><span className="snap-label">Aligned · 24px</span></>}
             <ConnectionLayer
               names={learnNames}
@@ -1204,6 +1182,7 @@ export function Workspace({
               showBottleneck={showBottleneck}
               bottleneckId={bottleneckId}
               nodePoint={nodePoint}
+              nodeOffset={offset}
               getNodeLabel={getNodeLabel}
               onSelectEdge={setSelectedEdge}
               onDeleteEdge={deleteEdgeByKey}
@@ -1239,6 +1218,22 @@ export function Workspace({
                 setDragging(active);
               }}
             />
+            {selectedNodeId && (
+              <NodeActionMenu
+                base={{
+                  x: nodePoint(selectedNodeId).x - offset(selectedNodeId).x,
+                  y: nodePoint(selectedNodeId).y - offset(selectedNodeId).y,
+                }}
+                shift={offset(selectedNodeId)}
+                aiEnabled={aiEnabled}
+                onAskArchie={() => {
+                  setAiOpen(true);
+                  setAiTesting(true);
+                }}
+                onConfigure={openSelectedNodeConfig}
+                onDelete={() => deleteNodeById(selectedNodeId)}
+              />
+            )}
             {Array.from({ length: notes }).map((_, index) => (
               <div className={`sticky-note note-${index}`} key={index}>
                 <b>{index === 0 ? "Resilience idea" : "New annotation"}</b>
@@ -1274,24 +1269,6 @@ export function Workspace({
             />
             <div className="canvas-hint"><Icon name="bolt" size={14} /> Drag empty canvas to move · Shift-drag to select · Scroll to zoom</div>
             </div>
-            {selectedNodeId && (
-              <ComponentPopover
-                selected={selected}
-                properties={selectedProperties}
-                aiEnabled={aiEnabled}
-                onClose={() => {
-                  setSelectedNodeId(null);
-                  setSelectedNodeIds([]);
-                }}
-                onExplain={() => {
-                  setAiOpen(true);
-                  setAiTesting(true);
-                }}
-                onConfigure={openSelectedNodeConfig}
-                onDuplicate={() => duplicateNode(selectedNodeId)}
-                onDelete={() => deleteNodeById(selectedNodeId)}
-              />
-            )}
             {selection && <span className="selection-box" style={{ left: selection.x, top: selection.y, width: selection.w, height: selection.h }} />}
           </div>
           <LiveMetrics
@@ -1335,27 +1312,6 @@ export function Workspace({
             />
           )}
         </section>
-        {rightOpen ? (
-          <ArchitectureInspector
-            analysis={architectureAnalysis}
-            activeFindingId={activeAnalysisFinding}
-            healthScore={healthScore}
-            availability={availability}
-            p95Latency={p95Latency}
-            monthlyCost={monthlyCost}
-            onFinding={focusArchitectureFinding}
-            onClose={closeArchitectureInspector}
-            onAskArchie={() => setAiOpen(true)}
-          />
-        ) : (
-          <button
-            className="reopen-panel reopen-right"
-            onClick={() => setRightOpen(true)}
-          >
-            <Icon name="chevron" />
-            <span>Inspection</span>
-          </button>
-        )}
         {mode === "challenge" && <>
           <div className="challenge-run-bar">
             <Button variant="soft" disabled={!stressComplete} title={stressComplete ? "Review measured constraints" : "Run the stress test before submitting"} onClick={() => setChallengeResult(true)}>Submit design</Button>

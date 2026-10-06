@@ -5,7 +5,7 @@ import { Button, IconButton, Tab, Tabs } from "../components/ui";
 import { useTheme } from "../hooks/useTheme";
 import { isEditableTarget } from "../lib/dom";
 import type { CreateProjectInput } from "../lib/projects";
-import { readJsonStorage, STORAGE_KEYS } from "../lib/storage";
+import { readLocalUser } from "../lib/localUser";
 import type { DashboardView, ExperienceLevel, Mode } from "../types";
 import { DashboardTour } from "./home/DashboardTour";
 import { ProfileMenu, SearchPalette } from "./home/DashboardOverlays";
@@ -16,22 +16,6 @@ import {
 } from "./home/DashboardSections";
 import { getDashboardSearchItems } from "./home/homeData";
 import { NewProjectModal } from "./home/ProjectModals";
-
-interface LocalUser {
-  name?: string;
-  email?: string;
-}
-
-function initialsFor(name: string): string {
-  return (
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("") || "LU"
-  );
-}
 
 export function Home({
   openNewProject,
@@ -52,9 +36,7 @@ export function Home({
   const [dark, setDark] = useTheme();
   const [profileOpen, setProfileOpen] = useState(false);
   const [showAllTutorials, setShowAllTutorials] = useState(false);
-  const localUser = readJsonStorage<LocalUser>(STORAGE_KEYS.user, {});
-  const displayName = localUser.name?.trim() || "Local user";
-  const initials = initialsFor(displayName);
+  const { displayName, initials } = readLocalUser();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

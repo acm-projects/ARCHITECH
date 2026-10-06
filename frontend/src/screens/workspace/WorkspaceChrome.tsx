@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ProductHeader } from "../../components/ProductShell";
+import { readLocalUser } from "../../lib/localUser";
+import { ProfileMenu } from "../home/DashboardOverlays";
 import { Button, Icon, IconButton, SegmentedControl, SegmentedControlItem, TextInput } from "../../components/ui";
-import type { Mode } from "../../types";
+import type { ExperienceLevel, Mode } from "../../types";
 
 interface WorkspaceHeaderProps {
   mode: Mode;
@@ -16,12 +18,9 @@ interface WorkspaceHeaderProps {
   onHome: () => void;
   onLanding: () => void;
   onSave: () => void;
-  onShare: () => void;
   running: boolean;
   onRun: () => void;
-  onAnalysis: () => void;
-  onReview: () => void;
-  onSettings: () => void;
+  level: ExperienceLevel;
 }
 
 function saveLabel(status: "saved" | "saving", lastSavedAt: string) {
@@ -49,15 +48,23 @@ export function WorkspaceHeader({
   onHome,
   onLanding,
   onSave,
-  onShare,
   running,
   onRun,
-  onAnalysis,
-  onReview,
-  onSettings,
+  level,
 }: WorkspaceHeaderProps) {
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState(projectName);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const { displayName, initials } = readLocalUser();
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setProfileOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [profileOpen]);
 
   const commitName = () => {
     const nextName = draftName.trim();
@@ -106,14 +113,6 @@ export function WorkspaceHeader({
           <div className="product-project-name">{projectControl}</div>
         </>
       )}
-      center={(
-        <nav className="workspace-view-tabs" aria-label="Workspace views">
-          <button className="active"><span>C</span>Canvas</button>
-          <button onClick={onAnalysis}><span>A</span>Analysis</button>
-          <button onClick={onReview}><span>R</span>Review</button>
-          <button onClick={onSettings}><span>S</span>Settings</button>
-        </nav>
-      )}
       actions={(
         <>
           <span className={saveStatus === "saving" ? "header-save-state saving" : "header-save-state"} role="status" aria-live="polite">
@@ -134,7 +133,7 @@ export function WorkspaceHeader({
             </SegmentedControlItem>
           </SegmentedControl>
           <Button className="header-stress-button" variant={running ? "danger" : "run"} onClick={onRun} icon={running ? "stop" : "play"}>
-            {running ? "Stop Test" : "Run Stress Test"}
+            {running ? "Stop" : "Run"}
           </Button>
           <IconButton
             icon={dark ? "sun" : "moon"}
@@ -143,7 +142,26 @@ export function WorkspaceHeader({
             onClick={onToggleTheme}
           />
           <IconButton icon="check" label="Save project" tooltip="Save" onClick={onSave} />
-          <IconButton icon="upload" label="Share project" tooltip="Share" onClick={onShare} />
+          <button
+            className="avatar avatar-button"
+            aria-label="Open account menu"
+            aria-expanded={profileOpen}
+            title="Account"
+            data-tooltip="Account"
+            onClick={() => setProfileOpen((open) => !open)}
+          >
+            {initials}
+          </button>
+          {profileOpen && (
+            <ProfileMenu
+              name={displayName}
+              initials={initials}
+              level={level}
+              dark={dark}
+              onToggleTheme={onToggleTheme}
+              onSignOut={onLanding}
+            />
+          )}
         </>
       )}
     />

@@ -35,14 +35,13 @@ function TourVisual({ step }: { step: number }) {
   );
 }
 
+// Components are added by dragging a row onto the canvas, never by clicking it.
 export function Toolbox({
   layer,
   onLayer,
-  onAdd,
 }: {
   layer: "frontend" | "backend" | "fullstack";
   onLayer: (layer: "frontend" | "backend" | "fullstack") => void;
-  onAdd: (name: string) => void;
 }) {
   const groups = ["Traffic", "Compute", "Data", "Integration"] as const;
 
@@ -75,8 +74,7 @@ export function Toolbox({
               <button
                 draggable
                 title={name}
-                aria-label={`Add ${name}`}
-                onClick={() => onAdd(name)}
+                aria-label={name}
                 onDragStart={(event) => event.dataTransfer.setData("component", name)}
                 key={name}
               >
