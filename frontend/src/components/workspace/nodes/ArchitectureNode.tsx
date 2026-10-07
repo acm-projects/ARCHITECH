@@ -6,10 +6,21 @@ import {
   useConnection,
   useNodeConnections,
   useReactFlow,
+  type Edge,
   type Node,
   type NodeProps,
 } from "@xyflow/react";
 
+import type {
+  ArchitectureNodeType,
+  NodeProperties,
+} from "../../../lib/architecture/types";
+import { buildPropertyViews } from "../../../lib/architecture/componentConfigView";
+import { removeFromGraph } from "../../../lib/architecture/nodeOperations";
+import {
+  commitPropertyDraft,
+  resetComponentProperty,
+} from "../../../lib/architecture/propertyEditing";
 import ComponentGlyph from "../ComponentGlyph";
 import {
   COMPONENT_CATALOG,
@@ -23,26 +34,14 @@ import {
   type NodePanel,
 } from "../NodeContextUi";
 
-export type ArchitectureNodeType =
-  | "client"
-  | "web-app"
-  | "mobile-app"
-  | "cdn"
-  | "dns"
-  | "server"
-  | "api-gateway"
-  | "load-balancer"
-  | "database"
-  | "cache"
-  | "queue"
-  | "worker"
-  | "object-storage"
-  | "search"
-  | "auth";
+// Defined in lib/architecture so the analysis and the saved-project validator share it.
+export type { ArchitectureNodeType };
 
 export type ArchitectureNodeData = {
   label: string;
   type: ArchitectureNodeType;
+  // Saved component configuration. Absent until a component is configured.
+  properties?: NodeProperties;
 };
 
 export const NODE_TYPE_LABELS: Record<ArchitectureNodeType, string> = {
@@ -70,7 +69,10 @@ export default function ArchitectureNode({
   data,
   selected,
 }: NodeProps<ArchitectureFlowNode>) {
-  const { deleteElements, updateNodeData } = useReactFlow();
+  const { updateNodeData, getNodes, setNodes, getEdges, setEdges } = useReactFlow<
+    ArchitectureFlowNode,
+    Edge
+  >();
   const [panel, setPanel] = useState<NodePanel>("none");
 
   // Contextual cards belong to the selected node: deselecting closes them.
@@ -80,7 +82,11 @@ export default function ArchitectureNode({
   useEffect(() => {
     if (panel === "none") return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPanel("none");
+      if (event.key === "Escape") {
+        setPanel("none");
+        // Handled here, so the same key press does not also clear the selection.
+        event.preventDefault();
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
@@ -105,6 +111,28 @@ export default function ArchitectureNode({
   const { family, label: typeLabel } = COMPONENT_CATALOG[data.type];
   // Secondary line: the component type when the node was renamed, otherwise its family.
   const meta = data.label === typeLabel ? FAMILY_LABELS[family] : typeLabel;
+  // Settings are edited through the same pure operations as everything else, on the current
+  // nodes, so one finished edit is one change to the graph (one undo step, one autosave).
+  // A refused or unchanged edit changes nothing.
+  const setProperty = (key: string, text: string) => {
+    const result = commitPropertyDraft(getNodes(), id, key, text);
+    if (!result.ok) return { message: result.message };
+    if (result.changed) setNodes(result.nodes);
+    return null;
+  };
+  const resetProperty = (key: string) => {
+    const result = resetComponentProperty(getNodes(), id, key);
+    if (result.ok && result.changed) setNodes(result.nodes);
+  };
+
+  // The same operation as deleting with the keyboard, so both always give the same result:
+  // the node and every edge attached to it go, in one change (one undo step, one autosave).
+  const deleteThisNode = () => {
+    const next = removeFromGraph({ nodes: getNodes(), edges: getEdges() }, { nodeIds: [id] });
+    setNodes(next.nodes);
+    setEdges(next.edges);
+  };
+
   const togglePanel = (next: Exclude<NodePanel, "none">) =>
     setPanel((current) => (current === next ? "none" : next));
 
@@ -139,7 +167,7 @@ export default function ArchitectureNode({
           panel={panel}
           onAskAi={() => togglePanel("ai")}
           onConfigure={() => togglePanel("configure")}
-          onDelete={() => void deleteElements({ nodes: [{ id }] })}
+          onDelete={deleteThisNode}
         />
       </NodeToolbar>
 
@@ -148,12 +176,15 @@ export default function ArchitectureNode({
         position={Position.Bottom}
         offset={10}
       >
-        {panel === "ai" && <ExplainCard type={data.type} />}
+        {panel === "ai" && <ExplainCard type={data.type} nodeId={id} />}
         {panel === "configure" && (
           <ConfigureCard
             type={data.type}
             name={data.label}
             onRename={(label) => updateNodeData(id, { label })}
+            properties={buildPropertyViews(data.type, data.properties)}
+            onSetProperty={setProperty}
+            onResetProperty={resetProperty}
           />
         )}
       </NodeToolbar>

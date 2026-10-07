@@ -1,16 +1,39 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
+
+import type { RunButtonState } from "../../lib/architecture/evaluation/resultsView";
+import { HOME_ROUTE } from "../../lib/routes";
+import type { ProjectMode } from "../projects/projectStore";
 
 type WorkspaceHeaderProps = {
   title: string;
   onTitleChange: (title: string) => void;
   onReset: () => void;
-  // Present only for saved projects.
   saveStatus?: "saved" | "saving" | "error";
-  // Present only in Learn and Challenge modes: replaces the editable title and the
-  // Learn/Run actions with a fixed title and a mode label.
-  session?: { title: string; label: string; status?: string };
+  // The project's mode. Learn and Challenge are two ways of working in the same project.
+  mode: ProjectMode;
+  onModeChange: (mode: ProjectMode) => void;
+  // Progress inside the mode, for example "Step 3 / 8".
+  modeStatus?: string;
+  // Run Design. Absent where the action is not available (the guided lesson, and Challenge,
+  // which has its own Submit).
+  onRun?: () => void;
+  runState?: RunButtonState;
+};
+
+const MODES: { mode: ProjectMode; label: string }[] = [
+  { mode: "learn", label: "Learn" },
+  { mode: "challenge", label: "Challenge" },
+];
+
+const RUN_LABELS: Record<RunButtonState, string> = {
+  idle: "Run design",
+  analyzing: "Analyzing…",
+  ready: "Run again",
+  stale: "Run again",
+  error: "Retry",
 };
 
 const MAX_TITLE_LENGTH = 80;
@@ -20,7 +43,11 @@ export default function WorkspaceHeader({
   onTitleChange,
   onReset,
   saveStatus,
-  session,
+  mode,
+  onModeChange,
+  modeStatus,
+  onRun,
+  runState = "idle",
 }: WorkspaceHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(title);
@@ -46,13 +73,11 @@ export default function WorkspaceHeader({
   return (
     <header className="ax-header flex h-11 shrink-0 items-center justify-between px-6">
       <div className="flex min-w-0 items-center gap-10">
-        <span className="ax-brand">ARCHITECH</span>
+        <Link href={HOME_ROUTE} className="ax-brand">
+          ARCHITECH
+        </Link>
 
-        {session ? (
-          <span className="truncate text-[11px] text-(--ax-ink-soft)">
-            {session.title}
-          </span>
-        ) : isEditing ? (
+        {isEditing ? (
           <input
             autoFocus
             value={draft}
@@ -79,12 +104,22 @@ export default function WorkspaceHeader({
       </div>
 
       <div className="flex items-center gap-5">
-        {session && (
-          <span className="text-[10px] text-(--ax-muted)">
-            {session.label}
-            {session.status ? ` · ${session.status}` : ""}
-          </span>
-        )}
+        <div role="group" aria-label="Project mode" className="ax-modes">
+          {MODES.map((option) => (
+            <button
+              key={option.mode}
+              type="button"
+              aria-pressed={mode === option.mode}
+              onClick={() => {
+                if (mode !== option.mode) onModeChange(option.mode);
+              }}
+              className="ax-action"
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        {modeStatus && <span className="text-[10px] text-(--ax-muted)">{modeStatus}</span>}
         {saveStatus && (
           <span role="status" data-state={saveStatus} className="ax-save">
             {saveStatus === "saving"
@@ -97,15 +132,16 @@ export default function WorkspaceHeader({
         <button type="button" onClick={onReset} className="ax-action">
           Reset
         </button>
-        {!session && (
-          <>
-            <button type="button" className="ax-action">
-              Learn
-            </button>
-            <button type="button" className="ax-action ax-action-primary">
-              Run design <span className="ax-arrow">→</span>
-            </button>
-          </>
+        {onRun && (
+          <button
+            type="button"
+            onClick={() => onRun()}
+            aria-disabled={runState === "analyzing"}
+            data-run-state={runState}
+            className="ax-action ax-action-primary"
+          >
+            {RUN_LABELS[runState]} <span className="ax-arrow">→</span>
+          </button>
         )}
       </div>
     </header>

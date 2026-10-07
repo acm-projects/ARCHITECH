@@ -824,3 +824,14 @@
     animation: none !important;
   }
 }
+
+/* A selected toggle (project mode, stress multiple) is underlined, so it never relies on color alone. */
+.ax-workspace .ax-action[aria-pressed="true"] {
+  color: var(--ax-ink);
+  box-shadow: inset 0 -1px 0 var(--ax-ink);
+}
+.ax-workspace .ax-modes {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}

@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { computePreview, formatRelativeTime } from "../projects/preview";
-import { projectStore, type Project } from "../projects/projectStore";
-import { useProjectList } from "../projects/useProjects";
+import { projectActions, type ActionResult } from "../projects/projectActions";
+import type { Project } from "../projects/projectStore";
+import { useProjectList, useProjectStorageIssue } from "../projects/useProjects";
+import { useStartProject } from "../projects/useStartProject";
+import { projectRoute } from "../../lib/routes";
 
 
 function TopologyPreview({ project }: { project: Project }) {
@@ -44,7 +46,8 @@ function TopologyPreview({ project }: { project: Project }) {
 type ProjectMenuProps = {
   project: Project;
   onRename: () => void;
-  onError: (message: string) => void;
+  // The failure message, or null once an action has succeeded.
+  onError: (message: string | null) => void;
 };
 
 function ProjectMenu({ project, onRename, onError }: ProjectMenuProps) {
@@ -67,14 +70,10 @@ function ProjectMenu({ project, onRename, onError }: ProjectMenuProps) {
     };
   }, [open]);
 
-  const run = (action: () => void, failure: string) => {
+  const run = (action: () => ActionResult<unknown>) => {
     setOpen(false);
-    try {
-      action();
-    } catch (error) {
-      console.error(failure, error);
-      onError(failure);
-    }
+    const result = action();
+    onError(result.ok ? null : result.message);
   };
 
   return (
@@ -114,12 +113,7 @@ function ProjectMenu({ project, onRename, onError }: ProjectMenuProps) {
             <button
               type="button"
               role="menuitem"
-              onClick={() =>
-                run(
-                  () => projectStore.duplicateProject(project.id),
-                  "Couldn't duplicate the project.",
-                )
-              }
+              onClick={() => run(() => projectActions.duplicate(project.id))}
               className="block w-full px-3 py-1.5 text-left hover:bg-neutral-100"
             >
               Duplicate
@@ -135,10 +129,7 @@ function ProjectMenu({ project, onRename, onError }: ProjectMenuProps) {
                   setOpen(false);
                   return;
                 }
-                run(
-                  () => projectStore.deleteProject(project.id),
-                  "Couldn't delete the project.",
-                );
+                run(() => projectActions.remove(project.id));
               }}
               className="block w-full px-3 py-1.5 text-left text-red-700 hover:bg-neutral-100"
             >
@@ -177,32 +168,31 @@ function RenameField({ title, onCommit }: RenameFieldProps) {
   );
 }
 
+// Shown in the same place as other errors when projects cannot be listed or saved at all.
+const STORAGE_ISSUE_MESSAGES = {
+  unavailable: "Browser storage is blocked, so projects can't be saved.",
+  unreadable: "Saved projects couldn't be read. They haven't been changed.",
+} as const;
+
 export default function RecentProjects() {
-  const router = useRouter();
+  const startProject = useStartProject();
   const projects = useProjectList();
+  const storageIssue = useProjectStorageIssue();
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Captured once so relative times do not change during render.
   const [nowMs] = useState(() => Date.now());
 
+  // A new project opens in Learn mode on an empty canvas; a repeat click is ignored.
   const createProject = () => {
-    try {
-      const project = projectStore.createProject();
-      router.push(`/workspace/${project.id}`);
-    } catch (caught) {
-      console.error("Couldn't create the project.", caught);
-      setError("Couldn't create the project.");
-    }
+    const result = startProject({ mode: "learn" });
+    if (result) setError(result.ok ? null : result.message);
   };
 
   const commitRename = (project: Project, title: string) => {
     setRenamingId(null);
-    try {
-      projectStore.renameProject(project.id, title);
-    } catch (caught) {
-      console.error("Couldn't rename the project.", caught);
-      setError("Couldn't rename the project.");
-    }
+    const result = projectActions.rename(project.id, title);
+    setError(result.ok ? null : result.message);
   };
 
   const count = projects?.length ?? 0;
@@ -222,9 +212,9 @@ export default function RecentProjects() {
             {String(count).padStart(2, "0")}
           </span>
         </h2>
-        {error && (
+        {(error ?? (storageIssue ? STORAGE_ISSUE_MESSAGES[storageIssue] : null)) && (
           <p role="alert" className="text-xs text-red-700">
-            {error}
+            {error ?? (storageIssue ? STORAGE_ISSUE_MESSAGES[storageIssue] : null)}
           </p>
         )}
       </div>
@@ -255,7 +245,7 @@ export default function RecentProjects() {
           {projects.map((project) => (
             <li key={project.id} className="group/card relative shrink-0 snap-start">
               <Link
-                href={`/workspace/${project.id}`}
+                href={projectRoute(project.id)}
                 aria-label={`Open ${project.title}`}
                 className="block focus-visible:outline-none"
               >
@@ -278,7 +268,7 @@ export default function RecentProjects() {
                   />
                 ) : (
                   <Link
-                    href={`/workspace/${project.id}`}
+                    href={projectRoute(project.id)}
                     className="min-w-0 truncate text-sm tracking-tight focus-visible:underline focus-visible:outline-none"
                   >
                     {project.title}

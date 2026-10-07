@@ -1,4 +1,4 @@
-import Link from "next/link";
+import StartChallengeButton from "./StartChallengeButton";
 
 type DailyChallengeProps = {
   title: string;
@@ -37,6 +37,7 @@ function HeroDiagram() {
   return (
     <svg
       viewBox="0 0 600 340"
+      preserveAspectRatio="xMaxYMid meet"
       className="h-full w-full"
       aria-hidden="true"
       fill="none"
@@ -112,7 +113,7 @@ export default function DailyChallenge({
 
   return (
     <section className="relative min-h-0 flex-1 overflow-hidden bg-[#0A0A0A] text-white max-lg:min-h-[75dvh]">
-      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[58%] items-center md:flex">
+      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[50%] items-center md:flex">
         <HeroDiagram />
       </div>
 
@@ -127,7 +128,7 @@ export default function DailyChallenge({
         </div>
 
         <div>
-          <h1 className="text-[clamp(2.25rem,min(7.5vw,12.5vh),7.5rem)] font-light leading-[0.95] tracking-[-0.045em]">
+          <h1 className="text-[clamp(2.25rem,min(6vw,12.5vh),7.5rem)] font-light leading-[0.95] tracking-[-0.045em]">
             {lines.map((line) => (
               <span key={line} className="block overflow-hidden pb-[0.08em]">
                 <span data-reveal="line" className="block">
@@ -137,28 +138,14 @@ export default function DailyChallenge({
             ))}
           </h1>
 
-          <div className="mt-[clamp(0.75rem,3vh,2rem)] flex flex-wrap items-center justify-between gap-6">
+          <div className="mt-[clamp(0.75rem,3vh,2rem)] flex flex-col items-start gap-4">
+            <div data-reveal="fade">
+              <StartChallengeButton title={title} />
+            </div>
+
             <p data-reveal="fade" className="text-sm text-neutral-400">
               {requirement}
             </p>
-
-            <div data-reveal="fade">
-              <Link
-                href="/challenge"
-                data-magnetic
-                className="group flex h-[clamp(4rem,11vh,6rem)] w-[clamp(4rem,11vh,6rem)] items-center justify-center rounded-full border border-neutral-600 text-sm transition-colors duration-200 hover:border-blue-600 hover:bg-blue-600 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-500 motion-reduce:transition-none"
-              >
-                <span className="flex items-center gap-1.5">
-                  Start
-                  <span
-                    aria-hidden="true"
-                    className="transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none"
-                  >
-                    →
-                  </span>
-                </span>
-              </Link>
-            </div>
           </div>
         </div>
       </div>
