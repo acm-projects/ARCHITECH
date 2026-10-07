@@ -269,7 +269,7 @@ test("a new project is a real project opened by id, on an empty canvas", () => {
   const source = read("src/components/projects/useStartProject.ts");
   assert.match(source, /projectActions\.create/);
   assert.match(source, /router\.push\(projectRoute\(result\.value\.id\)\)/);
-  assert.match(source, /nodes: \[\], edges: \[\]/);
+  assert.match(source, /nodes: \[\],\s*edges: \[\]/);
   const store = makeStore();
   const project = store.createProject({ mode: "learn", nodes: [], edges: [] });
   assert.equal(store.getProject(project.id)?.nodes.length, 0);
