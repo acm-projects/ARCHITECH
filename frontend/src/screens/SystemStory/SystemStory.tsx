@@ -3105,13 +3105,13 @@ timeline.to({}, { duration: 1.5 });
         </span>
 
         <h2>
-          Let's build
+          Let&apos;s build
           <br />
           Instagram.
         </h2>
 
         <p>
-          Start simple. We'll add complexity only when the
+          Start simple. We&apos;ll add complexity only when the
           system needs it.
         </p>
       </header>

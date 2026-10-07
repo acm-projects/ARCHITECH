@@ -3,7 +3,7 @@ import type {
   Evaluation,
   Finding,
   FindingSeverity,
-} from "./evaluation/urlShortener";
+} from "./cardResult";
 
 type ChallengeCardProps = {
   challenge: Challenge;
@@ -11,6 +11,12 @@ type ChallengeCardProps = {
   result: Evaluation | null;
   onRun: () => void;
   onBack: () => void;
+  // The design changed after this result, so it describes an earlier submission.
+  stale?: boolean;
+  // A submission is being judged.
+  running?: boolean;
+  // The latest submission failed.
+  error?: string | null;
 };
 
 const MAX_FINDINGS = 4;
@@ -51,10 +57,25 @@ export default function ChallengeCard({
   result,
   onRun,
   onBack,
+  stale = false,
+  running = false,
+  error = null,
 }: ChallengeCardProps) {
   return (
     <div className="ax-card ax-learn" aria-live="polite">
       <span className="ax-panel-title">Challenge</span>
+
+      {running && <p className="ax-card-label mt-3">Checking your design…</p>}
+      {error && (
+        <p role="alert" className="ax-card-label mt-3">
+          Submission failed: {error}
+        </p>
+      )}
+      {result && stale && !running && (
+        <p role="status" className="ax-card-label mt-3">
+          Your design changed — submit again.
+        </p>
+      )}
 
       {result ? (
         <>
@@ -97,7 +118,7 @@ export default function ChallengeCard({
               Back to requirements
             </button>
             <button type="button" onClick={onRun} className="ax-card-link mt-0!">
-              Run again →
+              Submit again →
             </button>
           </div>
         </>
@@ -118,7 +139,7 @@ export default function ChallengeCard({
           </ul>
 
           <button type="button" onClick={onRun} className="ax-card-link">
-            Run design →
+            Submit design →
           </button>
         </>
       )}

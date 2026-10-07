@@ -347,7 +347,7 @@ export function AuthPage({
           {/* Legal */}
           {isSignup && (
             <p className="auth-legal">
-              By creating an account, you agree to ARCHITECT's{" "}
+              By creating an account, you agree to ARCHITECT&apos;s{" "}
               <button type="button">Terms of Service</button> and{" "}
               <button type="button">Privacy Policy</button>.
             </p>
@@ -506,7 +506,7 @@ export function Onboarding({
                   system design experience?
                 </h1>
 
-                <p>We'll tailor ARCHITECT to your experience.</p>
+                <p>We&apos;ll tailor ARCHITECT to your experience.</p>
               </div>
 
               {/* native radios: one selection, arrow-key navigation */}

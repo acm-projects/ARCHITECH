@@ -1,14 +1,16 @@
-import type { ConnectionFeedback, Lesson } from "./lessons";
+import { FREE_PLAY_BODY, FREE_PLAY_TITLE, type ConnectionFeedback, type Lesson } from "./lessons";
 import type { LessonStatus } from "./useLessonEngine";
 
 type LearnCardProps = {
   lesson: Lesson;
   stepIndex: number;
   status: LessonStatus;
+  // The tutorial is finished and the design is free to change: replaces the step.
+  freePlay?: boolean;
   feedback?: ConnectionFeedback | null;
+  // A hint worked out from the design, shown when the learner is stuck.
+  hint?: string | null;
   onDismissFeedback?: () => void;
-  // Not connected yet: without a handler the action is shown disabled.
-  onFinish?: () => void;
 };
 
 // Small floating card over the canvas; the canvas stays fully interactive around it.
@@ -16,16 +18,17 @@ export default function LearnCard({
   lesson,
   stepIndex,
   status,
+  freePlay = false,
   feedback,
+  hint,
   onDismissFeedback,
-  onFinish,
 }: LearnCardProps) {
   const count = lesson.steps.length;
   const step = lesson.steps[stepIndex];
-  const isComplete = status === "complete";
+  const isComplete = freePlay || status === "complete";
 
   return (
-    <div className="ax-card ax-learn" aria-live="polite">
+    <div className="ax-card ax-learn" aria-live="polite" data-learn-phase={freePlay ? "free-play" : "guided"}>
       <div className="flex items-baseline justify-between">
         <span className="ax-panel-title">Learn</span>
         <span className="ax-card-label">
@@ -33,21 +36,10 @@ export default function LearnCard({
         </span>
       </div>
 
-      {isComplete ? (
+      {freePlay ? (
         <>
-          <p className="ax-card-title mt-4">✓ Lesson complete</p>
-          <p className="ax-card-body">{lesson.title}</p>
-          <p className="ax-card-label mt-4">You created:</p>
-          <p className="mt-1 text-[10px]">{lesson.summary}</p>
-          <button
-            type="button"
-            disabled={!onFinish}
-            onClick={onFinish}
-            title={onFinish ? undefined : "Not connected yet"}
-            className="ax-card-link"
-          >
-            Finish lesson →
-          </button>
+          <p className="ax-card-title mt-4">{FREE_PLAY_TITLE}</p>
+          <p className="ax-card-body">{FREE_PLAY_BODY}</p>
         </>
       ) : status === "success" ? (
         <>
@@ -55,6 +47,7 @@ export default function LearnCard({
             ✓ {step.successMessage}
           </p>
           <p className="ax-card-body">{step.title}</p>
+          <p className="ax-card-label mt-2">{step.successExplanation}</p>
         </>
       ) : feedback ? (
         <div className="ax-feedback mt-4">
@@ -73,6 +66,7 @@ export default function LearnCard({
           <p className="ax-card-title mt-4">{step.title}</p>
           <p className="ax-card-body">{step.description}</p>
           <p className="mt-3 text-[10px]">{step.instruction}</p>
+          {hint && <p className="ax-card-label mt-2">Hint: {hint}</p>}
         </>
       )}
 

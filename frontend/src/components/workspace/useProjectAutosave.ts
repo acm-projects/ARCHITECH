@@ -1,71 +1,71 @@
 import type { Edge } from "@xyflow/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 
-import { projectStore, serializeProjectContent } from "../projects/projectStore";
+import { createProjectAutosave } from "../projects/projectAutosave";
+import type { AutosaveStatus } from "../projects/autosaveController";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 
+export { AUTOSAVE_DEBOUNCE_MS } from "../projects/projectAutosave";
+
+// What the header shows. "dirty" (changed, waiting for the debounce) reads as "saving".
 export type SaveStatus = "saved" | "saving" | "error";
 
-export const AUTOSAVE_DEBOUNCE_MS = 500;
+const toSaveStatus = (status: AutosaveStatus): SaveStatus =>
+  status === "dirty" ? "saving" : status;
 
-// Saves a project's title, nodes and edges shortly after they stop changing.
-// Changes that do not alter the saved content (selection, measuring, a drag that ends
-// where it started) are ignored, so opening a project never changes its edit time.
+const noopSubscribe = () => () => {};
+
+// Saves a project's title, nodes and edges shortly after they stop changing. Changes that
+// do not alter the saved content (selection, measuring, a drag that ends where it
+// started) are ignored, so opening a project never changes its edit time. Pass null for
+// sessions that are not saved. The save logic is in projects/autosaveController.ts.
 export function useProjectAutosave(
   projectId: string | null,
   title: string,
   nodes: ArchitectureFlowNode[],
   edges: Edge[],
-): SaveStatus {
-  const [status, setStatus] = useState<SaveStatus>("saved");
-  const lastSaved = useRef<string | null>(null);
-  const pendingSave = useRef<(() => void) | null>(null);
+): { status: SaveStatus; flush: () => void } {
+  // One controller per project: switching projects starts from a clean controller.
+  const controller = useMemo(
+    () => (projectId ? createProjectAutosave(projectId) : null),
+    [projectId],
+  );
 
-  // Declared first so its cleanup runs before the debounce effect's cleanup on unmount.
-  // Writes any pending change when leaving the page or the project.
+  const subscribe = useCallback(
+    (listener: () => void) => (controller ? controller.subscribe(listener) : noopSubscribe()),
+    [controller],
+  );
+  const status = useSyncExternalStore(
+    subscribe,
+    (): AutosaveStatus => controller?.getStatus() ?? "saved",
+    (): AutosaveStatus => "saved",
+  );
+
   useEffect(() => {
-    if (!projectId) return;
-    const flush = () => pendingSave.current?.();
+    // While a node is being dragged the graph changes on every frame. The position it ends on
+    // is saved once the drag is over, so there is nothing to compare or copy until then.
+    if (nodes.some((node) => node.dragging)) return;
+    controller?.update({ title, nodes, edges });
+  }, [controller, title, nodes, edges]);
+
+  // Writes a pending change when the page is hidden or closed, or the workspace is left.
+  useEffect(() => {
+    if (!controller) return;
+    const flush = () => controller.flush();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
     window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       flush();
     };
-  }, [projectId]);
+  }, [controller]);
 
-  useEffect(() => {
-    if (!projectId) return;
-    const snapshot = serializeProjectContent(title, nodes, edges);
+  // Writes a pending change now (Ctrl/Cmd+S). Does nothing when nothing is pending.
+  const flush = useCallback(() => controller?.flush(), [controller]);
 
-    // The first run is the content that was just loaded, which is already saved.
-    if (lastSaved.current === null) {
-      lastSaved.current = snapshot;
-      return;
-    }
-    if (snapshot === lastSaved.current) {
-      setStatus("saved");
-      return;
-    }
-
-    setStatus("saving");
-    const save = () => {
-      pendingSave.current = null;
-      try {
-        projectStore.updateProject(projectId, { title, nodes, edges });
-        lastSaved.current = snapshot;
-        setStatus("saved");
-      } catch (error) {
-        console.error("Could not save project", error);
-        setStatus("error");
-      }
-    };
-    pendingSave.current = save;
-    const timer = setTimeout(save, AUTOSAVE_DEBOUNCE_MS);
-    return () => {
-      clearTimeout(timer);
-      pendingSave.current = null;
-    };
-  }, [projectId, title, nodes, edges]);
-
-  return status;
+  return { status: toSaveStatus(status), flush };
 }

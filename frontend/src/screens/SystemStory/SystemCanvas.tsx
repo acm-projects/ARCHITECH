@@ -498,7 +498,7 @@ export default function SystemCanvas() {
                 </strong>
 
                 <p>
-                  One server can't handle everyone at once.
+                  One server can&apos;t handle everyone at once.
                 </p>
               </div>
 
@@ -537,7 +537,7 @@ export default function SystemCanvas() {
                       </strong>
 
                       <span>
-                        Don't send every request to one server.
+                        Don&apos;t send every request to one server.
                       </span>
                     </div>
                   </div>
@@ -1040,7 +1040,7 @@ export default function SystemCanvas() {
 
             <p>
               Every system starts with someone asking it to
-              do something. We'll build only what Instagram
+              do something. We&apos;ll build only what Instagram
               needs as the problem grows.
             </p>
           </div>
@@ -1074,7 +1074,7 @@ export default function SystemCanvas() {
             </div>
 
             <p>
-              The server receives the user's request and
+              The server receives the user&apos;s request and
               decides what the application should do next.
             </p>
           </div>

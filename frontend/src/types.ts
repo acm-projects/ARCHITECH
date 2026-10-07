@@ -1,4 +1,4 @@
-export type Page = "landing" | "signin" | "signup" | "onboarding" | "home" | "workspace";
-export type Mode = "challenge" | "learn";
-export type DashboardView = "recent" | "challenge";
+// What the restored landing, sign-in and onboarding screens share.
 export type ExperienceLevel = "Beginner" | "Intermediate" | "Advanced";
+export type Mode = "learn" | "challenge";
+export type Page = "landing" | "signin" | "signup" | "onboarding";
