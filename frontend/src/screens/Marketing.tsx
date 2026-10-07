@@ -77,7 +77,7 @@ export function Landing({
         className={`landing-nav smart-nav ${navVisible ? "is-visible" : ""}`}
         onFocusCapture={() => setNavVisible(true)}
       >
-        <Logo />
+        <div className="logo"><Logo /></div>
 
         <div className="nav-actions">
           <Button variant="ghost" onClick={signIn}>
