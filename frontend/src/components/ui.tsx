@@ -125,6 +125,7 @@ export function ArchieMark({
 const LOGO_ASSETS = {
   "with-archie": { src: "/logo-with-archie.svg", width: 1720, height: 385 },
   "without-archie": { src: "/logo-without-archie.svg", width: 1365, height: 215 },
+  "archie-without-props": { src: "/logo-archie-without-props.svg", width: 1405, height: 214 },
 } as const;
 
 type LogoVariant = keyof typeof LOGO_ASSETS;
