@@ -497,8 +497,7 @@ export function Onboarding({
             <>
               <div className="onboarding-heading">
                 <h1 ref={headingRef} tabIndex={-1}>
-                  What best describes your <br />
-                  system design experience?
+                  What best describes your system design experience?
                 </h1>
 
                 <p>We'll tailor ARCHITECH to your experience.</p>
