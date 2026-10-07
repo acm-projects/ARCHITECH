@@ -4213,12 +4213,12 @@ textarea,
   color: var(--neutral-950);
   line-height: 0;
 }
-/* Keep the logo close to the height of the surrounding text. */
+/* The SVG has a little bottom padding; offset it to line up the lettering with the text. */
 .brand-wordmark-inline {
   display: inline-block;
   width: auto;
-  height: 0.85em;
-  vertical-align: baseline;
+  height: 1em;
+  vertical-align: -0.08em;
 }
 
 /* Default header width; individual layouts adjust it below. */
