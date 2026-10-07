@@ -13,7 +13,7 @@ Users build software systems on a visual drag-and-drop canvas, connect component
 Instead of memorizing the "right" architecture, Architech gives users a space to **experiment, make mistakes, and understand why architectural decisions matter.**
 
 ---
-
+;
 # ✨ Why Architech?
 
 ---
