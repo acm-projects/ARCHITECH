@@ -1,17 +1,21 @@
 import type { Edge } from "@xyflow/react";
 
-import { firstWebSystemLesson, type Lesson } from "../learn/lessons";
+import {
+  firstWebSystemLesson,
+  type Lesson,
+} from "../learn/lessons";
 import { useLessonEngine } from "../learn/useLessonEngine";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 import { useRunSession } from "./useRunSession";
 
-// Learn mode of a project: a guided lesson, then free play on the same canvas.
+// Controls everything that belongs specifically to Learn mode.
 //
-//   guided     the lesson watches the design and advances by itself. No Run Design.
-//   free-play  every step has held, so the lesson steps aside. The design is the learner's, and
-//              Run Design, the system review, the stress test and Archie are available.
+// Learn has two phases:
+// 1. Guided tutorial — the lesson watches the architecture and moves forward as the user builds.
+// 2. Free play — after the tutorial, the user keeps the same canvas and can experiment freely.
 //
-// Nothing here is Challenge's: a challenge brief, submission or score never shows in Learn.
+// Challenge state does not belong here. Learn and Challenge share the project graph,
+// but their lesson/results/submission state stays separate.
 export function useLearnMode({
   enabled,
   scopeKey,
@@ -25,18 +29,46 @@ export function useLearnMode({
   edges: Edge[];
   lesson?: Lesson;
 }) {
-  const engine = useLessonEngine(lesson, nodes, edges, enabled);
-  const { freePlay, reset: restartLesson } = engine;
+  // The lesson engine watches the live graph and figures out which tutorial step
+  // the learner is on, whether the step is complete, and what feedback/hints to show.
+  const engine = useLessonEngine(
+    lesson,
+    nodes,
+    edges,
+    enabled,
+  );
 
-  // Run Design belongs to free play: it is the same evaluation as everywhere else, in a session
-  // of its own, so nothing from a Challenge submission can appear here.
+  // freePlay becomes true once the guided lesson is finished.
+  // restartLesson lets Reset take Learn back to the beginning.
+  const {
+    freePlay,
+    reset: restartLesson,
+  } = engine;
+
+  // Run Design is only available after the tutorial is finished.
+  //
+  // This gets its own run session, separate from Challenge, so a Challenge
+  // submission/result can never accidentally appear inside Learn mode.
   const runs = useRunSession({
     scopeKey,
     enabled: enabled && freePlay,
     nodes,
     edges,
   });
-  const { reset: clearAnalysis } = runs;
 
-  return { lesson, engine, freePlay, runs, restartLesson, clearAnalysis };
+  // Learn Reset uses this to remove old Run Design / System Review results
+  // so we don't keep showing analysis for an architecture that was reset.
+  const {
+    reset: clearAnalysis,
+  } = runs;
+
+  // ArchitectureWorkspace gets everything it needs for both phases of Learn.
+  return {
+    lesson,
+    engine,
+    freePlay,
+    runs,
+    restartLesson,
+    clearAnalysis,
+  };
 }

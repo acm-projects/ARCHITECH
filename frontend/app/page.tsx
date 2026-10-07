@@ -1,7 +1,11 @@
+/* app/page.tsx delegates the actual authentication/onboarding behavior to EntryFlowLoader.
+  this imports the component responsible for loading the landing/auth/onboarding flow.
+  A browser that is already signed in is sent on to /dashboard (see EntryFlow).
+*/
 import EntryFlowLoader from "@/components/auth/EntryFlowLoader";
 
-// The landing page, sign in, sign up and onboarding. A browser that is already signed in is
-// sent on to /dashboard (see EntryFlow).
+// Entry point of the '/' route -> Next.js routing
 export default function Page() {
   return <EntryFlowLoader />;
 }
+

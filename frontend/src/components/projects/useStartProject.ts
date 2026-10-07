@@ -1,3 +1,4 @@
+// this file shows when someone click start/new project, create the project and get them into its workspace
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -7,32 +8,64 @@ import { projectRoute } from "../../lib/routes";
 import { projectActions, type ActionResult } from "./projectActions";
 import type { NewProjectInit, Project } from "./projectStore";
 
-// Where a new project starts: an empty canvas. The mode decides what is shown around it.
-export const NEW_PROJECT_START: Pick<NewProjectInit, "nodes" | "edges"> = { nodes: [], edges: [] };
+// Every new project starts with an empty canvas. Learn or Challenge mode
+// decides what guidance gets shown around that canvas.
+export const NEW_PROJECT_START: Pick<NewProjectInit, "nodes" | "edges"> = {
+  nodes: [],
+  edges: [],
+};
 
-// How long a second request is ignored after a project was created, so a double click creates
-// one project, not two, while the navigation is under way.
+// Stops a double click from accidentally creating two projects while the first one is opening.
 const DUPLICATE_GUARD_MS = 1500;
 
-// Creates a real project and opens it. Every canvas session belongs to a project, so this is
-// the only way into the workspace. Returns null when the request was ignored as a repeat;
-// otherwise the creation result, so the caller can show a failure. Navigates only on success.
+// Creates a project and opens its workspace. We always create the project first
+// because there is no standalone/scratch canvas anymore.
 export function useStartProject(): (init?: NewProjectInit) => ActionResult<Project> | null {
   const router = useRouter();
+
+  // Remember if a project is already being created so repeated clicks can be ignored.
   const creating = useRef(false);
 
   return useCallback(
     (init) => {
       if (creating.current) return null;
-      const result = projectActions.create({ ...NEW_PROJECT_START, ...init });
+
+      // Start from the shared empty canvas, then add the title/mode/source passed by the caller.
+      const result = projectActions.create({
+        ...NEW_PROJECT_START,
+        ...init,
+      });
+
+      // Stay on the current page if creation failed so the caller can show the error.
       if (!result.ok) return result;
+
+      // Give navigation a moment to finish before allowing another project to be created.
       creating.current = true;
       window.setTimeout(() => {
         creating.current = false;
       }, DUPLICATE_GUARD_MS);
+
+      // Creation worked, so open this project's workspace using its new ID.
       router.push(projectRoute(result.value.id));
+
       return result;
     },
     [router],
   );
 }
+
+/*Big picture:
+Click Start
+   ↓
+useStartProject()
+   ↓
+create project
+   ↓
+creation worked?
+  ↙       ↘
+no        yes
+↓          ↓
+return    get project ID
+error       ↓
+         open /workspace/[id]
+ */

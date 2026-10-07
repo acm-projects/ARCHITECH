@@ -1,3 +1,4 @@
+// this file owns the signed-in user's small account menu and sign out behavior
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -6,13 +7,17 @@ import { useEffect, useRef, useState } from "react";
 import { readLocalUser } from "../../lib/localUser";
 import { signOut } from "../../lib/session";
 
-// The signed-in user's initials, with the account menu: who is signed in, and Sign out.
+// account menu for the signed-in user. shows the locally stored profile and provides
+// the ui entry point for signing out
 export default function ProfileMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  // user profile data is currently read from local browser storage.
+  // BACKEND: replace this with the auth user's profile when user account are connected
   const [user] = useState(readLocalUser);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // while the menu is open, close it when the user clicks outside or presses escape
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
@@ -51,6 +56,7 @@ export default function ProfileMenu() {
           <button
             type="button"
             role="menuitem"
+            // end the session first, then return the user to the public entry flow
             onClick={() => {
               setOpen(false);
               signOut();
