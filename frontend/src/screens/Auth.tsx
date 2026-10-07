@@ -362,15 +362,14 @@ export function AuthPage({
   );
 }
 
-// Step 1 rows; order and copy are presentation only, the value is the ExperienceLevel
+// Experience choices share the same values used by the saved profile.
 const EXPERIENCE_OPTIONS: ReadonlyArray<{
   level: ExperienceLevel;
-  index: string;
   description: string;
 }> = [
-  { level: "Beginner", index: "01", description: "I'm learning how systems fit together." },
-  { level: "Intermediate", index: "02", description: "I understand the basics and want to practice designing systems." },
-  { level: "Advanced", index: "03", description: "I'm comfortable with system design and want more challenging scenarios." },
+  { level: "Beginner", description: "I'm learning how systems fit together." },
+  { level: "Intermediate", description: "I understand the basics and want to practice designing systems." },
+  { level: "Advanced", description: "I'm comfortable with system design and want more challenging scenarios." },
 ];
 
 /* BACKEND INTEGRATION:
@@ -500,7 +499,6 @@ export function Onboarding({
                   What best describes your system design experience?
                 </h1>
 
-                <p>We'll tailor ARCHITECH to your experience.</p>
               </div>
 
               {/* native radios: one selection, arrow-key navigation */}
@@ -524,9 +522,7 @@ export function Onboarding({
                         onChange={() => setLevel(option.level)}
                       />
 
-                      <span className="onboarding-option-index" aria-hidden="true">
-                        {option.index}
-                      </span>
+                      <span className="onboarding-option-media" aria-hidden="true" />
 
                       <span className="onboarding-option-copy">
                         <span className="onboarding-option-title">{option.level}</span>
@@ -534,8 +530,6 @@ export function Onboarding({
                           {option.description}
                         </span>
                       </span>
-
-                      <span className="onboarding-option-radio" aria-hidden="true" />
                     </label>
                   );
                 })}
