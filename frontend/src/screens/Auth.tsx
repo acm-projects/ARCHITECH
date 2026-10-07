@@ -56,7 +56,7 @@ const SOCIAL_PROVIDERS = [
   { name: "Google", Mark: GoogleMark },
 ] as const;
 /*App.tsx -> sends information/functions -> AuthPage
-  AuthPage receives four props: 
+  AuthPage receives four props:
   1. kind: "signin" | "signup" - tells this component which version it should display
   2. back: () => void - go back to the previous page
   3. done: () => void - auth is done, move to next
@@ -87,7 +87,7 @@ export function AuthPage({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // to make password hidden by default
   const [remember, setRemember] = useState(false); // for backend, not functioning yet
-  const [message, setMessage] = useState(""); 
+  const [message, setMessage] = useState("");
 
   // determines whether the main button should be enabled
   // have to meet requirements to enable the main button
@@ -100,7 +100,7 @@ export function AuthPage({
   // runs when someone click main button (submit)
   /* BACKED INTEGRATION - EMAIL AUTHENTICATION
      This function currently simulates signup/signin using local storage.
-     
+
      Sign up - frontend provides name, email, and password, which are stored locally.
      Backend should:
      1. validate the request
@@ -111,7 +111,7 @@ export function AuthPage({
      6. return the created user
 
      Expected frontend flow:
-     - post/api/auth/signup 
+     - post/api/auth/signup
      - success
      - done
      - onboarding
@@ -122,12 +122,12 @@ export function AuthPage({
      2. validate the pwd
      3. create/return an auth session
 
-     Error handling - backend errors should be returned in a form that the frontend can display to the user.    
+     Error handling - backend errors should be returned in a form that the frontend can display to the user.
                       can display using setMessage()
   */
   const submit = (event?: FormEvent) => {
     event?.preventDefault(); // prevent refresh, make user to stay on page
-    setMessage(""); // clear message before moving on to next 
+    setMessage(""); // clear message before moving on to next
 
     // show message if the form cannot be submitted
     if (!canSubmit) {
@@ -343,7 +343,7 @@ export function AuthPage({
           {/* Legal */}
           {isSignup && (
             <p className="auth-legal">
-              By creating an account, you agree to ARCHITECH's{" "}
+              By creating an account, you agree to ARCHITECT&apos;s{" "}
               <button type="button">Terms of Service</button> and{" "}
               <button type="button">Privacy Policy</button>.
             </p>
@@ -409,17 +409,17 @@ export function Onboarding({
 
   /*
      BACKEND INTEGRATION — EXPERIENCE LEVEL
-    
+
      The selected experience level should eventually be saved to the
      authenticated user's profile before moving to Step 2.
-    
+
      Frontend provides:
      {
        experienceLevel: level
      }
-    
+
      Example future flow:
-    
+
      PATCH /api/users/me
             ↓
      backend saves experience level
@@ -427,7 +427,7 @@ export function Onboarding({
      success
             ↓
      setStep(2)
-    
+
      For now, the level remains in frontend state and we immediately
      continue to Step 2.
    */
@@ -437,11 +437,11 @@ export function Onboarding({
 
   /*
      BACKEND INTEGRATION — GITHUB OAUTH
-    
+
      This is currently only a frontend placeholder.
-    
+
      Future expected flow:
-    
+
      User clicks "Connect GitHub"
             ↓
      Start GitHub OAuth
@@ -453,7 +453,7 @@ export function Onboarding({
      Backend associates GitHub account with authenticated user
             ↓
      Frontend continues to Home
-    
+
      Do not treat the account as connected until OAuth succeeds.
    */
   const connectGitHub = () => {
@@ -464,10 +464,10 @@ export function Onboarding({
 
   /*
      GitHub is optional.
-    
+
      If the user skips this step, onboarding is considered complete
      and App.tsx's done() callback sends the user to Home.
-    
+
      No GitHub account should be stored for users who skip.
    */
   const skipGitHub = () => {
@@ -499,6 +499,7 @@ export function Onboarding({
                   What best describes your system design experience?
                 </h1>
 
+                <p>We&apos;ll tailor ARCHITECT to your experience.</p>
               </div>
 
               {/* native radios: one selection, arrow-key navigation */}

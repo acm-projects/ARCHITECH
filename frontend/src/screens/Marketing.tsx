@@ -120,7 +120,19 @@ export function Landing({
         </div>
       </section>
 
-      <SystemStory />
+
+      {/* =====================================
+          INTERACTIVE PRODUCT STORY
+
+          01 BUILD
+          02 BREAK
+          03 SOLVE
+          04 LEARN
+          05 CHALLENGE
+      ====================================== */}
+
+      <SystemStory onGetStarted={signUp} />
+
     </main>
   )
 }
