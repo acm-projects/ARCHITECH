@@ -17,7 +17,11 @@ const ACTIVE_NODE_SHADOW =
 const OVERLOADED_NODE_SHADOW =
   "0 0 0 3px #ffffff, 0 0 0 6px rgba(10, 10, 10, 0.18), 0 18px 42px rgba(10, 10, 10, 0.16)";
 
-export default function SystemStory() {
+export default function SystemStory({
+  onGetStarted,
+}: {
+  onGetStarted: () => void;
+}) {
   const sectionRef = useRef<HTMLElement>(null);
   const demoRef = useRef<HTMLDivElement>(null);
 
@@ -3105,19 +3109,19 @@ timeline.to({}, { duration: 1.5 });
         </span>
 
         <h2>
-          Let's build
+          Let&apos;s build
           <br />
           Instagram.
         </h2>
 
         <p>
-          Start simple. We'll add complexity only when the
+          Start simple. We&apos;ll add complexity only when the
           system needs it.
         </p>
       </header>
 
       <div ref={demoRef}>
-        <SystemCanvas />
+        <SystemCanvas onGetStarted={onGetStarted} />
       </div>
     </section>
   );

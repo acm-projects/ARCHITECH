@@ -1,20 +1,9 @@
+// What the landing, sign-in and onboarding screens keep in this browser. The project store keeps
+// projects under its own key (architech:projects).
 export const STORAGE_KEYS = {
   lastPage: "architech-last-page",
-  mode: "architech-mode",
   level: "architech-level",
   user: "architech-user",
-  githubConnected: "architech-github-connected",
-  theme: "architech-theme",
-  aiEnabled: "architech-ai-enabled",
-  addedComponents: "architech-added-components",
-  nodeOffsets: "architech-node-offsets",
-  deletedNodes: "architech-deleted-nodes",
-  connections: "architech-connections",
-  nodeProperties: "architech-node-properties",
-  lastSave: "architech-last-save",
-  challengeSeen: "architech-challenge-v1",
-  projects: "architech-projects-v2",
-  activeProjectId: "architech-active-project-id",
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
