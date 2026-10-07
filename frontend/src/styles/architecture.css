@@ -1,0 +1,2213 @@
+/* ARCHITECH architecture layer: nodes, ports, edges, analysis findings, topology states, traffic, and component editing
+ * Selector ownership is consolidated here; do not add a cross-screen override stylesheet.
+ */
+.canvas-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.canvas-node:hover,
+.canvas-node.selected {
+  border-color: var(--purple);
+  box-shadow: none;
+}
+.canvas-node span:nth-child(2) b,
+.canvas-node span:nth-child(2) small {
+  display: block;
+  white-space: nowrap;
+}
+.dark .canvas-node {
+  background: var(--neutral-900);
+  border-color: var(--neutral-700);
+  color: var(--neutral-50);
+  box-shadow: none;
+}
+.dark .canvas-node small {
+  color: var(--neutral-400);
+}
+.canvas-lines path.edge-selected {
+  stroke: var(--danger, var(--color-danger));
+  stroke-width: 3;
+}
+.edge-delete-btn:hover {
+  background: var(--neutral-700);
+}
+.canvas-node.run-active {
+  border-color: var(--neutral-500);
+  box-shadow: none;
+  animation: node-running 1s infinite alternate;
+}
+.canvas-node.run-active::before {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--neutral-500);
+  box-shadow: none;
+}
+.selection-box {
+  position: absolute;
+  z-index: 20;
+  border: 1px solid var(--neutral-700);
+  background: rgba(20,20,20,.06);
+  pointer-events: none;
+}
+.has-group-selection .canvas-node.selected {
+  box-shadow: none;
+}
+.has-group-selection .canvas-node.selected::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px dashed var(--neutral-700);
+  border-radius: var(--radius-panel);
+  pointer-events: none;
+}
+.canvas-node:hover .node-actions {
+  display: flex;
+}
+.canvas-node.learn-focus {
+  border-color: var(--purple);
+  box-shadow: none;
+  animation: focus-pulse 1.5s infinite;
+}
+.canvas-lines .learning-highlight {
+  stroke: var(--purple);
+  stroke-width: 4;
+  filter: drop-shadow(0 0 3px rgba(85, 85, 85, .5));
+}
+.canvas-node.learn-pending {
+  opacity: .22;
+  filter: grayscale(.8);
+}
+.alignment-guide.vertical {
+  width: 1px;
+  top: 10%;
+  bottom: 10%;
+  left: 50%;
+}
+.alignment-guide.horizontal {
+  height: 1px;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+}
+.canvas-node:hover .connector-handle,
+.canvas-node.connecting .connector-handle {
+  display: grid;
+}
+.connector-handle.left {
+  left: -10px;
+  top: 21px;
+  transform: rotate(180deg);
+}
+.connector-handle.right {
+  right: -10px;
+  top: 21px;
+}
+.connector-handle.top {
+  left: 58px;
+  top: -10px;
+  transform: rotate(-90deg);
+}
+.connector-handle.bottom {
+  left: 58px;
+  bottom: -10px;
+  transform: rotate(90deg);
+}
+.canvas-lines .user-connection {
+  stroke: var(--purple);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 5;
+  animation: dash 1s linear infinite;
+}
+.component-popover > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 2px 9px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+.component-popover > div b {
+  font-size: 11px;
+}
+.component-popover > div button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.component-popover > button {
+  width: 100%;
+  min-height: 35px;
+  margin-top: 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 9px;
+  text-align: left;
+  color: var(--muted);
+  font-size: 9px;
+}
+.component-popover > button:first-of-type {
+  color: var(--purple);
+  border-color: var(--purple);
+}
+.component-popover > button.delete-action {
+  color: var(--danger);
+}
+.component-popover > button:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
+.dark .connector-handle,
+.dark .component-popover {
+  background: var(--neutral-900);
+  border-color: var(--neutral-500);
+}
+.dark .component-popover > button {
+  border-color: var(--neutral-700);
+}
+.dark .component-popover > button:first-of-type {
+  border-color: var(--neutral-500);
+  color: var(--neutral-300);
+}
+.main-canvas .canvas-node {
+  cursor: pointer;
+}
+.architecture-node {
+  width: 164px;
+  min-height: 82px;
+  height: auto;
+  padding: 8px 9px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--neutral-300);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+  text-align: left;
+  user-select: none;
+  touch-action: none;
+  transition: border-color .12s ease, box-shadow .12s ease, opacity .12s ease;
+}
+.architecture-node:hover,
+.architecture-node.selected {
+  border-color: var(--ink);
+  box-shadow: none;
+}
+.architecture-node:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.architecture-node .node-content {
+  display: block;
+  min-width: 0;
+}
+.node-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 6px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.node-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.architecture-node .node-title-row b {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.node-state {
+  width: 5px;
+  height: 5px;
+  margin-left: auto;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: .35;
+}
+.architecture-node .node-config-summary,
+.architecture-node .node-runtime-stat {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.architecture-node .node-config-summary {
+  margin-top: 4px;
+  color: var(--neutral-600);
+  font-size: 7px;
+  line-height: 1.2;
+}
+.architecture-node .node-runtime-stat {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--neutral-200);
+  color: var(--neutral-500);
+  font-size: 6.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .01em;
+}
+.node-visual {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--neutral-300);
+  border-radius: var(--radius-panel);
+  background: var(--neutral-50);
+  color: var(--neutral-950);
+}
+.node-client .node-visual {
+  border-radius: var(--radius-panel);
+}
+.node-client .node-visual::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -4px;
+  height: 1px;
+  background: var(--neutral-950);
+}
+.node-lb .node-visual {
+  border-radius: 0;
+  clip-path: polygon(18% 0, 82% 0, 100% 50%, 82% 100%, 18% 100%, 0 50%);
+}
+.node-gateway .node-visual {
+  box-shadow: none;
+}
+.node-service .node-visual {
+  border-radius: var(--radius-panel);
+  background: repeating-linear-gradient(
+      to bottom,
+      var(--neutral-50) 0,
+      var(--neutral-50) 8px,
+      var(--neutral-200) 8px,
+      var(--neutral-200) 9px
+    );
+}
+.node-cache .node-visual {
+  border-radius: 50%;
+}
+.node-queue .node-visual {
+  width: 38px;
+  height: 28px;
+  border-radius: var(--radius-panel);
+}
+.node-database .node-visual {
+  height: 36px;
+  border-radius: 50% / 18%;
+}
+.node-storage .node-visual {
+  border: 3px double var(--neutral-400);
+  border-radius: var(--radius-panel);
+}
+.node-cdn .node-visual {
+  border-radius: 50%;
+}
+.node-external .node-visual {
+  border-style: dashed;
+  background: transparent;
+}
+.architecture-node .architecture-port {
+  display: grid;
+  width: 11px;
+  height: 11px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--neutral-600);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+  opacity: 0;
+  transition: opacity .1s ease, transform .1s ease, background .1s ease;
+}
+.architecture-node:hover .architecture-port,
+.architecture-node.selected .architecture-port,
+.architecture-node.connecting .architecture-port,
+.connection-mode .architecture-node .architecture-port {
+  display: grid;
+  opacity: 1;
+}
+.architecture-node .architecture-port:hover {
+  background: var(--ink);
+  color: var(--surface);
+  transform: scale(1.18);
+}
+.architecture-node .architecture-port.left {
+  left: -6px;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+.architecture-node .architecture-port.right {
+  right: -6px;
+  top: 50%;
+  left: auto;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+.architecture-node .architecture-port.top {
+  left: 50%;
+  top: -6px;
+  right: auto;
+  bottom: auto;
+  transform: translateX(-50%);
+}
+.architecture-node .architecture-port.bottom {
+  left: 50%;
+  bottom: -6px;
+  right: auto;
+  top: auto;
+  transform: translateX(-50%);
+}
+.architecture-port > span {
+  position: absolute;
+  z-index: 2;
+  padding: 2px 4px;
+  border: 1px solid var(--neutral-250);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--neutral-600);
+  font-size: 5.5px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .1s ease;
+}
+.architecture-port:hover > span {
+  opacity: 1;
+}
+.architecture-port.left > span {
+  right: 14px;
+}
+.architecture-port.right > span {
+  left: 14px;
+}
+.architecture-port.top > span {
+  bottom: 14px;
+}
+.architecture-port.bottom > span {
+  top: 14px;
+}
+.architecture-lines {
+  overflow: visible;
+}
+.architecture-lines path:not([stroke="transparent"]) {
+  stroke: var(--neutral-600);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.architecture-lines .user-connection {
+  stroke: var(--neutral-700);
+  stroke-width: 1.7;
+  stroke-dasharray: none;
+  animation: none;
+}
+.architecture-lines path.edge-selected {
+  stroke: var(--neutral-950);
+  stroke-width: 2.4;
+}
+.edge-arrow-head {
+  fill: var(--neutral-600);
+  stroke: none;
+}
+.edge-label {
+  pointer-events: none;
+}
+.edge-label rect {
+  fill: var(--surface);
+  stroke: var(--neutral-250);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.edge-label text {
+  fill: var(--neutral-600);
+  font-size: 7px;
+  font-weight: 750;
+  letter-spacing: .055em;
+}
+.is-running .architecture-lines path:not([stroke="transparent"]) {
+  stroke: var(--neutral-900);
+}
+.edge-delete-btn {
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: none;
+  letter-spacing: .02em;
+  min-height: 25px;
+  padding: 0 7px;
+  border: 1px solid var(--neutral-900);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 7px;
+  font-weight: 700;
+}
+.main-canvas.has-analysis-focus .architecture-node:not(.analysis-focus) {
+  opacity: .24;
+  filter: grayscale(1);
+}
+.architecture-node.analysis-focus {
+  border-color: var(--ink);
+  box-shadow: none;
+}
+.architecture-node.node-stressed {
+  border-color: var(--neutral-800);
+  box-shadow: none;
+}
+.architecture-node.node-stressed::after {
+  color: var(--neutral-950);
+}
+.architecture-node.run-active {
+  border-color: var(--neutral-950);
+  box-shadow: none;
+  animation: none;
+}
+.architecture-node.run-active::before {
+  background: var(--neutral-950);
+  box-shadow: none;
+}
+.alignment-guide {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--neutral-900);
+  opacity: .35;
+}
+.snap-label {
+  position: absolute;
+  z-index: 3;
+  top: calc(50% + 8px);
+  left: calc(50% + 8px);
+  padding: 3px 5px;
+  font-size: 7px;
+  border-radius: var(--radius-panel);
+  background: var(--neutral-900);
+  color: var(--neutral-0);
+  box-shadow: none;
+}
+.architecture-toolbox {
+  display: grid;
+  gap: 8px;
+}
+.architecture-toolbox > span {
+  margin: 0;
+  color: var(--neutral-600);
+  font-size: 6px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.architecture-toolbox .stack-filter {
+  gap: 2px;
+  padding-bottom: 7px;
+}
+.architecture-toolbox .stack-filter button {
+  min-height: 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-panel);
+  font-size: 6.5px;
+}
+.architecture-toolbox .stack-filter button.active {
+  border-color: var(--neutral-900);
+  background: var(--neutral-900);
+  color: var(--neutral-0);
+  box-shadow: none;
+}
+.architecture-toolbox .toolbox-group > button {
+  width: 100%;
+  min-width: 0;
+  padding: 1px;
+  gap: 3px;
+}
+.architecture-toolbox .toolbox-icon {
+  width: 34px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--neutral-300);
+  border-radius: var(--radius-panel);
+  background: var(--neutral-50);
+  color: var(--neutral-950);
+  box-shadow: none;
+}
+.architecture-toolbox .toolbox-group > button:hover .toolbox-icon {
+  border-color: var(--neutral-950);
+  background: var(--neutral-0);
+}
+.architecture-toolbox .toolbox-group > button small {
+  color: var(--neutral-700);
+  font-size: 5.5px;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+.architecture-popover {
+  width: 236px;
+  padding: 9px;
+  border: 1px solid var(--neutral-900);
+  border-radius: var(--radius-panel);
+  box-shadow: none;
+}
+.architecture-popover .architecture-popover-head {
+  display: grid;
+  grid-template-columns: 30px 1fr 24px;
+  gap: 7px;
+  align-items: center;
+  padding: 0 0 8px;
+  margin: 0 0 7px;
+}
+.architecture-popover-head > span:nth-child(2) {
+  min-width: 0;
+}
+.architecture-popover-head small {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--neutral-600);
+  font-size: 6px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.architecture-popover-head b {
+  display: block;
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.architecture-popover > p {
+  margin: 0 1px 8px;
+  color: var(--neutral-600);
+  font-size: 7px;
+  line-height: 1.35;
+}
+.architecture-popover > button {
+  min-height: 31px;
+  margin-top: 4px;
+  border-radius: var(--radius-panel);
+  color: var(--neutral-800);
+  font-size: 8px;
+}
+.architecture-popover > button:first-of-type {
+  border-color: var(--neutral-900);
+  color: var(--neutral-950);
+}
+.architecture-popover > button:hover {
+  border-color: var(--neutral-900);
+  background: var(--neutral-50);
+}
+.architecture-popover > button.delete-action {
+  color: var(--neutral-800);
+  border-style: dashed;
+}
+.architecture-config-head {
+  display: grid;
+  grid-template-columns: 30px 1fr 28px;
+  gap: 8px;
+  align-items: center;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.architecture-config-head > span:nth-child(2) {
+  min-width: 0;
+}
+.architecture-config-head small {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--neutral-600);
+  font-size: 6px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.architecture-config-head b {
+  display: block;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.architecture-config-head > button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--neutral-600);
+}
+.architecture-config-summary > span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--neutral-500);
+  font-size: 6px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+.architecture-config-summary > b {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+}
+.architecture-config-summary > small {
+  display: block;
+  margin-top: 4px;
+  color: var(--neutral-600);
+  font-size: 7px;
+  line-height: 1.4;
+}
+.config-property {
+  display: grid;
+  gap: 5px;
+}
+.config-property > span:first-child {
+  display: flex;
+  justify-content: space-between;
+  color: var(--neutral-800);
+  font-size: 7px;
+  font-weight: 700;
+}
+.config-property > span:first-child small {
+  color: var(--neutral-400);
+  font-size: 6px;
+  font-weight: 600;
+}
+.config-property input,
+.config-property select {
+  width: 100%;
+  height: 32px;
+  padding: 0 9px;
+  border: 1px solid var(--neutral-300);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--ink);
+  outline: none;
+  font-size: 8px;
+}
+.config-property input:focus,
+.config-property select:focus {
+  border-color: var(--neutral-900);
+  box-shadow: none;
+}
+.architecture-config-foot {
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--line);
+}
+.architecture-config-foot > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.architecture-config-foot .config-apply-btn {
+  flex: 1;
+  width: auto;
+  background: var(--neutral-950);
+  color: var(--neutral-0);
+  border-color: var(--neutral-950);
+}
+.dark .architecture-node,
+.dark .architecture-popover,
+.dark .architecture-config-panel,
+.dark .architecture-port,
+.dark .edge-label rect {
+  background: var(--neutral-900);
+  border-color: var(--neutral-700);
+  color: var(--neutral-50);
+}
+.dark .architecture-node:hover,
+.dark .architecture-node.selected,
+.dark .architecture-node.analysis-focus {
+  border-color: var(--neutral-50);
+  box-shadow: none;
+}
+.dark .node-visual,
+.dark .architecture-toolbox .toolbox-icon,
+.dark .config-node-icon {
+  background: var(--neutral-900);
+  border-color: var(--neutral-700);
+  color: var(--neutral-50);
+}
+.dark .architecture-node .node-config-summary,
+.dark .architecture-node .node-runtime-stat,
+.dark .architecture-popover > p,
+.dark .architecture-config-summary > small {
+  color: var(--neutral-400);
+}
+.dark .architecture-node .node-runtime-stat,
+.dark .architecture-config-head,
+.dark .architecture-config-summary,
+.dark .architecture-config-foot {
+  border-color: var(--neutral-700);
+}
+.dark .edge-label text {
+  fill: var(--neutral-300);
+}
+.dark .edge-arrow-head {
+  fill: var(--neutral-400);
+}
+.dark .architecture-config-summary {
+  background: var(--neutral-900);
+}
+.dark .config-property input,
+.dark .config-property select {
+  border-color: var(--neutral-700);
+  background: var(--neutral-900);
+  color: var(--neutral-50);
+}
+.dark .architecture-toolbox .stack-filter button.active {
+  background: var(--neutral-50);
+  color: var(--neutral-900);
+  border-color: var(--neutral-50);
+}
+.canvas-node.architecture-node {
+  width: 164px;
+  min-height: 82px;
+  height: auto;
+  padding: 8px 9px;
+  border-radius: var(--radius-panel);
+  box-shadow: none;
+}
+.canvas-node.architecture-node:hover,
+.canvas-node.architecture-node.selected {
+  border-color: var(--ink);
+  box-shadow: none;
+}
+.canvas-node.architecture-node .node-config-summary {
+  font-family: inherit;
+  font-weight: 500;
+}
+.canvas-node.architecture-node .node-runtime-stat {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.component-popover.architecture-popover {
+  width: 236px;
+  border-radius: var(--radius-panel);
+  box-shadow: none;
+}
+.configure-panel.architecture-config-panel {
+  width: 334px;
+  border-radius: var(--radius-panel);
+  box-shadow: none;
+}
+.architecture-lines .edge-flowing {
+  stroke-dasharray: 11 8;
+  animation: architecture-edge-flow .7s linear infinite;
+}
+.architecture-lines .edge-bottleneck {
+  stroke: var(--danger);
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--danger) 40%, transparent));
+}
+@keyframes architecture-edge-flow {
+  to { stroke-dashoffset: -38; }
+}
+.main-canvas.connection-mode .canvas-node {
+  box-shadow: none;
+}
+.main-canvas.connection-mode .canvas-node:not(.connecting) .connector-handle {
+  opacity: 1;
+  transform: scale(1);
+  border-color: var(--neutral-900);
+  background: var(--neutral-0);
+}
+.canvas-node.connecting {
+  border-color: var(--purple);
+  box-shadow: none;
+}
+.canvas-node.connecting::after {
+  content: "START";
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 7px;
+  border-radius: var(--radius-panel);
+  background: var(--neutral-900);
+  color: var(--neutral-0);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.connection-mode .canvas-lines path:not([stroke="transparent"]) {
+  stroke-width: 2.6;
+}
+.component-popover button {
+  transform: none;
+}
+.canvas-node.selected {
+  border-color: var(--interaction-ink);
+  box-shadow: none;
+}
+.canvas-node:active {
+  cursor: grabbing;
+}
+.connector-handle {
+  display: none;
+  position: absolute;
+  z-index: 8;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--purple);
+  place-items: center;
+  box-shadow: none;
+  cursor: crosshair;
+  border-color: var(--interaction-ink);
+  color: var(--interaction-ink);
+}
+.component-popover {
+  position: absolute;
+  z-index: 20;
+  width: 250px;
+  padding: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--purple);
+  border-radius: var(--radius-panel);
+  box-shadow: none;
+  animation: interaction-surface-in .12s ease-out both;
+  transform-origin: top center;
+}
+.workspace-main .architecture-inspector.inspector {
+  width: 340px;
+  max-height: calc(100% - 156px);
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--neutral-250);
+  border-radius: var(--radius-panel);
+  background: rgba(255, 255, 255, .98);
+  box-shadow: none;
+}
+.learn-mode .architecture-inspector.inspector {
+  display: flex;
+}
+.challenge-mode .architecture-inspector.inspector {
+  right: 218px;
+}
+.architecture-inspector-head span {
+  color: var(--neutral-500);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .11em;
+}
+.architecture-inspector-head button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--neutral-600);
+  cursor: pointer;
+  transform: rotate(180deg);
+}
+.architecture-scan-summary span {
+  min-width: 0;
+  padding: 10px 11px;
+  border-right: 1px solid var(--neutral-200);
+}
+.architecture-scan-summary span:last-child {
+  border-right: 0;
+}
+.architecture-scan-summary b,
+.architecture-scan-summary small {
+  display: block;
+}
+.architecture-finding-meta {
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.architecture-finding-meta b {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.architecture-finding-meta small {
+  color: var(--neutral-500);
+  font: 700 7px/1 var(--font-mono);
+  letter-spacing: .08em;
+}
+.architecture-findings > button.active .architecture-finding-meta small {
+  color: var(--neutral-300);
+}
+.architecture-findings strong {
+  display: block;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.architecture-findings p {
+  margin: 6px 0 8px;
+  color: var(--neutral-600);
+  font-size: 9px;
+  line-height: 1.5;
+}
+.architecture-findings > button.active p {
+  color: var(--neutral-300);
+}
+.architecture-findings footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+}
+.architecture-findings footer span {
+  color: var(--neutral-700);
+  font-size: 8px;
+  font-weight: 650;
+}
+.architecture-findings footer span::before {
+  content: "↳ ";
+  color: var(--neutral-400);
+}
+.architecture-findings > button.active footer span {
+  color: var(--neutral-100);
+}
+.architecture-empty p {
+  margin: 7px 0 10px;
+  color: var(--neutral-600);
+  font-size: 9px;
+  line-height: 1.55;
+}
+.architecture-inspector-foot span {
+  color: var(--neutral-900);
+  font: 800 7px/1 var(--font-mono);
+  letter-spacing: .12em;
+}
+.architecture-inspector-foot small {
+  color: var(--neutral-500);
+  font-size: 8px;
+}
+.main-canvas.has-analysis-focus .canvas-node:not(.analysis-highlight):not(.analysis-focus) {
+  opacity: .34;
+  filter: grayscale(.72);
+}
+.canvas-node.analysis-highlight,
+.canvas-node.analysis-focus {
+  z-index: 12;
+  border-color: var(--neutral-900);
+  box-shadow: none;
+}
+.dark .architecture-inspector.inspector {
+  border-color: var(--neutral-800);
+  background: rgba(28, 30, 34, .98);
+  color: var(--neutral-100);
+}
+.dark .architecture-inspector-head,
+.dark .architecture-scan-summary,
+.dark .architecture-findings > button,
+.dark .architecture-inspector-foot {
+  border-color: var(--neutral-800);
+}
+.dark .architecture-inspector-head b,
+.dark .architecture-scan-summary b,
+.dark .architecture-empty b {
+  color: var(--neutral-50);
+}
+.dark .architecture-inspector-head span,
+.dark .architecture-scan-summary small,
+.dark .architecture-finding-meta small,
+.dark .architecture-empty p,
+.dark .architecture-empty small,
+.dark .architecture-inspector-foot small {
+  color: var(--neutral-400);
+}
+.dark .architecture-findings > button {
+  color: var(--neutral-100);
+}
+.dark .architecture-findings > button:hover {
+  background: var(--neutral-900);
+}
+.dark .architecture-findings > button.active {
+  background: var(--neutral-100);
+  color: var(--neutral-900);
+}
+.dark .architecture-findings p,
+.dark .architecture-findings footer span {
+  color: var(--neutral-400);
+}
+.dark .architecture-findings > button.active p,
+.dark .architecture-findings > button.active footer span {
+  color: var(--neutral-700);
+}
+.dark .architecture-inspector-foot {
+  background: var(--neutral-900);
+}
+.dark .architecture-inspector-foot span {
+  color: var(--neutral-100);
+}
+.dark .canvas-node.analysis-highlight,
+.canvas-node.analysis-focus {
+  border-color: var(--neutral-50);
+  box-shadow: none;
+}
+@media (max-width: 1180px) {
+  .workspace-main .architecture-inspector.inspector {
+    width: 300px;
+  }
+  .challenge-mode .architecture-inspector.inspector {
+    right: 204px;
+  }
+}
+.architecture-inspector-head span,
+.architecture-finding-meta b {
+  color: var(--neutral-500);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: .07em;
+}
+.canvas-node {
+  position: absolute;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  cursor: grab;
+  width: 146px;
+  height: 62px;
+  padding: 9px 10px;
+  border-radius: var(--radius-panel);
+  border-color: var(--neutral-250);
+  box-shadow: none;
+}
+.canvas-node:hover {
+  border-color: var(--neutral-500);
+  box-shadow: none;
+}
+.canvas-node.selected,
+.canvas-node.analysis-highlight,
+.canvas-node.analysis-focus {
+  border-color: var(--neutral-900);
+  box-shadow: none;
+}
+.canvas-node span:nth-child(2) b {
+  font-size: 10px;
+  font-weight: 680;
+}
+.canvas-node span:nth-child(2) small {
+  color: var(--muted);
+  font-size: 8px;
+  margin-top: 4px;
+  font: 500 8px/1.2 var(--font-mono);
+}
+.canvas-lines path {
+  fill: none;
+  stroke-dasharray: 0;
+  stroke: var(--neutral-500);
+  stroke-width: 1.5;
+}
+.is-running .canvas-lines path {
+  animation: dash 1.2s linear infinite;
+  stroke-dasharray: 7 8;
+  stroke: var(--neutral-900);
+}
+.architecture-inspector.inspector {
+  border-radius: var(--radius-panel);
+  box-shadow: none;
+  border-color: var(--neutral-250);
+}
+@media (max-width: 760px) {
+  .architecture-config-panel {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    top: auto;
+    bottom: 8px;
+    width: auto;
+    max-height: 62dvh;
+  }
+  .component-popover.architecture-popover {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    top: auto;
+    width: auto;
+  }
+}
+.system-node .node-kicker {
+  color: var(--neutral-500);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .12em;
+}
+.system-node.node-hot .node-kicker {
+  color: var(--neutral-300);
+}
+.architecture-findings > button:hover {
+  background: var(--neutral-50);
+  transform: none;
+}
+.architecture-finding-meta small,
+.architecture-inspector-foot > span {
+  font-family: var(--font-mono);
+  letter-spacing: .07em;
+}
+.architecture-finding-meta small,
+.architecture-finding-meta b {
+  border-radius: var(--radius-panel);
+}
+.architecture-config-panel {
+  width: 334px;
+  max-height: calc(100vh - 132px);
+  border-radius: var(--radius-panel);
+  box-shadow: none;
+  border: 1px solid var(--neutral-400);
+}
+.architecture-config-summary {
+  padding: 11px 12px 10px;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--neutral-50);
+}
+.architecture-config-foot > span {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--neutral-600);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+.config-node-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--neutral-300);
+  border-radius: var(--radius-panel);
+  color: var(--ink);
+  filter: grayscale(1);
+}
+@media (min-width: 901px) {
+  .workspace-main.right-collapsed > .architecture-inspector.inspector {
+    display: none;
+  }
+  .architecture-toolbox {
+    display: block;
+    gap: 0;
+    padding: 0 0 12px;
+  }
+  .architecture-toolbox .stack-filter > span,
+.architecture-toolbox > span {
+    display: block;
+    margin: 0;
+    padding: 9px 10px 7px;
+    color: var(--neutral-600);
+    font: 650 9px/1 var(--font-mono);
+    letter-spacing: .07em;
+  }
+  .architecture-toolbox .stack-filter > span {
+    padding-left: 0;
+  }
+  .architecture-toolbox .stack-filter button {
+    min-height: 27px;
+    padding: 0 7px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--neutral-700);
+    font-size: 10px;
+    text-align: left;
+    text-transform: capitalize;
+  }
+  .architecture-toolbox .stack-filter button:hover {
+    background: var(--neutral-50);
+  }
+  .architecture-toolbox .stack-filter button.active {
+    background: var(--neutral-200);
+    color: var(--neutral-950);
+    box-shadow: none;
+  }
+  .architecture-toolbox .toolbox-group > button:hover {
+    background: var(--neutral-50);
+  }
+  .architecture-toolbox .toolbox-icon {
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--neutral-800);
+  }
+  .architecture-toolbox .toolbox-group > button small {
+    overflow: hidden;
+    color: var(--neutral-800);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .architecture-inspector-head {
+    min-height: 46px;
+    padding: 8px 10px;
+    background: var(--neutral-50);
+  }
+  .architecture-inspector-head span {
+    font: 650 8px/1 var(--font-mono);
+    letter-spacing: .07em;
+  }
+  .architecture-inspector-head b {
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .architecture-scan-summary {
+    min-height: 48px;
+  }
+  .architecture-scan-summary > span {
+    padding: 7px 8px;
+  }
+  .architecture-scan-summary b {
+    font: 650 12px/1 var(--font-mono);
+  }
+  .architecture-scan-summary small {
+    margin-top: 4px;
+    font-size: 8px;
+    line-height: 1.15;
+  }
+  .architecture-findings {
+    overflow: auto;
+  }
+  .architecture-findings > button {
+    padding: 10px 11px;
+  }
+  .architecture-findings > button strong {
+    font-size: 11px;
+  }
+  .architecture-findings > button p {
+    margin-top: 4px;
+    font-size: 10px;
+    line-height: 1.38;
+  }
+  .canvas-node.architecture-node {
+    width: 168px;
+    min-height: 78px;
+    padding: 8px 9px;
+    border-radius: var(--radius-xs);
+    border-color: var(--neutral-400);
+    box-shadow: none;
+  }
+  .canvas-node.architecture-node:hover {
+    border-color: var(--neutral-600);
+  }
+  .canvas-node.architecture-node.selected {
+    border-color: var(--neutral-950);
+    box-shadow: none;
+  }
+  .architecture-node .node-visual {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-xs);
+    background: var(--neutral-50);
+  }
+  .node-queue .node-visual,
+.node-cache .node-visual,
+.node-database .node-visual {
+    border-radius: var(--radius-xs);
+    clip-path: none;
+  }
+  .architecture-node .node-kicker {
+    font-size: 7px;
+  }
+  .architecture-node .node-title-row b {
+    font-size: 11px;
+  }
+  .architecture-node .node-config-summary {
+    font-size: 8px;
+  }
+  .architecture-node .node-runtime-stat {
+    font-size: 7.5px;
+  }
+  .architecture-node .architecture-port {
+    border-radius: var(--radius-xs);
+  }
+}
+@media (min-width: 1180px) {
+  .workspace-main .architecture-inspector.inspector {
+    width: var(--inspect-w);
+  }
+}
+@media (min-width: 901px) and (max-width: 1179px) {
+  .workspace-main .architecture-inspector.inspector {
+    top: 38px;
+    right: 8px;
+    bottom: 8px;
+    width: min(300px, calc(100vw - 32px));
+    max-height: none;
+    border: 1px solid var(--neutral-400);
+    background: var(--neutral-0);
+    box-shadow: none;
+  }
+  .workspace-main:not(.right-collapsed) .architecture-inspector.inspector {
+    display: flex;
+  }
+}
+@media (max-width: 900px) {
+  .workspace-main .architecture-inspector.inspector {
+    display: none;
+    position: absolute;
+    z-index: 33;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(320px, 90vw);
+    max-height: none;
+    border: 0;
+    border-left: 1px solid var(--neutral-400);
+    border-radius: 0;
+    background: var(--neutral-0);
+    box-shadow: none;
+  }
+  .workspace-main:not(.right-collapsed) .architecture-inspector.inspector {
+    display: flex;
+  }
+  .workspace-main.right-collapsed > .architecture-inspector.inspector {
+    display: none;
+  }
+  .architecture-config-panel {
+    max-width: calc(100vw - 16px);
+  }
+}
+@media (max-height: 720px) {
+  .architecture-inspector-head {
+    min-height: 40px;
+    padding-block: 6px;
+  }
+  .architecture-scan-summary {
+    min-height: 42px;
+  }
+  .architecture-toolbox .toolbox-group > button {
+    min-height: 28px;
+  }
+  .architecture-toolbox .toolbox-group-label {
+    padding-block: 6px 4px;
+  }
+}
+@media (max-width: 760px) {
+  .workspace-main .architecture-inspector.inspector {
+    width: min(340px, 92vw);
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+  }
+  .workspace-main .architecture-inspector.inspector .collapse-handle {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .architecture-config-panel,
+.component-popover.architecture-popover {
+    position: fixed;
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    top: auto;
+    bottom: calc(var(--mobile-status-h) + max(8px, env(safe-area-inset-bottom)));
+    width: auto;
+    max-width: none;
+    max-height: 70dvh;
+    overflow: auto;
+  }
+}
+@media (max-width: 430px) {
+  .workspace-main .architecture-inspector.inspector {
+    width: 94vw;
+  }
+}
+@media (max-width: 900px) and (max-height: 560px) {
+  .architecture-config-panel,
+.component-popover.architecture-popover {
+    max-height: 76dvh;
+  }
+}
+@media (min-width: 901px) {
+  .workspace-main .architecture-inspector.inspector {
+    position: absolute;
+    z-index: 12;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    max-height: none;
+    border: 0;
+    border-left: 1px solid var(--neutral-250);
+    border-radius: 0;
+    background: var(--neutral-0);
+    box-shadow: none;
+    width: 286px;
+  }
+  .architecture-toolbox .stack-filter {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0 10px 10px;
+    border-bottom: 1px solid var(--neutral-250);
+    padding-inline: 8px;
+  }
+  .architecture-toolbox .toolbox-group > button {
+    width: 100%;
+    padding: 3px 10px;
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 0;
+    background: var(--neutral-0);
+    text-align: left;
+    min-height: 30px;
+  }
+  .architecture-toolbox .toolbox-group-label,
+.architecture-toolbox > span {
+    padding-inline: 8px;
+  }
+}
+.architecture-inspector {
+  border-radius: 0;
+  box-shadow: none;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  min-height: 0;
+}
+.architecture-inspector-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 52px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.architecture-inspector-head > div {
+  display: grid;
+  gap: 4px;
+}
+.architecture-inspector-head span,
+.architecture-empty > span,
+.architecture-inspector-foot span,
+.finding-main > small {
+  color: var(--muted);
+  font: 650 8px/1 var(--font-mono);
+  letter-spacing: .07em;
+}
+.architecture-inspector-head b {
+  color: var(--neutral-900);
+  font-size: 12px;
+}
+.architecture-scan-summary {
+  border-top: 1px solid var(--neutral-250);
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--line);
+}
+.architecture-scan-summary > span {
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  padding: 8px 9px;
+  display: grid;
+  gap: 4px;
+  border-right: 1px solid var(--line);
+}
+.architecture-scan-summary > span:last-child {
+  border-right: 0;
+}
+.architecture-scan-summary small {
+  margin-top: 2px;
+  font-size: 7px;
+  line-height: 1.25;
+  color: var(--muted);
+  font: 650 8px/1 var(--font-mono);
+}
+.architecture-scan-summary b {
+  color: var(--neutral-900);
+  font-size: 14px;
+}
+.architecture-findings {
+  overscroll-behavior: contain;
+  gap: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.architecture-findings > button {
+  cursor: pointer;
+  width: 100%;
+  min-height: 88px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 42px minmax(0,1fr) 14px;
+  align-items: start;
+  gap: 9px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  box-shadow: none;
+}
+.architecture-findings > button:hover,
+.architecture-findings > button.active {
+  background: var(--canvas);
+}
+.architecture-findings > button.active {
+  color: var(--neutral-0);
+  background: var(--neutral-100);
+  box-shadow: inset 2px 0 0 var(--ink);
+}
+.finding-severity {
+  padding-top: 2px;
+  color: var(--muted);
+  font: 700 8px/1 var(--font-mono);
+}
+.severity-high {
+  color: var(--ink);
+}
+.finding-main {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.finding-main strong {
+  font-size: 11px;
+  line-height: 1.25;
+}
+.finding-main p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+.finding-main em {
+  overflow: hidden;
+  color: var(--muted);
+  font: 500 8px/1.3 var(--font-mono);
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.architecture-empty {
+  margin: 0;
+  padding: 16px 10px;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+}
+.architecture-empty b {
+  display: block;
+  color: var(--neutral-900);
+  font-size: 11px;
+}
+.architecture-empty small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.architecture-inspector-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--neutral-50);
+  min-height: 44px;
+  padding: 9px 10px;
+  border-top: 1px solid var(--line);
+}
+@media (max-width: 900px) {
+  .architecture-inspector {
+    grid-template-rows: auto auto 1fr auto;
+  }
+}
+
+
+/* Canvas reference treatment: compact colored nodes and a docked selection inspector. */
+.workspace .architecture-node {
+  width: 148px;
+  min-height: 92px;
+  padding: 12px 12px 10px;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+  border: 1px solid var(--canvas-line-strong);
+  border-radius: 14px;
+  background: var(--canvas-surface);
+  box-shadow: 0 7px 18px rgba(31,41,55,.08);
+  color: var(--canvas-ink);
+}
+
+.workspace .architecture-node:hover {
+  border-color: var(--canvas-line-strong);
+  box-shadow: 0 9px 22px rgba(31,41,55,.11);
+}
+
+.workspace .architecture-node.selected {
+  border-color: var(--canvas-selection);
+  box-shadow: 0 0 0 4px var(--canvas-selection), 0 10px 24px rgba(31,41,55,.1);
+}
+
+.workspace .architecture-node .node-kicker,
+.workspace .architecture-node .node-config-summary,
+.workspace .architecture-node .node-state {
+  display: none;
+}
+
+.workspace .architecture-node .node-title-row b {
+  font-size: 12px;
+  font-weight: 720;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.workspace .architecture-node .node-runtime-stat {
+  grid-column: 1 / -1;
+  margin-top: 9px;
+  padding: 6px 8px;
+  border-top: 0;
+  border-radius: 8px;
+  background: var(--canvas-surface-muted);
+  color: var(--canvas-muted);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.workspace .architecture-node .node-visual {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--canvas-surface-soft);
+  color: var(--canvas-accent);
+}
+
+.workspace .architecture-node.node-lb .node-visual,
+.workspace .architecture-node.node-gateway .node-visual {
+  clip-path: none;
+  border-radius: 10px;
+  background: var(--canvas-surface)0e6;
+  color: var(--canvas-orange-text);
+}
+
+.workspace .architecture-node.node-service .node-visual {
+  border-radius: 10px;
+  background: var(--canvas-surface)0e6;
+  color: var(--canvas-orange-text);
+}
+
+.workspace .architecture-node.node-cache .node-visual {
+  border-radius: 10px;
+  background: var(--canvas-surface)7dc;
+  color: var(--canvas-amber-text);
+}
+
+.workspace .architecture-node.node-queue .node-visual {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--canvas-green-soft);
+  color: var(--canvas-green-text);
+}
+
+.workspace .architecture-node.node-database .node-visual,
+.workspace .architecture-node.node-storage .node-visual {
+  border: 0;
+  border-radius: 10px;
+  background: var(--canvas-violet-soft);
+  color: var(--canvas-violet);
+}
+
+.workspace .architecture-node.node-cdn .node-visual,
+.workspace .architecture-node.node-external .node-visual {
+  background: var(--canvas-line-soft);
+  color: var(--canvas-muted-dark);
+}
+
+.workspace .architecture-node.node-client .node-visual::after {
+  display: none;
+}
+
+.workspace .architecture-node.node-service {
+  background: var(--canvas-surface);
+}
+
+.workspace .architecture-node.node-stressed .node-runtime-stat,
+.workspace .architecture-node.stress-bottleneck .node-runtime-stat {
+  background: var(--canvas-surface)0e7;
+  color: var(--canvas-orange-strong);
+}
+
+.workspace .architecture-node.analysis-focus {
+  border-color: var(--canvas-violet);
+  box-shadow: 0 0 0 3px rgba(124,58,237,.16);
+}
+
+.workspace .canvas-lines path:not([stroke="transparent"]) {
+  stroke: var(--canvas-line-strong);
+  stroke-width: 2;
+}
+
+.workspace .canvas-lines .user-connection {
+  stroke: var(--canvas-muted-2);
+  stroke-width: 2;
+  stroke-dasharray: none;
+  animation: none;
+}
+
+.workspace .edge-arrow-head {
+  fill: var(--canvas-line-strong);
+}
+
+.workspace .edge-label {
+  opacity: .58;
+}
+
+.workspace .selected-component-panel.component-popover {
+  left: 24px;
+  right: auto;
+  top: auto;
+  bottom: 24px;
+  width: min(650px, calc(100% - 48px));
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-areas:
+    "kicker kicker"
+    "title props"
+    "title actions";
+  gap: 12px 22px;
+  border: 1px solid var(--canvas-line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 14px 34px rgba(31,41,55,.13);
+  transform: none;
+  transform-origin: center;
+  animation: selected-panel-in .16s cubic-bezier(.22,1,.36,1) both;
+}
+
+@keyframes selected-panel-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.workspace .selected-component-kicker {
+  grid-area: kicker;
+  margin: 0;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--canvas-line-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.workspace .selected-component-kicker > span {
+  color: var(--canvas-orange-text);
+  font: 800 10px/1 var(--font-mono);
+  letter-spacing: .08em;
+}
+
+.workspace .selected-component-title {
+  grid-area: title;
+  margin: 0;
+  padding: 2px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  border: 0;
+}
+
+.workspace .selected-component-title .config-node-icon {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--canvas-surface)0e6;
+  color: var(--canvas-orange-text);
+}
+
+.workspace .selected-component-title small {
+  display: block;
+  color: var(--canvas-muted-3);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.workspace .selected-component-title h2 {
+  margin: 5px 0 0;
+  color: var(--canvas-ink);
+  font-size: 25px;
+  font-weight: 680;
+  line-height: 1;
+  letter-spacing: -.04em;
+}
+
+.workspace .selected-component-properties {
+  grid-area: props;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workspace .selected-component-properties label {
+  min-width: 0;
+}
+
+.workspace .selected-component-properties label > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--canvas-muted-3);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.workspace .selected-component-properties label > b {
+  min-height: 38px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--canvas-line);
+  border-radius: 10px;
+  background: var(--canvas-surface-soft);
+  color: var(--canvas-ink-soft);
+  font-size: 9px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace .selected-component-actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.workspace .selected-component-actions .btn {
+  min-height: 36px;
+  border-radius: 10px;
+  font-size: 9px;
+}
+
+.workspace .selected-component-actions .btn-run {
+  background: var(--canvas-accent);
+  color: var(--canvas-surface);
+}
+
+.workspace .selected-component-actions .delete-action {
+  margin-left: auto;
+  color: var(--canvas-danger-muted);
+}
+
+.workspace-main .architecture-inspector.health-inspector.inspector {
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: 300px;
+  max-height: none;
+  padding: 0;
+  border: 1px solid var(--canvas-line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 12px 30px rgba(31,41,55,.08);
+  overflow: hidden;
+}
+
+.challenge-mode .workspace-main .architecture-inspector.health-inspector.inspector {
+  right: 12px;
+}
+
+.workspace .health-inspector .architecture-scan-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.workspace .health-inspector .architecture-scan-summary span {
+  padding: 8px 9px;
+}
+
+.workspace .health-inspector .architecture-scan-summary small {
+  color: var(--canvas-muted-4);
+  font-size: 6px;
+}
+
+.workspace .health-inspector .architecture-scan-summary b {
+  margin-top: 3px;
+  color: var(--canvas-ink-soft);
+  font-size: 12px;
+}
+
+.workspace .health-inspector .architecture-findings {
+  padding: 0 10px 10px;
+}
+
+.workspace .health-inspector .architecture-findings > button {
+  grid-template-columns: auto minmax(0, 1fr) 14px;
+  gap: 8px;
+  padding: 9px 8px;
+  border: 1px solid transparent;
+  border-bottom-color: var(--canvas-line-soft);
+  border-radius: 10px;
+  background: transparent;
+}
+
+.workspace .health-inspector .architecture-findings > button:hover {
+  background: var(--canvas-surface-muted);
+}
+
+.workspace .health-inspector .architecture-findings > button.active {
+  background: var(--canvas-ink);
+  color: var(--canvas-surface);
+}
+
+.workspace .health-inspector .finding-main p,
+.workspace .health-inspector .finding-main em {
+  display: none;
+}
+
+.workspace .health-inspector .finding-main strong {
+  margin-top: 2px;
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+.workspace .health-inspector .finding-main small {
+  font-size: 6px;
+}
+
+.workspace .health-inspector .finding-severity {
+  min-width: 36px;
+  padding: 4px 5px;
+  border-radius: 7px;
+  font-size: 6px;
+  text-align: center;
+}
+
+.workspace.dark .architecture-node,
+.workspace.dark .selected-component-panel.component-popover,
+.workspace.dark .architecture-inspector.health-inspector.inspector {
+  background: var(--canvas-dark-surface);
+  border-color: var(--canvas-dark-line);
+  color: var(--canvas-light-text);
+}
+
+.workspace.dark .architecture-node .node-title-row b,
+.workspace.dark .selected-component-title h2,
+.workspace.dark .selected-component-properties label > b,
+.workspace.dark .health-inspector .architecture-scan-summary b {
+  color: var(--canvas-light-text);
+}
+
+.workspace.dark .architecture-node .node-runtime-stat,
+.workspace.dark .selected-component-properties label > b {
+  background: var(--canvas-dark-surface-2);
+  border-color: var(--canvas-dark-line-2);
+}
+
+@media (max-width: 900px) {
+  .workspace .selected-component-panel.component-popover {
+    left: 10px;
+    bottom: 10px;
+    width: calc(100% - 20px);
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "kicker"
+      "title"
+      "props"
+      "actions";
+    padding: 14px;
+  }
+
+  .workspace .selected-component-properties {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Components tab: a rounded tab attached to the left screen edge, chevron only. */
+.workspace-main > .reopen-panel.reopen-left {
+  position: fixed;
+  top: 50%;
+  bottom: auto;
+  left: 0;
+  z-index: 12;
+  width: 24px;
+  min-height: 0;
+  height: 72px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--brand-blue);
+  border-left: 0;
+  border-radius: 0 var(--radius-round) var(--radius-round) 0;
+  background: var(--brand-blue);
+  box-shadow: none;
+  color: var(--neutral-0);
+  writing-mode: horizontal-tb;
+  transform: translateY(-50%);
+  transition: color .15s ease, border-color .15s ease, width .15s ease;
+}
+.workspace-main > .reopen-panel.reopen-left:hover,
+.workspace-main > .reopen-panel.reopen-left:focus-visible {
+  width: 28px;
+  filter: brightness(1.15);
+}
+/* The label stays for assistive tech but is not drawn. */
+.workspace-main > .reopen-panel.reopen-left > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.workspace-main > .reopen-panel.reopen-left svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* The collapse control inside the open panel: a small round button. */
+.workspace-main > .toolbox > .collapse-handle.left {
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-round);
+  background: var(--surface);
+  color: var(--muted);
+  opacity: 1;
+  transform: rotate(180deg);
+  transition: color .15s ease, border-color .15s ease;
+}
+.workspace-main > .toolbox > .collapse-handle.left:hover,
+.workspace-main > .toolbox > .collapse-handle.left:focus-visible {
+  border-color: var(--canvas-accent);
+  color: var(--canvas-accent);
+}
+
+/* Scope filter: Fullstack / Backend / Frontend stacked so all three are always visible. */
+@media (min-width: 901px) {
+  .workspace-main > .toolbox .stack-filter {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0 0 8px;
+  }
+  .workspace-main > .toolbox .stack-filter .ui-segmented {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .workspace-main > .toolbox .stack-filter .ui-segmented > .ui-segmented-item {
+    min-height: 24px;
+    padding: 0 10px;
+    border: 0;
+    border-left: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: var(--neutral-700);
+    font-size: 10px;
+    font-weight: 500;
+    text-align: left;
+    text-transform: capitalize;
+    white-space: nowrap;
+  }
+  .workspace-main > .toolbox .stack-filter .ui-segmented > .ui-segmented-item:hover:not(:disabled) {
+    background: var(--neutral-50);
+  }
+  .workspace-main > .toolbox .stack-filter .ui-segmented > .ui-segmented-item.is-selected {
+    border-left-color: var(--brand-blue);
+    background: var(--neutral-50);
+    color: var(--ink);
+  }
+}
+
+/* Selected-component action menu: three actions, attached above the node. */
+.node-action-menu {
+  position: absolute;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: var(--shadow-overlay);
+  white-space: nowrap;
+}
+.node-action-menu button {
+  min-height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+}
+.node-action-menu button:hover:not(:disabled) {
+  background: var(--neutral-100);
+}
+.node-action-menu button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.node-action-menu button.is-danger {
+  color: var(--color-danger);
+}
+
+/* The challenge brief bar above the canvas is hidden, so the canvas takes the full height. */
+.challenge-mode .canvas-wrap {
+  height: 100%;
+  margin-top: 0;
+}
