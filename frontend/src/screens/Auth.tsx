@@ -171,7 +171,7 @@ export function AuthPage({
     */
     if (!existing.name) {
       setMessage(
-        <>No <Logo variant="without-archie" size="inline" /> profile exists in this browser yet. Create an account first.</>,
+        <>No <Logo variant="archie-without-props" size="inline" /> profile exists in this browser yet. Create an account first.</>,
       );
       return;
     }
@@ -193,7 +193,7 @@ export function AuthPage({
     <main className="auth-page">
       {/* logo works as back button to return to the home page */}
       <Logo
-        variant="without-archie"
+        variant="with-archie"
         className="auth-brand"
         onClick={back}
         aria-label="Back to ARCHITECH home"
@@ -208,7 +208,7 @@ export function AuthPage({
 
             <p>
               {isSignup ? "Start building better systems with " : "Sign in to continue to "}
-              <Logo variant="without-archie" size="inline" />.
+              <Logo variant="archie-without-props" size="inline" />.
             </p>
           </div>
 
@@ -345,7 +345,7 @@ export function AuthPage({
           {/* Legal */}
           {isSignup && (
             <p className="auth-legal">
-              By creating an account, you agree to <Logo variant="without-archie" size="inline" />&apos;s{" "}
+              By creating an account, you agree to <Logo variant="archie-without-props" size="inline" />&apos;s{" "}
               <button type="button">Terms of Service</button> and{" "}
               <button type="button">Privacy Policy</button>.
             </p>
@@ -353,7 +353,7 @@ export function AuthPage({
 
           {/* Switch */}
           <p className="auth-switch">
-            {isSignup ? "Already have an account?" : <>New to <Logo variant="without-archie" size="inline" />?</>}{" "}
+            {isSignup ? "Already have an account?" : <>New to <Logo variant="archie-without-props" size="inline" />?</>}{" "}
             <button type="button" onClick={switchKind}>
               {isSignup ? "Sign in" : "Create account"}
             </button>
@@ -481,7 +481,7 @@ export function Onboarding({
       <header className="onboarding-bar">
         {/* One header for both onboarding steps. */}
         <div className="onboarding-brand logo">
-          <Logo variant="without-archie" />
+          <Logo variant="with-archie" />
         </div>
 
         {/* Step counter: 01 / 02 -> 02 / 02 */}
@@ -501,7 +501,7 @@ export function Onboarding({
                   What best describes your system design experience?
                 </h1>
 
-                <p>We&apos;ll tailor <Logo variant="without-archie" size="inline" /> to your experience.</p>
+                <p>We&apos;ll tailor <Logo variant="archie-without-props" size="inline" /> to your experience.</p>
               </div>
 
               {/* native radios: one selection, arrow-key navigation */}
@@ -566,7 +566,7 @@ export function Onboarding({
 
                 <p>
                   Connect GitHub to link your development workflow with
-                  {" "}<Logo variant="without-archie" size="inline" />.
+                  {" "}<Logo variant="archie-without-props" size="inline" />.
                 </p>
               </div>
 
@@ -578,7 +578,7 @@ export function Onboarding({
                 </li>
                 <li>
                   <Icon name="check" size={14} />
-                  Bring project context into <Logo variant="without-archie" size="inline" />
+                  Bring project context into <Logo variant="archie-without-props" size="inline" />
                 </li>
                 <li>
                   <Icon name="check" size={14} />
