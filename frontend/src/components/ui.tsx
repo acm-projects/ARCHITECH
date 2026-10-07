@@ -121,11 +121,11 @@ export function ArchieMark({
   );
 }
 
-export function BrandWordmark() {
+export function LogoWithArchie() {
   return (
     <Image
       className="brand-wordmark"
-      src="/logo.svg"
+      src="/logo-with-archie.svg"
       alt="ARCHITECH"
       width={1720}
       height={385}
@@ -144,7 +144,7 @@ export function Logo({
       aria-label="ARCHITECH"
       {...buttonProps}
     >
-      <BrandWordmark />
+      <LogoWithArchie />
     </button>
   );
 }
