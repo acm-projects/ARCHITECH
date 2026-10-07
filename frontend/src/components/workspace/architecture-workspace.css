@@ -1,0 +1,837 @@
+/*
+ * Visual system for the shared architecture workspace (/workspace, /learn, /challenge).
+ *
+ * Composition: one warm surface. The header, the tool palette and the canvas share the
+ * same tone and are separated by spacing and a single hairline, not by boxes. Type is
+ * small and contrast comes from size, not weight. Elevation is reserved for the one
+ * thing that floats over content: popovers. Blue means selection, focus or the primary
+ * action; family colors appear only on tiny glyphs.
+ *
+ * Everything is scoped under .ax-workspace because the legacy global stylesheets still
+ * style bare button / input / h2 elements for the landing, auth and dashboard screens.
+ * Those legacy rules are unlayered, so they beat Tailwind utilities; the few properties
+ * they would override (input chrome, button radius, focus outline) are reset here.
+ */
+
+.ax-workspace {
+  /* Color */
+  --ax-canvas: #f5f5f2;
+  --ax-surface: #fdfdfc;
+  --ax-ink: #111111;
+  --ax-ink-soft: #4a4a46;
+  --ax-muted: #77776f;
+  --ax-subtle: #a8a8a3;
+  --ax-line: #e4e4df;
+  --ax-line-strong: #d3d3ce;
+  --ax-accent: #1d4ed8;
+  --ax-brand: #1446a0;
+  --ax-danger: #b4343f;
+
+  /* Type scale: contrast comes from size, so weights stay 400-500. */
+  --ax-t-micro: 8.5px;
+  --ax-t-xs: 9px;
+  --ax-t-sm: 10px;
+  --ax-t-md: 11px;
+  --ax-t-lg: 12px;
+
+  /* Spacing rhythm: 4 / 8 / 12 / 16 / 24 / 32 */
+  --ax-s1: 4px;
+  --ax-s2: 8px;
+  --ax-s3: 12px;
+  --ax-s4: 16px;
+  --ax-s5: 24px;
+  --ax-s6: 32px;
+
+  /* Radius: small and precise */
+  --ax-radius-xs: 4px;
+  --ax-radius-sm: 5px;
+  --ax-radius-md: 8px;
+
+  /* Motion */
+  --ax-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ax-fast: 120ms;
+  --ax-base: 160ms;
+
+  background: var(--ax-canvas);
+  color: var(--ax-ink);
+}
+
+/* Tiny metadata. */
+.ax-workspace .ax-label {
+  font-size: var(--ax-t-xs);
+  font-weight: 400;
+  line-height: 1;
+  color: var(--ax-muted);
+}
+
+/* The legacy sheets round and outline bare buttons and inputs; reset to this system. */
+.ax-workspace :is(button, input) {
+  border-radius: var(--ax-radius-xs);
+}
+.ax-workspace :is(button, input):focus-visible {
+  outline: 1px solid var(--ax-accent);
+  outline-offset: 2px;
+}
+
+/* Text field: a ruled line, blue on focus. */
+.ax-workspace .ax-field {
+  width: 100%;
+  padding: var(--ax-s1) 0;
+  border: 0;
+  border-bottom: 1px solid var(--ax-line-strong);
+  border-radius: 0;
+  background: transparent;
+  font-size: var(--ax-t-md);
+  color: var(--ax-ink);
+  transition: border-color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-field:hover {
+  border-bottom-color: var(--ax-muted);
+}
+.ax-workspace .ax-field:focus,
+.ax-workspace .ax-field:focus-visible {
+  border-bottom-color: var(--ax-accent);
+  outline: none;
+}
+
+/* ---- Header: top chrome, no container ---- */
+
+.ax-workspace .ax-brand {
+  font-size: var(--ax-t-sm);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.ax-workspace .ax-title {
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  font-size: var(--ax-t-md);
+  color: var(--ax-ink-soft);
+  transition:
+    border-color var(--ax-fast) var(--ax-ease),
+    color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-title:hover {
+  border-bottom-color: var(--ax-line-strong);
+  color: var(--ax-ink);
+}
+
+/* Actions read as type until hovered. */
+.ax-workspace .ax-action {
+  padding: var(--ax-s1) 0;
+  border: 0;
+  background: transparent;
+  font-size: var(--ax-t-sm);
+  color: var(--ax-muted);
+  transition: color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-action:hover {
+  color: var(--ax-ink);
+}
+
+/* The one contained action. */
+.ax-workspace .ax-action-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--ax-radius-sm);
+  background: var(--ax-ink);
+  font-weight: 500;
+  color: #fff;
+  transition: background-color var(--ax-base) var(--ax-ease);
+}
+.ax-workspace .ax-action-primary:hover {
+  background: var(--ax-accent);
+  color: #fff;
+}
+.ax-workspace .ax-action-primary .ax-arrow {
+  display: inline-block;
+  transition: transform var(--ax-base) var(--ax-ease);
+}
+.ax-workspace .ax-action-primary:hover .ax-arrow {
+  transform: translateX(2px);
+}
+
+/* Save status: nearly invisible when saved, a tiny pulse while saving. */
+.ax-workspace .ax-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--ax-t-xs);
+  color: var(--ax-subtle);
+}
+.ax-workspace .ax-save[data-state="saved"] {
+  color: #c2c2bd;
+}
+.ax-workspace .ax-save[data-state="saving"]::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ax-subtle);
+  animation: ax-pulse 1.1s ease-in-out infinite;
+}
+.ax-workspace .ax-save[data-state="error"] {
+  color: var(--ax-danger);
+}
+
+/* ---- Tool palette: same surface as the canvas, one hairline edge ---- */
+
+.ax-workspace .ax-toolbox {
+  border-right: 1px solid var(--ax-line);
+  background: transparent;
+  color: var(--ax-ink);
+}
+
+.ax-workspace .ax-panel-title {
+  font-size: var(--ax-t-xs);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--ax-muted);
+}
+
+.ax-workspace .ax-icon-btn {
+  display: flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ax-subtle);
+  transition: color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-icon-btn:hover {
+  color: var(--ax-ink);
+}
+
+/*
+ * Collapse tab: a small rounded tab straddling the palette edge with an SVG chevron.
+ * Collapsed, it becomes the whole rail: a pill attached to the left edge of the screen.
+ */
+.ax-workspace .ax-collapse {
+  position: absolute;
+  top: 50%;
+  right: -9px;
+  transform: translateY(-50%);
+  z-index: 30;
+  width: 18px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 999px;
+  background: var(--ax-surface);
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.06);
+  padding: 0;
+  color: var(--ax-ink-soft);
+  opacity: 0.6;
+  transition:
+    opacity var(--ax-fast) var(--ax-ease),
+    color var(--ax-fast) var(--ax-ease),
+    border-color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-rail:hover .ax-collapse,
+.ax-workspace .ax-collapse:hover,
+.ax-workspace .ax-collapse:focus-visible {
+  opacity: 1;
+}
+.ax-workspace .ax-collapse:hover {
+  border-color: var(--ax-accent);
+  color: var(--ax-accent);
+}
+.ax-workspace .ax-collapse svg {
+  display: block;
+}
+.ax-workspace .ax-rail[data-collapsed="true"] .ax-collapse {
+  left: 0;
+  right: auto;
+  width: 26px;
+  height: 80px;
+  border-color: var(--ax-brand);
+  border-left: 0;
+  border-radius: 0 16px 16px 0;
+  background: var(--ax-brand);
+  color: #fff;
+  box-shadow: none;
+  opacity: 1;
+}
+.ax-workspace .ax-rail[data-collapsed="true"] .ax-collapse:hover {
+  border-color: var(--ax-brand);
+  color: #fff;
+  filter: brightness(1.15);
+}
+/* Collapsed, the palette's own hairline goes away; only the tab remains. */
+.ax-workspace .ax-rail[data-collapsed="true"] .ax-toolbox {
+  border-right-color: transparent;
+}
+
+/* Search: a line of interface text with a hairline underneath. */
+.ax-workspace .ax-search {
+  position: relative;
+}
+.ax-workspace .ax-search .ax-search-glyph {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 11px;
+  height: 11px;
+  transform: translateY(-50%);
+  color: var(--ax-subtle);
+  pointer-events: none;
+}
+.ax-workspace .ax-search-input {
+  width: 100%;
+  height: 26px;
+  padding: 0 0 0 18px;
+  border: 0;
+  border-bottom: 1px solid var(--ax-line);
+  border-radius: 0;
+  background: transparent;
+  font-size: var(--ax-t-sm);
+  color: var(--ax-ink);
+  transition: border-color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-search-input::placeholder {
+  color: var(--ax-muted);
+}
+.ax-workspace .ax-search-input:hover {
+  border-bottom-color: var(--ax-line-strong);
+}
+.ax-workspace .ax-search-input:focus,
+.ax-workspace .ax-search-input:focus-visible {
+  border-bottom-color: var(--ax-accent);
+  outline: none;
+}
+
+.ax-workspace .ax-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: var(--ax-t-xs);
+  color: var(--ax-muted);
+  transition: color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-more .ax-arrow {
+  transition: transform var(--ax-base) var(--ax-ease);
+}
+.ax-workspace .ax-more:hover {
+  color: var(--ax-ink);
+}
+.ax-workspace .ax-more:hover .ax-arrow {
+  transform: translateX(2px);
+}
+
+.ax-workspace .ax-section-label {
+  padding: var(--ax-s4) 0 var(--ax-s1);
+  font-size: var(--ax-t-micro);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--ax-subtle);
+}
+
+/* Component row: a tiny glyph and a label with generous space around them. */
+.ax-workspace .ax-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ax-s3);
+  height: 28px;
+  padding: 0 var(--ax-s2);
+  margin: 0 calc(var(--ax-s2) * -1);
+  border-radius: var(--ax-radius-xs);
+  background: transparent;
+  font-size: var(--ax-t-xs);
+  color: var(--ax-ink-soft);
+  user-select: none;
+  cursor: grab;
+  transition:
+    background-color var(--ax-fast) var(--ax-ease),
+    color var(--ax-fast) var(--ax-ease),
+    opacity var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-item .ax-item-glyph {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  color: var(--ax-family);
+  opacity: 0.75;
+  transition: opacity var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-item:hover {
+  background: rgba(17, 17, 17, 0.035);
+  color: var(--ax-ink);
+}
+.ax-workspace .ax-item:hover .ax-item-glyph {
+  opacity: 1;
+}
+.ax-workspace .ax-item:active {
+  cursor: grabbing;
+}
+.ax-workspace .ax-item.is-dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+.ax-workspace .ax-item:focus-visible {
+  outline: 1px solid var(--ax-accent);
+  outline-offset: -1px;
+}
+
+.ax-workspace .ax-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ax-line-strong) transparent;
+}
+
+/* Delete (used by the retained Properties panel): quiet until hovered. */
+.ax-workspace .ax-delete {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: var(--ax-t-sm);
+  color: var(--ax-muted);
+  transition: color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-delete:hover,
+.ax-workspace .ax-delete:focus-visible {
+  color: var(--ax-danger);
+}
+
+/* ---- React Flow: canvas, controls, attribution ---- */
+
+.ax-workspace .react-flow {
+  --xy-background-color: var(--ax-canvas);
+  --xy-edge-stroke: #b4b4af;
+  --xy-edge-stroke-selected: var(--ax-accent);
+  --xy-edge-stroke-width: 1;
+  --xy-connectionline-stroke: var(--ax-accent);
+  --xy-connectionline-stroke-width: 1.25;
+  --xy-controls-button-background-color: transparent;
+  --xy-controls-button-background-color-hover: rgba(17, 17, 17, 0.05);
+  --xy-controls-button-color: var(--ax-muted);
+  --xy-controls-button-color-hover: var(--ax-ink);
+  --xy-controls-button-border-color: transparent;
+  --xy-controls-box-shadow: none;
+  --xy-attribution-background-color: transparent;
+}
+
+/* Controls are present but nearly invisible; they show through interaction. */
+.ax-workspace .react-flow__controls {
+  border: 0;
+  box-shadow: none;
+  opacity: 0.55;
+  transition: opacity var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .react-flow__controls:hover,
+.ax-workspace .react-flow__controls:focus-within {
+  opacity: 1;
+}
+.ax-workspace .react-flow__controls-button {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: var(--ax-radius-xs);
+  transition:
+    background-color var(--ax-fast) var(--ax-ease),
+    color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .react-flow__controls-button svg {
+  width: 9px;
+  height: 9px;
+}
+
+/* Required by React Flow's license: kept readable, but quiet. */
+.ax-workspace .react-flow__attribution {
+  font-size: var(--ax-t-micro);
+  color: #85857f;
+}
+.ax-workspace .react-flow__attribution a {
+  color: #85857f;
+}
+
+/* Edges read as technical drawing lines. */
+.ax-workspace .react-flow__edge:hover .react-flow__edge-path {
+  stroke: #77776f;
+}
+.ax-workspace .react-flow__edge.selected .react-flow__edge-path,
+.ax-workspace .react-flow__edge.selected:hover .react-flow__edge-path {
+  stroke: var(--ax-accent);
+  stroke-width: 1.25;
+}
+
+/* ---- Architecture node: a small diagram object on a large canvas ---- */
+
+.ax-workspace .ax-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 82px;
+  height: 27px;
+  padding: 0 5px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 4px;
+  background: var(--ax-surface);
+  transition: border-color var(--ax-fast) var(--ax-ease);
+}
+/* A very subtle tinted tile holds the glyph; family color is the only accent. */
+.ax-workspace .ax-node .ax-node-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ax-family, var(--ax-muted)) 12%, transparent);
+  color: var(--ax-family, var(--ax-muted));
+}
+.ax-workspace .ax-node .ax-node-glyph {
+  width: 9px;
+  height: 9px;
+}
+.ax-workspace .ax-node .ax-node-text {
+  min-width: 0;
+  flex: 1;
+}
+.ax-workspace .ax-node .ax-node-name,
+.ax-workspace .ax-node .ax-node-meta {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ax-workspace .ax-node .ax-node-name {
+  font-size: 7.5px;
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--ax-ink);
+}
+.ax-workspace .ax-node .ax-node-meta {
+  margin-top: 1px;
+  font-size: 6px;
+  line-height: 1.1;
+  color: var(--ax-subtle);
+}
+.ax-workspace .ax-node:hover {
+  border-color: var(--ax-subtle);
+}
+/* Selected: a 1px blue border and a hairline offset ring. Same size, no glow. */
+.ax-workspace .ax-node.is-selected,
+.ax-workspace .ax-node.is-selected:hover {
+  border-color: var(--ax-accent);
+  outline: 1px solid rgba(29, 78, 216, 0.22);
+  outline-offset: 2px;
+}
+.ax-workspace .react-flow__node.dragging .ax-node {
+  box-shadow: 0 2px 6px rgba(17, 17, 17, 0.08);
+}
+.ax-workspace .ax-node.is-connect-source {
+  border-color: var(--ax-accent);
+}
+
+/*
+ * Handles are anchor points: left = input (target), right = output (source), centered
+ * on the node edge. Idle they are ~2px dots; they grow slightly on hover, selection and
+ * while connecting. An invisible pad around each keeps them easy to grab.
+ */
+.ax-workspace .react-flow__handle.ax-handle {
+  width: 2px;
+  height: 2px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #b4b4af;
+  transition:
+    width var(--ax-fast) var(--ax-ease),
+    height var(--ax-fast) var(--ax-ease),
+    background-color var(--ax-fast) var(--ax-ease),
+    box-shadow var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .react-flow__handle-left.ax-handle {
+  left: -1px;
+}
+.ax-workspace .react-flow__handle-right.ax-handle {
+  right: -1px;
+}
+/* A handle with a line attached stays visible as a plug where the line joins the node. */
+.ax-workspace .react-flow__handle.ax-handle.is-linked {
+  width: 5px;
+  height: 5px;
+  background: var(--ax-ink-soft);
+}
+.ax-workspace .react-flow__handle.ax-handle::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+.ax-workspace .ax-node:hover .react-flow__handle.ax-handle {
+  width: 4px;
+  height: 4px;
+  background: var(--ax-ink-soft);
+}
+.ax-workspace .ax-node.is-selected .react-flow__handle.ax-handle,
+.ax-workspace .react-flow__handle.ax-handle:hover {
+  width: 4px;
+  height: 4px;
+  background: var(--ax-accent);
+}
+
+/* Connection in progress. */
+.ax-workspace .ax-node.is-connect-source .react-flow__handle.ax-handle-out,
+.ax-workspace .react-flow__handle.ax-handle.connectingfrom {
+  width: 4px;
+  height: 4px;
+  background: var(--ax-accent);
+}
+.ax-workspace .ax-node.is-connecting:not(.is-connect-source) .react-flow__handle.ax-handle-in {
+  width: 4px;
+  height: 4px;
+  background: var(--ax-accent);
+  box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.14);
+}
+.ax-workspace .react-flow__handle.ax-handle-in.connectingto,
+.ax-workspace .react-flow__handle.ax-handle-in.valid {
+  width: 6px;
+  height: 6px;
+  background: var(--ax-accent);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.18);
+}
+
+/* A plain hover hint on the output handle, shown after a short delay. */
+.ax-workspace .react-flow__handle.ax-handle-out::after {
+  content: "Drag to connect →";
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  transform: translateY(-50%);
+  padding: 2px 5px;
+  border-radius: var(--ax-radius-xs);
+  background: var(--ax-ink);
+  color: #fff;
+  font-size: var(--ax-t-micro);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .react-flow__handle.ax-handle-out:hover::after {
+  opacity: 1;
+  transition-delay: 350ms;
+}
+.ax-workspace .ax-node.is-connecting .react-flow__handle.ax-handle-out::after {
+  display: none;
+}
+
+/* ---- Contextual surfaces ---- */
+
+.ax-workspace .ax-nodebar,
+.ax-workspace .ax-card {
+  animation: ax-pop var(--ax-base) var(--ax-ease);
+}
+
+/* Selected-object tool strip. */
+.ax-workspace .ax-nodebar {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  height: 22px;
+  padding: 0 2px;
+  border: 1px solid var(--ax-line);
+  border-radius: 5px;
+  background: var(--ax-surface);
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04);
+  white-space: nowrap;
+}
+/* Small to look at, with padding inside each button so the hit area stays comfortable. */
+.ax-workspace .ax-nodebar button {
+  height: 18px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  font-size: 8.5px;
+  color: var(--ax-muted);
+  transition:
+    background-color var(--ax-fast) var(--ax-ease),
+    color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-nodebar button:hover,
+.ax-workspace .ax-nodebar button[aria-pressed="true"] {
+  background: rgba(17, 17, 17, 0.05);
+  color: var(--ax-ink);
+}
+.ax-workspace .ax-nodebar .ax-nodebar-ai {
+  color: var(--ax-accent);
+}
+.ax-workspace .ax-nodebar .ax-nodebar-ai:hover,
+.ax-workspace .ax-nodebar .ax-nodebar-ai[aria-pressed="true"] {
+  background: rgba(29, 78, 216, 0.07);
+  color: var(--ax-accent);
+}
+.ax-workspace .ax-nodebar .ax-nodebar-delete:hover {
+  background: rgba(180, 52, 63, 0.07);
+  color: var(--ax-danger);
+}
+.ax-workspace .ax-nodebar .ax-nodebar-sep {
+  width: 1px;
+  height: 7px;
+  background: var(--ax-line);
+}
+
+/* Information surfaces (Ask AI, Configure, Learn, Challenge): hairline, small radius. */
+.ax-workspace .ax-card {
+  width: 220px;
+  padding: var(--ax-s3);
+  border: 1px solid var(--ax-line);
+  border-radius: var(--ax-radius-md);
+  background: var(--ax-surface);
+  color: var(--ax-ink);
+  cursor: default;
+}
+/* Popovers anchored to a node get the one restrained shadow. */
+.ax-workspace .ax-card.ax-popover {
+  box-shadow: 0 6px 20px rgba(17, 17, 17, 0.06);
+}
+.ax-workspace .ax-card-eyebrow {
+  font-size: var(--ax-t-micro);
+  letter-spacing: 0.04em;
+  color: var(--ax-muted);
+}
+.ax-workspace .ax-card-title {
+  font-size: var(--ax-t-md);
+  font-weight: 500;
+  line-height: 1.3;
+}
+.ax-workspace .ax-card-body {
+  margin-top: var(--ax-s1);
+  font-size: var(--ax-t-sm);
+  line-height: 1.6;
+  color: var(--ax-muted);
+}
+.ax-workspace .ax-card-label {
+  font-size: var(--ax-t-micro);
+  color: var(--ax-muted);
+}
+.ax-workspace .ax-card-section {
+  margin-top: var(--ax-s3);
+  padding-top: var(--ax-s3);
+  border-top: 1px solid var(--ax-line);
+}
+.ax-workspace .ax-card-link {
+  margin-top: var(--ax-s3);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: var(--ax-t-sm);
+  color: var(--ax-accent);
+  transition: opacity var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-card-link:hover:not(:disabled) {
+  opacity: 0.65;
+}
+.ax-workspace .ax-card-link:disabled {
+  color: var(--ax-subtle);
+  cursor: not-allowed;
+}
+
+/* ---- Learn and Challenge annotations over the canvas ---- */
+
+.ax-workspace .ax-learn {
+  width: 232px;
+  border-color: var(--ax-line);
+  background: var(--ax-surface);
+}
+.ax-workspace .ax-feedback {
+  padding-left: var(--ax-s3);
+  border-left: 1px solid #f05a72;
+}
+.ax-workspace .ax-bar {
+  margin-top: 3px;
+  height: 1px;
+  background: var(--ax-line-strong);
+}
+.ax-workspace .ax-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--ax-ink);
+  transition: width var(--ax-base) var(--ax-ease);
+}
+.ax-workspace .ax-mark {
+  display: inline-block;
+  width: 10px;
+  color: var(--ax-muted);
+}
+.ax-workspace .ax-mark-warning {
+  color: #f05a72;
+}
+.ax-workspace .ax-mark-good {
+  color: var(--ax-accent);
+}
+.ax-workspace .ax-dot {
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 50%;
+  background: transparent;
+  transition:
+    background-color var(--ax-base) var(--ax-ease),
+    border-color var(--ax-base) var(--ax-ease);
+}
+.ax-workspace .ax-dot.is-done {
+  border-color: var(--ax-accent);
+  background: var(--ax-accent);
+}
+.ax-workspace .ax-dot.is-current {
+  border-color: var(--ax-accent);
+}
+
+/* ---- Motion ---- */
+
+@keyframes ax-pop {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes ax-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-workspace * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* A selected toggle (project mode, stress multiple) is underlined, so it never relies on color alone. */
+.ax-workspace .ax-action[aria-pressed="true"] {
+  color: var(--ax-ink);
+  box-shadow: inset 0 -1px 0 var(--ax-ink);
+}
+.ax-workspace .ax-modes {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
