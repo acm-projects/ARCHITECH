@@ -2063,13 +2063,6 @@
     display: none;
   }
 }
-.hero-v2.is-stressed .wire-flow .stress-path {
-  stroke-width: 2.4;
-  stroke-dasharray: 3 6;
-}
-.hero-v2.is-critical .wire-flow .stress-path {
-  stroke-width: 3.2;
-}
 .workspace {
   height: 100vh;
   overflow: hidden;

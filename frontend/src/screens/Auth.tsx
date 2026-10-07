@@ -1,7 +1,7 @@
 // useState - lets page remember temporary values while user interacts
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { ArchieMark, Icon, StatusMessage } from "../components/ui";
+import { BrandWordmark, Icon, Logo, StatusMessage } from "../components/ui";
 
 // just for the frontend stage
 import {
@@ -140,7 +140,7 @@ export function AuthPage({
     }
 
     /*
-      ARCHITECT currently uses a local browser profile rather than
+      ARCHITECH currently uses a local browser profile rather than
       a real authentication backend.
 
       For now, signup stores the profile locally and signin checks
@@ -170,7 +170,7 @@ export function AuthPage({
     */
     if (!existing.name) {
       setMessage(
-        "No ARCHITECT profile exists in this browser yet. Create an account first.",
+        "No ARCHITECH profile exists in this browser yet. Create an account first.",
       );
       return;
     }
@@ -191,15 +191,11 @@ export function AuthPage({
   return (
     <main className="auth-page">
       {/* logo works as back button to return to the home page */}
-      <button
-        type="button"
+      <Logo
         className="auth-brand"
         onClick={back}
-        aria-label="Back to ARCHITECT home"
-      >
-        <ArchieMark size={24} />
-        <span>ARCHITECT</span>
-      </button>
+        aria-label="Back to ARCHITECH home"
+      />
 
       {/* authentication form section */}
       <section className="auth-shell">
@@ -210,8 +206,8 @@ export function AuthPage({
 
             <p>
               {isSignup
-                ? "Start building better systems with ARCHITECT."
-                : "Sign in to continue to ARCHITECT."}
+                ? "Start building better systems with ARCHITECH."
+                : "Sign in to continue to ARCHITECH."}
             </p>
           </div>
 
@@ -347,7 +343,7 @@ export function AuthPage({
           {/* Legal */}
           {isSignup && (
             <p className="auth-legal">
-              By creating an account, you agree to ARCHITECT&apos;s{" "}
+              By creating an account, you agree to ARCHITECH&apos;s{" "}
               <button type="button">Terms of Service</button> and{" "}
               <button type="button">Privacy Policy</button>.
             </p>
@@ -355,7 +351,7 @@ export function AuthPage({
 
           {/* Switch */}
           <p className="auth-switch">
-            {isSignup ? "Already have an account?" : "New to ARCHITECT?"}{" "}
+            {isSignup ? "Already have an account?" : "New to ARCHITECH?"}{" "}
             <button type="button" onClick={switchKind}>
               {isSignup ? "Sign in" : "Create account"}
             </button>
@@ -366,15 +362,14 @@ export function AuthPage({
   );
 }
 
-// Step 1 rows; order and copy are presentation only, the value is the ExperienceLevel
+// Experience choices share the same values used by the saved profile.
 const EXPERIENCE_OPTIONS: ReadonlyArray<{
   level: ExperienceLevel;
-  index: string;
   description: string;
 }> = [
-  { level: "Beginner", index: "01", description: "I'm learning how systems fit together." },
-  { level: "Intermediate", index: "02", description: "I understand the basics and want to practice designing systems." },
-  { level: "Advanced", index: "03", description: "I'm comfortable with system design and want more challenging scenarios." },
+  { level: "Beginner", description: "I'm learning how systems fit together." },
+  { level: "Intermediate", description: "I understand the basics and want to practice designing systems." },
+  { level: "Advanced", description: "I'm comfortable with system design and want more challenging scenarios." },
 ];
 
 /* BACKEND INTEGRATION:
@@ -451,7 +446,7 @@ export function Onboarding({
             ↓
      Start GitHub OAuth
             ↓
-     User authorizes ARCHITECT
+     User authorizes ARCHITECH
             ↓
      Backend receives OAuth callback
             ↓
@@ -482,10 +477,9 @@ export function Onboarding({
   return (
     <main className="onboarding">
       <header className="onboarding-bar">
-        {/* ARCHITECT branding */}
-        <div className="onboarding-brand">
-          <ArchieMark size={24} />
-          <span>ARCHITECT</span>
+        {/* ARCHITECH branding */}
+        <div className="onboarding-brand logo">
+          <BrandWordmark />
         </div>
 
         {/* Step counter: 01 / 02 -> 02 / 02 */}
@@ -502,11 +496,9 @@ export function Onboarding({
             <>
               <div className="onboarding-heading">
                 <h1 ref={headingRef} tabIndex={-1}>
-                  What best describes your <br />
-                  system design experience?
+                  What best describes your system design experience?
                 </h1>
 
-                <p>We&apos;ll tailor ARCHITECT to your experience.</p>
               </div>
 
               {/* native radios: one selection, arrow-key navigation */}
@@ -530,9 +522,7 @@ export function Onboarding({
                         onChange={() => setLevel(option.level)}
                       />
 
-                      <span className="onboarding-option-index" aria-hidden="true">
-                        {option.index}
-                      </span>
+                      <span className="onboarding-option-media" aria-hidden="true" />
 
                       <span className="onboarding-option-copy">
                         <span className="onboarding-option-title">{option.level}</span>
@@ -540,8 +530,6 @@ export function Onboarding({
                           {option.description}
                         </span>
                       </span>
-
-                      <span className="onboarding-option-radio" aria-hidden="true" />
                     </label>
                   );
                 })}
@@ -575,7 +563,7 @@ export function Onboarding({
 
                 <p>
                   Connect GitHub to link your development workflow with
-                  ARCHITECT.
+                  ARCHITECH.
                 </p>
               </div>
 
@@ -587,7 +575,7 @@ export function Onboarding({
                 </li>
                 <li>
                   <Icon name="check" size={14} />
-                  Bring project context into ARCHITECT
+                  Bring project context into ARCHITECH
                 </li>
                 <li>
                   <Icon name="check" size={14} />
