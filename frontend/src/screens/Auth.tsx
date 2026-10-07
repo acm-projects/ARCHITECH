@@ -1,7 +1,7 @@
 // useState - lets page remember temporary values while user interacts
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
-import { LogoWithArchie, Icon, Logo, StatusMessage } from "../components/ui";
+import { Icon, Logo, StatusMessage } from "../components/ui";
 
 // just for the frontend stage
 import {
@@ -87,7 +87,8 @@ export function AuthPage({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // to make password hidden by default
   const [remember, setRemember] = useState(false); // for backend, not functioning yet
-  const [message, setMessage] = useState("");
+  // Some messages include a logo, so they aren't all strings.
+  const [message, setMessage] = useState<ReactNode>("");
 
   // determines whether the main button should be enabled
   // have to meet requirements to enable the main button
@@ -170,7 +171,7 @@ export function AuthPage({
     */
     if (!existing.name) {
       setMessage(
-        "No ARCHITECH profile exists in this browser yet. Create an account first.",
+        <>No <Logo variant="without-archie" size="inline" /> profile exists in this browser yet. Create an account first.</>,
       );
       return;
     }
@@ -192,6 +193,7 @@ export function AuthPage({
     <main className="auth-page">
       {/* logo works as back button to return to the home page */}
       <Logo
+        variant="without-archie"
         className="auth-brand"
         onClick={back}
         aria-label="Back to ARCHITECH home"
@@ -205,9 +207,8 @@ export function AuthPage({
             <h1>{isSignup ? "Create your account" : "Welcome back"}</h1>
 
             <p>
-              {isSignup
-                ? "Start building better systems with ARCHITECH."
-                : "Sign in to continue to ARCHITECH."}
+              {isSignup ? "Start building better systems with " : "Sign in to continue to "}
+              <Logo variant="without-archie" size="inline" />.
             </p>
           </div>
 
@@ -323,8 +324,9 @@ export function AuthPage({
           {message && (
             <StatusMessage
               tone={
-                message.includes("will be") || // ex) Google auth will be ... -> info
-                message.includes("available")
+                // Check the wording only when the message is plain text.
+                typeof message === "string" &&
+                (message.includes("will be") || message.includes("available"))
                   ? undefined
                   : "error" // ex) No profile exists -> error
               }
@@ -343,7 +345,7 @@ export function AuthPage({
           {/* Legal */}
           {isSignup && (
             <p className="auth-legal">
-              By creating an account, you agree to ARCHITECT&apos;s{" "}
+              By creating an account, you agree to <Logo variant="without-archie" size="inline" />&apos;s{" "}
               <button type="button">Terms of Service</button> and{" "}
               <button type="button">Privacy Policy</button>.
             </p>
@@ -351,7 +353,7 @@ export function AuthPage({
 
           {/* Switch */}
           <p className="auth-switch">
-            {isSignup ? "Already have an account?" : "New to ARCHITECH?"}{" "}
+            {isSignup ? "Already have an account?" : <>New to <Logo variant="without-archie" size="inline" />?</>}{" "}
             <button type="button" onClick={switchKind}>
               {isSignup ? "Sign in" : "Create account"}
             </button>
@@ -477,9 +479,9 @@ export function Onboarding({
   return (
     <main className="onboarding">
       <header className="onboarding-bar">
-        {/* ARCHITECH branding */}
+        {/* One header for both onboarding steps. */}
         <div className="onboarding-brand logo">
-          <LogoWithArchie />
+          <Logo variant="without-archie" />
         </div>
 
         {/* Step counter: 01 / 02 -> 02 / 02 */}
@@ -499,7 +501,7 @@ export function Onboarding({
                   What best describes your system design experience?
                 </h1>
 
-                <p>We&apos;ll tailor ARCHITECT to your experience.</p>
+                <p>We&apos;ll tailor <Logo variant="without-archie" size="inline" /> to your experience.</p>
               </div>
 
               {/* native radios: one selection, arrow-key navigation */}
@@ -564,7 +566,7 @@ export function Onboarding({
 
                 <p>
                   Connect GitHub to link your development workflow with
-                  ARCHITECH.
+                  {" "}<Logo variant="without-archie" size="inline" />.
                 </p>
               </div>
 
@@ -576,7 +578,7 @@ export function Onboarding({
                 </li>
                 <li>
                   <Icon name="check" size={14} />
-                  Bring project context into ARCHITECH
+                  Bring project context into <Logo variant="without-archie" size="inline" />
                 </li>
                 <li>
                   <Icon name="check" size={14} />
