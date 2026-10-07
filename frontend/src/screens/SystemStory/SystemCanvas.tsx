@@ -189,7 +189,11 @@ function ToolboxItem({ icon, name }: ToolboxItemProps) {
   );
 }
 
-export default function SystemCanvas() {
+export default function SystemCanvas({
+  onGetStarted,
+}: {
+  onGetStarted: () => void;
+}) {
   return (
     <div className="story-demo">
       {/* =====================================================
@@ -893,6 +897,7 @@ export default function SystemCanvas() {
               <button
                 className="repo-demo-cta-button"
                 type="button"
+                onClick={onGetStarted}
               >
                 Get started
 

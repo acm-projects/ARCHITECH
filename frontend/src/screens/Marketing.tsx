@@ -312,7 +312,7 @@ export function Landing({
           05 CHALLENGE
       ====================================== */}
 
-      <SystemStory />
+      <SystemStory onGetStarted={signUp} />
 
     </main>
   );
