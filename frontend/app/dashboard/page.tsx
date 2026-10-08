@@ -3,7 +3,7 @@ import Link from "next/link";
 import AuthGate from "@/components/auth/AuthGate";
 import ProfileMenu from "@/components/auth/ProfileMenu";
 import DailyChallenge from "@/components/dashboard/DailyChallenge";
-import DashboardLogo from "@/components/dashboard/DashboardLogo";
+import { Logo } from "@/components/ui";
 import DashboardMotion from "@/components/dashboard/DashboardMotion";
 import RecentProjects from "@/components/dashboard/RecentProjects";
 import SystemTutorials from "@/components/dashboard/SystemTutorials";
@@ -15,7 +15,7 @@ export default function DashboardPage() {
     <main className="flex h-dvh flex-col overflow-hidden bg-white text-[#0A0A0A] max-lg:h-auto max-lg:min-h-dvh max-lg:overflow-visible">
       <header className="flex h-14 shrink-0 items-center justify-between bg-white px-8 lg:px-14">
         <Link href={HOME_ROUTE} aria-label="ARCHITECH dashboard" className="focus-visible:outline-2 focus-visible:outline-offset-4">
-          <DashboardLogo />
+          <Logo variant="by-level" />
         </Link>
 
         <nav className="flex items-center gap-8 text-xs text-neutral-500">

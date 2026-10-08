@@ -97,11 +97,8 @@
 /* ---- Header: top chrome, no container ---- */
 
 .ax-workspace .ax-brand {
-  font-size: var(--ax-t-sm);
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+  display: inline-flex;
+  flex-shrink: 0;
 }
 
 .ax-workspace .ax-title {

@@ -19,11 +19,9 @@ import { readStorageOption, STORAGE_KEYS, writeStorage } from "../../lib/storage
 // UI components - AuthPage, Onboarding, Landing
 import { AuthPage, Onboarding } from "../../screens/Auth";
 import { Landing } from "../../screens/Marketing";
-import type { ExperienceLevel } from "../../types";
+import { EXPERIENCE_LEVELS, type ExperienceLevel } from "../../types";
 // Project creation - useStartProject
 import { useStartProject } from "../projects/useStartProject";
-
-const LEVELS = ["Beginner", "Intermediate", "Advanced"] as const;
 
 /* Controls the full entry flow for '/': landing, auth, and onboarding.
    The screens handle their own UI while this compoenent owns navigation
@@ -36,7 +34,7 @@ export default function EntryFlow() {
   // A browser that is already signed in goes straight to the dashboard; onboarding is not repeated.
   const [signedIn] = useState(isSignedIn); // whether the user is already signed in
   const [level, setLevelState] = useState<ExperienceLevel>(() => // level = the user's experience level
-    readStorageOption(STORAGE_KEYS.level, LEVELS, "Intermediate"), // // Restore the saved experience level, defaulting to Intermediate for a new browser.
+    readStorageOption(STORAGE_KEYS.level, EXPERIENCE_LEVELS, "Intermediate"), // // Restore the saved experience level, defaulting to Intermediate for a new browser.
   );
 
   // Skip landing/auth/onboarding when an existing signed-in session opens '/'.
