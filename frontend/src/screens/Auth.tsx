@@ -1,3 +1,5 @@
+//Connects to authentication backend
+import { signIn } from "next-auth/react";
 // useState - lets page remember temporary values while user interacts
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
@@ -125,63 +127,52 @@ export function AuthPage({
      Error handling - backend errors should be returned in a form that the frontend can display to the user.    
                       can display using setMessage()
   */
-  const submit = (event?: FormEvent) => {
-    event?.preventDefault(); // prevent refresh, make user to stay on page
-    setMessage(""); // clear message before moving on to next 
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault(); // This single line stops the GET error!
 
-    // show message if the form cannot be submitted
-    if (!canSubmit) {
-      setMessage(
-        isSignup
-          ? "Enter your name, email, and a password with at least 6 characters." // signup
-          : "Enter your email and password.", // signin
-      );
-      return;
-    }
+  if (isSignup) {
+    // 1. SIGN UP LOGIC
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }), // Ensure these match your state variables!
+    });
 
-    /*
-      ARCHITECT currently uses a local browser profile rather than
-      a real authentication backend.
-
-      For now, signup stores the profile locally and signin checks
-      whether a local profile exists.
-
-      current: react -> browser local storage
-      after adding backend: react -> auth backend -> DB -> pwd handling
-    */
-
-    // saves user's name and email but not store the password yet
-    /* Temp signup implementation
-      replace this localstorage write with the real signup api call
-    */
-    if (isSignup) {
-      writeJsonStorage(STORAGE_KEYS.user, {
-        name: name.trim(),
-        email: email.trim(),
+    if (res.ok) {
+      // Success: instantly log them in
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false, 
       });
-
-      done();
-      return;
+      
+      if (!result?.error) {
+        window.location.href = "/dashboard";
+      } else {
+        alert(result.error);
+      }
+    } else {
+      const data = await res.json();
+      alert(data.error); // E.g., "Email already in use."
     }
+  } else {
+    // 2. LOG IN LOGIC
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
 
-    // Currently doesnt check entered main = saved email? or entered password = saved password?
-    /*BACKEND INTEGRATION:
-      replace this local profile check with the real signin api call
-    */
-    if (!existing.name) {
-      setMessage(
-        "No ARCHITECT profile exists in this browser yet. Create an account first.",
-      );
-      return;
+    if (result?.error) {
+      alert(result.error); // E.g., "Invalid email or password"
+    } else {
+      window.location.href = "/dashboard";
     }
-
-    done();
-  };
+  }
+};
 
   // handles Apple, Git, Google -> to sign in
-  /*BACKEND INTEGRATION:
-    replace this social sign in click handler with the real social signin api call
-  */
+  // Apple remains a placeholder until its OAuth provider is configured.
   const socialClick = (provider: string) => {
     setMessage(
       `${provider} authentication will be connected when OAuth is added.`,
@@ -222,7 +213,13 @@ export function AuthPage({
                 key={name}
                 type="button"
                 className="auth-social-button"
-                onClick={() => socialClick(name)} // call it only when click happens
+                onClick={() =>
+                  name === "GitHub"
+                    ? signIn("github", { callbackUrl: "/dashboard" })
+                    : name === "Google"
+                      ? signIn("google", { callbackUrl: "/dashboard" })
+                      : socialClick(name)
+                }
                 aria-label={`Continue with ${name}`}
                 title={`Continue with ${name}`}
               >

@@ -4,18 +4,17 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { readLocalUser } from "../../lib/localUser";
 import { signOut } from "../../lib/session";
 
 // account menu for the signed-in user. shows the locally stored profile and provides
 // the ui entry point for signing out
-export default function ProfileMenu() {
+export default function ProfileMenu({ userName }: { userName?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  // user profile data is currently read from local browser storage.
-  // BACKEND: replace this with the auth user's profile when user account are connected
-  const [user] = useState(readLocalUser);
   const rootRef = useRef<HTMLDivElement>(null);
+  const displayName = userName || "User";
+  const userInitial = displayName.charAt(0).toUpperCase();
+  const handleToggle = () => setOpen((value) => !value);
 
   // while the menu is open, close it when the user clicks outside or presses escape
   useEffect(() => {
@@ -38,13 +37,13 @@ export default function ProfileMenu() {
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        aria-label={`Account: ${user.displayName}`}
+        aria-label={`Account: ${displayName}`}
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0A0A0A] text-[11px] text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+        onClick={handleToggle}
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0A0A0A] text-[11px] font-semibold tracking-widest text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
       >
-        {user.initials}
+        {userInitial}
       </button>
 
       {open && (
@@ -52,7 +51,7 @@ export default function ProfileMenu() {
           role="menu"
           className="absolute right-0 top-9 z-20 w-44 rounded-md border border-neutral-200 bg-white py-1 text-[13px]"
         >
-          <p className="truncate px-3 py-1.5 text-neutral-500">{user.displayName}</p>
+          <p className="truncate px-3 py-1.5 text-neutral-500">{displayName}</p>
           <button
             type="button"
             role="menuitem"
