@@ -53,11 +53,7 @@
     <ellipse cx="773" cy="616" rx="101" ry="99"/>
   </g>
 
-  <!-- Solid black eyes: no colored irises or highlights -->
-  <g fill="#000000">
-    <ellipse cx="487" cy="627" rx="37" ry="40"/>
-    <ellipse cx="759" cy="625" rx="37" ry="40"/>
-  </g>
+  <!-- OnboardingArchie draws the moving pupils. -->
 
   <!-- Propeller stem -->
   <path d="M448 256L450 209L465 205L490 247Z"
