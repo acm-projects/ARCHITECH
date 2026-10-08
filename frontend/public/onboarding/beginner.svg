@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1000" height="1020" viewBox="125 100 1000 1020"
+     role="img" aria-labelledby="title">
+  <title id="title">Archie with black eyes and a colorful propeller cap</title>
+
+  <defs>
+    <linearGradient id="body" x1="240" y1="1000" x2="950" y2="400"
+                    gradientUnits="userSpaceOnUse">
+      <stop stop-color="#009bff"/>
+      <stop offset="1" stop-color="#0091ff"/>
+    </linearGradient>
+
+    <clipPath id="cap">
+      <path d="M338 450
+               C305 357 364 279 455 252
+               C550 224 647 246 688 337
+               C563 342 427 383 338 450Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Archie -->
+  <path fill="url(#body)" d="
+    M239 746
+    C239 522 409 344 627 344
+    C845 344 1016 522 1016 746
+    V1022
+    Q1016 1036 1031 1043
+    C1057 1057 1048 1101 1011 1101
+    H797
+    C769 1101 747 1078 747 1051
+    V866
+    C747 800 693 746 627 746
+    C561 746 507 800 507 866
+    V1051
+    C507 1078 485 1101 457 1101
+    H244
+    C207 1101 198 1057 224 1043
+    Q239 1036 239 1022Z"/>
+
+  <!-- Hands -->
+  <g fill="#008eff">
+    <circle cx="220" cy="918" r="80"/>
+    <circle cx="1034" cy="918" r="80"/>
+  </g>
+
+  <!-- Glasses -->
+  <path d="M573 613Q626 575 675 613"
+        fill="none" stroke="#081747"
+        stroke-width="29" stroke-linecap="round"/>
+
+  <g fill="#fff" stroke="#081747" stroke-width="33">
+    <ellipse cx="473" cy="616" rx="101" ry="99"/>
+    <ellipse cx="773" cy="616" rx="101" ry="99"/>
+  </g>
+
+  <!-- Solid black eyes: no colored irises or highlights -->
+  <g fill="#000000">
+    <ellipse cx="487" cy="627" rx="37" ry="40"/>
+    <ellipse cx="759" cy="625" rx="37" ry="40"/>
+  </g>
+
+  <!-- Propeller stem -->
+  <path d="M448 256L450 209L465 205L490 247Z"
+        fill="#20bbaa" stroke="#081747"
+        stroke-width="17" stroke-linejoin="round"/>
+
+  <!-- Cap panels -->
+  <g clip-path="url(#cap)">
+    <path d="M300 220H720V470H300Z" fill="#ff7a68"/>
+    <path d="M454 252
+             C426 287 430 348 442 385
+             L567 346
+             C554 303 519 256 483 246Z"
+          fill="#ffd45c"/>
+    <path d="M483 246
+             C523 264 553 306 567 346
+             L706 338L673 221Z"
+          fill="#20bbaa"/>
+  </g>
+
+  <path d="M338 450
+           C305 357 364 279 455 252
+           C550 224 647 246 688 337
+           C563 342 427 383 338 450Z"
+        fill="none" stroke="#081747"
+        stroke-width="18"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Propeller -->
+  <g stroke="#081747" stroke-width="18" stroke-linejoin="round">
+    <path d="M436 195
+             C389 184 318 198 283 226
+             C248 254 267 278 306 270
+             C355 261 402 230 436 207Z"
+          fill="#ffd45c"/>
+    <path d="M479 179
+             C536 137 606 113 639 133
+             C672 153 646 182 602 194
+             C562 204 518 201 482 196Z"
+          fill="#ff7a68"/>
+    <circle cx="454" cy="192" r="29" fill="#20bbaa"/>
+  </g>
+</svg>

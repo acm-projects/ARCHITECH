@@ -5972,8 +5972,13 @@ body,
 }
 
 .onboarding-option-media {
+  position: relative;
   min-width: 0;
   min-height: 0;
+}
+
+.onboarding-option-media img {
+  object-fit: contain;
 }
 
 .onboarding-option-copy {
@@ -6014,6 +6019,10 @@ body,
   }
   .onboarding-option-copy {
     gap: 6px;
+  }
+  .onboarding-option-media {
+    align-self: center;
+    aspect-ratio: 1000 / 1020;
   }
   .onboarding-option-title {
     font-size: 18px;
