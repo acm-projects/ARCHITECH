@@ -1,15 +1,15 @@
 //Connects to authentication backend
 import { signIn } from "next-auth/react";
 // useState - lets page remember temporary values while user interacts
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { BrandWordmark, Icon, Logo, StatusMessage } from "../components/ui";
+import { Icon, Logo, StatusMessage } from "../components/ui";
+import { OnboardingArchie, useArchieEyes } from "../components/auth/OnboardingArchie";
 
 // just for the frontend stage
 import {
   readJsonStorage,
   STORAGE_KEYS, // ex) STORAGE_KEYS.user
-  writeJsonStorage,
 } from "../lib/storage";
 
 // "Beginner", "Intermediate", "Advanced" experience levels
@@ -58,22 +58,20 @@ const SOCIAL_PROVIDERS = [
   { name: "Google", Mark: GoogleMark },
 ] as const;
 /*App.tsx -> sends information/functions -> AuthPage
-  AuthPage receives four props: 
+  AuthPage receives three props:
   1. kind: "signin" | "signup" - tells this component which version it should display
   2. back: () => void - go back to the previous page
-  3. done: () => void - auth is done, move to next
-  4. switchKind: () => void - switch between signin and signup
+  3. switchKind: () => void - switch between signin and signup
+  (after a successful sign in/up, NextAuth redirects to /dashboard)
  */
 
 export function AuthPage({
   kind,
   back,
-  done,
   switchKind,
 }: {
   kind: "signin" | "signup";
   back: () => void;
-  done: () => void;
   switchKind: () => void;
 }) {
 
@@ -89,7 +87,8 @@ export function AuthPage({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // to make password hidden by default
   const [remember, setRemember] = useState(false); // for backend, not functioning yet
-  const [message, setMessage] = useState(""); 
+  // Some messages include a logo, so they aren't all strings.
+  const [message, setMessage] = useState<ReactNode>("");
 
   // determines whether the main button should be enabled
   // have to meet requirements to enable the main button
@@ -102,7 +101,7 @@ export function AuthPage({
   // runs when someone click main button (submit)
   /* BACKED INTEGRATION - EMAIL AUTHENTICATION
      This function currently simulates signup/signin using local storage.
-     
+
      Sign up - frontend provides name, email, and password, which are stored locally.
      Backend should:
      1. validate the request
@@ -113,7 +112,7 @@ export function AuthPage({
      6. return the created user
 
      Expected frontend flow:
-     - post/api/auth/signup 
+     - post/api/auth/signup
      - success
      - done
      - onboarding
@@ -124,7 +123,7 @@ export function AuthPage({
      2. validate the pwd
      3. create/return an auth session
 
-     Error handling - backend errors should be returned in a form that the frontend can display to the user.    
+     Error handling - backend errors should be returned in a form that the frontend can display to the user.
                       can display using setMessage()
   */
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -183,6 +182,7 @@ export function AuthPage({
     <main className="auth-page">
       {/* logo works as back button to return to the home page */}
       <Logo
+        variant="with-archie"
         className="auth-brand"
         onClick={back}
         aria-label="Back to ARCHITECH home"
@@ -196,9 +196,8 @@ export function AuthPage({
             <h1>{isSignup ? "Create your account" : "Welcome back"}</h1>
 
             <p>
-              {isSignup
-                ? "Start building better systems with ARCHITECH."
-                : "Sign in to continue to ARCHITECH."}
+              {isSignup ? "Start building better systems with " : "Sign in to continue to "}
+              <Logo variant="archie-without-props" size="inline" />.
             </p>
           </div>
 
@@ -320,8 +319,9 @@ export function AuthPage({
           {message && (
             <StatusMessage
               tone={
-                message.includes("will be") || // ex) Google auth will be ... -> info
-                message.includes("available")
+                // Check the wording only when the message is plain text.
+                typeof message === "string" &&
+                (message.includes("will be") || message.includes("available"))
                   ? undefined
                   : "error" // ex) No profile exists -> error
               }
@@ -340,7 +340,7 @@ export function AuthPage({
           {/* Legal */}
           {isSignup && (
             <p className="auth-legal">
-              By creating an account, you agree to ARCHITECH&apos;s{" "}
+              By creating an account, you agree to <Logo variant="archie-without-props" size="inline" />&apos;s{" "}
               <button type="button">Terms of Service</button> and{" "}
               <button type="button">Privacy Policy</button>.
             </p>
@@ -348,7 +348,7 @@ export function AuthPage({
 
           {/* Switch */}
           <p className="auth-switch">
-            {isSignup ? "Already have an account?" : "New to ARCHITECH?"}{" "}
+            {isSignup ? "Already have an account?" : <>New to <Logo variant="archie-without-props" size="inline" />?</>}{" "}
             <button type="button" onClick={switchKind}>
               {isSignup ? "Sign in" : "Create account"}
             </button>
@@ -362,11 +362,12 @@ export function AuthPage({
 // Experience choices share the same values used by the saved profile.
 const EXPERIENCE_OPTIONS: ReadonlyArray<{
   level: ExperienceLevel;
+  image: string;
   description: string;
 }> = [
-  { level: "Beginner", description: "I'm learning how systems fit together." },
-  { level: "Intermediate", description: "I understand the basics and want to practice designing systems." },
-  { level: "Advanced", description: "I'm comfortable with system design and want more challenging scenarios." },
+  { level: "Beginner", image: "/onboarding/beginner.svg", description: "I'm learning how systems fit together." },
+  { level: "Intermediate", image: "/onboarding/intermediate.svg", description: "I understand the basics and want to practice designing systems." },
+  { level: "Advanced", image: "/onboarding/advanced.svg", description: "I'm comfortable with system design and want more challenging scenarios." },
 ];
 
 /* BACKEND INTEGRATION:
@@ -389,6 +390,8 @@ export function Onboarding({
   // Step 1 = experience level
   // Step 2 = optional GitHub connection
   const [step, setStep] = useState<1 | 2>(1);
+  const optionsRef = useRef<HTMLFieldSetElement>(null);
+  useArchieEyes(optionsRef, step === 1);
 
   // Message shown on the GitHub step.
   // For now this is only used to explain that OAuth is not connected yet.
@@ -406,17 +409,17 @@ export function Onboarding({
 
   /*
      BACKEND INTEGRATION — EXPERIENCE LEVEL
-    
+
      The selected experience level should eventually be saved to the
      authenticated user's profile before moving to Step 2.
-    
+
      Frontend provides:
      {
        experienceLevel: level
      }
-    
+
      Example future flow:
-    
+
      PATCH /api/users/me
             ↓
      backend saves experience level
@@ -424,7 +427,7 @@ export function Onboarding({
      success
             ↓
      setStep(2)
-    
+
      For now, the level remains in frontend state and we immediately
      continue to Step 2.
    */
@@ -434,11 +437,11 @@ export function Onboarding({
 
   /*
      BACKEND INTEGRATION — GITHUB OAUTH
-    
+
      This is currently only a frontend placeholder.
-    
+
      Future expected flow:
-    
+
      User clicks "Connect GitHub"
             ↓
      Start GitHub OAuth
@@ -450,7 +453,7 @@ export function Onboarding({
      Backend associates GitHub account with authenticated user
             ↓
      Frontend continues to Home
-    
+
      Do not treat the account as connected until OAuth succeeds.
    */
   const connectGitHub = () => {
@@ -461,10 +464,10 @@ export function Onboarding({
 
   /*
      GitHub is optional.
-    
+
      If the user skips this step, onboarding is considered complete
      and App.tsx's done() callback sends the user to Home.
-    
+
      No GitHub account should be stored for users who skip.
    */
   const skipGitHub = () => {
@@ -474,9 +477,9 @@ export function Onboarding({
   return (
     <main className="onboarding">
       <header className="onboarding-bar">
-        {/* ARCHITECH branding */}
+        {/* One header for both onboarding steps. */}
         <div className="onboarding-brand logo">
-          <BrandWordmark />
+          <Logo variant="with-archie" />
         </div>
 
         {/* Step counter: 01 / 02 -> 02 / 02 */}
@@ -499,7 +502,7 @@ export function Onboarding({
               </div>
 
               {/* native radios: one selection, arrow-key navigation */}
-              <fieldset className="onboarding-options">
+              <fieldset ref={optionsRef} className="onboarding-options">
                 <legend className="onboarding-sr-only">System design experience</legend>
 
                 {EXPERIENCE_OPTIONS.map((option) => {
@@ -519,7 +522,8 @@ export function Onboarding({
                         onChange={() => setLevel(option.level)}
                       />
 
-                      <span className="onboarding-option-media" aria-hidden="true" />
+                      {/* The label already names the level, so the illustration is decorative. */}
+                      <OnboardingArchie src={option.image} />
 
                       <span className="onboarding-option-copy">
                         <span className="onboarding-option-title">{option.level}</span>
@@ -560,7 +564,7 @@ export function Onboarding({
 
                 <p>
                   Connect GitHub to link your development workflow with
-                  ARCHITECH.
+                  {" "}<Logo variant="archie-without-props" size="inline" />.
                 </p>
               </div>
 
@@ -572,7 +576,7 @@ export function Onboarding({
                 </li>
                 <li>
                   <Icon name="check" size={14} />
-                  Bring project context into ARCHITECH
+                  Bring project context into <Logo variant="archie-without-props" size="inline" />
                 </li>
                 <li>
                   <Icon name="check" size={14} />
