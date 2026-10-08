@@ -121,30 +121,47 @@ export function ArchieMark({
   );
 }
 
-export function BrandWordmark() {
-  return (
-    <Image
-      className="brand-wordmark"
-      src="/logo.svg"
-      alt="ARCHITECH"
-      width={1720}
-      height={385}
-    />
-  );
-}
+// Keep the SVG dimensions here so swapping logos doesn't stretch them.
+const LOGO_ASSETS = {
+  "with-archie": { src: "/logo-with-archie.svg", width: 1720, height: 385 },
+  "without-archie": { src: "/logo-without-archie.svg", width: 1365, height: 215 },
+  "archie-without-props": { src: "/logo-archie-without-props.svg", width: 1405, height: 214 },
+} as const;
+
+type LogoVariant = keyof typeof LOGO_ASSETS;
 
 export function Logo({
+  variant = "with-archie",
+  size = "header",
   className = "",
-  ...buttonProps
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+  onClick,
+  "aria-label": label = "ARCHITECH",
+}: {
+  variant?: LogoVariant;
+  size?: "header" | "inline";
+  className?: string;
+  onClick?: ButtonHTMLAttributes<HTMLButtonElement>["onClick"];
+  "aria-label"?: string;
+}) {
+  const image = (
+    <Image
+      {...LOGO_ASSETS[variant]}
+      className={`brand-wordmark brand-wordmark-${size} ${onClick ? "" : className}`.trim()}
+      alt="ARCHITECH"
+    />
+  );
+
+  if (!onClick) return image;
+
+  // Use a real button when the logo is clickable, so it works with the keyboard too.
   return (
     <button
       type="button"
       className={`logo ${className}`.trim()}
-      aria-label="ARCHITECH"
-      {...buttonProps}
+      aria-label={label}
+      onClick={onClick}
     >
-      <BrandWordmark />
+      {image}
     </button>
   );
 }

@@ -77,7 +77,7 @@ export function Landing({
         className={`landing-nav smart-nav ${navVisible ? "is-visible" : ""}`}
         onFocusCapture={() => setNavVisible(true)}
       >
-        <Logo />
+        <div className="logo"><Logo /></div>
 
         <div className="nav-actions">
           <Button variant="ghost" onClick={signIn}>
@@ -120,7 +120,19 @@ export function Landing({
         </div>
       </section>
 
+
+      {/* =====================================
+          INTERACTIVE PRODUCT STORY
+
+          01 BUILD
+          02 BREAK
+          03 SOLVE
+          04 LEARN
+          05 CHALLENGE
+      ====================================== */}
+
       <SystemStory onGetStarted={signUp} />
+
     </main>
   )
 }
