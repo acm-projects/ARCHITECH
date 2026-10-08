@@ -1,12 +1,19 @@
+"use client";
+
 import Image from "next/image";
 import {
+  useMemo,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
   type InputHTMLAttributes,
   type LabelHTMLAttributes,
+  type MouseEventHandler,
   type ReactNode,
   type SelectHTMLAttributes,
 } from "react";
+
+import { readStorageOption, STORAGE_KEYS } from "../lib/storage";
+import { EXPERIENCE_LEVELS, type ExperienceLevel } from "../types";
 
 const ICON_PATHS = {
   arrow: <><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>,
@@ -129,6 +136,19 @@ const LOGO_ASSETS = {
 } as const;
 
 type LogoVariant = keyof typeof LOGO_ASSETS;
+const LEVEL_LOGOS = {
+  Beginner: "with-archie",
+  Intermediate: "archie-without-props",
+  Advanced: "without-archie",
+} as const satisfies Record<ExperienceLevel, LogoVariant>;
+
+type LogoProps = {
+  variant?: LogoVariant | "by-level";
+  size?: "header" | "inline";
+  className?: string;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
+  "aria-label"?: string;
+};
 
 export function Logo({
   variant = "with-archie",
@@ -136,16 +156,17 @@ export function Logo({
   className = "",
   onClick,
   "aria-label": label = "ARCHITECH",
-}: {
-  variant?: LogoVariant;
-  size?: "header" | "inline";
-  className?: string;
-  onClick?: ButtonHTMLAttributes<HTMLButtonElement>["onClick"];
-  "aria-label"?: string;
-}) {
+}: LogoProps) {
+  const asset = useMemo(() => {
+    if (variant !== "by-level") return LOGO_ASSETS[variant];
+
+    // Keep canvas updates from repeatedly reading browser storage.
+    const level = readStorageOption(STORAGE_KEYS.level, EXPERIENCE_LEVELS, "Intermediate");
+    return LOGO_ASSETS[LEVEL_LOGOS[level]];
+  }, [variant]);
   const image = (
     <Image
-      {...LOGO_ASSETS[variant]}
+      {...asset}
       className={`brand-wordmark brand-wordmark-${size} ${onClick ? "" : className}`.trim()}
       alt="ARCHITECH"
     />

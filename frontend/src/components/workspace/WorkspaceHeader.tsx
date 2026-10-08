@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { Logo } from "../ui";
 
 import type { RunButtonState } from "../../lib/architecture/evaluation/resultsView";
 import { HOME_ROUTE } from "../../lib/routes";
@@ -73,8 +74,8 @@ export default function WorkspaceHeader({
   return (
     <header className="ax-header flex h-11 shrink-0 items-center justify-between px-6">
       <div className="flex min-w-0 items-center gap-10">
-        <Link href={HOME_ROUTE} className="ax-brand">
-          ARCHITECH
+        <Link href={HOME_ROUTE} className="ax-brand focus-visible:outline-2 focus-visible:outline-offset-4" aria-label="ARCHITECH dashboard">
+          <Logo variant="by-level" />
         </Link>
 
         {isEditing ? (
