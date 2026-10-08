@@ -81,7 +81,6 @@ export default function EntryFlow() {
         <AuthPage
           kind="signin"
           back={() => go("back")}
-          done={() => go("authenticated")}
           switchKind={() => go("switch")}
         />
       );
@@ -90,7 +89,6 @@ export default function EntryFlow() {
         <AuthPage
           kind="signup"
           back={() => go("back")}
-          done={() => go("authenticated")}
           switchKind={() => go("switch")}
         />
       );
