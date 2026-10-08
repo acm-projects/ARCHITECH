@@ -1,8 +1,7 @@
 /*
  * Visual system for the shared architecture workspace (/workspace, /learn, /challenge).
  *
- * Composition: one warm surface. The header, the tool palette and the canvas share the
- * same tone and are separated by spacing and a single hairline, not by boxes. Type is
+ * Composition: one warm canvas with floating tool surfaces and pill handles. Type is
  * small and contrast comes from size, not weight. Elevation is reserved for the one
  * thing that floats over content: popovers. Blue means selection, focus or the primary
  * action; family colors appear only on tiny glyphs.
@@ -178,12 +177,101 @@
   color: var(--ax-danger);
 }
 
-/* ---- Tool palette: same surface as the canvas, one hairline edge ---- */
-
-.ax-workspace .ax-toolbox {
-  border-right: 1px solid var(--ax-line);
+/* Floating canvas tools share one surface and one pill handle. */
+/* Let canvas interactions pass through the gap between the rail and its flyout.
+   The visible surfaces below opt back into pointer events. */
+.ax-workspace .ax-canvas-panel {
+  position: absolute;
+  z-index: 20;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-height: calc(100% - 32px);
+  pointer-events: none;
+}
+.ax-workspace .ax-canvas-panel[data-side="right"] {
+  left: auto;
+  right: 16px;
+  flex-direction: row-reverse;
+}
+.ax-workspace .ax-panel-rail {
+  padding: 5px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 999px;
+  background: var(--ax-surface);
+  pointer-events: auto;
+}
+.ax-workspace .ax-panel-handle,
+.ax-workspace .ax-panel-rail .ax-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
   background: transparent;
+  color: var(--ax-ink-soft);
+}
+.ax-workspace .ax-panel-rail .ax-item .ax-item-glyph { width: 16px; height: 16px; }
+.ax-workspace .ax-panel-rail ul { margin: 0; padding: 0; list-style: none; }
+.ax-workspace [data-side="left"] .ax-panel-rail ul { display: grid; gap: 2px; }
+.ax-workspace .ax-component-menu ul { margin: 0; padding: 0; list-style: none; }
+.ax-workspace .ax-component-menu .ax-section-label { padding: 12px 4px 4px; }
+.ax-workspace .ax-component-menu .ax-panel-title { padding-left: 4px; font-size: var(--ax-t-md); }
+.ax-workspace .ax-component-menu .ax-item { margin: 0; padding: 0 4px; gap: 8px; height: 30px; }
+.ax-workspace .ax-component-menu .ax-search { margin: 0 4px; }
+/* Hover names do not capture the pointer or become another clickable surface.
+   Buttons retain their accessible names even while these visual labels are hidden. */
+.ax-workspace .ax-rail-name,
+.ax-workspace .ax-panel-rail .ax-component-name {
+  display: none;
+  position: absolute;
+  left: calc(100% + 12px);
+  padding: 6px 10px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 999px;
+  background: var(--ax-surface);
   color: var(--ax-ink);
+  font-size: var(--ax-t-md);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ax-workspace [data-side="right"] .ax-rail-name { left: auto; right: calc(100% + 12px); }
+.ax-workspace .ax-panel-handle[aria-expanded="false"]:focus-visible .ax-rail-name { display: block; }
+@media (hover: hover) {
+  .ax-workspace .ax-panel-handle[aria-expanded="false"]:hover .ax-rail-name,
+  .ax-workspace .ax-panel-rail .ax-item:hover .ax-component-name { display: block; }
+}
+.ax-workspace .ax-panel-handle:hover,
+.ax-workspace .ax-panel-handle[aria-expanded="true"] { background: var(--ax-line); }
+.ax-workspace .ax-panel-handle[aria-expanded="true"] { outline: 1px solid var(--ax-ink-soft); }
+.ax-workspace .ax-panel-content {
+  width: 232px;
+  max-height: calc(100dvh - 120px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 16px;
+  background: var(--ax-surface);
+  pointer-events: auto;
+}
+/* Explicitly preserve hidden behavior against the legacy global surface styles. */
+.ax-workspace .ax-panel-content[hidden] { display: none; }
+.ax-workspace .ax-canvas-panel[data-wide="true"] .ax-panel-content { width: 310px; }
+.ax-workspace .ax-panel-content .ax-card { width: 100%; border: 0; border-radius: 0; animation: none; }
+.ax-workspace .ax-panel-content .ax-card + .ax-card { border-top: 1px solid var(--ax-line); }
+@media (max-width: 767px) {
+  .ax-workspace .ax-canvas-panel { top: 12px; left: 12px; transform: none; align-items: flex-start; }
+  .ax-workspace .ax-canvas-panel[data-side="left"] { position: relative; top: auto; left: auto; margin: 12px; }
+  .ax-workspace .ax-canvas-panel[data-side="right"] { right: 12px; }
+  .ax-workspace .ax-panel-content,
+  .ax-workspace .ax-canvas-panel[data-wide="true"] .ax-panel-content { width: min(310px, calc(100vw - 78px)); max-height: 32dvh; }
 }
 
 .ax-workspace .ax-panel-title {
@@ -208,67 +296,6 @@
 }
 .ax-workspace .ax-icon-btn:hover {
   color: var(--ax-ink);
-}
-
-/*
- * Collapse tab: a small rounded tab straddling the palette edge with an SVG chevron.
- * Collapsed, it becomes the whole rail: a pill attached to the left edge of the screen.
- */
-.ax-workspace .ax-collapse {
-  position: absolute;
-  top: 50%;
-  right: -9px;
-  transform: translateY(-50%);
-  z-index: 30;
-  width: 18px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: 999px;
-  background: var(--ax-surface);
-  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.06);
-  padding: 0;
-  color: var(--ax-ink-soft);
-  opacity: 0.6;
-  transition:
-    opacity var(--ax-fast) var(--ax-ease),
-    color var(--ax-fast) var(--ax-ease),
-    border-color var(--ax-fast) var(--ax-ease);
-}
-.ax-workspace .ax-rail:hover .ax-collapse,
-.ax-workspace .ax-collapse:hover,
-.ax-workspace .ax-collapse:focus-visible {
-  opacity: 1;
-}
-.ax-workspace .ax-collapse:hover {
-  border-color: var(--ax-accent);
-  color: var(--ax-accent);
-}
-.ax-workspace .ax-collapse svg {
-  display: block;
-}
-.ax-workspace .ax-rail[data-collapsed="true"] .ax-collapse {
-  left: 0;
-  right: auto;
-  width: 26px;
-  height: 80px;
-  border-color: var(--ax-brand);
-  border-left: 0;
-  border-radius: 0 16px 16px 0;
-  background: var(--ax-brand);
-  color: #fff;
-  box-shadow: none;
-  opacity: 1;
-}
-.ax-workspace .ax-rail[data-collapsed="true"] .ax-collapse:hover {
-  border-color: var(--ax-brand);
-  color: #fff;
-  filter: brightness(1.15);
-}
-/* Collapsed, the palette's own hairline goes away; only the tab remains. */
-.ax-workspace .ax-rail[data-collapsed="true"] .ax-toolbox {
-  border-right-color: transparent;
 }
 
 /* Search: a line of interface text with a hairline underneath. */
