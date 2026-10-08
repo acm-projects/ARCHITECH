@@ -46,11 +46,7 @@
     <ellipse cx="773" cy="616" rx="101" ry="99"/>
   </g>
 
-  <!-- Solid black eyes -->
-  <g fill="#000">
-    <ellipse cx="487" cy="627" rx="37" ry="40"/>
-    <ellipse cx="759" cy="625" rx="37" ry="40"/>
-  </g>
+  <!-- OnboardingArchie draws the moving pupils. -->
 
   <!-- Graduation cap -->
   <g fill="#073880" stroke="#081747"
