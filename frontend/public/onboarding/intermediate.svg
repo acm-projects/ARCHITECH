@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg"
      width="1000" height="1020" viewBox="125 100 1000 1020"
      role="img" aria-labelledby="title">
-  <title id="title">Archie with a graduation cap and outlined gold tassel</title>
+  <title id="title">Archie without a hat</title>
 
   <defs>
     <linearGradient id="body" x1="240" y1="1000" x2="950" y2="400"
@@ -48,49 +48,4 @@
 
   <!-- OnboardingArchie draws the moving pupils. -->
 
-  <!-- Graduation cap -->
-  <g fill="#073880" stroke="#081747"
-     stroke-width="19" stroke-linejoin="round">
-    <path d="
-      M264 287L515 147
-      Q526 140 540 143
-      L831 179
-      Q845 181 835 190
-      L713 261L425 318L263 298
-      Q251 296 264 287Z"/>
-
-    <path d="
-      M425 318
-      C513 266 624 240 713 261
-      L753 350
-      C642 328 516 365 416 426Z"/>
-  </g>
-
-  <!-- Tassel cord: navy under-stroke outlines every edge -->
-  <path d="M500 224L355 282Q346 286 345 296L340 349"
-        fill="none" stroke="#081747" stroke-width="37"
-        stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M500 224L355 282Q346 286 345 296L340 349"
-        fill="none" stroke="#ffda36" stroke-width="18"
-        stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- Closed fringe shape with a continuous outer outline -->
-  <path d="
-    M320 371
-    L273 467
-    Q265 485 285 489
-    Q321 496 357 492
-    Q376 490 373 473
-    L359 373Z"
-    fill="#ffda36" stroke="#081747"
-    stroke-width="18" stroke-linejoin="round"/>
-
-  <!-- Interior strand stays within the outlined fringe -->
-  <path d="M325 435L314 483"
-        fill="none" stroke="#081747"
-        stroke-width="12" stroke-linecap="round"/>
-
-  <!-- Knot covers the cord/fringe joins cleanly -->
-  <circle cx="340" cy="354" r="29"
-          fill="#ffda36" stroke="#081747" stroke-width="18"/>
 </svg>
