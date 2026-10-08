@@ -1,8 +1,8 @@
 // useState - lets page remember temporary values while user interacts
-import Image from "next/image";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { Icon, Logo, StatusMessage } from "../components/ui";
+import { OnboardingArchie, useArchieEyes } from "../components/auth/OnboardingArchie";
 
 // just for the frontend stage
 import {
@@ -396,6 +396,8 @@ export function Onboarding({
   // Step 1 = experience level
   // Step 2 = optional GitHub connection
   const [step, setStep] = useState<1 | 2>(1);
+  const optionsRef = useRef<HTMLFieldSetElement>(null);
+  useArchieEyes(optionsRef, step === 1);
 
   // Message shown on the GitHub step.
   // For now this is only used to explain that OAuth is not connected yet.
@@ -507,7 +509,7 @@ export function Onboarding({
               </div>
 
               {/* native radios: one selection, arrow-key navigation */}
-              <fieldset className="onboarding-options">
+              <fieldset ref={optionsRef} className="onboarding-options">
                 <legend className="onboarding-sr-only">System design experience</legend>
 
                 {EXPERIENCE_OPTIONS.map((option) => {
@@ -528,14 +530,7 @@ export function Onboarding({
                       />
 
                       {/* The label already names the level, so the illustration is decorative. */}
-                      <span className="onboarding-option-media" aria-hidden="true">
-                        <Image
-                          src={option.image}
-                          alt=""
-                          fill
-                          sizes="(max-width: 700px) 64px, (max-width: 1064px) 30vw, 270px"
-                        />
-                      </span>
+                      <OnboardingArchie src={option.image} />
 
                       <span className="onboarding-option-copy">
                         <span className="onboarding-option-title">{option.level}</span>

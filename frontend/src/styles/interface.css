@@ -5981,6 +5981,14 @@ body,
   object-fit: contain;
 }
 
+.onboarding-eyes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 .onboarding-option-copy {
   display: flex;
   flex-direction: column;
