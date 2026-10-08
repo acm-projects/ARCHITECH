@@ -192,6 +192,7 @@ export function AuthPage({
 
   return (
     <main className="auth-page">
+      <header className="page-header auth-header">
       {/* logo works as back button to return to the home page */}
       <Logo
         variant="with-archie"
@@ -199,6 +200,8 @@ export function AuthPage({
         onClick={back}
         aria-label="Back to ARCHITECH home"
       />
+
+      </header>
 
       {/* authentication form section */}
       <section className="auth-shell">
@@ -482,7 +485,7 @@ export function Onboarding({
 
   return (
     <main className="onboarding">
-      <header className="onboarding-bar">
+      <header className="page-header onboarding-bar">
         {/* One header for both onboarding steps. */}
         <div className="onboarding-brand logo">
           <Logo variant="with-archie" />

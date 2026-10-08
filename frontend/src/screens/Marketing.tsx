@@ -74,7 +74,7 @@ export function Landing({
     <main className="landing landing-v2">
 
       <nav
-        className={`landing-nav smart-nav ${navVisible ? "is-visible" : ""}`}
+        className={`page-header landing-nav smart-nav ${navVisible ? "is-visible" : ""}`}
         onFocusCapture={() => setNavVisible(true)}
       >
         <div className="logo"><Logo /></div>

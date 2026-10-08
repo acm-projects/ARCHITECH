@@ -13,7 +13,7 @@ export default function DashboardPage() {
   return (
     <AuthGate>
     <main className="flex h-dvh flex-col overflow-hidden bg-white text-[#0A0A0A] max-lg:h-auto max-lg:min-h-dvh max-lg:overflow-visible">
-      <header className="flex h-14 shrink-0 items-center justify-between bg-white px-8 lg:px-14">
+      <header className="page-header flex shrink-0 items-center justify-between bg-white">
         <Link href={HOME_ROUTE} aria-label="ARCHITECH dashboard" className="focus-visible:outline-2 focus-visible:outline-offset-4">
           <Logo variant="by-level" />
         </Link>
