@@ -1,4 +1,5 @@
 // useState - lets page remember temporary values while user interacts
+import Image from "next/image";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { Icon, Logo, StatusMessage } from "../components/ui";
@@ -367,11 +368,12 @@ export function AuthPage({
 // Experience choices share the same values used by the saved profile.
 const EXPERIENCE_OPTIONS: ReadonlyArray<{
   level: ExperienceLevel;
+  image: string;
   description: string;
 }> = [
-  { level: "Beginner", description: "I'm learning how systems fit together." },
-  { level: "Intermediate", description: "I understand the basics and want to practice designing systems." },
-  { level: "Advanced", description: "I'm comfortable with system design and want more challenging scenarios." },
+  { level: "Beginner", image: "/onboarding/beginner.svg", description: "I'm learning how systems fit together." },
+  { level: "Intermediate", image: "/onboarding/intermediate.svg", description: "I understand the basics and want to practice designing systems." },
+  { level: "Advanced", image: "/onboarding/advanced.svg", description: "I'm comfortable with system design and want more challenging scenarios." },
 ];
 
 /* BACKEND INTEGRATION:
@@ -525,7 +527,15 @@ export function Onboarding({
                         onChange={() => setLevel(option.level)}
                       />
 
-                      <span className="onboarding-option-media" aria-hidden="true" />
+                      {/* The label already names the level, so the illustration is decorative. */}
+                      <span className="onboarding-option-media" aria-hidden="true">
+                        <Image
+                          src={option.image}
+                          alt=""
+                          fill
+                          sizes="(max-width: 700px) 64px, (max-width: 1064px) 30vw, 270px"
+                        />
+                      </span>
 
                       <span className="onboarding-option-copy">
                         <span className="onboarding-option-title">{option.level}</span>
