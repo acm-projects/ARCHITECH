@@ -29,8 +29,6 @@ import ChallengeCard from "../challenge/ChallengeCard";
 import LearnCard from "../learn/LearnCard";
 import { projectActions } from "../projects/projectActions";
 import type { Project, ProjectMode } from "../projects/projectStore";
-import { BookOpen } from "lucide-react";
-import CanvasPanel from "./CanvasPanel";
 import ComponentToolbox from "./ComponentToolbox";
 import {
   hasComponentDragData,
@@ -462,63 +460,66 @@ function Workspace({ project }: { project: Project }) {
               </p>
             )}
 
-            <CanvasPanel side="right" label="Guidance" icon={<BookOpen size={16} aria-hidden="true" />}>
-              {/* Challenge keeps its own brief/submission flow around the same project canvas. */}
-              {mode === "challenge" && (
-                <>
-                  <ChallengeCard
-                    challenge={challenge.challenge}
-                    result={challenge.cardResult}
-                    // Submit evaluates a snapshot of the architecture as it looks right now.
-                    onRun={challenge.submit}
-                    onBack={challenge.backToBrief}
-                    stale={challenge.view?.isStale}
-                    running={challenge.view?.isRunning}
-                    error={challenge.view?.error}
-                  />
-                </>
-              )}
+            {/* Keep the current lesson visible when the canvas opens. */}
+            <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
+              <div className="ax-panel-content">
+                {/* Challenge keeps its own brief/submission flow around the same project canvas. */}
+                {mode === "challenge" && (
+                  <>
+                    <ChallengeCard
+                      challenge={challenge.challenge}
+                      result={challenge.cardResult}
+                      // Submit evaluates a snapshot of the architecture as it looks right now.
+                      onRun={challenge.submit}
+                      onBack={challenge.backToBrief}
+                      stale={challenge.view?.isStale}
+                      running={challenge.view?.isRunning}
+                      error={challenge.view?.error}
+                    />
+                  </>
+                )}
 
-              {/* Learn starts as a guided lesson, then unlocks the normal project tools
-                  once the learner finishes the tutorial. */}
-              {mode === "learn" && (
-                <>
-                  <LearnCard
-                    lesson={learn.lesson}
-                    stepIndex={learn.engine.stepIndex}
-                    status={learn.engine.status}
-                    freePlay={learn.freePlay}
-                    feedback={learn.engine.feedback}
-                    hint={
-                      learn.engine.hintVisible
-                        ? learn.engine.hint?.text
-                        : null
-                    }
-                    onDismissFeedback={learn.engine.dismissFeedback}
-                  />
+                {/* Learn starts as a guided lesson, then unlocks the normal project tools
+                    once the learner finishes the tutorial. */}
+                {mode === "learn" && (
+                  <>
+                    <LearnCard
+                      lesson={learn.lesson}
+                      stepIndex={learn.engine.stepIndex}
+                      status={learn.engine.status}
+                      freePlay={learn.freePlay}
+                      feedback={learn.engine.feedback}
+                      hint={
+                        learn.engine.hintVisible
+                          ? learn.engine.hint?.text
+                          : null
+                      }
+                      onDismissFeedback={learn.engine.dismissFeedback}
+                    />
 
-                  {/* After the tutorial, Learn becomes free-play and exposes the
-                      same Run Design / Stress Test analysis tools used for experimenting. */}
-                  {learn.freePlay && (
-                    <>
-                      <StressTestPanel
-                        traffic={learn.runs.traffic}
-                        running={learn.runs.view.isRunning}
-                        onRateChange={learn.runs.setRequestRate}
-                        onRun={learn.runs.run}
-                        onRunAtRate={learn.runs.runAtRate}
-                      />
+                    {/* After the tutorial, Learn becomes free-play and exposes the
+                        same Run Design / Stress Test analysis tools used for experimenting. */}
+                    {learn.freePlay && (
+                      <>
+                        <StressTestPanel
+                          traffic={learn.runs.traffic}
+                          running={learn.runs.view.isRunning}
+                          onRateChange={learn.runs.setRequestRate}
+                          onRun={learn.runs.run}
+                          onRunAtRate={learn.runs.runAtRate}
+                        />
 
-                      <RunResultsPanel
-                        view={learn.runs.view}
-                        onRun={learn.runs.run}
-                        liveTraffic={learn.runs.traffic}
-                      />
-                    </>
-                  )}
-                </>
-              )}
-            </CanvasPanel>
+                        <RunResultsPanel
+                          view={learn.runs.view}
+                          onRun={learn.runs.run}
+                          liveTraffic={learn.runs.traffic}
+                        />
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </aside>
           </main>
         </div>
       </div>
