@@ -1,28 +1,12 @@
 //Connects to authentication backend
-import { signIn } from "next-auth/react";
-// useState - lets page remember temporary values while user interacts
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
 
 import { ArchieMark, Icon, StatusMessage } from "../components/ui";
-
-// just for the frontend stage
-import {
-  readJsonStorage,
-  STORAGE_KEYS, // ex) STORAGE_KEYS.user
-  writeJsonStorage,
-} from "../lib/storage";
+import { isValidAuthEmail, normalizeAuthEmail } from "../lib/authEmail";
 
 // "Beginner", "Intermediate", "Advanced" experience levels
 import type { ExperienceLevel } from "../types";
-
-/* BACKEND INTEGRATION:
-   Once authentication is connected, the backend should define the actual
-   user model returned by the authentication API
-*/
-interface LocalUser {
-  name?: string; // ? means property is optional
-  email?: string;
-}
 
 // Provider marks for the icon-only social buttons (aria-hidden; the button carries the label)
 function AppleMark() {
@@ -76,16 +60,10 @@ export function AuthPage({
   done: () => void;
   switchKind: () => void;
 }) {
-
   const isSignup = kind === "signup"; // if kind = "signup", true; otherwise, false
 
-  // BACKEND INTEGRATION:
-  // replace this as the source of authentication truth with the authenticated
-  // user/session returned by the backend
-  const existing = readJsonStorage<LocalUser>(STORAGE_KEYS.user, {}); // get existing user
-
-  const [name, setName] = useState(existing.name ?? ""); // if existing.name is dne, use ""
-  const [email, setEmail] = useState(existing.email ?? "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // to make password hidden by default
   const [remember, setRemember] = useState(false); // for backend, not functioning yet
@@ -95,81 +73,58 @@ export function AuthPage({
   // have to meet requirements to enable the main button
   const canSubmit = isSignup
     ? name.trim().length >= 2 &&
-      email.trim().length > 0 &&
+      isValidAuthEmail(normalizeAuthEmail(email)) &&
       password.length >= 6
-    : email.trim().length > 0 && password.length > 0;
+    : isValidAuthEmail(normalizeAuthEmail(email)) && password.length > 0;
 
-  // runs when someone click main button (submit)
-  /* BACKED INTEGRATION - EMAIL AUTHENTICATION
-     This function currently simulates signup/signin using local storage.
-     
-     Sign up - frontend provides name, email, and password, which are stored locally.
-     Backend should:
-     1. validate the request
-     2. check whether the email already exists
-     3. securely hash the password
-     4. create the user
-     5. create/return an auth session
-     6. return the created user
-
-     Expected frontend flow:
-     - post/api/auth/signup 
-     - success
-     - done
-     - onboarding
-
-     Sign in - frontend provides email and password, which are checked against locally stored profile.
-     Backend should:
-     1. Find the user
-     2. validate the pwd
-     3. create/return an auth session
-
-     Error handling - backend errors should be returned in a form that the frontend can display to the user.    
-                      can display using setMessage()
-  */
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault(); // This single line stops the GET error!
+    e.preventDefault();
+    setMessage("");
+    const normalizedEmail = normalizeAuthEmail(email);
 
-  if (isSignup) {
-    // 1. SIGN UP LOGIC
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }), // Ensure these match your state variables!
-    });
+    if (!isValidAuthEmail(normalizedEmail)) {
+      setMessage("Enter a valid email address without spaces.");
+      return;
+    }
 
-    if (res.ok) {
-      // Success: instantly log them in
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false, 
-      });
-      
-      if (!result?.error) {
-        window.location.href = "/dashboard";
-      } else {
-        alert(result.error);
+    try {
+      if (isSignup) {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            email: normalizedEmail,
+            password,
+          }),
+        });
+        const body: { error?: string } = await response.json();
+
+        if (!response.ok) {
+          setMessage(body.error || "Unable to create your account. Please try again.");
+          return;
+        }
       }
-    } else {
-      const data = await res.json();
-      alert(data.error); // E.g., "Email already in use."
-    }
-  } else {
-    // 2. LOG IN LOGIC
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
 
-    if (result?.error) {
-      alert(result.error); // E.g., "Invalid email or password"
-    } else {
-      window.location.href = "/dashboard";
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: normalizedEmail,
+        password,
+      });
+
+      if (result?.error) {
+        setMessage(result.error);
+      } else {
+        done();
+      }
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Authentication failed. Please try again.",
+      );
     }
-  }
-};
+  };
 
   // handles Apple, Git, Google -> to sign in
   // Apple remains a placeholder until its OAuth provider is configured.
@@ -217,7 +172,7 @@ export function AuthPage({
                   name === "GitHub"
                     ? signIn("github", { callbackUrl: "/dashboard" })
                     : name === "Google"
-                      ? signIn("google", { callbackUrl: "/dashboard" })
+                      ? signIn("google", { callbackUrl: "/" })
                       : socialClick(name)
                 }
                 aria-label={`Continue with ${name}`}
@@ -258,6 +213,15 @@ export function AuthPage({
               placeholder="you@example.com"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              onBlur={() => {
+                const normalizedEmail = normalizeAuthEmail(email);
+                setEmail(normalizedEmail);
+                setMessage(
+                  normalizedEmail && !isValidAuthEmail(normalizedEmail)
+                    ? "Enter a valid email address without spaces."
+                    : "",
+                );
+              }}
             />
           </label>
 
@@ -375,8 +339,8 @@ const EXPERIENCE_OPTIONS: ReadonlyArray<{
 ];
 
 /* BACKEND INTEGRATION:
-   The final selected experience level should be saved to the authenticated
-   user's profile on the backend.
+   The selected experience level is saved to the authenticated user's profile
+   before the optional GitHub connection step.
 
    level- what's selected
    setLevel - change selected level
@@ -384,20 +348,21 @@ const EXPERIENCE_OPTIONS: ReadonlyArray<{
 export function Onboarding({
   level,
   setLevel,
+  step,
+  setStep,
+  onboardingStarted,
   done,
 }: {
   level: ExperienceLevel;
   setLevel: (value: ExperienceLevel) => void;
+  step: 1 | 2;
+  setStep: (value: 1 | 2) => void;
+  onboardingStarted: () => void;
   done: () => void;
 }) {
-  // Keeps track of which onboarding screen the user is currently viewing.
-  // Step 1 = experience level
-  // Step 2 = optional GitHub connection
-  const [step, setStep] = useState<1 | 2>(1);
-
-  // Message shown on the GitHub step.
-  // For now this is only used to explain that OAuth is not connected yet.
-  const [githubMessage, setGithubMessage] = useState("");
+  const { update } = useSession();
+  const [onboardingError, setOnboardingError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Move focus to the new heading when the step changes so keyboard and
   // screen-reader users land at the top of the new step (not on first render).
@@ -412,66 +377,61 @@ export function Onboarding({
   /*
      BACKEND INTEGRATION — EXPERIENCE LEVEL
     
-     The selected experience level should eventually be saved to the
-     authenticated user's profile before moving to Step 2.
+     The selected experience level is saved to the authenticated user's
+     profile before moving to Step 2.
     
      Frontend provides:
      {
        experienceLevel: level
      }
     
-     Example future flow:
-    
-     PATCH /api/users/me
-            ↓
-     backend saves experience level
-            ↓
-     success
-            ↓
-     setStep(2)
-    
-     For now, the level remains in frontend state and we immediately
-     continue to Step 2.
+     The profile API validates the level and updates the signed-in user's
+     database record before continuing.
    */
-  const continueToGitHub = () => {
-    setStep(2);
+  const continueToGitHub = async () => {
+     onboardingStarted();
+     setOnboardingError("");
+     setIsSaving(true);
+    try {
+      const response = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ experienceLevel: level }),
+      });
+      const result: { error?: string } = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to save your experience level.");
+      }
+
+      setStep(2);
+      const session = await update();
+      if (!session?.user?.experienceLevel) {
+        setOnboardingError(
+          "Your experience level was saved, but the session could not be refreshed. You can continue and try again later.",
+        );
+      }
+    } catch (error) {
+      setOnboardingError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save your experience level. Please try again.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  /*
-     BACKEND INTEGRATION — GITHUB OAUTH
-    
-     This is currently only a frontend placeholder.
-    
-     Future expected flow:
-    
-     User clicks "Connect GitHub"
-            ↓
-     Start GitHub OAuth
-            ↓
-     User authorizes ARCHITECT
-            ↓
-     Backend receives OAuth callback
-            ↓
-     Backend associates GitHub account with authenticated user
-            ↓
-     Frontend continues to Home
-    
-     Do not treat the account as connected until OAuth succeeds.
-   */
   const connectGitHub = () => {
-    setGithubMessage(
-      "GitHub connection will be available when OAuth is connected.",
-    );
+    void signIn("github", { callbackUrl: "/dashboard" }).catch((error: unknown) => {
+      setOnboardingError(
+        error instanceof Error
+          ? error.message
+          : "Unable to connect GitHub. Please try again.",
+      );
+    });
   };
 
-  /*
-     GitHub is optional.
-    
-     If the user skips this step, onboarding is considered complete
-     and App.tsx's done() callback sends the user to Home.
-    
-     No GitHub account should be stored for users who skip.
-   */
   const skipGitHub = () => {
     done();
   };
@@ -548,13 +508,19 @@ export function Onboarding({
                 type="button"
                 className="onboarding-primary"
                 onClick={continueToGitHub}
-                disabled={!level}
+                disabled={!level || isSaving}
               >
                 Continue
                 <Icon name="arrow" size={16} />
               </button>
 
               <p className="onboarding-note">You can change this later in settings.</p>
+
+              {onboardingError && (
+                <StatusMessage tone="error" className="onboarding-message">
+                  {onboardingError}
+                </StatusMessage>
+              )}
             </>
           )}
 
@@ -576,7 +542,6 @@ export function Onboarding({
                 </p>
               </div>
 
-              {/* what GitHub will enable once OAuth exists - not a connected state */}
               <ul className="onboarding-benefits">
                 <li>
                   <Icon name="check" size={14} />
@@ -592,12 +557,6 @@ export function Onboarding({
                 </li>
               </ul>
 
-              {githubMessage && (
-                <StatusMessage className="onboarding-message">
-                  {githubMessage}
-                </StatusMessage>
-              )}
-
               <button
                 type="button"
                 className="onboarding-primary"
@@ -612,6 +571,7 @@ export function Onboarding({
                 type="button"
                 className="onboarding-text-button"
                 onClick={skipGitHub}
+                disabled={isSaving}
               >
                 Skip for now
               </button>
@@ -619,14 +579,17 @@ export function Onboarding({
               <button
                 type="button"
                 className="onboarding-back"
-                onClick={() => {
-                  setGithubMessage("");
-                  setStep(1);
-                }}
+                onClick={() => setStep(1)}
               >
                 <Icon name="arrow" size={14} />
                 Back
               </button>
+
+              {onboardingError && (
+                <StatusMessage tone="error" className="onboarding-message">
+                  {onboardingError}
+                </StatusMessage>
+              )}
             </div>
           )}
         </div>
