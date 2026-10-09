@@ -68,9 +68,14 @@ export default function ComponentToolbox() {
   // null closes the flyout; a family opens only its components; "all" is the More library.
   const [category, setCategory] = useState<ComponentFamily | "all" | null>(null);
   const [query, setQuery] = useState("");
+  const [flyoutOffset, setFlyoutOffset] = useState(6);
   const [dragging, setDragging] = useState<ArchitectureNodeType | null>(null);
   const groups = componentGroups(query).filter((group) => category === "all" || group.family === category);
   const title = CATEGORIES.find((group) => group.family === category)?.label ?? "Components";
+  const alignFlyout = (button: HTMLButtonElement) => {
+    const rail = button.closest(".ax-panel-rail");
+    if (rail) setFlyoutOffset(button.getBoundingClientRect().top - rail.getBoundingClientRect().top);
+  };
   // Clicking the active category closes it. Clear the old search when switching so
   // a query from More cannot accidentally hide the next category's components.
   const selectCategory = (next: ComponentFamily | "all" | null) => {
@@ -84,6 +89,7 @@ export default function ComponentToolbox() {
       label="Components"
       icon={<Layers size={16} aria-hidden="true" />}
       expanded={category !== null}
+      flyoutOffset={flyoutOffset}
       onExpandedChange={(open) => { if (!open) selectCategory(null); }}
       rail={
         <ul aria-label="Component categories">
@@ -91,7 +97,19 @@ export default function ComponentToolbox() {
             { key: "all" as const, label: "More", Icon: MoreHorizontal }].map(({ key, label, Icon }) => (
             <li key={key}>
               <button type="button" className="ax-panel-handle" aria-label={label}
-                aria-expanded={category === key} onClick={() => selectCategory(key)}>
+                aria-expanded={category === key}
+                onPointerEnter={(event) => {
+                  if (event.pointerType !== "mouse") return;
+                  alignFlyout(event.currentTarget);
+                  if (category !== key) { setCategory(key); setQuery(""); }
+                }}
+                onClick={(event) => {
+                  alignFlyout(event.currentTarget);
+                  // Mouse hover already opened the menu; clicks must not immediately hide it.
+                  if (event.detail > 0 && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+                    if (category !== key) { setCategory(key); setQuery(""); }
+                  } else selectCategory(key);
+                }}>
                 <Icon size={16} color={key === "all" ? undefined : FAMILY_COLORS[key]} aria-hidden="true" />
                 <span className="ax-rail-name" aria-hidden="true">{label}</span>
               </button>

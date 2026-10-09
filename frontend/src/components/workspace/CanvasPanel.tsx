@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState, type CSSProperties, type ReactNode } from "react";
 
 // Shared canvas chrome: the toolbox supplies category buttons; guidance uses one toggle.
 // Each caller keeps its own content and project logic outside this wrapper.
@@ -12,6 +12,7 @@ export default function CanvasPanel({
   rail,
   expanded,
   onExpandedChange,
+  flyoutOffset,
   children,
 }: {
   side: "left" | "right";
@@ -21,6 +22,7 @@ export default function CanvasPanel({
   rail?: ReactNode;
   expanded?: boolean;
   onExpandedChange?: (open: boolean) => void;
+  flyoutOffset?: number;
   children: ReactNode;
 }) {
   // Category selection controls the toolbox's open state. Guidance has no category
@@ -31,7 +33,16 @@ export default function CanvasPanel({
   const id = useId();
 
   return (
-    <aside className="ax-canvas-panel" data-side={side} data-wide={wide} aria-label={label}>
+    <aside className="ax-canvas-panel" data-side={side} data-wide={wide} aria-label={label}
+      data-hover-flyout={flyoutOffset !== undefined || undefined}
+      style={flyoutOffset === undefined ? undefined : { "--ax-flyout-offset": `${flyoutOffset}px` } as CSSProperties}
+      onPointerLeave={flyoutOffset === undefined ? undefined : (event) => {
+        if (event.pointerType === "mouse" && !event.currentTarget.contains(document.activeElement)) setOpen(false);
+      }}
+      onBlur={flyoutOffset === undefined ? undefined : (event) => {
+        if (!event.currentTarget.contains(event.relatedTarget) && !event.currentTarget.matches(":hover")) setOpen(false);
+      }}
+      onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); }}>
       <div className="ax-panel-rail">
         {rail}
       {!rail && <button
