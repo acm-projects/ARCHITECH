@@ -65,7 +65,7 @@ export default function LearnCard({
         <>
           <p className="ax-card-title mt-4">{step.title}</p>
           <p className="ax-card-body">{step.description}</p>
-          <p className="mt-3 text-[10px]">{step.instruction}</p>
+          <p className="mt-3 text-(length:--ax-t-sm)">{step.instruction}</p>
           {hint && <p className="ax-card-label mt-2">Hint: {hint}</p>}
         </>
       )}
