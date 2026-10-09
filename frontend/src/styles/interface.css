@@ -6210,3 +6210,43 @@ body,
     transition: none;
   }
 }
+
+/* All page brands share one anchor, including the fixed landing nav and account screens.
+   Keep these rules after the legacy header rules so route-specific offsets cannot drift. */
+:root {
+  --page-header-height: 56px;
+  --page-header-inset: 24px;
+  --page-logo-width: 168px;
+}
+.page-header,
+.landing-v2 .landing-nav.page-header,
+.onboarding-bar.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--page-header-height);
+  height: var(--page-header-height);
+  padding: 0 var(--page-header-inset);
+  flex-shrink: 0;
+}
+.auth-header,
+.onboarding-bar.page-header { position: absolute; top: 0; left: 0; right: 0; }
+.page-header .auth-brand { position: static; margin: 0; padding: 0; }
+.page-header .brand-wordmark-header,
+.page-header .logo .brand-wordmark-header {
+  width: var(--page-logo-width);
+  max-width: none;
+  height: 40px;
+  object-fit: contain;
+  object-position: left center;
+  flex-shrink: 0;
+}
+.page-header .logo { max-width: none; flex-shrink: 0; }
+@media (max-width: 767px) {
+  :root { --page-header-inset: 16px; --page-logo-width: 140px; }
+  /* Canvas actions reflow below the brand instead of squeezing its position on phones. */
+  .page-header.ax-header { height: auto; flex-wrap: wrap; }
+  .ax-header > div:first-child { min-height: var(--page-header-height); gap: 16px; width: 100%; }
+  .ax-header .ax-title { max-width: calc(100vw - 188px); }
+  .ax-header > div:last-child { flex-wrap: wrap; gap: 12px; padding-bottom: 10px; }
+}

@@ -43,20 +43,22 @@ const SOCIAL_PROVIDERS = [
   { name: "Google", Mark: GoogleMark },
 ] as const;
 /*App.tsx -> sends information/functions -> AuthPage
-  AuthPage receives three props:
+  AuthPage receives four props:
   1. kind: "signin" | "signup" - tells this component which version it should display
   2. back: () => void - go back to the previous page
-  3. switchKind: () => void - switch between signin and signup
-  (after a successful sign in/up, NextAuth redirects to /dashboard)
+  3. done: () => void - auth is done, move to next
+  4. switchKind: () => void - switch between signin and signup
  */
 
 export function AuthPage({
   kind,
   back,
+  done,
   switchKind,
 }: {
   kind: "signin" | "signup";
   back: () => void;
+  done: () => void;
   switchKind: () => void;
 }) {
   const isSignup = kind === "signup"; // if kind = "signup", true; otherwise, false
@@ -136,6 +138,7 @@ export function AuthPage({
 
   return (
     <main className="auth-page">
+      <header className="page-header auth-header">
       {/* logo works as back button to return to the home page */}
       <Logo
         variant="with-archie"
@@ -143,6 +146,8 @@ export function AuthPage({
         onClick={back}
         aria-label="Back to ARCHITECH home"
       />
+
+      </header>
 
       {/* authentication form section */}
       <section className="auth-shell">
@@ -438,7 +443,7 @@ export function Onboarding({
 
   return (
     <main className="onboarding">
-      <header className="onboarding-bar">
+      <header className="page-header onboarding-bar">
         {/* One header for both onboarding steps. */}
         <div className="onboarding-brand logo">
           <Logo variant="with-archie" />
