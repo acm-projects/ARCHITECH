@@ -1,18 +1,15 @@
 // this file owns the signed-in user's small account menu and sign out behavior
 "use client";
 
-import { useRouter } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 
-import { signOut } from "../../lib/session";
-
-// account menu for the signed-in user. shows the locally stored profile and provides
-// the ui entry point for signing out
-export default function ProfileMenu({ userName }: { userName?: string }) {
-  const router = useRouter();
+// Account menu for the signed-in user and the UI entry point for signing out.
+export default function ProfileMenu() {
+  const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const displayName = userName || "User";
+  const displayName = session?.user?.name || session?.user?.email || "User";
   const userInitial = displayName.charAt(0).toUpperCase();
   const handleToggle = () => setOpen((value) => !value);
 
@@ -55,11 +52,9 @@ export default function ProfileMenu({ userName }: { userName?: string }) {
           <button
             type="button"
             role="menuitem"
-            // end the session first, then return the user to the public entry flow
             onClick={() => {
               setOpen(false);
-              signOut();
-              router.replace("/");
+              void signOut({ callbackUrl: "/" });
             }}
             className="block w-full px-3 py-1.5 text-left hover:bg-neutral-100"
           >

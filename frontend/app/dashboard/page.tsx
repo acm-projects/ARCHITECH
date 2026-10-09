@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../api/auth/[...nextauth]/route";
 
 import ProfileMenu from "@/components/auth/ProfileMenu";
 import DailyChallenge from "@/components/dashboard/DailyChallenge";
@@ -10,9 +8,6 @@ import SystemTutorials from "@/components/dashboard/SystemTutorials";
 import { HOME_ROUTE } from "@/lib/routes";
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
-  const userName = session?.user?.name || "User";
-
   return (
     <main className="flex h-dvh flex-col overflow-hidden bg-white text-[#0A0A0A] max-lg:h-auto max-lg:min-h-dvh max-lg:overflow-visible">
       <header className="flex h-14 shrink-0 items-center justify-between bg-white px-8 lg:px-14">
@@ -21,7 +16,7 @@ export default async function DashboardPage() {
         </Link>
 
         <nav className="flex items-center gap-8 text-xs text-neutral-500">
-          <ProfileMenu userName={userName} />
+          <ProfileMenu />
         </nav>
       </header>
 
