@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg"
      width="1000" height="1020" viewBox="125 100 1000 1020"
      role="img" aria-labelledby="title">
-  <title id="title">Archie with a centered hard hat and black eyes</title>
+  <title id="title">Archie with a graduation cap and outlined gold tassel</title>
 
   <defs>
     <linearGradient id="body" x1="240" y1="1000" x2="950" y2="400"
@@ -48,45 +48,49 @@
 
   <!-- OnboardingArchie draws the moving pupils. -->
 
-  <!-- Hard hat: symmetrical around Archie's center -->
-  <g stroke="#081747" stroke-width="18"
-     stroke-linecap="round" stroke-linejoin="round">
-
-    <!-- Helmet shell -->
+  <!-- Graduation cap -->
+  <g fill="#073880" stroke="#081747"
+     stroke-width="19" stroke-linejoin="round">
     <path d="
-      M382 407
-      V392
-      C382 267 489 169 627 169
-      C765 169 872 267 872 392
-      V407Z"
-      fill="#ffda36"/>
+      M264 287L515 147
+      Q526 140 540 143
+      L831 179
+      Q845 181 835 190
+      L713 261L425 318L263 298
+      Q251 296 264 287Z"/>
 
-    <!-- Side ribs -->
-    <path d="M463 394C463 321 479 263 503 219
-             M791 394C791 321 775 263 751 219"
-          fill="none"/>
-
-    <!-- Raised central ridge -->
     <path d="
-      M567 395
-      C567 303 572 227 581 171
-      Q584 153 601 153
-      H653
-      Q670 153 673 171
-      C682 227 687 303 687 395Z"
-      fill="#ffe363"/>
-
-    <!-- Brim follows the head's crown -->
-    <path d="
-      M371 399
-      C440 377 531 365 627 365
-      C723 365 814 377 883 399
-      C900 405 908 420 902 434
-      C896 448 882 451 866 446
-      C799 425 716 414 627 414
-      C538 414 455 425 388 446
-      C372 451 358 448 352 434
-      C346 420 354 405 371 399Z"
-      fill="#ffda36"/>
+      M425 318
+      C513 266 624 240 713 261
+      L753 350
+      C642 328 516 365 416 426Z"/>
   </g>
+
+  <!-- Tassel cord: navy under-stroke outlines every edge -->
+  <path d="M500 224L355 282Q346 286 345 296L340 349"
+        fill="none" stroke="#081747" stroke-width="37"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M500 224L355 282Q346 286 345 296L340 349"
+        fill="none" stroke="#ffda36" stroke-width="18"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Closed fringe shape with a continuous outer outline -->
+  <path d="
+    M320 371
+    L273 467
+    Q265 485 285 489
+    Q321 496 357 492
+    Q376 490 373 473
+    L359 373Z"
+    fill="#ffda36" stroke="#081747"
+    stroke-width="18" stroke-linejoin="round"/>
+
+  <!-- Interior strand stays within the outlined fringe -->
+  <path d="M325 435L314 483"
+        fill="none" stroke="#081747"
+        stroke-width="12" stroke-linecap="round"/>
+
+  <!-- Knot covers the cord/fringe joins cleanly -->
+  <circle cx="340" cy="354" r="29"
+          fill="#ffda36" stroke="#081747" stroke-width="18"/>
 </svg>
