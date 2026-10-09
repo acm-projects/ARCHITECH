@@ -181,6 +181,15 @@
 /* Let canvas interactions pass through the gap between the rail and its flyout.
    The visible surfaces below opt back into pointer events. */
 .ax-workspace .ax-canvas-panel {
+  /* Panel text stays readable independently of the smaller diagram and header type. */
+  --ax-t-micro: 12px;
+  --ax-t-xs: 13px;
+  --ax-t-sm: 14px;
+  --ax-t-md: 15px;
+  --ax-t-lg: 16px;
+  --ax-muted: #4a4a46;
+  --ax-subtle: #62625c;
+
   position: absolute;
   z-index: 20;
   top: 50%;
@@ -224,7 +233,8 @@
 .ax-workspace .ax-component-menu ul { margin: 0; padding: 0; list-style: none; }
 .ax-workspace .ax-component-menu .ax-section-label { padding: 12px 4px 4px; }
 .ax-workspace .ax-component-menu .ax-panel-title { padding-left: 4px; font-size: var(--ax-t-md); }
-.ax-workspace .ax-component-menu .ax-item { margin: 0; padding: 0 4px; gap: 8px; height: 30px; }
+.ax-workspace .ax-component-menu .ax-item { margin: 0; padding: 6px 4px; gap: 8px; min-height: 34px; height: auto; }
+.ax-workspace .ax-component-menu .ax-component-name { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.4; }
 .ax-workspace .ax-component-menu .ax-search { margin: 0 4px; }
 /* Hover names do not capture the pointer or become another clickable surface.
    Buttons retain their accessible names even while these visual labels are hidden. */
@@ -252,7 +262,9 @@
 .ax-workspace .ax-panel-handle[aria-expanded="true"] { background: var(--ax-line); }
 .ax-workspace .ax-panel-handle[aria-expanded="true"] { outline: 1px solid var(--ax-ink-soft); }
 .ax-workspace .ax-panel-content {
-  width: 232px;
+  width: 280px;
+  font-size: var(--ax-t-sm);
+  line-height: 1.5;
   max-height: calc(100dvh - 120px);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -281,6 +293,9 @@
   pointer-events: auto;
 }
 .ax-workspace .ax-canvas-panel[data-wide="true"] .ax-panel-content { width: 310px; }
+.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content { width: 310px; }
+.ax-workspace .ax-panel-content .ax-search-input { height: 34px; }
+.ax-workspace .ax-panel-content .ax-panel-title { font-weight: 500; color: var(--ax-ink-soft); }
 .ax-workspace .ax-panel-content .ax-card { width: 100%; border: 0; border-radius: 0; animation: none; }
 .ax-workspace .ax-panel-content .ax-card + .ax-card { border-top: 1px solid var(--ax-line); }
 @media (max-width: 767px) {
@@ -290,6 +305,7 @@
   .ax-workspace .ax-canvas-panel[data-hover-flyout] .ax-panel-content { max-height: 32dvh; }
   .ax-workspace .ax-canvas-panel[data-side="right"] { right: 12px; }
   .ax-workspace .ax-panel-content,
+  .ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content,
   .ax-workspace .ax-canvas-panel[data-wide="true"] .ax-panel-content { width: min(310px, calc(100vw - 78px)); max-height: 32dvh; }
 }
 
