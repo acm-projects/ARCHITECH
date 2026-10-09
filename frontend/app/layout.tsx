@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 
+import AuthSessionProvider from "@/components/auth/AuthSessionProvider";
 import "../src/index.css";
 
 export const metadata: Metadata = {
@@ -15,7 +16,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en">
       <body>
-        <div id="root">{children}</div>
+        <AuthSessionProvider>
+          <div id="root">{children}</div>
+        </AuthSessionProvider>
       </body>
     </html>
   );
