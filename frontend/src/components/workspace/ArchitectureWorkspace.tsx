@@ -29,7 +29,7 @@ import ChallengeCard from "../challenge/ChallengeCard";
 import LearnCard from "../learn/LearnCard";
 import { projectActions } from "../projects/projectActions";
 import type { Project, ProjectMode } from "../projects/projectStore";
-import ComponentToolbox from "./ComponentToolbox";
+import ComponentToolbox from "./toolbox/ComponentToolbox";
 import {
   hasComponentDragData,
   readComponentDragData,

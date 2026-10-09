@@ -1,5 +1,7 @@
 import { FREE_PLAY_BODY, FREE_PLAY_TITLE, type ConnectionFeedback, type Lesson } from "./lessons";
 import type { LessonStatus } from "./useLessonEngine";
+import { CATEGORY_ICONS } from "../workspace/toolbox/categoryIcons";
+import { COMPONENT_CATALOG, FAMILY_COLORS, FAMILY_LABELS } from "../workspace/componentCatalog";
 
 type LearnCardProps = {
   lesson: Lesson;
@@ -26,6 +28,11 @@ export default function LearnCard({
   const count = lesson.steps.length;
   const step = lesson.steps[stepIndex];
   const isComplete = freePlay || status === "complete";
+  // Add-component instructions follow the catalog when a component moves categories.
+  const category = step.objective.kind === "node"
+    ? COMPONENT_CATALOG[step.objective.componentType].family
+    : null;
+  const CategoryIcon = category ? CATEGORY_ICONS[category] : null;
 
   return (
     <div className="ax-card ax-learn" aria-live="polite" data-learn-phase={freePlay ? "free-play" : "guided"}>
@@ -65,7 +72,18 @@ export default function LearnCard({
         <>
           <p className="ax-card-title mt-4">{step.title}</p>
           <p className="ax-card-body">{step.description}</p>
-          <p className="mt-3 text-(length:--ax-t-sm)">{step.instruction}</p>
+          <p className="mt-3 text-(length:--ax-t-sm)">
+            {CategoryIcon && category && <>
+              Open{" "}
+              <span className="inline-block align-text-bottom" role="img"
+                aria-label={`${FAMILY_LABELS[category]} category`}
+                title={FAMILY_LABELS[category]}>
+                <CategoryIcon size={16} color={FAMILY_COLORS[category]} aria-hidden="true" />
+              </span>{" "}
+              in the left toolbar.{" "}
+            </>}
+            {step.instruction}
+          </p>
           {hint && <p className="ax-card-label mt-2">Hint: {hint}</p>}
         </>
       )}

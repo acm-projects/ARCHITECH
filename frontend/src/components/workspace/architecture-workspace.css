@@ -416,8 +416,7 @@
   cursor: grab;
   transition:
     background-color var(--ax-fast) var(--ax-ease),
-    color var(--ax-fast) var(--ax-ease),
-    opacity var(--ax-fast) var(--ax-ease);
+    color var(--ax-fast) var(--ax-ease);
 }
 .ax-workspace .ax-item .ax-item-glyph {
   flex: none;
@@ -435,10 +434,6 @@
   opacity: 1;
 }
 .ax-workspace .ax-item:active {
-  cursor: grabbing;
-}
-.ax-workspace .ax-item.is-dragging {
-  opacity: 0.45;
   cursor: grabbing;
 }
 .ax-workspace .ax-item:focus-visible {
