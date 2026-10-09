@@ -231,9 +231,20 @@
 .ax-workspace .ax-panel-rail ul { margin: 0; padding: 0; list-style: none; }
 .ax-workspace [data-side="left"] .ax-panel-rail ul { display: grid; gap: 2px; }
 .ax-workspace .ax-component-menu ul { margin: 0; padding: 0; list-style: none; }
-.ax-workspace .ax-component-menu .ax-section-label { padding: 12px 4px 4px; }
+.ax-workspace .ax-component-menu { overflow: hidden; }
+.ax-workspace .ax-component-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ax-line-strong) transparent;
+}
+.ax-workspace .ax-component-list::-webkit-scrollbar { width: 6px; }
+.ax-workspace .ax-component-list::-webkit-scrollbar-thumb { background: var(--ax-line-strong); }
+.ax-workspace .ax-component-list::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+.ax-workspace .ax-component-menu .ax-section-label { padding: 8px 4px 2px; font-weight: 500; color: var(--ax-ink-soft); }
 .ax-workspace .ax-component-menu .ax-panel-title { padding-left: 4px; font-size: var(--ax-t-md); }
-.ax-workspace .ax-component-menu .ax-item { margin: 0; padding: 6px 4px; gap: 8px; min-height: 34px; height: auto; }
+.ax-workspace .ax-component-menu .ax-item { margin: 0; padding: 6px 4px; gap: 8px; min-height: 32px; height: auto; }
 .ax-workspace .ax-component-menu .ax-component-name { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.4; }
 .ax-workspace .ax-component-menu .ax-search { margin: 0 4px; }
 /* Hover names do not capture the pointer or become another clickable surface.
@@ -292,7 +303,8 @@
   height: 100%;
   pointer-events: auto;
 }
-.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content { scrollbar-width: thin; }
+.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content { overflow: hidden; }
+.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:not([hidden]) { display: flex; flex-direction: column; }
 .ax-workspace .ax-canvas-panel[data-wide="true"] .ax-panel-content { width: 200px; }
 .ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content { width: 310px; }
 .ax-workspace .ax-panel-content .ax-search-input { height: 34px; }

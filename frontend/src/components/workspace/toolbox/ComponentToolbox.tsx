@@ -100,32 +100,34 @@ export default function ComponentToolbox() {
       }
     >
       <div className="ax-component-menu flex min-h-0 flex-col p-3">
-        <div className="flex items-center justify-between pb-2">
-          <h2 className="ax-panel-title">{title}</h2>
-          <button type="button" className="ax-icon-btn" aria-label="Close components" onClick={() => selectCategory(null)}>
+        {/* More uses search as its header; categories retain their title. */}
+        <div className="flex shrink-0 items-center justify-between gap-2 pb-2">
+          {category === "all" ? <div className="ax-search min-w-0 flex-1">
+            <ComponentGlyph type="search" className="ax-search-glyph" />
+            <input type="search" value={query} placeholder="Search" aria-label="Search"
+              autoComplete="off" onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => { if (event.key === "Escape") selectCategory(null); }} className="ax-search-input" />
+          </div> : <h2 className="ax-panel-title">{title}</h2>}
+          <button type="button" className="ax-icon-btn shrink-0" aria-label="Close components" onClick={() => selectCategory(null)}>
             <X size={14} aria-hidden="true" />
           </button>
         </div>
-        {/* Search belongs to More; individual categories show their complete contents. */}
-        {category === "all" && <div className="ax-search">
-          <ComponentGlyph type="search" className="ax-search-glyph" />
-          <input type="search" value={query} placeholder="Search components" aria-label="Search components"
-            autoComplete="off" onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => { if (event.key === "Escape") selectCategory(null); }} className="ax-search-input" />
-        </div>}
-        {groups.length === 0 && <p className="ax-card-body">No matching components</p>}
-        {groups.map((group) => (
-          <section key={group.family} aria-label={group.label}>
-            {category === "all" && <h3 className="ax-section-label">{group.label}</h3>}
-            <ul>
-              {group.components.map((component) => (
-                <li key={component.type}>
-                  <ComponentRow component={component} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+        {/* Only the list scrolls; the title, close control, and search remain available. */}
+        <div className="ax-component-list">
+          {groups.length === 0 && <p className="ax-card-body">No matching components</p>}
+          {groups.map((group) => (
+            <section key={group.family} aria-label={group.label}>
+              {category === "all" && <h3 className="ax-section-label">{group.label}</h3>}
+              <ul>
+                {group.components.map((component) => (
+                  <li key={component.type}>
+                    <ComponentRow component={component} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
       </div>
     </CanvasPanel>
   );
