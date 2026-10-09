@@ -67,6 +67,7 @@ export default function ComponentToolbox() {
     <CanvasPanel
       side="left"
       label="Components"
+      wide={category === "all"}
       icon={<Layers size={16} aria-hidden="true" />}
       expanded={category !== null}
       flyoutOffset={flyoutOffset}
