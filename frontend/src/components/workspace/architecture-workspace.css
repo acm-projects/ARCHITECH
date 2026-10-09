@@ -263,12 +263,31 @@
 }
 /* Explicitly preserve hidden behavior against the legacy global surface styles. */
 .ax-workspace .ax-panel-content[hidden] { display: none; }
+/* Absolute placement keeps the rail still as categories change height. The transparent
+   bridge lets the pointer cross the gap without dismissing the hover menu. */
+.ax-workspace .ax-canvas-panel[data-hover-flyout] .ax-panel-content {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: var(--ax-flyout-offset);
+  max-height: min(420px, calc(50dvh - var(--ax-flyout-offset) + 60px));
+}
+.ax-workspace .ax-canvas-panel[data-hover-flyout]:has(.ax-panel-content:not([hidden]))::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: 10px;
+  height: 100%;
+  pointer-events: auto;
+}
 .ax-workspace .ax-canvas-panel[data-wide="true"] .ax-panel-content { width: 310px; }
 .ax-workspace .ax-panel-content .ax-card { width: 100%; border: 0; border-radius: 0; animation: none; }
 .ax-workspace .ax-panel-content .ax-card + .ax-card { border-top: 1px solid var(--ax-line); }
 @media (max-width: 767px) {
   .ax-workspace .ax-canvas-panel { top: 12px; left: 12px; transform: none; align-items: flex-start; }
   .ax-workspace .ax-canvas-panel[data-side="left"] { position: relative; top: auto; left: auto; margin: 12px; }
+  .ax-workspace .ax-canvas-panel[data-hover-flyout] { width: max-content; }
+  .ax-workspace .ax-canvas-panel[data-hover-flyout] .ax-panel-content { max-height: 32dvh; }
   .ax-workspace .ax-canvas-panel[data-side="right"] { right: 12px; }
   .ax-workspace .ax-panel-content,
   .ax-workspace .ax-canvas-panel[data-wide="true"] .ax-panel-content { width: min(310px, calc(100vw - 78px)); max-height: 32dvh; }
