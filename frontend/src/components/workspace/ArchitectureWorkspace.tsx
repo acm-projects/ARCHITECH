@@ -2,8 +2,6 @@
 
 import { useCallback, useState, type DragEvent } from "react";
 import {
-  Background,
-  BackgroundVariant,
   Controls,
   MarkerType,
   ReactFlow,
@@ -440,13 +438,6 @@ function Workspace({ project }: { project: Project }) {
               fitView
               fitViewOptions={FIT_VIEW_OPTIONS}
             >
-              <Background
-                variant={BackgroundVariant.Dots}
-                gap={24}
-                size={1}
-                color="#dedeD9"
-              />
-
               <Controls showInteractive={false} />
             </ReactFlow>
 

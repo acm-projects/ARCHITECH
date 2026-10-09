@@ -477,6 +477,8 @@
 /* ---- React Flow: canvas, controls, attribution ---- */
 
 .ax-workspace .react-flow {
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.15) 1px, transparent 1px);
+  background-size: 32px 32px;
   --xy-background-color: var(--ax-canvas);
   --xy-edge-stroke: #b4b4af;
   --xy-edge-stroke-selected: var(--ax-accent);
