@@ -3578,14 +3578,34 @@ textarea {
   }
 }
 /* Landing hero: fixed two-line heading with a rotating verb. */
+@property --intro-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgb(16 119 255);
+}
 .landing-intro {
-  --intro-accent: rgb(16 119 255);
+  --intro-word-color: rgb(16 119 255);
+  --intro-accent: var(--intro-word-color);
+  --intro-tint: color-mix(in srgb, var(--intro-accent) 25%, var(--neutral-0));
+  --intro-wash: color-mix(in srgb, var(--intro-accent) 4%, var(--neutral-0));
   display: flex;
   align-items: center;
   min-height: 100svh;
   min-height: 100dvh;
   padding: 64px clamp(24px, 4vw, 64px);
   background: var(--neutral-0);
+  background-image:
+    radial-gradient(circle, rgba(0, 0, 0, 0.15) 1px, transparent 1px),
+    linear-gradient(135deg, var(--intro-tint), var(--intro-wash) 50%, transparent);
+  background-size: 32px 32px, 100% 100%;
+  transition: --intro-accent 700ms ease-in-out;
+}
+/* Words take their target color immediately; only the background accent interpolates. */
+.landing-intro[data-verb="Break"] {
+  --intro-word-color: rgb(234 88 12);
+}
+.landing-intro[data-verb="Understand"] {
+  --intro-word-color: rgb(127 77 246);
 }
 .landing-intro-copy {
   width: min(560px, 100%);
@@ -3603,18 +3623,12 @@ textarea {
   display: block;
   height: 1.12em;
   overflow: hidden;
-  color: var(--intro-accent);
 }
 .landing-intro-verb {
   display: block;
   width: max-content;
+  color: var(--intro-word-color);
   animation: landing-verb-in 280ms ease-out both;
-}
-.landing-intro-verb[data-verb="Break"] {
-  color: rgb(234 153 8);
-}
-.landing-intro-verb[data-verb="Understand"] {
-  color: rgb(127 77 246);
 }
 .landing-intro-system {
   display: block;
@@ -3668,6 +3682,9 @@ textarea {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .landing-intro {
+    transition: none;
+  }
   .landing-intro-verb {
     animation: none;
   }
