@@ -2,33 +2,23 @@
 
 import { useState, type CSSProperties } from "react";
 
-import { Database, Globe, Layers, Monitor, MoreHorizontal, Server, X } from "lucide-react";
+import { Layers, MoreHorizontal, X } from "lucide-react";
 
 import CanvasPanel from "./CanvasPanel";
-import ComponentGlyph from "./ComponentGlyph";
+import ComponentGlyph from "../ComponentGlyph";
+import { CATEGORY_ICONS } from "./categoryIcons";
 import {
   FAMILY_COLORS,
   type ComponentFamily,
   componentGroups,
   writeComponentDragData,
   type ComponentDefinition,
-} from "./componentCatalog";
+} from "../componentCatalog";
 import { setComponentDragImage } from "./dragPreview";
-import type { ArchitectureNodeType } from "./nodes/ArchitectureNode";
-
-type ComponentRowProps = {
-  component: ComponentDefinition;
-  isDragging: boolean;
-  onDragStateChange: (type: ArchitectureNodeType | null) => void;
-};
 
 // One draggable row, used by both category panels and the full library. Dragging onto the
 // canvas is the only way to add a component: rows have no click or keyboard action.
-function ComponentRow({
-  component,
-  isDragging,
-  onDragStateChange,
-}: ComponentRowProps) {
+function ComponentRow({ component }: { component: ComponentDefinition }) {
   return (
     <div
       draggable
@@ -42,11 +32,9 @@ function ComponentRow({
           event.currentTarget.querySelector("svg"),
           FAMILY_COLORS[component.family],
         );
-        onDragStateChange(component.type);
       }}
-      onDragEnd={() => onDragStateChange(null)}
       style={{ "--ax-family": FAMILY_COLORS[component.family] } as CSSProperties}
-      className={`ax-item ${isDragging ? "is-dragging" : ""}`}
+      className="ax-item"
     >
       <ComponentGlyph type={component.type} className="ax-item-glyph" />
       <span className="ax-component-name min-w-0 truncate">{component.label}</span>
@@ -55,13 +43,6 @@ function ComponentRow({
 }
 
 // Match the catalog's families; component definitions and ordering stay in the catalog.
-const CATEGORY_ICONS = {
-  frontend: Monitor,
-  backend: Server,
-  data: Database,
-  infrastructure: Globe,
-  general: Layers,
-};
 const CATEGORIES = componentGroups("");
 
 export default function ComponentToolbox() {
@@ -69,7 +50,6 @@ export default function ComponentToolbox() {
   const [category, setCategory] = useState<ComponentFamily | "all" | null>(null);
   const [query, setQuery] = useState("");
   const [flyoutOffset, setFlyoutOffset] = useState(6);
-  const [dragging, setDragging] = useState<ArchitectureNodeType | null>(null);
   const groups = componentGroups(query).filter((group) => category === "all" || group.family === category);
   const title = CATEGORIES.find((group) => group.family === category)?.label ?? "Components";
   const alignFlyout = (button: HTMLButtonElement) => {
@@ -139,7 +119,7 @@ export default function ComponentToolbox() {
             <ul>
               {group.components.map((component) => (
                 <li key={component.type}>
-                  <ComponentRow component={component} isDragging={dragging === component.type} onDragStateChange={setDragging} />
+                  <ComponentRow component={component} />
                 </li>
               ))}
             </ul>

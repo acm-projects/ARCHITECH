@@ -2,8 +2,7 @@
 
 import { useId, useState, type CSSProperties, type ReactNode } from "react";
 
-// Shared canvas chrome: the toolbox supplies category buttons; guidance uses one toggle.
-// Each caller keeps its own content and project logic outside this wrapper.
+// Canvas chrome for the toolbox rail and flyout; content and project logic stay outside.
 export default function CanvasPanel({
   side,
   label,
@@ -25,8 +24,8 @@ export default function CanvasPanel({
   flyoutOffset?: number;
   children: ReactNode;
 }) {
-  // Category selection controls the toolbox's open state. Guidance has no category
-  // controller, so it uses the local toggle instead. Both start as icon-only rails.
+  // Category selection controls the toolbox's open state; an optional local toggle
+  // supports callers without a category rail.
   const [localOpen, setLocalOpen] = useState(false);
   const open = expanded ?? localOpen;
   const setOpen = onExpandedChange ?? setLocalOpen;
@@ -57,7 +56,7 @@ export default function CanvasPanel({
         <span className="ax-rail-name" aria-hidden="true">{label}</span>
       </button>}
       </div>
-      {/* Keep content mounted when closed so search and guidance state survive reopening.
+      {/* Keep content mounted when closed so search state survives reopening.
           The hidden attribute also removes those controls from keyboard navigation. */}
       <div id={id} className="ax-panel-content" hidden={!open}>
         {children}
