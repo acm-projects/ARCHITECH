@@ -84,7 +84,7 @@ export default function RunResultsPanel({ view, onRun, liveTraffic }: RunResults
               : ""}
           </p>
 
-          <ul className="mt-3 space-y-1 text-[10px]">
+          <ul className="mt-3 space-y-1 text-(length:--ax-t-sm)">
             {SCORE_ROWS.map(({ key, label }) => (
               <li key={key} className="flex justify-between">
                 <span>{label}</span>
@@ -96,7 +96,7 @@ export default function RunResultsPanel({ view, onRun, liveTraffic }: RunResults
             ))}
           </ul>
 
-          <ul className="mt-4 space-y-1 border-t border-(--ax-line) pt-4 text-[10px]">
+          <ul className="mt-4 space-y-1 border-t border-(--ax-line) pt-4 text-(length:--ax-t-sm)">
             <li className="flex justify-between">
               <span>Demand</span>
               <span className="tabular-nums" data-demand={verdict?.state}>
@@ -158,7 +158,7 @@ export default function RunResultsPanel({ view, onRun, liveTraffic }: RunResults
           {result.topFindings.length > 0 && (
             <ul className="mt-4 space-y-2.5 border-t border-(--ax-line) pt-4">
               {result.topFindings.map((finding, index) => (
-                <li key={finding.id} className="text-[10px]">
+                <li key={finding.id} className="text-(length:--ax-t-sm)">
                   <p>
                     {finding.severity}: {finding.title}
                   </p>

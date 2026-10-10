@@ -90,7 +90,7 @@ export function Landing({
         </div>
       </nav>
 
-      <section className="landing-intro" aria-labelledby="landing-intro-title">
+      <section className="landing-intro" data-verb={heroVerb} aria-labelledby="landing-intro-title">
         <div className="landing-intro-copy">
           <h1
             id="landing-intro-title"
