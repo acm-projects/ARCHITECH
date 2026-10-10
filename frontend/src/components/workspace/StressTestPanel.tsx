@@ -51,7 +51,7 @@ export default function StressTestPanel({
     <div className="ax-card ax-learn" data-stress-panel>
       <span className="ax-panel-title">Stress test</span>
 
-      <label className="mt-3 flex items-baseline justify-between gap-3 text-[10px]">
+      <label className="mt-3 flex items-baseline justify-between gap-3 text-(length:--ax-t-sm)">
         <span>Request rate</span>
         <span className="flex items-baseline gap-1">
           <input

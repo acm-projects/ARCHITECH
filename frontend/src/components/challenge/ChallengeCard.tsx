@@ -40,7 +40,7 @@ const topFindings = (findings: Finding[]) => findings.slice(0, MAX_FINDINGS);
 function ScoreRow({ label, value }: { label: string; value: number }) {
   return (
     <li>
-      <div className="flex items-baseline justify-between text-[10px]">
+      <div className="flex items-baseline justify-between text-(length:--ax-t-sm)">
         <span>{label}</span>
         <span className="tabular-nums">{value}</span>
       </div>
@@ -94,7 +94,7 @@ export default function ChallengeCard({
 
           <ul className="mt-4 space-y-2.5 border-t border-(--ax-line) pt-4">
             {topFindings(result.findings).map((finding) => (
-              <li key={finding.title} className="text-[10px]">
+              <li key={finding.title} className="text-(length:--ax-t-sm)">
                 <p>
                   <span
                     className={`ax-mark ax-mark-${finding.severity}`}
@@ -132,7 +132,7 @@ export default function ChallengeCard({
           </ul>
 
           <p className="ax-card-label mt-4">Requirements</p>
-          <ul className="mt-1 space-y-0.5 text-[10px]">
+          <ul className="mt-1 space-y-0.5 text-(length:--ax-t-sm)">
             {challenge.highlights.map((line) => (
               <li key={line}>• {line}</li>
             ))}
