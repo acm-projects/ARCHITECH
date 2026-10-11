@@ -30,7 +30,7 @@ export async function GET() {
     }
 
     const githubResponse = await fetch(
-      "https://api.github.com/user/repos?sort=updated&per_page=10",
+      "https://api.github.com/user/repos?sort=updated&per_page=3",
       {
         headers: {
           Accept: "application/vnd.github+json",
