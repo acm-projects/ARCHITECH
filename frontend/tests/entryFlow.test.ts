@@ -145,7 +145,7 @@ test("onboarding keeps its two questions and its experience levels", () => {
   assert.match(githubRepos, /provider: "github"/);
   assert.match(githubRepos, /select: \{ access_token: true \}/);
   assert.match(githubRepos, /status: 404/);
-  assert.match(githubRepos, /https:\/\/api\.github\.com\/user\/repos\?sort=updated&per_page=10/);
+  assert.match(githubRepos, /https:\/\/api\.github\.com\/user\/repos\?sort=updated&per_page=3/);
   assert.match(githubRepos, /Authorization: `Bearer \$\{githubAccount\.access_token\}`/);
   assert.match(githubRepos, /status: 502/);
 });
