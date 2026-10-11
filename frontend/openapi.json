@@ -1,0 +1,756 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ARCHITECH API",
+    "version": "0.2.0",
+    "contact": {
+      "name": "ARCHITECH team (ACM Projects, UT Dallas)",
+      "url": "https://github.com/acm-projects/ARCHITECH"
+    },
+    "description": "API for the ARCHITECH Next.js app. All routes live under `frontend/app/api`.\n\n## Data storage: PostgreSQL\nAll user data is stored in **PostgreSQL** through Prisma (`@auth/prisma-adapter`, schema in `frontend/prisma/schema.prisma`):\n\n| Table | Written by | Holds |\n|---|---|---|\n| `users` | `POST /api/auth/register`, Google/GitHub first sign-in, `PATCH /api/users/me` | name, email, bcrypt password hash, experience level, avatar |\n| `accounts` | Google/GitHub sign-in (Prisma adapter) | linked provider id and OAuth access/refresh tokens |\n\nSign-in itself is stateless (`session.strategy: \"jwt\"`, required for email/password logins). After sign-in the\nbrowser holds only a signed login token (the `next-auth.session-token` cookie) containing the user's id and\nexperience level, never the user record itself. Every protected route takes the id from that token and reads or\nupdates the user in PostgreSQL. The experience level in the token is re-read from PostgreSQL at sign-in and\nwhenever the frontend calls `update()`. (Because of the JWT strategy, the `sessions` table exists but is not used.)\n\n## Routes\n- **Custom:** `POST /api/auth/register`, `PATCH /api/users/me`, `GET /api/github/repos`\n- **NextAuth v4** (`app/api/auth/[...nextauth]/route.ts`): everything else under `/api/auth/*`, with\n  Credentials (email + password), Google and GitHub providers. The sign-in page is `/`.\n\n## Calling protected routes\nSign in at http://localhost:3000 in the same browser first. Pages under `/dashboard/*` and `/workspace/*`\nredirect to `/` without a valid login token (`proxy.ts`).\n"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local dev server (npm run dev)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Registration",
+      "description": "Email/password account creation"
+    },
+    {
+      "name": "Users",
+      "description": "The signed-in user's profile"
+    },
+    {
+      "name": "GitHub",
+      "description": "Data from the user's linked GitHub account"
+    },
+    {
+      "name": "NextAuth",
+      "description": "Built-in NextAuth endpoints (sign-in, sign-out, session)"
+    }
+  ],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Registration"
+        ],
+        "operationId": "registerUser",
+        "summary": "Create an email/password account",
+        "description": "Validates the input, normalizes the email (trimmed and lowercased), checks for an existing\nuser case-insensitively, hashes the password with bcrypt and inserts a row into the PostgreSQL `users` table.\nDoes **not** sign the user in; the frontend then calls the credentials sign-in.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "message": "User created."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or the email is already in use",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "invalidBody": {
+                    "value": {
+                      "error": "Invalid request body."
+                    }
+                  },
+                  "shortName": {
+                    "value": {
+                      "error": "Name must be at least 2 characters."
+                    }
+                  },
+                  "badEmail": {
+                    "value": {
+                      "error": "Enter a valid email address without spaces."
+                    }
+                  },
+                  "shortPassword": {
+                    "value": {
+                      "error": "Password must be at least 6 characters."
+                    }
+                  },
+                  "duplicate": {
+                    "value": {
+                      "error": "Email already in use."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/me": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "updateMyExperienceLevel",
+        "summary": "Save the signed-in user's experience level",
+        "description": "Called at the end of onboarding step 1. Updates `users.experienceLevel` in PostgreSQL.\nAfter this succeeds, the frontend calls NextAuth's\n`update()`, which re-reads the level into the session token.\n",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperienceLevelUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Level saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperienceLevelUpdate"
+                },
+                "example": {
+                  "experienceLevel": "Intermediate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body is not JSON or the level is not one of the allowed values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "invalidBody": {
+                    "value": {
+                      "error": "Invalid request body."
+                    }
+                  },
+                  "badLevel": {
+                    "value": {
+                      "error": "Select a valid experience level."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "500": {
+            "description": "Database update failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unable to save your experience level."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/github/repos": {
+      "get": {
+        "tags": [
+          "GitHub"
+        ],
+        "operationId": "listMyGithubRepos",
+        "summary": "List the signed-in user's 3 most recently updated GitHub repos",
+        "description": "Reads the GitHub OAuth access token from the user's `github` row in the PostgreSQL `accounts` table and calls\n`GET https://api.github.com/user/repos?sort=updated&per_page=3`. The GitHub response is passed\nthrough unchanged, so each item is a full GitHub repository object; only common fields are listed below.\n",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of GitHub repository objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GithubRepo"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the GitHub token expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "notSignedIn": {
+                    "value": {
+                      "error": "Authentication required."
+                    }
+                  },
+                  "githubExpired": {
+                    "value": {
+                      "error": "GitHub authorization expired. Reconnect GitHub."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The user has not connected GitHub",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Connect your GitHub account to access repositories."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A GitHub account is linked but has no stored access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "The linked GitHub account has no access token. Reconnect GitHub."
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "GitHub failed or returned an invalid response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "GitHub could not retrieve repositories."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/csrf": {
+      "get": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "getCsrfToken",
+        "summary": "Get a CSRF token",
+        "description": "Required in the body of every NextAuth POST (sign-in, sign-out).",
+        "responses": {
+          "200": {
+            "description": "CSRF token (also sets the `next-auth.csrf-token` cookie)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "csrfToken": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/providers": {
+      "get": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "listProviders",
+        "summary": "List configured sign-in providers",
+        "responses": {
+          "200": {
+            "description": "Map of provider id to provider info. Keys are `google`, `github` and `credentials`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Provider"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/session": {
+      "get": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "getSession",
+        "summary": "Get the current session",
+        "description": "Returns `{}` when signed out. `user.id` and `user.experienceLevel` are added by the `session` callback.",
+        "responses": {
+          "200": {
+            "description": "The session, or an empty object when signed out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/callback/credentials": {
+      "post": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "signInWithCredentials",
+        "summary": "Sign in with email and password",
+        "description": "This is what `signIn(\"credentials\", {...})` posts to. Get `csrfToken` from `/api/auth/csrf` first.\n\nServer steps (`authorize` in route.ts):\n1. Rejects a missing or malformed email or password.\n2. Normalizes the email (trimmed and lowercased) and looks up the user in PostgreSQL `users`, case-insensitively.\n3. Rejects users with no `passwordHash` (Google/GitHub-only accounts).\n4. Compares the password with the stored bcrypt hash.\n5. On success, issues the login token with the user's `id` and `experienceLevel` (read from PostgreSQL).\n\nEvery failure returns the same message, \"Invalid email or password\", so the response never reveals\nwhether an email is registered. With `json=true` the error comes back in `{ url }` as `?error=...`;\n`signIn(..., { redirect: false })` surfaces it as `result.error`.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrfToken",
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "csrfToken": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password"
+                  },
+                  "callbackUrl": {
+                    "type": "string",
+                    "example": "/dashboard"
+                  },
+                  "json": {
+                    "type": "string",
+                    "example": "true",
+                    "description": "Return JSON `{ url }` instead of a redirect"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON `{ url }` when `json=true`"
+          },
+          "302": {
+            "description": "Redirect to callbackUrl (success) or the error page"
+          }
+        }
+      }
+    },
+    "/api/auth/signin/{provider}": {
+      "post": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "startOAuthSignIn",
+        "summary": "Start an OAuth sign-in (Google or GitHub)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OAuthProvider"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrfToken"
+                ],
+                "properties": {
+                  "csrfToken": {
+                    "type": "string"
+                  },
+                  "callbackUrl": {
+                    "type": "string",
+                    "example": "/dashboard"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "description": "Redirect to the provider's consent screen"
+          }
+        }
+      }
+    },
+    "/api/auth/callback/{provider}": {
+      "get": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "oauthCallback",
+        "summary": "OAuth callback (called by Google or GitHub, not by the app)",
+        "description": "Register these as the redirect URIs in the Google and GitHub OAuth app settings:\n`http://localhost:3000/api/auth/callback/google` and `http://localhost:3000/api/auth/callback/github`.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OAuthProvider"
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "On first sign-in the Prisma adapter inserts a row into PostgreSQL `users` (name, email, image)\nand one into `accounts` (provider id and OAuth tokens). Later sign-ins reuse them.\nSets the login token and redirects to callbackUrl.\n"
+          }
+        }
+      }
+    },
+    "/api/auth/signout": {
+      "post": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "signOut",
+        "summary": "Sign out",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrfToken"
+                ],
+                "properties": {
+                  "csrfToken": {
+                    "type": "string"
+                  },
+                  "callbackUrl": {
+                    "type": "string",
+                    "example": "/"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "description": "Clears the session cookie and redirects"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "next-auth.session-token",
+        "description": "NextAuth login token (signed JWT with the user id), set when you sign in. It identifies the user; all user data is read from PostgreSQL."
+      }
+    },
+    "parameters": {
+      "OAuthProvider": {
+        "name": "provider",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "google",
+            "github"
+          ]
+        }
+      }
+    },
+    "responses": {
+      "Unauthenticated": {
+        "description": "Not signed in",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Authentication required."
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ExperienceLevel": {
+        "type": "string",
+        "enum": [
+          "Beginner",
+          "Intermediate",
+          "Advanced"
+        ]
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "description": "Trimmed before saving",
+            "example": "Shivam"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Trimmed and lowercased; no spaces",
+            "example": "shivam@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 6,
+            "example": "hunter22"
+          }
+        }
+      },
+      "ExperienceLevelUpdate": {
+        "type": "object",
+        "required": [
+          "experienceLevel"
+        ],
+        "properties": {
+          "experienceLevel": {
+            "$ref": "#/components/schemas/ExperienceLevel"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Provider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "google"
+          },
+          "name": {
+            "type": "string",
+            "example": "Google"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "oauth",
+              "credentials"
+            ]
+          },
+          "signinUrl": {
+            "type": "string"
+          },
+          "callbackUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "User id (cuid)"
+              },
+              "name": {
+                "type": "string",
+                "nullable": true
+              },
+              "email": {
+                "type": "string",
+                "nullable": true
+              },
+              "image": {
+                "type": "string",
+                "nullable": true
+              },
+              "experienceLevel": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ExperienceLevel"
+                  }
+                ],
+                "nullable": true,
+                "description": "null until onboarding step 1 is completed"
+              }
+            }
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "GithubRepo": {
+        "type": "object",
+        "description": "Subset of GitHub's repository object (the full object is returned)",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string",
+            "example": "ARCHITECH"
+          },
+          "full_name": {
+            "type": "string",
+            "example": "acm-projects/ARCHITECH"
+          },
+          "private": {
+            "type": "boolean"
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "default_branch": {
+            "type": "string",
+            "example": "main"
+          },
+          "stargazers_count": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "owner": {
+            "type": "object",
+            "properties": {
+              "login": {
+                "type": "string"
+              },
+              "avatar_url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
