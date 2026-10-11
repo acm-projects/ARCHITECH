@@ -22,7 +22,14 @@ export const authOptions: NextAuthOptions = {
     GithubProvider({
     clientId: process.env.GITHUB_ID as string,
     clientSecret: process.env.GITHUB_SECRET as string,
-  }),
+    authorization: {
+    params: {
+      // 'repo' grants access to read/write both public and private repositories
+      scope: "read:user user:email repo", 
+    }
+  }
+    },
+    ),
     CredentialsProvider({
       name: "Email and Password",
       credentials: {
