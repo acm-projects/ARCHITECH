@@ -65,6 +65,7 @@ export type Project = {
   nodes: ArchitectureFlowNode[];
   edges: Edge[];
   mode: ProjectMode;
+  learnSkipped?: boolean;
   source?: ProjectSource;
   createdAt: string;
   updatedAt: string;
@@ -308,6 +309,7 @@ export function parseProject(raw: unknown): Project | null {
     nodes: cleanNodes,
     edges: sanitizeEdges(edges, cleanNodes),
     mode: isProjectMode(mode) ? mode : DEFAULT_PROJECT_MODE,
+    ...(typeof raw.learnSkipped === "boolean" ? { learnSkipped: raw.learnSkipped } : {}),
     ...(isProjectSource(source) ? { source } : {}),
     createdAt,
     updatedAt,
@@ -582,6 +584,20 @@ export function createProjectStore(options: ProjectStoreOptions) {
     return updated;
   }
 
+  // Tutorial preferences are separate from architecture edits and survive autosave.
+  function setLearnSkipped(id: string, skipped: boolean): Project | null {
+    if (typeof skipped !== "boolean") {
+      throw new ProjectStoreError("unexpected", "Invalid tutorial preference.");
+    }
+    const projects = load().projects;
+    const existing = projects.find((project) => project.id === id);
+    if (!existing) return null;
+    if ((existing.learnSkipped ?? false) === skipped) return existing;
+    const updated: Project = { ...existing, learnSkipped: skipped };
+    write(projects.map((project) => (project.id === id ? updated : project)));
+    return updated;
+  }
+
   // Opening a project only changes lastOpenedAt, not updatedAt.
   function markProjectOpened(id: string): Project | null {
     const projects = load().projects;
@@ -614,6 +630,7 @@ export function createProjectStore(options: ProjectStoreOptions) {
       nodes: copy(existing.nodes),
       edges: copy(existing.edges),
       mode: existing.mode,
+      ...(existing.learnSkipped !== undefined ? { learnSkipped: existing.learnSkipped } : {}),
       source: "duplicate",
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -634,6 +651,7 @@ export function createProjectStore(options: ProjectStoreOptions) {
     renameProject,
     markProjectOpened,
     setProjectMode,
+    setLearnSkipped,
     deleteProject,
     duplicateProject,
   };
