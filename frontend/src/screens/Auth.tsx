@@ -1,5 +1,6 @@
 // useState - lets page remember temporary values while user interacts
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import Image from "next/image";
 
 import { Icon, Logo, StatusMessage } from "../components/ui";
 import { OnboardingArchie, useArchieEyes } from "../components/auth/OnboardingArchie";
@@ -56,6 +57,10 @@ const SOCIAL_PROVIDERS = [
   { name: "GitHub", Mark: GitHubMark },
   { name: "Google", Mark: GoogleMark },
 ] as const;
+
+const SYSTEM_BRANDS = [
+  "YouTube", "Netflix", "Spotify", "Uber", "Airbnb", "Instagram", "Dropbox", "Discord",
+] as const;
 /*App.tsx -> sends information/functions -> AuthPage
   AuthPage receives four props:
   1. kind: "signin" | "signup" - tells this component which version it should display
@@ -88,6 +93,7 @@ export function AuthPage({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // to make password hidden by default
   const [remember, setRemember] = useState(false); // for backend, not functioning yet
+  const [orbitPaused, setOrbitPaused] = useState(false);
   // Some messages include a logo, so they aren't all strings.
   const [message, setMessage] = useState<ReactNode>("");
 
@@ -205,6 +211,34 @@ export function AuthPage({
 
       {/* authentication form section */}
       <section className="auth-shell">
+        {/* Counter-rotation keeps the logos upright as the circle turns. */}
+        <div className="auth-orbit" data-paused={orbitPaused}>
+          <div className="auth-orbit-ring" aria-hidden="true">
+            {SYSTEM_BRANDS.map((brand, index) => (
+              <span
+                key={brand}
+                className="auth-orbit-slot"
+                style={{ transform: `rotate(${index * 45}deg) translateY(calc(-1 * var(--orbit-radius))) rotate(${-index * 45}deg)` }}
+              >
+                <Image
+                  className="auth-orbit-logo"
+                  src={`/auth-logos/${brand.toLowerCase()}.svg`}
+                  alt=""
+                  width={48}
+                  height={48}
+                />
+              </span>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="auth-orbit-toggle auth-text-button"
+            aria-pressed={orbitPaused}
+            onClick={() => setOrbitPaused((paused) => !paused)}
+          >
+            {orbitPaused ? "Resume rotation" : "Pause rotation"}
+          </button>
+        </div>
         <form className="auth-form" onSubmit={submit}>
           {/* Heading */}
           <div className="auth-heading">
