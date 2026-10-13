@@ -9,6 +9,9 @@ type LearnCardProps = {
   status: LessonStatus;
   // The tutorial is finished and the design is free to change: replaces the step.
   freePlay?: boolean;
+  skipped?: boolean;
+  onSkip: () => void;
+  error?: string | null;
   feedback?: ConnectionFeedback | null;
   // A hint worked out from the design, shown when the learner is stuck.
   hint?: string | null;
@@ -21,6 +24,9 @@ export default function LearnCard({
   stepIndex,
   status,
   freePlay = false,
+  skipped = false,
+  onSkip,
+  error,
   feedback,
   hint,
   onDismissFeedback,
@@ -39,14 +45,16 @@ export default function LearnCard({
       <div className="flex items-baseline justify-between">
         <span className="ax-panel-title">Learn</span>
         <span className="ax-card-label">
-          {isComplete ? count : stepIndex + 1} / {count}
+          {skipped ? "Free play" : `${isComplete ? count : stepIndex + 1} / ${count}`}
         </span>
       </div>
 
       {freePlay ? (
         <>
-          <p className="ax-card-title mt-4">{FREE_PLAY_TITLE}</p>
-          <p className="ax-card-body">{FREE_PLAY_BODY}</p>
+          <p className="ax-card-title mt-4">{skipped ? "Free play" : FREE_PLAY_TITLE}</p>
+          <p className="ax-card-body">{skipped
+            ? "Build your architecture, configure components, and run your design."
+            : FREE_PLAY_BODY}</p>
         </>
       ) : status === "success" ? (
         <>
@@ -88,7 +96,7 @@ export default function LearnCard({
         </>
       )}
 
-      <ol className="mt-4 flex gap-1.5" aria-label="Lesson progress">
+      {!skipped && <ol className="mt-4 flex gap-1.5" aria-label="Lesson progress">
         {lesson.steps.map((lessonStep, index) => {
           const done =
             isComplete ||
@@ -112,7 +120,11 @@ export default function LearnCard({
             </li>
           );
         })}
-      </ol>
+      </ol>}
+      {!freePlay && <button type="button" className="ax-card-link" onClick={onSkip}>
+        Skip tutorial
+      </button>}
+      {error && <p className="ax-card-body mt-2" role="alert">{error}</p>}
     </div>
   );
 }
