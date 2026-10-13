@@ -42,18 +42,18 @@ export default function LearnCard({
 
   return (
     <div className="ax-card ax-learn" aria-live="polite" data-learn-phase={freePlay ? "free-play" : "guided"}>
-      <div className="flex items-baseline justify-between">
+      {!freePlay && <div className="flex items-baseline justify-between">
         <span className="ax-panel-title">Learn</span>
         <span className="ax-card-label">
           {skipped ? "Free play" : `${isComplete ? count : stepIndex + 1} / ${count}`}
         </span>
-      </div>
+      </div>}
 
       {freePlay ? (
         <>
-          <p className="ax-card-title mt-4">{skipped ? "Free play" : FREE_PLAY_TITLE}</p>
+          <p className="ax-card-title">{skipped ? "Free play" : FREE_PLAY_TITLE}</p>
           <p className="ax-card-body">{skipped
-            ? "Build your architecture, configure components, and run your design."
+            ? "Build, configure, and test your architecture."
             : FREE_PLAY_BODY}</p>
         </>
       ) : status === "success" ? (
