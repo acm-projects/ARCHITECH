@@ -5484,14 +5484,14 @@ body,
   letter-spacing: 0.02em;
 }
 
-/* Viewport-centred column */
+/* Keep the existing form on the right, leaving space on the left. */
 .auth-shell {
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 64px 24px;
+  justify-content: flex-end;
+  padding: 64px clamp(24px, 8vw, 128px);
 }
 
 /* Restrained surface: hairline border, no shadow; fields stay 408px wide */
@@ -5753,6 +5753,13 @@ body,
   color: var(--auth-muted);
   font-size: 14px;
   text-align: center;
+}
+
+@media (max-width: 900px) {
+  .auth-shell {
+    justify-content: center;
+    padding-inline: 24px;
+  }
 }
 
 @media (max-width: 600px) {
