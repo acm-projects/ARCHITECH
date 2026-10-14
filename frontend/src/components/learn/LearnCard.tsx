@@ -1,3 +1,6 @@
+import Image from "next/image";
+import type { ReactNode } from "react";
+
 import { FREE_PLAY_BODY, FREE_PLAY_TITLE, type ConnectionFeedback, type Lesson } from "./lessons";
 import type { LessonStatus } from "./useLessonEngine";
 import { CATEGORY_ICONS } from "../workspace/toolbox/categoryIcons";
@@ -18,7 +21,22 @@ type LearnCardProps = {
   onDismissFeedback?: () => void;
 };
 
-// Small floating card over the canvas; the canvas stays fully interactive around it.
+// Keep Archie's explanation distinct from the action the learner should take.
+function ArchieDialogue({ children }: { children: ReactNode }) {
+  return (
+    <div className="ax-learn-dialogue">
+      <span className="ax-learn-portrait" aria-hidden="true">
+        <Image src="/archie.svg" alt="" width={518} height={400} />
+      </span>
+      <div className="ax-learn-speech">
+        <span className="ax-learn-speaker">Archie</span>
+        <p className="ax-card-body">{children}</p>
+      </div>
+    </div>
+  );
+}
+
+// The canvas stays interactive while the current instruction remains visible.
 export default function LearnCard({
   lesson,
   stepIndex,
@@ -52,9 +70,9 @@ export default function LearnCard({
       {freePlay ? (
         <>
           <p className="ax-card-title">{skipped ? "Free play" : FREE_PLAY_TITLE}</p>
-          <p className="ax-card-body">{skipped
+          <ArchieDialogue>{skipped
             ? "Build, configure, and test your architecture."
-            : FREE_PLAY_BODY}</p>
+            : FREE_PLAY_BODY}</ArchieDialogue>
         </>
       ) : status === "success" ? (
         <>
@@ -62,12 +80,12 @@ export default function LearnCard({
             ✓ {step.successMessage}
           </p>
           <p className="ax-card-body">{step.title}</p>
-          <p className="ax-card-label mt-2">{step.successExplanation}</p>
+          <ArchieDialogue>{step.successExplanation}</ArchieDialogue>
         </>
       ) : feedback ? (
         <div className="ax-feedback mt-4">
           <p className="ax-card-title">{feedback.title}</p>
-          <p className="ax-card-body">{feedback.explanation}</p>
+          <ArchieDialogue>{feedback.explanation}</ArchieDialogue>
           <button
             type="button"
             onClick={onDismissFeedback}
@@ -79,7 +97,7 @@ export default function LearnCard({
       ) : (
         <>
           <p className="ax-card-title mt-4">{step.title}</p>
-          <p className="ax-card-body">{step.description}</p>
+          <ArchieDialogue>{step.description}</ArchieDialogue>
           <p className="mt-3 text-(length:--ax-t-sm)">
             {CategoryIcon && category && <>
               Open{" "}

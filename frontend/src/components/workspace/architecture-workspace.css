@@ -819,9 +819,70 @@
 /* ---- Learn and Challenge annotations over the canvas ---- */
 
 .ax-workspace .ax-learn {
-  width: 232px;
+  width: 100%;
   border-color: var(--ax-line);
   background: var(--ax-surface);
+}
+
+/* A dialogue portrait accompanies explanations; task controls stay outside it. */
+.ax-workspace .ax-learn-dialogue {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.ax-workspace .ax-learn-portrait {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border: 2px solid var(--ax-ink);
+  border-radius: 50%;
+  background: #fff;
+}
+
+.ax-workspace .ax-learn-portrait img {
+  position: absolute;
+  width: 179%;
+  max-width: none;
+  height: auto;
+  left: -39%;
+  top: -5%;
+}
+
+.ax-workspace .ax-learn-speech {
+  position: relative;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 3px;
+}
+
+.ax-workspace .ax-learn-speech::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 17px;
+  width: 8px;
+  height: 8px;
+  border-left: 1px solid var(--ax-line-strong);
+  border-bottom: 1px solid var(--ax-line-strong);
+  background: var(--ax-surface);
+  transform: rotate(45deg);
+}
+
+.ax-workspace .ax-learn-speaker {
+  font-size: var(--ax-t-xs);
+  font-weight: 600;
+  color: var(--ax-ink);
+}
+
+.ax-workspace .ax-learn-speech .ax-card-body {
+  margin-top: 4px;
+  color: var(--ax-ink-soft);
+  overflow-wrap: anywhere;
 }
 .ax-workspace .ax-feedback {
   padding-left: var(--ax-s3);
