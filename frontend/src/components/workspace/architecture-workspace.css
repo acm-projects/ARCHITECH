@@ -825,9 +825,18 @@
 }
 
 /* A dialogue portrait accompanies explanations; task controls stay outside it. */
+.ax-workspace .ax-learn-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ax-workspace .ax-learn-header .ax-card-label { flex-shrink: 0; }
+
 .ax-workspace .ax-learn-dialogue {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr);
   align-items: start;
   gap: 12px;
   margin-top: 12px;
@@ -835,8 +844,8 @@
 
 .ax-workspace .ax-learn-portrait {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   overflow: hidden;
   border: 2px solid var(--ax-ink);
   border-radius: 50%;
@@ -855,8 +864,8 @@
 .ax-workspace .ax-learn-speech {
   position: relative;
   min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--ax-line-strong);
+  padding: 8px 10px;
+  border: 1px solid var(--ax-line);
   border-radius: 3px;
 }
 
@@ -864,25 +873,71 @@
   content: "";
   position: absolute;
   left: -5px;
-  top: 17px;
+  top: 13px;
   width: 8px;
   height: 8px;
-  border-left: 1px solid var(--ax-line-strong);
-  border-bottom: 1px solid var(--ax-line-strong);
+  border-left: 1px solid var(--ax-line);
+  border-bottom: 1px solid var(--ax-line);
   background: var(--ax-surface);
   transform: rotate(45deg);
 }
 
-.ax-workspace .ax-learn-speaker {
-  font-size: var(--ax-t-xs);
-  font-weight: 600;
-  color: var(--ax-ink);
-}
-
 .ax-workspace .ax-learn-speech .ax-card-body {
-  margin-top: 4px;
+  margin-top: 0;
   color: var(--ax-ink-soft);
   overflow-wrap: anywhere;
+}
+
+.ax-workspace .ax-learn-instruction {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+  font-size: var(--ax-t-sm);
+  line-height: 1.6;
+}
+
+.ax-workspace .ax-learn-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  vertical-align: middle;
+}
+
+.ax-workspace .ax-learn-skip {
+  margin-top: 12px;
+  font-size: var(--ax-t-xs);
+  color: var(--ax-muted);
+}
+
+.ax-workspace .ax-learn-hint {
+  margin-top: 12px;
+  font-size: var(--ax-t-xs);
+  color: var(--ax-muted);
+}
+
+.ax-workspace .ax-learn-hint summary { cursor: pointer; }
+
+.ax-workspace .ax-learn-skip:hover:not(:disabled) {
+  color: var(--ax-ink);
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.ax-workspace .ax-learn-dialogue[data-celebrating="true"] .ax-learn-portrait img {
+  transform-origin: 50% 65%;
+  animation: ax-learn-nod 480ms ease-in-out 1;
+}
+
+@keyframes ax-learn-nod {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  35% { transform: translateY(2px) rotate(5deg); }
+  70% { transform: translateY(-1px) rotate(-2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-workspace .ax-learn-dialogue[data-celebrating="true"] .ax-learn-portrait img {
+    animation: none;
+  }
 }
 .ax-workspace .ax-feedback {
   padding-left: var(--ax-s3);

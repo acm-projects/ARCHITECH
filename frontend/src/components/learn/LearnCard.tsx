@@ -22,14 +22,14 @@ type LearnCardProps = {
 };
 
 // Keep Archie's explanation distinct from the action the learner should take.
-function ArchieDialogue({ children }: { children: ReactNode }) {
+function ArchieDialogue({ children, celebrating = false }: { children: ReactNode; celebrating?: boolean }) {
   return (
-    <div className="ax-learn-dialogue">
+    <div className="ax-learn-dialogue" data-celebrating={celebrating}>
       <span className="ax-learn-portrait" aria-hidden="true">
         <Image src="/archie.svg" alt="" width={518} height={400} />
       </span>
       <div className="ax-learn-speech">
-        <span className="ax-learn-speaker">Archie</span>
+        <span className="sr-only">Archie: </span>
         <p className="ax-card-body">{children}</p>
       </div>
     </div>
@@ -57,34 +57,31 @@ export default function LearnCard({
     ? COMPONENT_CATALOG[step.objective.componentType].family
     : null;
   const CategoryIcon = category ? CATEGORY_ICONS[category] : null;
+  const heading = freePlay
+    ? skipped ? "Free play" : FREE_PLAY_TITLE
+    : status === "success" ? step.successMessage : feedback ? feedback.title : step.title;
 
   return (
     <div className="ax-card ax-learn" aria-live="polite" data-learn-phase={freePlay ? "free-play" : "guided"}>
-      {!freePlay && <div className="flex items-baseline justify-between">
-        <span className="ax-panel-title">Learn</span>
-        <span className="ax-card-label">
-          {skipped ? "Free play" : `${isComplete ? count : stepIndex + 1} / ${count}`}
-        </span>
-      </div>}
+      <div className="ax-learn-header">
+        <p className="ax-card-title">{heading}</p>
+        {!freePlay && <span className="ax-card-label" aria-label={`Step ${isComplete ? count : stepIndex + 1} of ${count}`}>
+          {isComplete ? count : stepIndex + 1} / {count}
+        </span>}
+      </div>
 
       {freePlay ? (
         <>
-          <p className="ax-card-title">{skipped ? "Free play" : FREE_PLAY_TITLE}</p>
           <ArchieDialogue>{skipped
             ? "Build, configure, and test your architecture."
             : FREE_PLAY_BODY}</ArchieDialogue>
         </>
       ) : status === "success" ? (
         <>
-          <p className="ax-card-title mt-4 text-(--ax-accent)">
-            ✓ {step.successMessage}
-          </p>
-          <p className="ax-card-body">{step.title}</p>
-          <ArchieDialogue>{step.successExplanation}</ArchieDialogue>
+          <ArchieDialogue key={`success-${step.id}`} celebrating>{step.successExplanation}</ArchieDialogue>
         </>
       ) : feedback ? (
-        <div className="ax-feedback mt-4">
-          <p className="ax-card-title">{feedback.title}</p>
+        <div>
           <ArchieDialogue>{feedback.explanation}</ArchieDialogue>
           <button
             type="button"
@@ -96,50 +93,24 @@ export default function LearnCard({
         </div>
       ) : (
         <>
-          <p className="ax-card-title mt-4">{step.title}</p>
           <ArchieDialogue>{step.description}</ArchieDialogue>
-          <p className="mt-3 text-(length:--ax-t-sm)">
-            {CategoryIcon && category && <>
-              Open{" "}
-              <span className="inline-block align-text-bottom" role="img"
-                aria-label={`${FAMILY_LABELS[category]} category`}
-                title={FAMILY_LABELS[category]}>
+          <div className="ax-learn-instruction">
+            {CategoryIcon && category && <p>
+              Open{" "}<span className="ax-learn-category">
                 <CategoryIcon size={16} color={FAMILY_COLORS[category]} aria-hidden="true" />
-              </span>{" "}
-              in the left toolbar.{" "}
-            </>}
-            {step.instruction}
-          </p>
-          {hint && <p className="ax-card-label mt-2">Hint: {hint}</p>}
+                <span>{FAMILY_LABELS[category]}</span>
+              </span>{" "}in the left toolbar.
+            </p>}
+            <p>{step.instruction}</p>
+          </div>
+          {hint && <details className="ax-learn-hint">
+            <summary>Hint</summary>
+            <p className="ax-card-body">{hint}</p>
+          </details>}
         </>
       )}
 
-      {!skipped && <ol className="mt-4 flex gap-1.5" aria-label="Lesson progress">
-        {lesson.steps.map((lessonStep, index) => {
-          const done =
-            isComplete ||
-            index < stepIndex ||
-            (index === stepIndex && status === "success");
-          const state = done
-            ? "is-done"
-            : index === stepIndex
-              ? "is-current"
-              : "";
-          return (
-            <li
-              key={lessonStep.id}
-              className={`ax-dot ${state}`}
-              aria-current={index === stepIndex && !done ? "step" : undefined}
-            >
-              <span className="sr-only">
-                Step {index + 1}
-                {done ? ", done" : ""}
-              </span>
-            </li>
-          );
-        })}
-      </ol>}
-      {!freePlay && <button type="button" className="ax-card-link" onClick={onSkip}>
+      {!freePlay && <button type="button" className="ax-card-link ax-learn-skip" onClick={onSkip}>
         Skip tutorial
       </button>}
       {error && <p className="ax-card-body mt-2" role="alert">{error}</p>}
