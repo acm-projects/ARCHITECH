@@ -266,7 +266,8 @@
 .ax-workspace [data-side="right"] .ax-rail-name { left: auto; right: calc(100% + 12px); }
 .ax-workspace .ax-panel-handle[aria-expanded="false"]:focus-visible .ax-rail-name { display: block; }
 @media (hover: hover) {
-  .ax-workspace .ax-panel-handle[aria-expanded="false"]:hover .ax-rail-name,
+  /* Hover flyouts show their contents directly; a label would flash before React opens them. */
+  .ax-workspace .ax-canvas-panel:not([data-hover-flyout]) .ax-panel-handle[aria-expanded="false"]:hover .ax-rail-name,
   .ax-workspace .ax-panel-rail .ax-item:hover .ax-component-name { display: block; }
 }
 .ax-workspace .ax-panel-handle:hover,

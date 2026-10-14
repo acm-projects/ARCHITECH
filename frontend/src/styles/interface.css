@@ -5484,14 +5484,57 @@ body,
   letter-spacing: 0.02em;
 }
 
-/* Viewport-centred column */
+/* Keep the existing form on the right, leaving space on the left. */
 .auth-shell {
   min-height: 100vh;
   min-height: 100dvh;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 474px;
   align-items: center;
-  justify-content: center;
-  padding: 64px 24px;
+  gap: 32px;
+  padding: 64px clamp(24px, 8vw, 128px);
+}
+
+/* One slow orbit; the marks themselves remain upright. */
+.auth-orbit {
+  --orbit-radius: clamp(100px, 12vw, 180px);
+  justify-self: center;
+  display: grid;
+  justify-items: center;
+  gap: 32px;
+}
+
+.auth-orbit-ring {
+  position: relative;
+  width: calc(var(--orbit-radius) * 2 + 48px);
+  height: calc(var(--orbit-radius) * 2 + 48px);
+  animation: auth-orbit-turn 90s linear infinite;
+}
+
+.auth-orbit-slot {
+  position: absolute;
+  top: calc(50% - 24px);
+  left: calc(50% - 24px);
+  width: 48px;
+  height: 48px;
+}
+
+.auth-orbit-logo {
+  display: block;
+  animation: auth-orbit-turn 90s linear infinite reverse;
+}
+
+.auth-orbit[data-paused="true"] :is(.auth-orbit-ring, .auth-orbit-logo) {
+  animation-play-state: paused;
+}
+
+.auth-orbit-toggle {
+  font-size: 12px;
+  color: var(--auth-subtle);
+}
+
+@keyframes auth-orbit-turn {
+  to { transform: rotate(360deg); }
 }
 
 /* Restrained surface: hairline border, no shadow; fields stay 408px wide */
@@ -5755,6 +5798,18 @@ body,
   text-align: center;
 }
 
+@media (max-width: 900px) {
+  .auth-shell {
+    display: flex;
+    justify-content: center;
+    padding-inline: 24px;
+  }
+
+  .auth-orbit {
+    display: none;
+  }
+}
+
 @media (max-width: 600px) {
   .auth-brand {
     top: 20px;
@@ -5791,6 +5846,14 @@ body,
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .auth-orbit :is(.auth-orbit-ring, .auth-orbit-logo) {
+    animation: none;
+  }
+
+  .auth-orbit-toggle {
+    display: none;
+  }
+
   .auth-page * {
     transition: none;
   }

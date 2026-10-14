@@ -139,6 +139,7 @@ function Workspace({ project }: { project: Project }) {
   const learn = useLearnMode({
     enabled: mode === "learn",
     scopeKey: project.id,
+    initiallySkipped: project.learnSkipped,
     nodes,
     edges,
   });
@@ -286,6 +287,9 @@ function Workspace({ project }: { project: Project }) {
       return;
     }
 
+    // Save the return to guidance before resetting the canvas; failed storage leaves it intact.
+    if (mode === "learn" && !learn.prepareReset()) return;
+
     applyReset(mode, plan, {
       replaceGraph: () => {
         replaceGraph(emptyGraph());
@@ -405,7 +409,7 @@ function Workspace({ project }: { project: Project }) {
           modeStatus={
             mode === "learn"
               ? learn.freePlay
-                ? "Tutorial complete"
+                ? learn.skipped ? "Free play" : "Tutorial complete"
                 : `Step ${learn.engine.stepIndex + 1} / ${learn.lesson.steps.length}`
               : challenge.challenge.title
           }
@@ -479,6 +483,9 @@ function Workspace({ project }: { project: Project }) {
                       stepIndex={learn.engine.stepIndex}
                       status={learn.engine.status}
                       freePlay={learn.freePlay}
+                      skipped={learn.skipped}
+                      onSkip={learn.skipLesson}
+                      error={learn.tutorialError}
                       feedback={learn.engine.feedback}
                       hint={
                         learn.engine.hintVisible
