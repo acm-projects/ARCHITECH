@@ -824,17 +824,52 @@
   background: var(--ax-surface);
 }
 
+/* Guided lessons leave more of the canvas exposed than the analysis panels. */
+.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content:has(> .ax-learn[data-learn-phase="guided"]) {
+  width: min(290px, calc(100vw - 78px));
+}
+
+.ax-workspace .ax-learn[data-learn-phase="guided"] { padding: 14px 12px; }
+
+@media (min-width: 768px) {
+  .ax-workspace .ax-learn[data-learn-phase="guided"] {
+    display: flex;
+    flex-direction: column;
+    min-height: min(360px, calc(100dvh - 140px));
+    row-gap: 8px;
+  }
+
+  .ax-workspace .ax-learn[data-learn-phase="guided"] .ax-learn-progress {
+    flex-shrink: 0;
+    margin-top: 8px;
+  }
+
+  .ax-workspace .ax-learn[data-learn-phase="guided"] > .ax-learn-dialogue {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .ax-workspace .ax-learn[data-learn-phase="guided"] > .ax-learn-dialogue > .ax-learn-speech {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+  }
+
+}
+
 /* A dialogue portrait accompanies explanations; task controls stay outside it. */
 .ax-workspace .ax-learn-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 10px;
 }
 
 .ax-workspace .ax-learn-progress {
-  height: 3px;
-  margin-top: 16px;
+  height: 2px;
+  margin-top: 8px;
   overflow: hidden;
   background: var(--ax-line);
 }
@@ -851,11 +886,7 @@
 }
 
 .ax-workspace .ax-learn-dialogue {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  align-items: start;
-  gap: 12px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .ax-workspace .ax-learn-portrait {
@@ -880,26 +911,29 @@
 .ax-workspace .ax-learn-speech {
   position: relative;
   min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--ax-line);
+  padding: 12px;
+  border: 1px solid var(--ax-line-strong);
   border-radius: 3px;
+  background: var(--ax-canvas);
 }
 
 .ax-workspace .ax-learn-speech::before {
   content: "";
   position: absolute;
-  left: -5px;
-  top: 13px;
+  right: 15px;
+  top: -5px;
   width: 8px;
   height: 8px;
-  border-left: 1px solid var(--ax-line);
-  border-bottom: 1px solid var(--ax-line);
-  background: var(--ax-surface);
-  transform: rotate(45deg);
+  border-left: 1px solid var(--ax-line-strong);
+  border-bottom: 1px solid var(--ax-line-strong);
+  background: var(--ax-canvas);
+  transform: rotate(135deg);
 }
 
 .ax-workspace .ax-learn-speech .ax-card-body {
   margin-top: 0;
+  font-size: 15px;
+  line-height: 1.65;
   color: var(--ax-ink-soft);
   overflow-wrap: anywhere;
 }
@@ -907,7 +941,7 @@
 .ax-workspace .ax-learn-instruction {
   display: grid;
   gap: 4px;
-  margin-top: 16px;
+  margin-top: 12px;
   font-size: var(--ax-t-sm);
   line-height: 1.6;
 }
@@ -921,7 +955,7 @@
 
 .ax-workspace .ax-learn-continue {
   display: block;
-  margin-top: 16px;
+  margin-top: 12px;
   padding: 8px 14px;
   border: 1px solid var(--ax-ink);
   border-radius: 3px;
@@ -942,7 +976,7 @@
 
 .ax-workspace .ax-learn-hint summary { cursor: pointer; }
 
-.ax-workspace .ax-learn-dialogue[data-celebrating="true"] .ax-learn-portrait img {
+.ax-workspace .ax-learn-header[data-celebrating="true"] .ax-learn-portrait img {
   transform-origin: 50% 65%;
   animation: ax-learn-nod 480ms ease-in-out 1;
 }
@@ -954,7 +988,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ax-workspace .ax-learn-dialogue[data-celebrating="true"] .ax-learn-portrait img {
+  .ax-workspace .ax-learn-header[data-celebrating="true"] .ax-learn-portrait img {
     animation: none;
   }
 }

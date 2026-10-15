@@ -22,12 +22,9 @@ type LearnCardProps = {
 };
 
 // Keep Archie's explanation distinct from the action the learner should take.
-function ArchieDialogue({ children, celebrating = false }: { children: ReactNode; celebrating?: boolean }) {
+function ArchieDialogue({ children }: { children: ReactNode }) {
   return (
-    <div className="ax-learn-dialogue" data-celebrating={celebrating}>
-      <span className="ax-learn-portrait" aria-hidden="true">
-        <Image src="/archie.svg" alt="" width={518} height={400} />
-      </span>
+    <div className="ax-learn-dialogue">
       <div className="ax-learn-speech">
         <span className="sr-only">Archie: </span>
         <p className="ax-card-body">{children}</p>
@@ -64,8 +61,11 @@ export default function LearnCard({
 
   return (
     <div className="ax-card ax-learn" aria-live="polite" data-learn-phase={freePlay ? "free-play" : "guided"}>
-      <div className="ax-learn-header">
+      <div className="ax-learn-header" data-celebrating={status === "success"}>
         <p className="ax-card-title">{heading}</p>
+        <span key={`${step.id}-${status}`} className="ax-learn-portrait" aria-hidden="true">
+          <Image src="/archie.svg" alt="" width={518} height={400} />
+        </span>
       </div>
 
       {freePlay ? (
@@ -76,7 +76,7 @@ export default function LearnCard({
         </>
       ) : status === "success" ? (
         <>
-          <ArchieDialogue key={`success-${step.id}`} celebrating>{step.successExplanation}</ArchieDialogue>
+          <ArchieDialogue>{step.successExplanation}</ArchieDialogue>
           <button type="button" className="ax-learn-continue" onClick={onContinue}>
             Continue
           </button>
