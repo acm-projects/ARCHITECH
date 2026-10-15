@@ -60,3 +60,68 @@ model VerificationToken {
   @@unique([identifier, token])
   @@map("verification_tokens")
 }
+// ---- Component library ----
+// The components a user can place on the canvas (types) and the technologies behind each one
+// (implementations). Filled by prisma/seed.ts; see docs/graph-spec.md for how a saved graph
+// refers to these rows.
+
+// Semantic group of a component type. Same values as ComponentFamily in
+// src/components/workspace/componentCatalog.ts.
+enum ComponentFamily {
+  general
+  frontend
+  backend
+  data
+  infrastructure
+
+  @@map("component_family")
+}
+
+// A kind of component, e.g. "database". `id` is the same key the canvas stores in
+// node.data.type (ArchitectureNodeType in src/lib/architecture/types.ts).
+model ComponentType {
+  id              String                    @id
+  label           String
+  family          ComponentFamily
+  description     String
+  sortOrder       Int                       @map("sort_order")
+  implementations ComponentImplementation[]
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+
+  @@map("component_types")
+}
+
+// A concrete technology for a component type, e.g. PostgreSQL for "database". Exactly one
+// implementation per type is the default (enforced by the seed script). The numbers are the
+// per-instance baseline the metrics engine uses, with the same meaning as SimulationProfile in
+// src/lib/architecture/evaluation/capabilities.ts: educational estimates, not benchmarks.
+model ComponentImplementation {
+  id                     String        @id
+  componentTypeId        String        @map("component_type_id")
+  name                   String
+  vendor                 String?
+  description            String
+  isDefault              Boolean       @default(false) @map("is_default")
+  sortOrder              Int           @map("sort_order")
+  // Work one instance can do per second. Null: never limits throughput (clients, frontends).
+  capacityPerInstance    Int?          @map("capacity_per_instance")
+  // Concurrent connections one instance can hold, where that is a limit.
+  connectionsPerInstance Int?          @map("connections_per_instance")
+  // Added to a request passing through, when idle.
+  latencyMs              Float         @map("latency_ms")
+  monthlyCostPerInstance Float         @map("monthly_cost_per_instance")
+  // Availability of one instance, as a fraction (0.999 = 99.9%).
+  availability           Float
+  // Share of reads answered without going further (caches and CDNs).
+  hitRate                Float?        @map("hit_rate")
+  // Short points for comparing technologies (shown when swapping, and given to the AI).
+  strengths              String[]
+  tradeoffs              String[]
+  componentType          ComponentType @relation(fields: [componentTypeId], references: [id], onDelete: Cascade)
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+
+  @@index([componentTypeId])
+  @@map("component_implementations")
+}

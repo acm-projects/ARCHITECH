@@ -7,6 +7,8 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    // Run with `npx prisma db seed` (Prisma 7 no longer seeds automatically after migrate).
+    seed: "node --experimental-strip-types prisma/seed.ts",
   },
   datasource: {
     url: process.env["DATABASE_URL"],
