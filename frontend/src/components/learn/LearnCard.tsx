@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 import { FREE_PLAY_BODY, FREE_PLAY_TITLE, type ConnectionFeedback, type Lesson } from "./lessons";
 import type { LessonStatus } from "./useLessonEngine";
@@ -21,13 +21,51 @@ type LearnCardProps = {
   onDismissFeedback?: () => void;
 };
 
+function DialogueText({ text }: { text: string }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const start = performance.now();
+    const finish = () => {
+      clearInterval(timer);
+      setCount(text.length);
+    };
+    const timer = window.setInterval(() => {
+      const next = Math.min(text.length, Math.floor((performance.now() - start) / 18));
+      setCount(next);
+      if (next === text.length) clearInterval(timer);
+    }, 18);
+    const onVisibility = () => { if (document.hidden) finish(); };
+    if (motion.matches || document.hidden) finish();
+    motion.addEventListener("change", finish);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearInterval(timer);
+      motion.removeEventListener("change", finish);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [text]);
+
+  return <>
+    <span className="sr-only">{text}</span>
+    <span aria-hidden="true" className="ax-learn-typed">
+      {count >= text.length ? text : <>
+        {text.slice(0, count)}<span style={{ visibility: "hidden" }}>{text.slice(count)}</span>
+      </>}
+    </span>
+  </>;
+}
+
 // Keep Archie's explanation distinct from the action the learner should take.
-function ArchieDialogue({ children }: { children: ReactNode }) {
+function ArchieDialogue({ children }: { children: string }) {
   return (
     <div className="ax-learn-dialogue">
       <div className="ax-learn-speech">
         <span className="sr-only">Archie: </span>
-        <p className="ax-card-body">{children}</p>
+        <p className="ax-card-body">
+          <DialogueText key={children} text={children} />
+        </p>
       </div>
     </div>
   );
