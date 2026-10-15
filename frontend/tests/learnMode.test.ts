@@ -428,9 +428,16 @@ test("hints depend only on the design, so the same design gives the same hint", 
   assert.equal(hintFor(5, renamed)?.text, hintFor(5, stages.database())?.text);
 });
 
-test("a hint appears right away when the learner is stuck on the last part, and otherwise after a wrong attempt", () => {
+test("hints omit repeated instructions but retain diagnosis and missing prerequisites", () => {
   const stuck = validateObjective(step(5).objective, stages.database());
-  assert.equal(shouldShowHint(0, stuck), true);
+  assert.equal(shouldShowHint(0, stuck), false);
+  assert.equal(shouldShowHint(3, stuck), false);
+  const missingNode = validateObjective(step(1).objective, graphOf([], []));
+  assert.equal(shouldShowHint(3, missingNode), false);
+  const reversed = validateObjective(step(3).objective, graphOf(stages.server().nodes, [e("s", "c")]));
+  assert.equal(shouldShowHint(0, reversed), true);
+  const redundant = validateObjective(step(8).objective, stages.cached());
+  assert.equal(shouldShowHint(0, redundant), true);
   const missing = validateObjective(step(5).objective, stages.connected());
   assert.equal(shouldShowHint(0, missing), false);
   assert.equal(shouldShowHint(1, missing), true);

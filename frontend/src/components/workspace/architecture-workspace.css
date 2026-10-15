@@ -919,12 +919,6 @@
   vertical-align: middle;
 }
 
-.ax-workspace .ax-learn-skip {
-  margin-top: 12px;
-  font-size: var(--ax-t-xs);
-  color: var(--ax-muted);
-}
-
 .ax-workspace .ax-learn-continue {
   display: block;
   margin-top: 16px;
@@ -947,12 +941,6 @@
 }
 
 .ax-workspace .ax-learn-hint summary { cursor: pointer; }
-
-.ax-workspace .ax-learn-skip:hover:not(:disabled) {
-  color: var(--ax-ink);
-  opacity: 1;
-  text-decoration: underline;
-}
 
 .ax-workspace .ax-learn-dialogue[data-celebrating="true"] .ax-learn-portrait img {
   transform-origin: 50% 65%;

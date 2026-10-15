@@ -13,7 +13,6 @@ type LearnCardProps = {
   // The tutorial is finished and the design is free to change: replaces the step.
   freePlay?: boolean;
   skipped?: boolean;
-  onSkip: () => void;
   onContinue: () => void;
   error?: string | null;
   feedback?: ConnectionFeedback | null;
@@ -44,7 +43,6 @@ export default function LearnCard({
   status,
   freePlay = false,
   skipped = false,
-  onSkip,
   onContinue,
   error,
   feedback,
@@ -62,7 +60,7 @@ export default function LearnCard({
   const CategoryIcon = category ? CATEGORY_ICONS[category] : null;
   const heading = freePlay
     ? skipped ? "Free play" : FREE_PLAY_TITLE
-    : status === "success" ? step.successMessage : feedback ? feedback.title : step.title;
+    : feedback ? feedback.title : step.title;
 
   return (
     <div className="ax-card ax-learn" aria-live="polite" data-learn-phase={freePlay ? "free-play" : "guided"}>
@@ -113,9 +111,6 @@ export default function LearnCard({
         </>
       )}
 
-      {!freePlay && <button type="button" className="ax-card-link ax-learn-skip" onClick={onSkip}>
-        Skip tutorial
-      </button>}
       {error && <p className="ax-card-body mt-2" role="alert">{error}</p>}
       {!freePlay && <div
         className="ax-learn-progress"
