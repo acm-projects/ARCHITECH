@@ -838,10 +838,6 @@
     row-gap: 8px;
   }
 
-  .ax-workspace .ax-learn[data-learn-phase="guided"] .ax-learn-progress {
-    flex-shrink: 0;
-    margin-top: 8px;
-  }
 
 }
 
@@ -851,24 +847,6 @@
   grid-template-columns: minmax(0, 1fr) 40px;
   align-items: center;
   gap: 10px;
-}
-
-.ax-workspace .ax-learn-progress {
-  height: 2px;
-  margin-top: 8px;
-  overflow: hidden;
-  background: var(--ax-line);
-}
-
-.ax-workspace .ax-learn-progress > span {
-  display: block;
-  height: 100%;
-  background: var(--ax-accent);
-  transition: width var(--ax-base) var(--ax-ease);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ax-workspace .ax-learn-progress > span { transition: none; }
 }
 
 .ax-workspace .ax-learn-dialogue {
