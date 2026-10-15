@@ -925,6 +925,21 @@
   color: var(--ax-muted);
 }
 
+.ax-workspace .ax-learn-continue {
+  display: block;
+  margin-top: 16px;
+  padding: 8px 14px;
+  border: 1px solid var(--ax-ink);
+  border-radius: 3px;
+  background: var(--ax-ink);
+  color: var(--ax-surface);
+  font-size: var(--ax-t-sm);
+  font-weight: 500;
+}
+
+.ax-workspace .ax-learn-continue:hover { background: var(--ax-ink-soft); }
+.ax-workspace .ax-learn-continue:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 3px; }
+
 .ax-workspace .ax-learn-hint {
   margin-top: 12px;
   font-size: var(--ax-t-xs);

@@ -8,11 +8,14 @@ import { createRunSession } from "../src/lib/architecture/evaluation/runSession.
 import { getLearnHint, shouldShowHint } from "../src/lib/architecture/learn/hints.ts";
 import { validateObjective, type LearnObjective } from "../src/lib/architecture/learn/objectives.ts";
 import {
+  continueLessonDisplay,
   checkLesson,
   createLearnSession,
+  reconcileLessonDisplay,
   reconcileLearnSession,
   recordAttempt,
   resetLearnSession,
+  type LessonDisplay,
 } from "../src/lib/architecture/learn/session.ts";
 import { createChallengeSession } from "../src/lib/architecture/challenge/session.ts";
 import { urlShortenerDefinition } from "../src/components/challenge/challenges.ts";
@@ -486,4 +489,45 @@ test("a lesson session shares nothing with a workspace run or a challenge submis
   challenge.reset();
   assert.equal(JSON.stringify(learn), snapshot);
   assert.equal(reconcile(stages.stored(), learn), learn);
+});
+
+// Completed explanations require an explicit Continue.
+const active: LessonDisplay = { stepIndex: 0, status: "active", seen: 0 };
+
+test("completed objectives wait indefinitely until Continue", () => {
+  const pending = reconcileLessonDisplay(active, 1, 8, true);
+  assert.equal(pending.status, "success");
+  assert.equal(pending.stepIndex, 0);
+  assert.equal(reconcileLessonDisplay(pending, 1, 8, true), pending);
+  assert.deepEqual(continueLessonDisplay(pending, 1, 8), { stepIndex: 1, status: "active", seen: 1 });
+});
+
+test("Continue cannot bypass an unfinished objective", () => {
+  assert.equal(continueLessonDisplay(active, 0, 8), active);
+});
+
+test("building ahead still requires Continue for each explanation", () => {
+  const first = reconcileLessonDisplay(active, 3, 8, true);
+  const second = continueLessonDisplay(first, 3, 8);
+  assert.deepEqual(second, { stepIndex: 1, status: "success", seen: 3 });
+  const third = continueLessonDisplay(second, 3, 8);
+  assert.deepEqual(third, { stepIndex: 2, status: "success", seen: 3 });
+  assert.deepEqual(continueLessonDisplay(third, 3, 8), { stepIndex: 3, status: "active", seen: 3 });
+});
+
+test("undo invalidates a pending success and Continue cannot accept it", () => {
+  const pending: LessonDisplay = { stepIndex: 2, status: "success", seen: 3 };
+  assert.deepEqual(reconcileLessonDisplay(pending, 1, 8, true), { stepIndex: 1, status: "active", seen: 1 });
+  assert.deepEqual(continueLessonDisplay(pending, 2, 8), { stepIndex: 2, status: "active", seen: 2 });
+});
+
+test("final explanation requires Continue before completion", () => {
+  const pending: LessonDisplay = { stepIndex: 7, status: "success", seen: 8 };
+  assert.equal(reconcileLessonDisplay(pending, 8, 8, true), pending);
+  assert.deepEqual(continueLessonDisplay(pending, 8, 8), { stepIndex: 7, status: "complete", seen: 8 });
+});
+
+test("switching modes does not dismiss a pending explanation", () => {
+  const pending: LessonDisplay = { stepIndex: 1, status: "success", seen: 2 };
+  assert.deepEqual(reconcileLessonDisplay(pending, 3, 8, false), { ...pending, seen: 3 });
 });
