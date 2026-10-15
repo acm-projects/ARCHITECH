@@ -84,10 +84,7 @@ export default function LearnCard({
   hint,
   onDismissFeedback,
 }: LearnCardProps) {
-  const count = lesson.steps.length;
   const step = lesson.steps[stepIndex];
-  const isComplete = freePlay || status === "complete";
-  const progress = isComplete ? count : Math.min(stepIndex + 1, count);
   // Add-component instructions follow the catalog when a component moves categories.
   const category = step.objective.kind === "node"
     ? COMPONENT_CATALOG[step.objective.componentType].family
@@ -150,17 +147,6 @@ export default function LearnCard({
       )}
 
       {error && <p className="ax-card-body mt-2" role="alert">{error}</p>}
-      {!freePlay && <div
-        className="ax-learn-progress"
-        role="progressbar"
-        aria-label="Lesson progress"
-        aria-valuemin={0}
-        aria-valuemax={count}
-        aria-valuenow={progress}
-        aria-valuetext={`Step ${progress} of ${count}`}
-      >
-        <span style={{ width: `${count ? progress / count * 100 : 0}%` }} />
-      </div>}
     </div>
   );
 }
