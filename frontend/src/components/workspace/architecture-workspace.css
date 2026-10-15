@@ -832,7 +832,23 @@
   gap: 16px;
 }
 
-.ax-workspace .ax-learn-header .ax-card-label { flex-shrink: 0; }
+.ax-workspace .ax-learn-progress {
+  height: 3px;
+  margin-top: 16px;
+  overflow: hidden;
+  background: var(--ax-line);
+}
+
+.ax-workspace .ax-learn-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--ax-accent);
+  transition: width var(--ax-base) var(--ax-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-workspace .ax-learn-progress > span { transition: none; }
+}
 
 .ax-workspace .ax-learn-dialogue {
   display: grid;
