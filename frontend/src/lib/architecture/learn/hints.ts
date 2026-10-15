@@ -67,11 +67,8 @@ export function getLearnHint(objective: LearnObjective, check: ObjectiveCheck): 
   }
 }
 
-// Reasons where the person has already done the groundwork and is stuck on the last part, so a
-// hint helps straight away. For "something is missing" the instruction already says what to
-// add, so the hint waits until they have tried something that did not work.
+// Show hints that add diagnosis or another way forward, rather than repeat the instruction.
 const STUCK_REASONS = new Set<ObjectiveCheck["reason"]>([
-  "not-connected",
   "reversed",
   "no-path",
   "not-reachable",
@@ -81,5 +78,6 @@ const STUCK_REASONS = new Set<ObjectiveCheck["reason"]>([
 ]);
 
 export function shouldShowHint(attempts: number, check: ObjectiveCheck): boolean {
+  if (check.reason === "component-missing" || check.reason === "not-connected") return false;
   return !check.valid && (attempts > 0 || STUCK_REASONS.has(check.reason));
 }

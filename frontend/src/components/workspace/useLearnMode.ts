@@ -86,7 +86,6 @@ export function useLearnMode({
     clearAnalysis,
     skipped,
     tutorialError,
-    skipLesson: () => setTutorialSkipped(true),
     // Persist the return to guidance before the workspace replaces the graph.
     prepareReset: () => !skipped || setTutorialSkipped(false),
   };

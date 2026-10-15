@@ -410,7 +410,7 @@ function Workspace({ project }: { project: Project }) {
             mode === "learn"
               ? learn.freePlay
                 ? learn.skipped ? "Free play" : "Tutorial complete"
-                : `Step ${learn.engine.stepIndex + 1} / ${learn.lesson.steps.length}`
+                : undefined
               : challenge.challenge.title
           }
           onRun={canRunDesign ? learn.runs.run : undefined}
@@ -484,7 +484,7 @@ function Workspace({ project }: { project: Project }) {
                       status={learn.engine.status}
                       freePlay={learn.freePlay}
                       skipped={learn.skipped}
-                      onSkip={learn.skipLesson}
+                      onContinue={learn.engine.continueStep}
                       error={learn.tutorialError}
                       feedback={learn.engine.feedback}
                       hint={
