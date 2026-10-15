@@ -14,6 +14,7 @@ type LearnCardProps = {
   freePlay?: boolean;
   skipped?: boolean;
   onSkip: () => void;
+  onContinue: () => void;
   error?: string | null;
   feedback?: ConnectionFeedback | null;
   // A hint worked out from the design, shown when the learner is stuck.
@@ -44,6 +45,7 @@ export default function LearnCard({
   freePlay = false,
   skipped = false,
   onSkip,
+  onContinue,
   error,
   feedback,
   hint,
@@ -77,6 +79,9 @@ export default function LearnCard({
       ) : status === "success" ? (
         <>
           <ArchieDialogue key={`success-${step.id}`} celebrating>{step.successExplanation}</ArchieDialogue>
+          <button type="button" className="ax-learn-continue" onClick={onContinue}>
+            Continue
+          </button>
         </>
       ) : feedback ? (
         <div>

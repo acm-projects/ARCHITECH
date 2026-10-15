@@ -485,6 +485,7 @@ function Workspace({ project }: { project: Project }) {
                       freePlay={learn.freePlay}
                       skipped={learn.skipped}
                       onSkip={learn.skipLesson}
+                      onContinue={learn.engine.continueStep}
                       error={learn.tutorialError}
                       feedback={learn.engine.feedback}
                       hint={

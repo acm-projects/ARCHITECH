@@ -104,3 +104,34 @@ export type LearnPhase = "guided" | "free-play";
 
 export const learnPhase = (session: Pick<LearnSession, "everCompleted">): LearnPhase =>
   session.everCompleted ? "free-play" : "guided";
+
+// Explanation acknowledgement is separate from objective completion.
+export type LessonStatus = "active" | "success" | "complete";
+export type LessonDisplay = { stepIndex: number; status: LessonStatus; seen: number };
+
+export function reconcileLessonDisplay(display: LessonDisplay, target: number, count: number, enabled: boolean): LessonDisplay {
+  if (display.seen === target) return display;
+  // Undo/delete invalidates a pending explanation immediately.
+  if (target <= display.stepIndex && display.status !== "complete") {
+    return { stepIndex: target, status: "active", seen: target };
+  }
+  // Completed explanations wait for an explicit Continue, including mode switches.
+  if (display.status === "success" || (display.status === "complete" && target >= count)) {
+    return { ...display, seen: target };
+  }
+  if (enabled && target > display.stepIndex) {
+    return { stepIndex: display.stepIndex, status: "success", seen: target };
+  }
+  return { stepIndex: Math.min(target, count - 1), status: target >= count ? "complete" : "active", seen: target };
+}
+
+export function continueLessonDisplay(display: LessonDisplay, target: number, count: number): LessonDisplay {
+  if (display.status !== "success") return display;
+  if (target <= display.stepIndex) return { stepIndex: target, status: "active", seen: target };
+  const next = display.stepIndex + 1;
+  return {
+    stepIndex: Math.min(next, count - 1),
+    status: next >= count ? "complete" : next < target ? "success" : "active",
+    seen: target,
+  };
+}
