@@ -1,8 +1,6 @@
 import {
   useCallback,
-  useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 
@@ -13,10 +11,13 @@ import {
 } from "../../lib/architecture/learn/hints";
 import { validateObjective } from "../../lib/architecture/learn/objectives";
 import {
+  continueLessonDisplay,
   createLearnSession,
   learnPhase,
+  reconcileLessonDisplay,
   reconcileLearnSession,
   recordAttempt,
+  type LessonDisplay,
   type LearnSession,
 } from "../../lib/architecture/learn/session";
 import {
@@ -29,13 +30,7 @@ import type {
   Lesson,
 } from "./lessons";
 
-// What the Learn card is currently showing:
-// active   = waiting for the learner to finish the current step
-// success  = the step was just completed, so briefly celebrate it
-// complete = every tutorial step is finished
-export type LessonStatus = "active" | "success" | "complete";
-
-export const SUCCESS_DURATION_MS = 700;
+export type { LessonStatus } from "../../lib/architecture/learn/session";
 
 // Connects the Learn tutorial to the actual architecture on the canvas.
 //
@@ -96,24 +91,8 @@ export function useLessonEngine(
   const count = lesson.steps.length;
   const target = reconciled.currentStep;
 
-  // Keep the newest target available to the success timer.
-  // This matters because the architecture can change during the short celebration.
-  const targetRef = useRef(target);
-
-  useEffect(() => {
-    targetRef.current = target;
-  });
-
-  // `target` tells us where the DESIGN currently is.
-  // `display` tells us what the Learn card is currently showing.
-  //
-  // We keep these separate because completing a step should briefly show
-  // "success" before the card moves on to the next step.
-  const [display, setDisplay] = useState<{
-    stepIndex: number;
-    status: LessonStatus;
-    seen: number;
-  }>(() =>
+  // Objective completion and the explanation being read are separate states.
+  const [display, setDisplay] = useState<LessonDisplay>(() =>
     opening.currentStep >= count
       ? {
           stepIndex: count - 1,
@@ -131,108 +110,24 @@ export function useLessonEngine(
   const [feedback, setFeedback] =
     useState<ConnectionFeedback | null>(null);
 
-  // If Challenge is currently open, quietly keep Learn matched to the graph.
-  // We don't show old success animations when the user eventually switches back.
-  if (!enabled && display.seen !== target) {
-    setDisplay(
-      target >= count
-        ? {
-            stepIndex: count - 1,
-            status: "complete",
-            seen: target,
-          }
-        : {
-            stepIndex: target,
-            status: "active",
-            seen: target,
-          },
-    );
-
+  const nextDisplay = reconcileLessonDisplay(display, target, count, enabled);
+  if (nextDisplay !== display) {
+    setDisplay(nextDisplay);
     setFeedback(null);
   }
 
-  // When Learn is visible, react to the architecture moving forward or backward
-  // through the lesson.
-  if (enabled && display.seen !== target) {
-    let next: {
-      stepIndex: number;
-      status: LessonStatus;
-    };
-
-    if (
-      display.status === "success" ||
-      (display.status === "complete" && target >= count)
-    ) {
-      // If we're already celebrating a step, let that animation finish.
-      // If the tutorial is still complete, just stay complete.
-      next = display;
-    } else if (target > display.stepIndex) {
-      // The architecture now satisfies this step.
-      // Celebrate it before moving the card forward.
-      next = {
-        stepIndex: display.stepIndex,
-        status: "success",
-      };
-    } else if (
-      target < display.stepIndex ||
-      (display.status === "complete" && target < count)
-    ) {
-      // Something like undo/delete made an earlier requirement invalid,
-      // so move the lesson back to the first thing that is missing.
-      next = {
-        stepIndex: target,
-        status: "active",
-      };
-    } else {
-      next = display;
-    }
-
-    setDisplay({
-      ...next,
-      seen: target,
-    });
-
-    // Old connection feedback should not follow the learner into another step.
+  // Completing an objective never dismisses its explanation automatically.
+  const continueStep = useCallback(() => {
+    if (!enabled) return;
+    setDisplay((current) => continueLessonDisplay(current, target, count));
     setFeedback(null);
-  }
-
-  // A completed step shows success briefly, then moves to whatever step
-  // the CURRENT architecture needs next.
-  useEffect(() => {
-    if (display.status !== "success") {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      // Don't trust the target from when the timer started.
-      // The user may have changed the architecture during the celebration.
-      const latest = targetRef.current;
-
-      setDisplay((current) => ({
-        ...(latest >= count
-          ? {
-              stepIndex: count - 1,
-              status: "complete" as const,
-            }
-          : {
-              stepIndex: latest,
-              status: "active" as const,
-            }),
-        seen: current.seen,
-      }));
-    }, SUCCESS_DURATION_MS);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [display, count]);
+  }, [enabled, target, count]);
 
   // This is the lesson step the Learn card should currently display.
   const step = lesson.steps[display.stepIndex];
 
   // Check the current architecture against this step's actual objective.
-  // This is what lets the tutorial understand the learner's design instead
-  // of relying on a manual "Next" button.
+  // Continue acknowledges an explanation; only the design can satisfy an objective.
   const check = useMemo(
     () =>
       validateObjective(
@@ -264,7 +159,7 @@ export function useLessonEngine(
   // The same architecture becomes free-play and unlocks Run Design,
   // System Review, Stress Test, and Archie.
   //
-  // We wait for the final success celebration to finish before switching.
+  // The final explanation stays visible until Continue is pressed.
   const freePlay =
     enabled &&
     learnPhase(reconciled) === "free-play" &&
@@ -338,6 +233,7 @@ export function useLessonEngine(
     feedback,
     reportConnection,
     dismissFeedback,
+    continueStep,
     reset,
     session: reconciled,
     check,
