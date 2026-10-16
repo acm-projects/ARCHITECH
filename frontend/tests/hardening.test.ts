@@ -685,9 +685,12 @@ test("every button in the new app does something, or is disabled and says why", 
   let checked = 0;
   for (const root of roots) {
     for (const file of sourceFiles(root)) {
-      for (const tag of buttonTags(readFileSync(file, "utf8"))) {
+      const source = readFileSync(file, "utf8");
+      for (const tag of buttonTags(source)) {
         checked += 1;
-        const acts = /\bonClick=|type="submit"|\{\.\.\./.test(tag);
+        const popoverTarget = tag.match(/\bpopoverTarget="([^"]+)"/)?.[1];
+        const opensPopover = Boolean(popoverTarget && source.includes(`id="${popoverTarget}"`) && /\bpopover=/.test(source));
+        const acts = /\bonClick=|type="submit"|\{\.\.\./.test(tag) || opensPopover;
         const explainedDisabled = /(?<![-\w])disabled\b/.test(tag) && /\btitle=/.test(tag);
         if (!acts && !explainedDisabled) offenders.push(`${file}: ${tag.replace(/\s+/g, " ").slice(0, 90)}`);
       }

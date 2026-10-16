@@ -1,9 +1,13 @@
+import Image from "next/image";
+
+import type { ChallengeDifficulty } from "../challenge/challenges";
 import StartChallengeButton from "./StartChallengeButton";
 
 type DailyChallengeProps = {
   title: string;
-  difficulty: "Easy" | "Intermediate" | "Hard";
+  difficulty: ChallengeDifficulty;
   requirement: string;
+  compact?: boolean;
 };
 
 // Request path drawn in the hero: Client -> Load Balancer -> API Servers -> Cache / DB.
@@ -105,6 +109,7 @@ export default function DailyChallenge({
   title,
   difficulty,
   requirement,
+  compact = false,
 }: DailyChallengeProps) {
   // Two lines of display type; each line is revealed from behind a mask.
   const words = title.split(" ");
@@ -112,15 +117,28 @@ export default function DailyChallenge({
   const lines = [words.slice(0, split).join(" "), words.slice(split).join(" ")];
 
   return (
-    // Hide only the presentation; keep the challenge markup and behavior mounted.
-    <section style={{ display: "none" }} className="relative min-h-0 flex-1 overflow-hidden bg-[#0A0A0A] text-white max-lg:min-h-[75dvh]">
-      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[50%] items-center md:flex">
+    // Keep the original hero mounted; the compact presentation opens from Archie.
+    <div style={{ display: compact ? undefined : "none" }} className={compact ? "ml-auto mt-auto w-fit pt-4" : undefined}>
+      {compact && (
+        <button type="button" popoverTarget="daily-challenge-reminder" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-4">
+          <span className="border-b border-neutral-400 py-1">Daily challenge</span>
+          <Image src="/archie.svg" alt="" width={80} height={62} />
+        </button>
+      )}
+    <section
+      id="daily-challenge-reminder"
+      popover={compact ? "auto" : undefined}
+      aria-label="Daily challenge"
+      className={compact ? "fixed inset-auto right-8 bottom-28 m-0 max-h-[calc(100dvh-2rem)] w-60 max-w-[calc(100vw-4rem)] overflow-y-auto border border-neutral-300 bg-white text-[#0A0A0A] lg:right-14 lg:bottom-32" : "relative min-h-0 flex-1 overflow-hidden bg-[#0A0A0A] text-white max-lg:min-h-[75dvh]"}
+    >
+      <div style={{ display: compact ? "none" : undefined }} className="pointer-events-none absolute inset-y-0 right-0 hidden w-[50%] items-center md:flex">
         <HeroDiagram />
       </div>
 
-      <div className="relative flex h-full flex-col justify-between px-8 py-6 lg:px-14 lg:py-[clamp(1rem,3.5vh,2.5rem)]">
+      <div className={compact ? "space-y-4 p-5" : "relative flex h-full flex-col justify-between px-8 py-6 lg:px-14 lg:py-[clamp(1rem,3.5vh,2.5rem)]"}>
         <div
-          data-reveal="fade"
+          style={{ display: compact ? "none" : undefined }}
+          data-reveal={compact ? undefined : "fade"}
           className="flex items-center gap-4 text-xs text-neutral-400"
         >
           <span>Daily challenge</span>
@@ -129,10 +147,10 @@ export default function DailyChallenge({
         </div>
 
         <div>
-          <h1 className="text-[clamp(2.25rem,min(6vw,12.5vh),7.5rem)] font-light leading-[0.95] tracking-[-0.045em]">
+          <h1 className={compact ? "text-2xl font-light leading-tight tracking-tight" : "text-[clamp(2.25rem,min(6vw,12.5vh),7.5rem)] font-light leading-[0.95] tracking-[-0.045em]"}>
             {lines.map((line) => (
               <span key={line} className="block overflow-hidden pb-[0.08em]">
-                <span data-reveal="line" className="block">
+                <span data-reveal={compact ? undefined : "line"} className="block">
                   {line}
                 </span>
               </span>
@@ -140,16 +158,17 @@ export default function DailyChallenge({
           </h1>
 
           <div className="mt-[clamp(0.75rem,3vh,2rem)] flex flex-col items-start gap-4">
-            <div data-reveal="fade">
+            <div data-reveal={compact ? undefined : "fade"}>
               <StartChallengeButton title={title} />
             </div>
 
-            <p data-reveal="fade" className="text-sm text-neutral-400">
+            <p style={{ display: compact ? "none" : undefined }} data-reveal={compact ? undefined : "fade"} className="text-sm text-neutral-400">
               {requirement}
             </p>
           </div>
         </div>
       </div>
     </section>
+    </div>
   );
 }

@@ -198,7 +198,7 @@ export default function RecentProjects() {
   const count = projects?.length ?? 0;
 
   return (
-    <section className="min-h-0 bg-white px-8 py-6 lg:flex-1 lg:basis-0 lg:overflow-y-auto lg:px-14 lg:py-8">
+    <section className="shrink-0 bg-white px-8 py-6 lg:px-14">
       <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
         <h2
           data-reveal="fade"
