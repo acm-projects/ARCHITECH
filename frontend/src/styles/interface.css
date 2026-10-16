@@ -4854,9 +4854,9 @@ body,
   .landing-v2 .landing-nav {
     gap: 6px;
   }
-  /* On narrow phones, keep the returning-user path visible.
-     Signup remains available from the primary hero CTA. */
-  .landing-nav .nav-actions .btn-outline {
+  /* On narrow phones, keep the primary action in the header.
+     Explore remains available in the hero. */
+  .landing-nav .nav-actions .btn-ghost {
     display: none;
   }
   .landing-nav .logo {
