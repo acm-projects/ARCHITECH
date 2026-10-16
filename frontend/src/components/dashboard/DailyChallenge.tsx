@@ -112,7 +112,8 @@ export default function DailyChallenge({
   const lines = [words.slice(0, split).join(" "), words.slice(split).join(" ")];
 
   return (
-    <section className="relative min-h-0 flex-1 overflow-hidden bg-[#0A0A0A] text-white max-lg:min-h-[75dvh]">
+    // Hide only the presentation; keep the challenge markup and behavior mounted.
+    <section style={{ display: "none" }} className="relative min-h-0 flex-1 overflow-hidden bg-[#0A0A0A] text-white max-lg:min-h-[75dvh]">
       <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[50%] items-center md:flex">
         <HeroDiagram />
       </div>
