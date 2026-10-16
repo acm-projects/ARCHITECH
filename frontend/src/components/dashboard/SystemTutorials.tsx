@@ -140,8 +140,8 @@ function SystemDiagram({ nodes, edges }: Pick<Tutorial, "nodes" | "edges">) {
 
 export default function SystemTutorials() {
   return (
-    <section className="shrink-0 bg-[#F2F2EF] px-8 pb-[clamp(0.75rem,2.5vh,1.75rem)] pt-[clamp(0.75rem,2.5vh,1.5rem)] lg:px-14">
-      <div className="mb-[clamp(0.5rem,1.5vh,1rem)] flex items-baseline justify-between">
+    <section className="min-h-0 border-t border-neutral-300 bg-[#F2F2EF] px-8 py-6 lg:flex-1 lg:basis-0 lg:overflow-y-auto lg:px-14 lg:py-8">
+      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
         <h2 data-reveal="fade" className="text-lg font-light tracking-[-0.02em]">
           System breakdowns
         </h2>
