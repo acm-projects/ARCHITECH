@@ -8,7 +8,6 @@ const heroVerbs = ["Build", "Break", "Understand"] as const
 const nunito = Nunito({ subsets: ["latin"], weight: "400", display: "swap" })
 
 export function Landing({
-  signIn,
   signUp,
   demo,
 }: {
@@ -70,6 +69,17 @@ export function Landing({
     }
   }, [])
 
+  const actions = (
+    <>
+      <Button onClick={signUp}>
+        Start building <Icon name="arrow" />
+      </Button>
+      <Button variant="ghost" onClick={demo}>
+        Explore a system <Icon name="arrow" />
+      </Button>
+    </>
+  )
+
   return (
     <main className="landing landing-v2">
 
@@ -80,13 +90,7 @@ export function Landing({
         <div className="logo"><Logo /></div>
 
         <div className="nav-actions">
-          <Button variant="ghost" onClick={signIn}>
-            Open workspace
-          </Button>
-
-          <Button variant="outline" onClick={signUp}>
-            Set up profile
-          </Button>
+          {actions}
         </div>
       </nav>
 
@@ -110,12 +114,7 @@ export function Landing({
             Think like an architect.
           </p>
           <div className="landing-intro-actions">
-            <Button onClick={signUp}>
-              Start building <Icon name="arrow" />
-            </Button>
-            <Button variant="ghost" onClick={demo}>
-              Explore a system <Icon name="arrow" />
-            </Button>
+            {actions}
           </div>
         </div>
       </section>
