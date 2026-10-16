@@ -872,36 +872,6 @@
   top: -5%;
 }
 
-.ax-workspace .ax-learn-speech {
-  position: relative;
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: 3px;
-  background: var(--ax-canvas);
-}
-
-.ax-workspace .ax-learn-speech::before {
-  content: "";
-  position: absolute;
-  right: 15px;
-  top: -5px;
-  width: 8px;
-  height: 8px;
-  border-left: 1px solid var(--ax-line-strong);
-  border-bottom: 1px solid var(--ax-line-strong);
-  background: var(--ax-canvas);
-  transform: rotate(135deg);
-}
-
-.ax-workspace .ax-learn-speech .ax-card-body {
-  margin-top: 0;
-  font-size: 15px;
-  line-height: 1.65;
-  color: var(--ax-ink-soft);
-  overflow-wrap: anywhere;
-}
-
 .ax-workspace .ax-learn-instruction {
   display: grid;
   gap: 4px;

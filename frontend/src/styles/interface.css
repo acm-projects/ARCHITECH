@@ -6330,3 +6330,68 @@ body,
   .ax-header .ax-title { max-width: calc(100vw - 188px); }
   .ax-header > div:last-child { flex-wrap: wrap; gap: 12px; padding-bottom: 10px; }
 }
+
+/* Shared Archie message bar for Learn and the dashboard. */
+.ax-learn-speech {
+  position: relative;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--ax-line-strong, var(--color-line));
+  border-radius: var(--radius-panel);
+  background: var(--ax-canvas, var(--color-canvas));
+}
+
+.ax-learn-speech::before {
+  content: "";
+  position: absolute;
+  right: 15px;
+  top: -5px;
+  width: 8px;
+  height: 8px;
+  border-left: 1px solid var(--ax-line-strong, var(--color-line));
+  border-bottom: 1px solid var(--ax-line-strong, var(--color-line));
+  background: var(--ax-canvas, var(--color-canvas));
+  transform: rotate(135deg);
+}
+
+.ax-learn-speech .ax-card-body,
+.ax-workspace .ax-learn-speech .ax-card-body {
+  margin-top: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ax-ink-soft, var(--color-muted));
+  overflow-wrap: anywhere;
+}
+
+.ax-daily-challenge .ax-learn-speech::before {
+  top: calc(50% - 4px);
+  right: -5px;
+  transform: rotate(225deg);
+}
+
+.ax-daily-challenge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 440px;
+  max-width: 100%;
+  margin: auto 0 0 auto;
+  padding-top: 16px;
+}
+
+.ax-daily-challenge .ax-learn-speech {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+}
+
+.ax-daily-challenge .ax-card-body { grid-column: 1; }
+.ax-daily-challenge > img { flex-shrink: 0; }
+.ax-daily-challenge-action { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+
+@media (max-width: 480px) {
+  .ax-daily-challenge .ax-learn-speech { grid-template-columns: minmax(0, 1fr); }
+  .ax-daily-challenge-action { grid-column: 1; grid-row: auto; }
+  .ax-daily-challenge > img { width: 72px; height: auto; }
+}
