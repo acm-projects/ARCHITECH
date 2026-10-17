@@ -15,6 +15,13 @@ import type { TrafficProfile } from "./traffic.ts";
 //  - A queue accepts writes and hands them on at a smoothed rate; everything behind it is
 //    asynchronous and does not hold up the request that was answered.
 //  - When a service has both downstream services and data, requests split evenly.
+//  - Static files (traffic.staticShare of all requests: images, scripts, video) are reads
+//    that never need the database. A client or CDN sends them to object storage (or a CDN)
+//    when it is connected to one; a CDN answers its hit rate of them at the edge; a service
+//    reads them from object storage when connected to it, otherwise serves them itself.
+//    readRatio is the read share of the remaining (API) requests.
+//  - Support services (auth, search) are called alongside; authentication only for its
+//    check rate (with JWTs, sign-ins and refreshes).
 // Cycles are cut where they close, so the flow always ends.
 //
 // Flow is linear in the requested rate, so it is computed once per 1 request/s and scaled.
@@ -23,26 +30,39 @@ const EPSILON = 1e-12;
 
 // Requests per second of each kind reaching a point, per 1 request/s asked of the system.
 // The sync fields count only what the client is still waiting for (not behind a queue).
-type Flow = { read: number; write: number; syncRead: number; syncWrite: number };
+// read and write are API requests; asset is static files (always reads).
+type Flow = {
+  read: number;
+  write: number;
+  asset: number;
+  syncRead: number;
+  syncWrite: number;
+  syncAsset: number;
+};
 
-const ZERO: Flow = { read: 0, write: 0, syncRead: 0, syncWrite: 0 };
+const ZERO: Flow = { read: 0, write: 0, asset: 0, syncRead: 0, syncWrite: 0, syncAsset: 0 };
 
-const mix = (flow: Flow, readFactor: number, writeFactor: number): Flow => ({
+// Static files are reads, so they follow the read factor unless told otherwise.
+const mix = (flow: Flow, readFactor: number, writeFactor: number, assetFactor = readFactor): Flow => ({
   read: flow.read * readFactor,
   write: flow.write * writeFactor,
+  asset: flow.asset * assetFactor,
   syncRead: flow.syncRead * readFactor,
   syncWrite: flow.syncWrite * writeFactor,
+  syncAsset: flow.syncAsset * assetFactor,
 });
 
 const addFlow = (a: Flow, b: Flow): Flow => ({
   read: a.read + b.read,
   write: a.write + b.write,
+  asset: a.asset + b.asset,
   syncRead: a.syncRead + b.syncRead,
   syncWrite: a.syncWrite + b.syncWrite,
+  syncAsset: a.syncAsset + b.syncAsset,
 });
 
-const totalOf = (flow: Flow) => flow.read + flow.write;
-const syncOf = (flow: Flow) => flow.syncRead + flow.syncWrite;
+const totalOf = (flow: Flow) => flow.read + flow.write + flow.asset;
+const syncOf = (flow: Flow) => flow.syncRead + flow.syncWrite + flow.syncAsset;
 
 export type NodeSimulation = {
   id: string;
@@ -51,6 +71,8 @@ export type NodeSimulation = {
   // Some of what reaches it is waited on by a client (as opposed to only queued work).
   sync: boolean;
   demandRps: number;
+  // The part of demandRps that is static files (images, scripts, video).
+  staticRps: number;
   capacityRps: number | null;
   // The most requested load this component alone can carry, or Infinity.
   limitRps: number;
@@ -72,6 +94,8 @@ export type Simulation = {
   criticalPath: string[];
   uptimeAvailability: number;
   monthlyCost: number;
+  // Share of all requests that are static files, and the read/write split of the rest.
+  staticShare: number;
   readShare: number;
   writeShare: number;
   // Each connection that leads back into a component already on the request path, as the node
@@ -94,6 +118,8 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
   const roleOf = (id: string): NodeRole => (configs.get(id) as NodeSimulationConfig).role;
 
   const requestedRps = traffic.requestsPerSecond;
+  // Static files, then the API requests split into reads and writes.
+  const staticShare = traffic.staticShare / 100;
   const readShare = traffic.readRatio / 100;
   const writeShare = 1 - readShare;
 
@@ -175,6 +201,30 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
   };
 
   const isThroughCache = (id: string) => (succ.get(id)?.length ?? 0) > 0;
+  const isStorage = (id: string) => roleOf(id) === "storage";
+  // Where a client sends static files when it can: object storage, or a CDN (an edge that caches).
+  const takesAssets = (id: string) =>
+    isStorage(id) || (roleOf(id) === "edge" && (configs.get(id) as NodeSimulationConfig).hitRate > 0);
+
+  // Static files to `assetTargets`, API requests to `others`, when both exist; otherwise
+  // everything is spread over all targets. `assetFactor` scales the static files sent on.
+  const splitAssets = (
+    flow: Flow,
+    targets: string[],
+    isAssetTarget: (id: string) => boolean,
+    assetFactor: number,
+  ): [string, Flow][] => {
+    const assetTargets = targets.filter(isAssetTarget);
+    const others = targets.filter((target) => !isAssetTarget(target));
+    if (assetTargets.length === 0 || others.length === 0) {
+      const each = 1 / targets.length;
+      return targets.map((t) => [t, mix(flow, each, each, assetFactor * each)]);
+    }
+    return [
+      ...assetTargets.map((t): [string, Flow] => [t, mix(flow, 0, 0, assetFactor / assetTargets.length)]),
+      ...others.map((t): [string, Flow] => [t, mix(flow, 1 / others.length, 1 / others.length, 0)]),
+    ];
+  };
 
   // ---- Flow ----
   const route = (id: string, flow: Flow): [string, Flow][] => {
@@ -188,20 +238,24 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
       case "storage":
         return [];
       case "entry":
-        return targets.map((t) => [t, mix(flow, each, each)]);
+        return splitAssets(flow, targets, takesAssets, 1);
       case "queue":
         return targets.map((t) => [
           t,
           {
             read: flow.read * ASSUMPTIONS.queueSmoothing * each,
             write: flow.write * ASSUMPTIONS.queueSmoothing * each,
+            asset: flow.asset * ASSUMPTIONS.queueSmoothing * each,
             syncRead: 0,
             syncWrite: 0,
+            syncAsset: 0,
           },
         ]);
       case "cache":
-      case "edge":
         return targets.map((t) => [t, mix(flow, (1 - config.hitRate) * each, each)]);
+      case "edge":
+        // A CDN answers its hit rate of the static files; API requests always go to the origin.
+        return splitAssets(flow, targets, isStorage, 1 - config.hitRate);
       default:
         break;
     }
@@ -210,11 +264,22 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
     const { forwardShare, dataShare } = sharesOf(id, groups);
     const out: [string, Flow][] = [];
 
+    // Static files: read from object storage when connected to it; a gateway or load balancer
+    // otherwise passes them on; a service otherwise serves them itself (they end here).
+    const storages = groups.stores.filter(isStorage);
+    const forwardAssets = storages.length === 0 && config.role === "ingress";
+    for (const storage of storages) out.push([storage, mix(flow, 0, 0, 1 / storages.length)]);
+
     for (const target of groups.forward) {
       const share = forwardShare / groups.forward.length;
-      out.push([target, mix(flow, share, share)]);
+      out.push([target, mix(flow, share, share, forwardAssets ? 1 / groups.forward.length : 0)]);
     }
-    for (const target of groups.sidecars) out.push([target, flow]);
+    // A support service sees the share of requests that call it (authentication with JWTs:
+    // only sign-ins and token refreshes).
+    for (const target of groups.sidecars) {
+      const rate = (configs.get(target) as NodeSimulationConfig).checkRate;
+      out.push([target, mix(flow, rate, rate, 0)]);
+    }
     if (dataShare === 0) return out;
 
     const { caches, queues, stores } = groups;
@@ -222,7 +287,7 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
 
     // Reads go to the caches if there are any, otherwise to the stores. A cache-aside cache
     // sends only its misses on to the stores.
-    for (const cache of caches) out.push([cache, mix(flow, dataShare / caches.length, 0)]);
+    for (const cache of caches) out.push([cache, mix(flow, dataShare / caches.length, 0, 0)]);
     const storeReadShare =
       caches.length > 0
         ? caches.reduce(
@@ -238,15 +303,15 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
     // Writes go to the queues if there are any, otherwise to the stores, otherwise through a cache.
     let storeWriteShare = 0;
     if (queues.length > 0) {
-      for (const queue of queues) out.push([queue, mix(flow, 0, dataShare / queues.length)]);
+      for (const queue of queues) out.push([queue, mix(flow, 0, dataShare / queues.length, 0)]);
     } else if (stores.length > 0) {
       storeWriteShare = dataShare;
     } else {
-      for (const cache of through) out.push([cache, mix(flow, 0, dataShare / through.length)]);
+      for (const cache of through) out.push([cache, mix(flow, 0, dataShare / through.length, 0)]);
     }
 
     for (const store of stores) {
-      out.push([store, mix(flow, storeReadShare / stores.length, storeWriteShare / stores.length)]);
+      out.push([store, mix(flow, storeReadShare / stores.length, storeWriteShare / stores.length, 0)]);
     }
     return out;
   };
@@ -256,11 +321,14 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
   const edgeKey = (from: string, to: string) => `${from}\u0000${to}`;
   for (const entry of entryIds) {
     const share = 1 / entryIds.length;
+    const api = (1 - staticShare) * share;
     inflow.set(entry, {
-      read: readShare * share,
-      write: writeShare * share,
-      syncRead: readShare * share,
-      syncWrite: writeShare * share,
+      read: readShare * api,
+      write: writeShare * api,
+      asset: staticShare * share,
+      syncRead: readShare * api,
+      syncWrite: writeShare * api,
+      syncAsset: staticShare * share,
     });
   }
   for (const id of order) {
@@ -296,7 +364,8 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
         const datasetFactor = 1 / (1 + traffic.datasetGb / ASSUMPTIONS.databaseDatasetHalvingGb);
         capacityUnits = config.capacityPerInstance * datasetFactor;
         // The primary takes every write and its share of the reads; replicas take the rest.
-        unitsPerRequested = ASSUMPTIONS.databaseWriteCost * flow.write + flow.read / config.instances;
+        unitsPerRequested =
+          ASSUMPTIONS.databaseWriteCost * flow.write + (flow.read + flow.asset) / config.instances;
       } else {
         capacityUnits = config.capacityPerInstance * config.instances;
         unitsPerRequested = total;
@@ -410,13 +479,22 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
 
     if (config.role === "entry") {
       downstream = alternatives(targets, pathAvailability);
-    } else if (config.role === "cache" || config.role === "edge") {
+    } else if (config.role === "cache") {
       const onward = alternatives(targets, pathAvailability);
       downstream = readShare * (config.hitRate + (1 - config.hitRate) * onward) + writeShare * onward;
+    } else if (config.role === "edge") {
+      // Static files it holds keep working when the origin is down; API requests do not.
+      const onward = alternatives(targets, pathAvailability);
+      downstream = staticShare * (config.hitRate + (1 - config.hitRate) * onward) + (1 - staticShare) * onward;
     } else if (config.role === "compute" || config.role === "ingress" || config.role === "support") {
       const groups = groupsOf(id);
       const { forwardShare, dataShare } = sharesOf(id, groups);
-      const required = groups.sidecars.reduce((p, s) => p * (pathAvailability.get(s) ?? 0), 1);
+      // A request fails when a support service it calls is down; requests that do not call it
+      // (JWTs already issued) are unaffected.
+      const required = groups.sidecars.reduce((p, s) => {
+        const rate = (configs.get(s) as NodeSimulationConfig).checkRate;
+        return p * (1 - rate * (1 - (pathAvailability.get(s) ?? 0)));
+      }, 1);
 
       const through = groups.caches.filter(isThroughCache);
       const readSide =
@@ -431,8 +509,17 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
             : alternatives(through, pathAvailability);
       const data = readShare * readSide + writeShare * writeSide;
       const forward = alternatives(groups.forward, pathAvailability);
-      downstream =
-        required * (forwardShare * forward + dataShare * data + (1 - forwardShare - dataShare));
+      const api = required * (forwardShare * forward + dataShare * data + (1 - forwardShare - dataShare));
+      // Static files need object storage when they are read from it, the next hop when a
+      // gateway passes them on, and nothing more when a service serves them itself.
+      const storages = groups.stores.filter(isStorage);
+      const assets =
+        storages.length > 0
+          ? alternatives(storages, pathAvailability)
+          : config.role === "ingress" && groups.forward.length > 0
+            ? forward
+            : 1;
+      downstream = (1 - staticShare) * api + staticShare * assets;
     }
     pathAvailability.set(id, config.availability * downstream);
   }
@@ -460,6 +547,7 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
       reachable: m.reachable,
       sync: m.sync,
       demandRps: m.demandRps,
+      staticRps: requestedRps * m.flow.asset,
       capacityRps: m.capacityRps,
       limitRps: m.limitRps,
       utilization: m.utilization,
@@ -480,6 +568,7 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
     criticalPath: ready ? criticalPath : [],
     uptimeAvailability,
     monthlyCost,
+    staticShare,
     readShare,
     writeShare,
     cycles,

@@ -698,7 +698,7 @@ test("editing a setting makes a Run Design result stale, undo makes it current, 
 });
 
 test("resetting a setting returns the evaluation to the default behaviour", () => {
-  const traffic = { requestsPerSecond: 6000 };
+  const traffic = { requestsPerSecond: 6000, staticShare: 0 };
   const evaluate = (nodes: TNode[]) => evaluateArchitecture({ graph: { nodes, edges: design().edges } as never, traffic });
   const baseline = evaluate(design().nodes);
   const set = setComponentProperty(design().nodes, "server-1", "replicas", 5);
@@ -714,7 +714,7 @@ test("resetting a setting returns the evaluation to the default behaviour", () =
 });
 
 test("database read replicas and cache hit rate change the evaluation as described", () => {
-  const traffic = { requestsPerSecond: 8000, readRatio: 90 };
+  const traffic = { requestsPerSecond: 8000, readRatio: 90, staticShare: 0 };
   const base: Graph = {
     nodes: [node("c", "client"), node("s", "server", { replicas: 8 }), node("d", "database"), node("k", "cache")],
     edges: [edge("c", "s"), edge("s", "d"), edge("s", "k")],

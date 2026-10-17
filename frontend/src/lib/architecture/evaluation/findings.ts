@@ -31,6 +31,8 @@ const LOW_AVAILABILITY = 0.999;
 const VERY_LOW_AVAILABILITY = 0.99;
 const OVERPROVISIONED_UTILIZATION = 0.15;
 const LOW_READ_SHARE = 0.3;
+// A service spending this share of its work on static files is flagged.
+const STATIC_ON_SERVER_SHARE = 0.25;
 const IDLE_COST_SHARE_FOR_MEDIUM = 0.2;
 
 const percent = (value: number) => `${Math.round(value * 100)}%`;
@@ -308,6 +310,23 @@ export function buildFindings(
     });
   }
   for (const node of reachable) {
+    if (
+      node.config.role === "compute" &&
+      node.demandRps > 0 &&
+      node.staticRps / node.demandRps >= STATIC_ON_SERVER_SHARE
+    ) {
+      const busy = node.utilization >= ASSUMPTIONS.nearCapacityUtilization;
+      findings.push({
+        id: `static-on-servers-${node.id}`,
+        category: "performance",
+        severity: busy ? "medium" : "low",
+        title: `${label(node.id)} serves static files`,
+        message: `${rps(node.staticRps)} of images, scripts and other static files go through ${label(node.id)}: ${percent(node.staticRps / node.demandRps)} of its work.`,
+        nodeIds: [node.id],
+        recommendation:
+          "Put static files in object storage and serve them from a CDN: connect the client to a CDN and the CDN to object storage, so your servers only handle API requests.",
+      });
+    }
     if (node.config.role === "cache" && sim.readShare < LOW_READ_SHARE) {
       findings.push({
         id: `cache-low-benefit-${node.id}`,

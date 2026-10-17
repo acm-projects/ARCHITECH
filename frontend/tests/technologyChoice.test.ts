@@ -30,6 +30,7 @@ const traffic = (requestsPerSecond: number, datasetGb = 50) => ({
   concurrentUsers: 5_000,
   datasetGb,
   readRatio: 80,
+  staticShare: 0,
   networkLatencyMs: 40,
 });
 const design = (database?: string) => ({

@@ -37,7 +37,8 @@ const e = (source: string, target: string) => ({ source, target });
 const graphOf = (nodes: N[], edges: { source: string; target: string }[]) => ({ nodes, edges });
 
 const evaluate = (graph: unknown, traffic: Record<string, unknown> = {}): ArchitectureEvaluation =>
-  evaluateArchitecture({ graph: graph as never, traffic: { ...DEFAULT_TRAFFIC, ...traffic } });
+  // API-only load (no static files) unless a test says otherwise.
+  evaluateArchitecture({ graph: graph as never, traffic: { ...DEFAULT_TRAFFIC, staticShare: 0, ...traffic } });
 
 const simple = () =>
   graphOf([n("c", "client"), n("s", "server"), n("d", "database")], [e("c", "s"), e("s", "d")]);

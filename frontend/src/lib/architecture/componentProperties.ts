@@ -4,6 +4,7 @@ import {
   CAPACITY_MAX,
   DATABASE_REPLICAS_MAX,
   REPLICAS_MAX,
+  AUTH_CHECK_RATE_DEFAULT,
   profileOf,
   configureNode,
 } from "./evaluation/capabilities.ts";
@@ -20,7 +21,7 @@ import type { NodeProperties, ArchitectureNodeType } from "./types.ts";
 // so what is stored is always what the engine will use. (The generic sanitizer in
 // nodeProperties.ts stays the storage-level guard; this is the per-property layer on top.)
 
-export type ComponentPropertyKey = "replicas" | "capacity" | "cacheHitRate";
+export type ComponentPropertyKey = "replicas" | "capacity" | "cacheHitRate" | "authCheckRate";
 
 // integer: a whole number. number: any number in range. rate: a fraction from 0 to 1
 // (0.7 means 70%), the same representation the engine reads.
@@ -39,7 +40,7 @@ export type ComponentPropertyDefinition = {
   unit?: string;
 };
 
-const DEFINITION_ORDER: ComponentPropertyKey[] = ["replicas", "capacity", "cacheHitRate"];
+const DEFINITION_ORDER: ComponentPropertyKey[] = ["replicas", "capacity", "cacheHitRate", "authCheckRate"];
 
 // Components whose capacity is not worth configuring: name lookups are never the limit.
 const NO_CAPACITY_CONTROL = new Set<ArchitectureNodeType>(["dns"]);
@@ -98,12 +99,29 @@ function buildDefinitions(
     definitions.push({
       key: "cacheHitRate",
       label: "Hit rate",
-      description: "Share of reads answered here without going further, from 0 to 1 (0.7 is 70%).",
+      description:
+        role === "edge"
+          ? "Share of static files (images, scripts, video) answered at the edge without reaching your servers, from 0 to 1 (0.95 is 95%). API requests always go through."
+          : "Share of reads answered here without going further, from 0 to 1 (0.7 is 70%).",
       kind: "rate",
       min: 0,
       max: 1,
       step: 0.05,
       defaultValue: profile.hitRate ?? 0,
+    });
+  }
+
+  if (type === "auth") {
+    definitions.push({
+      key: "authCheckRate",
+      label: "Requests checked by auth",
+      description:
+        "Share of requests that call this service, from 0 to 1. JWT (default 0.05): services verify the signed token themselves, so only sign-ins and token refreshes reach it; tokens cannot be revoked instantly. Session lookup (1): every request checks with it, so a sign-out takes effect at once but it carries the full load.",
+      kind: "rate",
+      min: 0,
+      max: 1,
+      step: 0.05,
+      defaultValue: AUTH_CHECK_RATE_DEFAULT,
     });
   }
 
@@ -164,8 +182,10 @@ export function getEffectiveProperties(
       values.replicas = roleOf(type) === "database" ? config.instances - 1 : config.instances;
     } else if (definition.key === "capacity") {
       values.capacity = config.capacityPerInstance ?? definition.defaultValue;
-    } else {
+    } else if (definition.key === "cacheHitRate") {
       values.cacheHitRate = config.hitRate;
+    } else {
+      values.authCheckRate = config.checkRate;
     }
   }
   return values;
