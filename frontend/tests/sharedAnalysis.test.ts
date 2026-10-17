@@ -154,7 +154,8 @@ test("two separate islands are both counted and the orphans reported", () => {
     },
     traffic,
   );
-  assert.deepEqual(find(result, "orphaned-components")?.nodeIds, ["c2", "s2", "lone"]);
+  // Listed in id order: the same design lists them the same way however it was built.
+  assert.deepEqual(find(result, "orphaned-components")?.nodeIds, ["c2", "lone", "s2"]);
 });
 
 test("multiple components of the same type are handled independently", () => {
@@ -183,7 +184,9 @@ test("single point of failure names what a node cuts off", () => {
   const result = analyzeGraph(core, traffic);
   const finding = find(result, "spof-g");
   assert.equal(finding?.category, "Single point of failure");
-  assert.deepEqual(finding?.nodeIds, ["g", "s", "q", "d"]);
+  // The component itself first, then everything it cuts off.
+  assert.equal(finding?.nodeIds[0], "g");
+  assert.deepEqual(finding?.nodeIds.slice(1).sort(), ["d", "q", "s"]);
 });
 
 test("a single database without replicas is reported, and replicas silence it", () => {

@@ -342,12 +342,17 @@ export function buildFindings(
 
   // ---- Reliability ----
   if (sim.uptimeAvailability < LOW_AVAILABILITY) {
+    // The least available link; between equally weak ones, the first a request reaches.
+    const pathIndex = (id: string) => {
+      const index = sim.criticalPath.indexOf(id);
+      return index === -1 ? Infinity : index;
+    };
+    const weaker = (node: NodeSimulation, worst: NodeSimulation) =>
+      node.config.availability < worst.config.availability ||
+      (node.config.availability === worst.config.availability && pathIndex(node.id) < pathIndex(worst.id));
     const weakest = syncReachable
       .filter((node) => node.config.role !== "entry")
-      .reduce<NodeSimulation | null>(
-        (worst, node) => (!worst || node.config.availability < worst.config.availability ? node : worst),
-        null,
-      );
+      .reduce<NodeSimulation | null>((worst, node) => (!worst || weaker(node, worst) ? node : worst), null);
     findings.push({
       id: "low-availability",
       category: "reliability",
