@@ -2,13 +2,20 @@ import type { GraphNode } from "../graph.ts";
 
 import { roleOf, type NodeRole } from "../analysis.ts";
 import type { ArchitectureNodeType } from "../types.ts";
+import {
+  COMPONENT_TYPES,
+  defaultImplementationFor,
+  resolveImplementation,
+  type ComponentImplementationSeed,
+} from "../componentLibrary.ts";
 
 // What each kind of component does in the model, kept apart from how it looks (the
 // visual catalog lives in components/workspace/componentCatalog.ts and is not touched
-// here). Every number is an educational estimate chosen to make designs compare
-// sensibly, not a benchmark. Change them here and nowhere else.
+// here). The numbers come from the component library (../componentLibrary.ts): change
+// them there and nowhere else. Every number is an educational estimate, not a benchmark.
 //
-// How a component is understood comes only from its type, plus a few properties (below).
+// How a component is understood comes only from its type, its chosen implementation
+// (data.implementation, optional) and a few properties (below).
 // Its name and position never matter.
 
 export type SimulationProfile = {
@@ -29,23 +36,38 @@ export type SimulationProfile = {
   hitRate?: number;
 };
 
-export const SIMULATION_PROFILES: Record<ArchitectureNodeType, SimulationProfile> = {
-  client: { defaultInstances: 1, minInstances: 1, capacityPerInstance: null, latencyMs: 0, monthlyCostPerInstance: 0, availability: 1 },
-  "web-app": { defaultInstances: 1, minInstances: 1, capacityPerInstance: null, latencyMs: 0, monthlyCostPerInstance: 0, availability: 1 },
-  "mobile-app": { defaultInstances: 1, minInstances: 1, capacityPerInstance: null, latencyMs: 0, monthlyCostPerInstance: 0, availability: 1 },
-  cdn: { defaultInstances: 1, minInstances: 1, capacityPerInstance: 50_000, latencyMs: 10, monthlyCostPerInstance: 40, availability: 0.9999, hitRate: 0.5 },
-  dns: { defaultInstances: 1, minInstances: 1, capacityPerInstance: 100_000, latencyMs: 5, monthlyCostPerInstance: 5, availability: 0.9999, hitRate: 0 },
-  "api-gateway": { defaultInstances: 1, minInstances: 1, capacityPerInstance: 10_000, connectionsPerInstance: 100_000, latencyMs: 8, monthlyCostPerInstance: 54, availability: 0.9995 },
-  "load-balancer": { defaultInstances: 1, minInstances: 1, capacityPerInstance: 12_000, connectionsPerInstance: 200_000, latencyMs: 4, monthlyCostPerInstance: 48, availability: 0.9999 },
-  server: { defaultInstances: 1, minInstances: 1, capacityPerInstance: 2_500, connectionsPerInstance: 20_000, latencyMs: 20, monthlyCostPerInstance: 42, availability: 0.999 },
-  worker: { defaultInstances: 1, minInstances: 1, capacityPerInstance: 1_500, latencyMs: 15, monthlyCostPerInstance: 42, availability: 0.999 },
-  auth: { defaultInstances: 1, minInstances: 1, capacityPerInstance: 4_000, latencyMs: 10, monthlyCostPerInstance: 30, availability: 0.999 },
-  search: { defaultInstances: 1, minInstances: 1, capacityPerInstance: 1_500, latencyMs: 30, monthlyCostPerInstance: 90, availability: 0.999 },
-  queue: { defaultInstances: 1, minInstances: 1, capacityPerInstance: 8_000, latencyMs: 6, monthlyCostPerInstance: 36, availability: 0.9995 },
-  cache: { defaultInstances: 1, minInstances: 1, capacityPerInstance: 40_000, latencyMs: 1.5, monthlyCostPerInstance: 25, availability: 0.999, hitRate: 0.7 },
-  database: { defaultInstances: 1, minInstances: 1, capacityPerInstance: 5_000, latencyMs: 24, monthlyCostPerInstance: 90, availability: 0.999 },
-  "object-storage": { defaultInstances: 1, minInstances: 1, capacityPerInstance: 12_000, latencyMs: 20, monthlyCostPerInstance: 20, availability: 0.9999 },
-};
+// Built from the component library: a type's profile is its default implementation's
+// numbers. Every component starts with one instance.
+function profileFromImplementation(implementation: ComponentImplementationSeed): SimulationProfile {
+  const profile: SimulationProfile = {
+    defaultInstances: 1,
+    minInstances: 1,
+    capacityPerInstance: implementation.capacityPerInstance,
+    latencyMs: implementation.latencyMs,
+    monthlyCostPerInstance: implementation.monthlyCostPerInstance,
+    availability: implementation.availability,
+  };
+  if (implementation.connectionsPerInstance !== null) {
+    profile.connectionsPerInstance = implementation.connectionsPerInstance;
+  }
+  if (implementation.hitRate !== null) profile.hitRate = implementation.hitRate;
+  return profile;
+}
+
+export const SIMULATION_PROFILES: Record<ArchitectureNodeType, SimulationProfile> = Object.fromEntries(
+  COMPONENT_TYPES.map((componentType) => [
+    componentType.name,
+    profileFromImplementation(defaultImplementationFor(componentType.name)),
+  ]),
+) as Record<ArchitectureNodeType, SimulationProfile>;
+
+// The profile a node uses: its chosen implementation's numbers when `implementationId` is a
+// real implementation of `type`, otherwise the type's default profile.
+export function profileOf(type: ArchitectureNodeType, implementationId?: string): SimulationProfile {
+  if (implementationId === undefined) return SIMULATION_PROFILES[type];
+  const implementation = resolveImplementation(type, implementationId);
+  return implementation.isDefault ? SIMULATION_PROFILES[type] : profileFromImplementation(implementation);
+}
 
 // ---- Model assumptions shared by the simulation and the scoring ----
 
@@ -115,7 +137,7 @@ export type NodeSimulationConfig = {
 // A larger `capacity` also costs proportionally more.
 export function configureNode(node: GraphNode): NodeSimulationConfig {
   const type = node.data.type;
-  const profile = SIMULATION_PROFILES[type];
+  const profile = profileOf(type, node.data.implementation);
   const isDatabase = roleOf(type) === "database";
 
   const replicas = Math.floor(

@@ -1,3 +1,4 @@
+import { isImplementationOf } from "../../lib/architecture/componentLibrary.ts";
 import type {
   ArchitectureNodeData,
   ArchitectureNodeType,
@@ -194,10 +195,12 @@ export function writeComponentDragData(
   dataTransfer: DataTransfer,
   component: ArchitectureNodeData,
 ) {
-  // Only the node data travels with the drag, not the palette metadata.
+  // Only the node data travels with the drag, not the palette metadata. A technology
+  // dragged from the toolbox's technology list travels too, so the node lands already set.
   const payload: ArchitectureNodeData = {
     type: component.type,
     label: component.label,
+    ...(component.implementation ? { implementation: component.implementation } : {}),
   };
   dataTransfer.setData(COMPONENT_DRAG_MIME, JSON.stringify(payload));
   dataTransfer.effectAllowed = "copy";
@@ -217,7 +220,7 @@ export function readComponentDragData(
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return null;
-    const { type, label } = parsed as Record<string, unknown>;
+    const { type, label, implementation } = parsed as Record<string, unknown>;
     if (!isNodeType(type)) return null;
     if (
       typeof label !== "string" ||
@@ -226,7 +229,12 @@ export function readComponentDragData(
     ) {
       return null;
     }
-    return { type, label: label.trim() };
+    // An unknown technology, or one of another type, is dropped: the node gets the default.
+    return {
+      type,
+      label: label.trim(),
+      ...(isImplementationOf(type, implementation) ? { implementation } : {}),
+    };
   } catch {
     return null;
   }

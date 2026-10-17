@@ -4,13 +4,14 @@ import type { EdgeLike, GraphState, NodeLike } from "./nodeOperations.ts";
 import type { ArchitectureNodeType, NodeProperties } from "./types.ts";
 
 // Copy, paste and duplicate share one description of a piece of graph: the selected nodes
-// with their types, labels, properties and positions, and the edges that run between
+// with their types, labels, implementations, properties and positions, and the edges that run between
 // them. It holds no node or edge ids and no selection state, so pasting can only create
 // new items and can never touch the originals.
 
 export type ClipboardNode = {
   type: ArchitectureNodeType;
   label: string;
+  implementation?: string;
   properties?: NodeProperties;
   // Relative to `origin`.
   offset: { x: number; y: number };
@@ -68,6 +69,7 @@ export function copySelection<N extends NodeLike, E extends EdgeLike>(
     nodes: selected.map((node) => ({
       type: node.data.type,
       label: node.data.label,
+      ...(node.data.implementation ? { implementation: node.data.implementation } : {}),
       ...(node.data.properties ? { properties: clone(node.data.properties) } : {}),
       offset: { x: node.position.x - origin.x, y: node.position.y - origin.y },
       ...(node.type === undefined ? {} : { nodeType: node.type }),
@@ -105,6 +107,7 @@ export function pasteClipboard<N extends NodeLike, E extends EdgeLike>(
         data: {
           type: item.type,
           label: item.label,
+          ...(item.implementation ? { implementation: item.implementation } : {}),
           ...(item.properties ? { properties: clone(item.properties) } : {}),
         },
         selected: true,

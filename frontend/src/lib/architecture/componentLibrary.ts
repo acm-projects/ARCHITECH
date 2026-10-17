@@ -1,22 +1,25 @@
-// Seed data for the component library: every component type the canvas supports, and the
-// technologies (implementations) behind each one.
+// The component library: every component type the canvas supports, and the technologies
+// (implementations) behind each one. This file is the single source of truth for those numbers:
+//   - the metrics engine reads it (SIMULATION_PROFILES in evaluation/capabilities.ts is built
+//     from each type's default implementation, and a node's `data.implementation` selects
+//     another one), and
+//   - prisma/seed.ts copies it into the component_types / component_implementations tables.
 //
 // Component types mirror src/components/workspace/componentCatalog.ts (same names, labels,
-// families and descriptions), so saved graphs keep working: a node's data.type is a
-// ComponentType name.
+// families and descriptions): a node's data.type is a ComponentType name.
 //
-// Each type has exactly one default implementation, and its numbers are identical to that
-// type's SIMULATION_PROFILES entry in src/lib/architecture/evaluation/capabilities.ts, so
-// the metrics engine gives the same results whether it reads the code or the database.
-// The README's MVP components (frontend, backend, database, cache, queue, CDN, load
-// balancer, authentication) also get alternatives for technology swapping. All numbers are
-// educational estimates chosen to make designs compare sensibly, not benchmarks.
+// Each type has exactly one default implementation. The README's MVP components (frontend,
+// backend, database, cache, queue, CDN, load balancer, authentication) also get alternatives
+// for technology swapping. All numbers are educational estimates chosen to make designs
+// compare sensibly, not benchmarks.
+
+import type { ArchitectureNodeType } from "./types.ts";
 
 export type ComponentFamily = "general" | "frontend" | "backend" | "data" | "infrastructure";
 
 export type ComponentTypeSeed = {
   // The string the canvas stores in node.data.type; component_types.name.
-  name: string;
+  name: ArchitectureNodeType;
   label: string;
   family: ComponentFamily;
   description: string;
@@ -25,7 +28,7 @@ export type ComponentTypeSeed = {
 export type ComponentImplementationSeed = {
   id: string;
   // Name of the component type this implementation belongs to.
-  componentType: string;
+  componentType: ArchitectureNodeType;
   name: string;
   vendor: string | null;
   description: string;
@@ -294,3 +297,44 @@ export const COMPONENT_IMPLEMENTATIONS: readonly ComponentImplementationSeed[] =
     tradeoffs: ["Harder to customize than Auth0", "Ties user accounts to AWS"],
   },
 ];
+
+// ---- Lookups ----
+
+const IMPLEMENTATIONS_BY_ID: ReadonlyMap<string, ComponentImplementationSeed> = new Map(
+  COMPONENT_IMPLEMENTATIONS.map((implementation) => [implementation.id, implementation]),
+);
+
+// The implementation with this id, or undefined when there is none.
+export function implementationById(id: string): ComponentImplementationSeed | undefined {
+  return IMPLEMENTATIONS_BY_ID.get(id);
+}
+
+// Every implementation of a component type, default first.
+export function implementationsFor(type: ArchitectureNodeType): ComponentImplementationSeed[] {
+  return COMPONENT_IMPLEMENTATIONS.filter((implementation) => implementation.componentType === type);
+}
+
+// The type's default implementation. Every type has exactly one (checked by the tests).
+export function defaultImplementationFor(type: ArchitectureNodeType): ComponentImplementationSeed {
+  const found = COMPONENT_IMPLEMENTATIONS.find(
+    (implementation) => implementation.componentType === type && implementation.isDefault,
+  );
+  if (!found) throw new Error(`Component type "${type}" has no default implementation.`);
+  return found;
+}
+
+// The implementation a node actually uses: the chosen one when it exists and belongs to the
+// node's type, otherwise the type's default. Unknown or mismatched ids never break a design.
+export function resolveImplementation(
+  type: ArchitectureNodeType,
+  implementationId: string | undefined,
+): ComponentImplementationSeed {
+  const chosen = implementationId === undefined ? undefined : IMPLEMENTATIONS_BY_ID.get(implementationId);
+  return chosen && chosen.componentType === type ? chosen : defaultImplementationFor(type);
+}
+
+// Whether `implementationId` is a real implementation of `type` (used when loading saved data).
+export function isImplementationOf(type: ArchitectureNodeType, implementationId: unknown): implementationId is string {
+  if (typeof implementationId !== "string") return false;
+  return IMPLEMENTATIONS_BY_ID.get(implementationId)?.componentType === type;
+}

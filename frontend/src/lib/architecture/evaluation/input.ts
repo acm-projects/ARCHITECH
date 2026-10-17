@@ -31,7 +31,12 @@ export function usableGraph(graph: unknown): GraphInput {
 
 type SnapshotNode = {
   id: string;
-  data: { type: GraphNode["data"]["type"]; label?: string; properties?: NodeProperties };
+  data: {
+    type: GraphNode["data"]["type"];
+    label?: string;
+    implementation?: string;
+    properties?: NodeProperties;
+  };
 };
 
 // A copy of a live graph holding only what evaluation looks at, so it can be sent for
@@ -46,6 +51,7 @@ export function snapshotGraph(
       data: {
         type: node.data.type,
         ...(node.data.label === undefined ? {} : { label: node.data.label }),
+        ...(node.data.implementation === undefined ? {} : { implementation: node.data.implementation }),
         ...(node.data.properties
           ? { properties: JSON.parse(JSON.stringify(node.data.properties)) as NodeProperties }
           : {}),

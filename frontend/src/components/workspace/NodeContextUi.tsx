@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState } from "react";
+import { useContext, useState, type ReactNode } from "react";
 
 import { STALE_NOTICE, explainNodeInView } from "../../lib/architecture/archie/view";
 import type { PropertyView } from "../../lib/architecture/componentConfigView";
@@ -145,6 +145,8 @@ type ConfigureCardProps = {
   // Commits a finished edit; returns why it was refused, or null when it was accepted.
   onSetProperty: (key: ComponentPropertyKey, text: string) => { message: string } | null;
   onResetProperty: (key: ComponentPropertyKey) => void;
+  // The technology picker (TechnologyChooser), shown under the type.
+  technology?: ReactNode;
 };
 
 type PropertyFieldProps = {
@@ -235,6 +237,7 @@ export function ConfigureCard({
   properties,
   onSetProperty,
   onResetProperty,
+  technology,
 }: ConfigureCardProps) {
   const [draft, setDraft] = useState(name);
 
@@ -266,6 +269,8 @@ export function ConfigureCard({
         <p className="ax-card-label">Type</p>
         <p className="mt-1 text-[10px]">{COMPONENT_CATALOG[type].label}</p>
       </div>
+
+      {technology}
 
       {properties.length > 0 && (
         <div className="ax-card-section">

@@ -51,7 +51,8 @@ export function setComponentProperty<N extends NodeLike>(
   const validation = validatePropertyValue(node.data.type, key, value);
   if (!validation.ok) return validation;
 
-  const definition = getPropertyDefinition(node.data.type, key);
+  // The default of the technology the component uses (its chosen implementation, if any).
+  const definition = getPropertyDefinition(node.data.type, key, node.data.implementation);
   const update =
     validation.value === definition?.defaultValue
       ? removeNodeProperty(nodes, nodeId, key)

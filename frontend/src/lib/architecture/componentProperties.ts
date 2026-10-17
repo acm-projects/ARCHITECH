@@ -1,9 +1,10 @@
 import { roleOf } from "./analysis.ts";
+import { resolveImplementation } from "./componentLibrary.ts";
 import {
   CAPACITY_MAX,
   DATABASE_REPLICAS_MAX,
   REPLICAS_MAX,
-  SIMULATION_PROFILES,
+  profileOf,
   configureNode,
 } from "./evaluation/capabilities.ts";
 import type { NodeProperties, ArchitectureNodeType } from "./types.ts";
@@ -43,8 +44,11 @@ const DEFINITION_ORDER: ComponentPropertyKey[] = ["replicas", "capacity", "cache
 // Components whose capacity is not worth configuring: name lookups are never the limit.
 const NO_CAPACITY_CONTROL = new Set<ArchitectureNodeType>(["dns"]);
 
-function buildDefinitions(type: ArchitectureNodeType): ComponentPropertyDefinition[] {
-  const profile = SIMULATION_PROFILES[type];
+function buildDefinitions(
+  type: ArchitectureNodeType,
+  implementation: string | undefined,
+): ComponentPropertyDefinition[] {
+  const profile = profileOf(type, implementation);
   const role = roleOf(type);
   if (role === "entry") return [];
 
@@ -108,17 +112,22 @@ function buildDefinitions(type: ArchitectureNodeType): ComponentPropertyDefiniti
   );
 }
 
-const cache = new Map<ArchitectureNodeType, readonly ComponentPropertyDefinition[]>();
+const cache = new Map<string, readonly ComponentPropertyDefinition[]>();
 
 // The properties that can be configured on a component type, in display order. Empty for
-// components with nothing to configure (clients). The same array is returned each time.
+// components with nothing to configure (clients). Defaults (capacity, hit rate) come from the
+// chosen implementation, or the type's default one. The same array is returned each time.
 export function getPropertyDefinitions(
   type: ArchitectureNodeType,
+  implementation?: string,
 ): readonly ComponentPropertyDefinition[] {
-  let definitions = cache.get(type);
+  // Unknown or mismatched ids behave exactly like the default, so they share its entry.
+  const resolved = resolveImplementation(type, implementation);
+  const cacheKey = `${type}:${resolved.id}`;
+  let definitions = cache.get(cacheKey);
   if (!definitions) {
-    definitions = Object.freeze(buildDefinitions(type));
-    cache.set(type, definitions);
+    definitions = Object.freeze(buildDefinitions(type, resolved.isDefault ? undefined : resolved.id));
+    cache.set(cacheKey, definitions);
   }
   return definitions;
 }
@@ -126,8 +135,9 @@ export function getPropertyDefinitions(
 export function getPropertyDefinition(
   type: ArchitectureNodeType,
   key: string,
+  implementation?: string,
 ): ComponentPropertyDefinition | undefined {
-  return getPropertyDefinitions(type).find((definition) => definition.key === key);
+  return getPropertyDefinitions(type, implementation).find((definition) => definition.key === key);
 }
 
 // ---- Effective values ----
@@ -138,10 +148,18 @@ export function getPropertyDefinition(
 export function getEffectiveProperties(
   type: ArchitectureNodeType,
   properties: NodeProperties | undefined,
+  implementation?: string,
 ): Partial<Record<ComponentPropertyKey, number>> {
-  const config = configureNode({ id: "-", data: { type, ...(properties ? { properties } : {}) } });
+  const config = configureNode({
+    id: "-",
+    data: {
+      type,
+      ...(implementation === undefined ? {} : { implementation }),
+      ...(properties ? { properties } : {}),
+    },
+  });
   const values: Partial<Record<ComponentPropertyKey, number>> = {};
-  for (const definition of getPropertyDefinitions(type)) {
+  for (const definition of getPropertyDefinitions(type, implementation)) {
     if (definition.key === "replicas") {
       values.replicas = roleOf(type) === "database" ? config.instances - 1 : config.instances;
     } else if (definition.key === "capacity") {
@@ -157,8 +175,9 @@ export function getEffectiveProperty(
   type: ArchitectureNodeType,
   properties: NodeProperties | undefined,
   key: ComponentPropertyKey,
+  implementation?: string,
 ): number | undefined {
-  return getEffectiveProperties(type, properties)[key];
+  return getEffectiveProperties(type, properties, implementation)[key];
 }
 
 // Whether the user has stored a value for this property, as opposed to using the default.

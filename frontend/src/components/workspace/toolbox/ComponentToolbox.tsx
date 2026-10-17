@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 
-import { Layers, MoreHorizontal, X } from "lucide-react";
+import { ChevronDown, Layers, MoreHorizontal, X } from "lucide-react";
 
 import CanvasPanel from "./CanvasPanel";
 import ComponentGlyph from "../ComponentGlyph";
@@ -15,11 +15,24 @@ import {
   type ComponentDefinition,
 } from "../componentCatalog";
 import { setComponentDragImage } from "./dragPreview";
+import { TechnologyDragList } from "../TechnologyPicker";
 
 // One draggable row, used by both category panels and the full library. Dragging onto the
-// canvas is the only way to add a component: rows have no click or keyboard action.
-function ComponentRow({ component }: { component: ComponentDefinition }) {
+// canvas is the only way to add a component: rows have no click or keyboard action. The
+// chevron opens the component's technologies (with numbers sized for the design's traffic);
+// dragging one of those adds the component already set to that technology.
+function ComponentRow({
+  component,
+  open,
+  onToggle,
+}: {
+  component: ComponentDefinition;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const listId = `technologies-${component.type}`;
   return (
+    <>
     <div
       draggable
       aria-label={component.label}
@@ -37,8 +50,20 @@ function ComponentRow({ component }: { component: ComponentDefinition }) {
       className="ax-item"
     >
       <ComponentGlyph type={component.type} className="ax-item-glyph" />
-      <span className="ax-component-name min-w-0 truncate">{component.label}</span>
+      <span className="ax-component-name min-w-0 flex-1 truncate">{component.label}</span>
+      <button
+        type="button"
+        className="ax-icon-btn ax-tech-toggle shrink-0"
+        aria-label={`${open ? "Hide" : "Show"} ${component.label} technologies`}
+        aria-expanded={open}
+        aria-controls={open ? listId : undefined}
+        onClick={onToggle}
+      >
+        <ChevronDown size={12} aria-hidden="true" data-open={open || undefined} />
+      </button>
     </div>
+    {open && <TechnologyDragList component={component} id={listId} />}
+    </>
   );
 }
 
@@ -50,6 +75,8 @@ export default function ComponentToolbox() {
   const [category, setCategory] = useState<ComponentFamily | "all" | null>(null);
   const [query, setQuery] = useState("");
   const [flyoutOffset, setFlyoutOffset] = useState(6);
+  // The one component whose technologies are showing, if any.
+  const [technologiesOf, setTechnologiesOf] = useState<ComponentDefinition["type"] | null>(null);
   const groups = componentGroups(query).filter((group) => category === "all" || group.family === category);
   const title = CATEGORIES.find((group) => group.family === category)?.label ?? "Components";
   const alignFlyout = (button: HTMLButtonElement) => {
@@ -121,7 +148,13 @@ export default function ComponentToolbox() {
               <ul>
                 {group.components.map((component) => (
                   <li key={component.type}>
-                    <ComponentRow component={component} />
+                    <ComponentRow
+                      component={component}
+                      open={technologiesOf === component.type}
+                      onToggle={() =>
+                        setTechnologiesOf((shown) => (shown === component.type ? null : component.type))
+                      }
+                    />
                   </li>
                 ))}
               </ul>

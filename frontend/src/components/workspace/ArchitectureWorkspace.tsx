@@ -33,6 +33,7 @@ import {
   readComponentDragData,
 } from "./componentCatalog";
 import { ArchieContext } from "./ArchieContext";
+import { DesignTrafficContext } from "./DesignTrafficContext";
 import RunResultsPanel from "./RunResultsPanel";
 import StressTestPanel from "./StressTestPanel";
 import { useChallengeMode } from "./useChallengeMode";
@@ -397,6 +398,7 @@ function Workspace({ project }: { project: Project }) {
 
   return (
     <ArchieContext.Provider value={archie}>
+      <DesignTrafficContext.Provider value={activeRuns.traffic}>
       <div className="ax-workspace flex h-screen flex-col overflow-hidden">
         {/* The header owns project-level controls like title, mode, reset, Run Design,
             and save status. It does not own the graph itself. */}
@@ -521,6 +523,7 @@ function Workspace({ project }: { project: Project }) {
           </main>
         </div>
       </div>
+      </DesignTrafficContext.Provider>
     </ArchieContext.Provider>
   );
 }

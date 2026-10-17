@@ -1012,3 +1012,80 @@
   align-items: center;
   gap: 14px;
 }
+
+/* ---- Technology picker (TechnologyPicker.tsx): toolbox list and Configure card ---- */
+
+.ax-workspace .ax-tech-toggle {
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  color: var(--ax-muted);
+}
+.ax-workspace .ax-tech-toggle svg { transition: transform var(--ax-fast) var(--ax-ease); }
+.ax-workspace .ax-tech-toggle svg[data-open] { transform: rotate(180deg); }
+.ax-workspace .ax-tech-list {
+  display: grid;
+  gap: 2px;
+  margin: 2px 0 6px;
+}
+.ax-workspace .ax-component-menu .ax-tech-list {
+  margin-left: 12px;
+  padding-left: 8px;
+  border-left: 1px solid var(--ax-line);
+}
+.ax-workspace .ax-tech-list ul { display: grid; gap: 2px; }
+.ax-workspace .ax-tech-basis {
+  margin-top: 2px;
+  padding: 2px 0 4px;
+  font-size: var(--ax-t-micro);
+  line-height: 1.4;
+  color: var(--ax-subtle);
+}
+.ax-workspace .ax-tech-option {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  padding: 5px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--ax-radius-xs);
+  background: transparent;
+  text-align: left;
+  color: var(--ax-ink-soft);
+  transition:
+    background-color var(--ax-fast) var(--ax-ease),
+    border-color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-tech-option:hover { background: rgba(17, 17, 17, 0.035); color: var(--ax-ink); }
+.ax-workspace .ax-tech-option:focus-visible { outline: 1px solid var(--ax-accent); outline-offset: -1px; }
+.ax-workspace .ax-tech-option[aria-checked="true"] {
+  border-color: var(--ax-line-strong);
+  background: rgba(17, 17, 17, 0.035);
+  color: var(--ax-ink);
+}
+.ax-workspace .ax-tech-drag { cursor: grab; user-select: none; }
+.ax-workspace .ax-tech-drag:active { cursor: grabbing; }
+.ax-workspace .ax-tech-head { display: flex; align-items: center; gap: 6px; }
+.ax-workspace .ax-tech-head .ax-item-glyph { width: 10px; height: 10px; color: var(--ax-family); opacity: 0.75; }
+.ax-workspace .ax-tech-name { font-size: var(--ax-t-xs); font-weight: 500; }
+.ax-workspace .ax-tech-tag {
+  padding: 0 4px;
+  border: 1px solid var(--ax-line);
+  border-radius: 999px;
+  font-size: var(--ax-t-micro);
+  color: var(--ax-muted);
+}
+.ax-workspace .ax-tech-meta {
+  display: block;
+  font-size: var(--ax-t-micro);
+  line-height: 1.45;
+  color: var(--ax-muted);
+}
+.ax-workspace .ax-tech-sized { color: var(--ax-ink-soft); }
+.ax-workspace .ax-tech-sized[data-short] { color: var(--ax-danger); }
+.ax-workspace .ax-tech-notes {
+  display: grid;
+  margin-top: 3px;
+  font-size: var(--ax-t-micro);
+  line-height: 1.45;
+  color: var(--ax-muted);
+}
