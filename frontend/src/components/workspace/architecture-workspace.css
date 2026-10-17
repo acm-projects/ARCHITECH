@@ -478,8 +478,11 @@
 /* ---- React Flow: canvas, controls, attribution ---- */
 
 .ax-workspace .react-flow {
-  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.15) 1px, transparent 1px);
-  background-size: 32px 32px;
+  /* Uniform graph-paper squares. */
+  background-image:
+    linear-gradient(to right, rgba(17, 17, 17, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17, 17, 17, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
   --xy-background-color: var(--ax-canvas);
   --xy-edge-stroke: #b4b4af;
   --xy-edge-stroke-selected: var(--ax-accent);
@@ -870,36 +873,6 @@
   height: auto;
   left: -39%;
   top: -5%;
-}
-
-.ax-workspace .ax-learn-speech {
-  position: relative;
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: 3px;
-  background: var(--ax-canvas);
-}
-
-.ax-workspace .ax-learn-speech::before {
-  content: "";
-  position: absolute;
-  right: 15px;
-  top: -5px;
-  width: 8px;
-  height: 8px;
-  border-left: 1px solid var(--ax-line-strong);
-  border-bottom: 1px solid var(--ax-line-strong);
-  background: var(--ax-canvas);
-  transform: rotate(135deg);
-}
-
-.ax-workspace .ax-learn-speech .ax-card-body {
-  margin-top: 0;
-  font-size: 15px;
-  line-height: 1.65;
-  color: var(--ax-ink-soft);
-  overflow-wrap: anywhere;
 }
 
 .ax-workspace .ax-learn-instruction {

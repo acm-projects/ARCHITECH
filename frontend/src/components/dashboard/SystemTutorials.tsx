@@ -1,3 +1,7 @@
+import DailyChallenge from "./DailyChallenge";
+
+import { urlShortenerChallenge } from "../challenge/challenges";
+
 type NodeKind = "box" | "circle";
 type TopologyNode = { x: number; y: number; kind: NodeKind };
 type TopologyEdge = {
@@ -140,8 +144,8 @@ function SystemDiagram({ nodes, edges }: Pick<Tutorial, "nodes" | "edges">) {
 
 export default function SystemTutorials() {
   return (
-    <section className="shrink-0 bg-[#F2F2EF] px-8 pb-[clamp(0.75rem,2.5vh,1.75rem)] pt-[clamp(0.75rem,2.5vh,1.5rem)] lg:px-14">
-      <div className="mb-[clamp(0.5rem,1.5vh,1rem)] flex items-baseline justify-between">
+    <section className="flex min-h-0 flex-col border-t border-neutral-300 bg-[#F2F2EF] px-8 py-6 lg:flex-1 lg:basis-0 lg:overflow-y-auto lg:px-14 lg:py-8">
+      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
         <h2 data-reveal="fade" className="text-lg font-light tracking-[-0.02em]">
           System breakdowns
         </h2>
@@ -162,7 +166,7 @@ export default function SystemTutorials() {
         </button>
       </div>
 
-      <ul className="grid grid-cols-1 border-y border-neutral-300 lg:grid-cols-3 lg:divide-x lg:divide-neutral-300">
+      <ul className="grid shrink-0 grid-cols-1 border-y border-neutral-300 lg:grid-cols-3 lg:divide-x lg:divide-neutral-300">
         {TUTORIALS.map((tutorial, index) => (
           <li
             key={tutorial.id}
@@ -194,6 +198,12 @@ export default function SystemTutorials() {
           </li>
         ))}
       </ul>
+      <DailyChallenge
+        compact
+        title={urlShortenerChallenge.title}
+        difficulty={urlShortenerChallenge.difficulty}
+        requirement={urlShortenerChallenge.summary[0]}
+      />
     </section>
   );
 }

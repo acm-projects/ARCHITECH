@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import ProfileMenu from "@/components/auth/ProfileMenu";
-import DailyChallenge from "@/components/dashboard/DailyChallenge";
 import { Logo } from "@/components/ui";
 import DashboardMotion from "@/components/dashboard/DashboardMotion";
 import RecentProjects from "@/components/dashboard/RecentProjects";
@@ -22,11 +21,6 @@ export default async function DashboardPage() {
       </header>
 
       <DashboardMotion className="flex min-h-0 flex-1 flex-col">
-        <DailyChallenge
-          title="Design a URL Shortener"
-          difficulty="Intermediate"
-          requirement="100M redirects / day"
-        />
         <RecentProjects />
         <SystemTutorials />
       </DashboardMotion>
