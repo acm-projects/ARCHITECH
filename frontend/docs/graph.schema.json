@@ -13,7 +13,7 @@
   },
   "$defs": {
     "componentTypeId": {
-      "description": "Same values as ArchitectureNodeType (src/lib/architecture/types.ts) and component_types.id.",
+      "description": "Same values as ArchitectureNodeType (src/lib/architecture/types.ts) and component_types.name.",
       "enum": [
         "client", "web-app", "mobile-app", "cdn", "dns", "server", "api-gateway",
         "load-balancer", "database", "cache", "queue", "worker", "object-storage",

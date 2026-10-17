@@ -70,9 +70,9 @@ One component on the canvas.
 
 | Field | Type | Required | Rules |
 |---|---|---|---|
-| `type` | `ComponentTypeId` | yes | One of the 15 ids in the table below. Same value as `component_types.id` in the database. |
+| `type` | `ComponentTypeId` | yes | One of the 15 ids in the table below. Same value as `component_types.name` in the database. |
 | `label` | string | yes | The user's name for it. 1–60 characters and not just whitespace. Doesn't affect metrics. |
-| `implementation` | string | no | New. The chosen technology, as a `component_implementations.id` (e.g. `"postgresql"`). Its `component_type_id` has to match `data.type`. If it's missing, the type's default implementation (`is_default = true`) is used. |
+| `implementation` | string | no | New. The chosen technology, as a `component_implementations.id` (e.g. `"postgresql"`). Its component type's `name` has to match `data.type`. If it's missing, the type's default implementation (`is_default = true`) is used. |
 | `properties` | object | no | The user's config overrides, described under Node properties. Leave it out rather than writing `{}` when nothing is set. |
 
 ### Component types
@@ -256,7 +256,7 @@ replicas, and a Kafka queue feeding workers.
 
 - **Saving (frontend → API):** `{ schemaVersion: 1, nodes: sanitizeNodes(nodes), edges: sanitizeEdges(edges, cleanNodes) }`. The sanitizers already strip runtime fields like `selected` and `measured`.
 - **Loading (API → frontend):** hand `nodes` and `edges` to `<ReactFlow>` directly, but run them through the same sanitizers first. Don't trust what comes back from the server either.
-- **Database:** put the whole document in one `jsonb` column (e.g. `projects.graph`) instead of a row per node. We always load and save the full graph, so one read and one write is all we need.
+- **Database:** stored whole in the `projects.graph` `jsonb` column (one row per project) instead of a row per node. We always load and save the full graph, so one read and one write is all we need. The projects API (`/api/projects`) checks every save against section 5.
 - **Metrics engine:** only looks at `nodes[].id`, `nodes[].data.type`, `nodes[].data.properties` (and `data.implementation` eventually), plus `edges[].source` / `edges[].target`. Labels and positions never matter.
 - **AI review:** strip positions before sending the graph, and swap in each node's implementation name from the database so the prompt says "PostgreSQL" and not an id.
 

@@ -1,0 +1,103 @@
+import { getServerSession } from "next-auth/next";
+import { NextResponse } from "next/server";
+
+import { authOptions } from "../../auth/[...nextauth]/route";
+import { prisma } from "@/lib/prisma";
+import { isValidProjectId, validateProjectInput } from "@/lib/projects/projectPayload";
+import {
+  PROJECT_SELECT,
+  checkImplementations,
+  inputToData,
+  rowToPayload,
+} from "@/lib/projects/projectRecords";
+
+type Context = { params: Promise<{ id: string }> };
+
+const NOT_FOUND = { error: "Project not found." };
+
+async function currentUserId(): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.id ?? null;
+}
+
+const unauthenticated = () =>
+  NextResponse.json({ error: "Authentication required." }, { status: 401 });
+
+// GET /api/projects/[id]: one project. Another user's project is reported as not found.
+export async function GET(_request: Request, { params }: Context) {
+  const userId = await currentUserId();
+  if (!userId) return unauthenticated();
+  const { id } = await params;
+  if (!isValidProjectId(id)) return NextResponse.json(NOT_FOUND, { status: 404 });
+
+  try {
+    const row = await prisma.project.findFirst({ where: { id, userId }, select: PROJECT_SELECT });
+    if (!row) return NextResponse.json(NOT_FOUND, { status: 404 });
+    return NextResponse.json(rowToPayload(row), { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("Failed to load project.", error);
+    return NextResponse.json({ error: "Unable to load the project." }, { status: 500 });
+  }
+}
+
+// PUT /api/projects/[id]: create the project with this id, or replace it. The id comes from
+// the browser (a UUID), so creating offline and retrying are both safe: sending the same
+// project twice stores it once.
+export async function PUT(request: Request, { params }: Context) {
+  const userId = await currentUserId();
+  if (!userId) return unauthenticated();
+  const { id } = await params;
+  if (!isValidProjectId(id)) {
+    return NextResponse.json({ error: "Invalid project id." }, { status: 400 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+  const validation = validateProjectInput(body);
+  if (!validation.ok) return NextResponse.json({ error: validation.error }, { status: 400 });
+  const input = validation.value;
+  if (typeof (body as { id?: unknown }).id === "string" && (body as { id: string }).id !== id) {
+    return NextResponse.json({ error: "The id in the body does not match the URL." }, { status: 400 });
+  }
+
+  try {
+    const implementationError = await checkImplementations(input.graph);
+    if (implementationError) return NextResponse.json({ error: implementationError }, { status: 400 });
+
+    const existing = await prisma.project.findUnique({ where: { id }, select: { userId: true } });
+    // Ids are random UUIDs, so this only happens when someone guesses another user's id.
+    if (existing && existing.userId !== userId) {
+      return NextResponse.json(NOT_FOUND, { status: 404 });
+    }
+
+    const data = inputToData(input);
+    const row = existing
+      ? await prisma.project.update({ where: { id }, data, select: PROJECT_SELECT })
+      : await prisma.project.create({ data: { id, userId, ...data }, select: PROJECT_SELECT });
+    return NextResponse.json(rowToPayload(row), { status: existing ? 200 : 201 });
+  } catch (error) {
+    console.error("Failed to save project.", error);
+    return NextResponse.json({ error: "Unable to save the project." }, { status: 500 });
+  }
+}
+
+// DELETE /api/projects/[id]: delete one of the user's projects.
+export async function DELETE(_request: Request, { params }: Context) {
+  const userId = await currentUserId();
+  if (!userId) return unauthenticated();
+  const { id } = await params;
+  if (!isValidProjectId(id)) return NextResponse.json(NOT_FOUND, { status: 404 });
+
+  try {
+    const { count } = await prisma.project.deleteMany({ where: { id, userId } });
+    if (count === 0) return NextResponse.json(NOT_FOUND, { status: 404 });
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    console.error("Failed to delete project.", error);
+    return NextResponse.json({ error: "Unable to delete the project." }, { status: 500 });
+  }
+}

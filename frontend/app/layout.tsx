@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
 import AuthSessionProvider from "@/components/auth/AuthSessionProvider";
+import ProjectSync from "@/components/projects/ProjectSync";
 import "../src/index.css";
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en">
       <body>
         <AuthSessionProvider>
+          <ProjectSync />
           <div id="root">{children}</div>
         </AuthSessionProvider>
       </body>
