@@ -1,9 +1,15 @@
+"use client";
+
+import Image from "next/image";
+
+import type { ChallengeDifficulty } from "../challenge/challenges";
 import StartChallengeButton from "./StartChallengeButton";
 
 type DailyChallengeProps = {
   title: string;
-  difficulty: "Easy" | "Intermediate" | "Hard";
+  difficulty: ChallengeDifficulty;
   requirement: string;
+  compact?: boolean;
 };
 
 // Request path drawn in the hero: Client -> Load Balancer -> API Servers -> Cache / DB.
@@ -105,14 +111,30 @@ export default function DailyChallenge({
   title,
   difficulty,
   requirement,
+  compact = false,
 }: DailyChallengeProps) {
+  if (compact) {
+    return (
+      <aside className="ax-daily-challenge" aria-label="Daily challenge">
+        <div className="ax-learn-speech">
+          <p className="text-xs text-neutral-500">Daily challenge</p>
+          <p className="ax-card-body"><span className="sr-only">Archie: </span>{title}</p>
+          <div className="ax-daily-challenge-action">
+            <StartChallengeButton title={title} />
+          </div>
+        </div>
+        <Image src="/archie.svg" alt="" width={96} height={74} />
+      </aside>
+    );
+  }
   // Two lines of display type; each line is revealed from behind a mask.
   const words = title.split(" ");
   const split = Math.ceil(words.length / 2);
   const lines = [words.slice(0, split).join(" "), words.slice(split).join(" ")];
 
   return (
-    <section className="relative min-h-0 flex-1 overflow-hidden bg-[#0A0A0A] text-white max-lg:min-h-[75dvh]">
+    // Preserve the original hero presentation for reuse.
+    <section style={{ display: "none" }} className="relative min-h-0 flex-1 overflow-hidden bg-[#0A0A0A] text-white max-lg:min-h-[75dvh]">
       <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[50%] items-center md:flex">
         <HeroDiagram />
       </div>
