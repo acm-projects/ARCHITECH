@@ -2,12 +2,12 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ARCHITECH API",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "contact": {
       "name": "ARCHITECH team (ACM Projects, UT Dallas)",
       "url": "https://github.com/acm-projects/ARCHITECH"
     },
-    "description": "API for the ARCHITECH Next.js app. All routes live under `frontend/app/api`.\n\n## Data storage: PostgreSQL\nAll user data is stored in **PostgreSQL** through Prisma (`@auth/prisma-adapter`, schema in `frontend/prisma/schema.prisma`):\n\n| Table | Written by | Holds |\n|---|---|---|\n| `users` | `POST /api/auth/register`, Google/GitHub first sign-in, `PATCH /api/users/me` | name, email, bcrypt password hash, experience level, avatar |\n| `accounts` | Google/GitHub sign-in (Prisma adapter) | linked provider id and OAuth access/refresh tokens |\n\nSign-in itself is stateless (`session.strategy: \"jwt\"`, required for email/password logins). After sign-in the\nbrowser holds only a signed login token (the `next-auth.session-token` cookie) containing the user's id and\nexperience level, never the user record itself. Every protected route takes the id from that token and reads or\nupdates the user in PostgreSQL. The experience level in the token is re-read from PostgreSQL at sign-in and\nwhenever the frontend calls `update()`. (Because of the JWT strategy, the `sessions` table exists but is not used.)\n\n## Routes\n- **Custom:** `POST /api/auth/register`, `PATCH /api/users/me`, `GET /api/github/repos`\n- **NextAuth v4** (`app/api/auth/[...nextauth]/route.ts`): everything else under `/api/auth/*`, with\n  Credentials (email + password), Google and GitHub providers. The sign-in page is `/`.\n\n## Calling protected routes\nSign in at http://localhost:3000 in the same browser first. Pages under `/dashboard/*` and `/workspace/*`\nredirect to `/` without a valid login token (`proxy.ts`).\n"
+    "description": "API for the ARCHITECH Next.js app. All routes live under `frontend/app/api`.\n\n## Data storage: PostgreSQL\nAll user data is stored in **PostgreSQL** through Prisma (`@auth/prisma-adapter`, schema in `frontend/prisma/schema.prisma`):\n\n| Table | Written by | Holds |\n|---|---|---|\n| `users` | `POST /api/auth/register`, Google/GitHub first sign-in, `PATCH /api/users/me` | name, email, bcrypt password hash, experience level, avatar |\n| `accounts` | Google/GitHub sign-in (Prisma adapter) | linked provider id and OAuth access/refresh tokens |\n| `projects` | `PUT /api/projects/{id}` (the canvas syncs automatically) | saved diagrams: title, mode, and the graph as `jsonb` (docs/graph-spec.md) |\n| `component_types`, `component_implementations` | `npx prisma db seed` | the component library and the technologies behind each component |\n\nSign-in itself is stateless (`session.strategy: \"jwt\"`, required for email/password logins). After sign-in the\nbrowser holds only a signed login token (the `next-auth.session-token` cookie) containing the user's id and\nexperience level, never the user record itself. Every protected route takes the id from that token and reads or\nupdates the user in PostgreSQL. The experience level in the token is re-read from PostgreSQL at sign-in and\nwhenever the frontend calls `update()`. (Because of the JWT strategy, the `sessions` table exists but is not used.)\n\n## Routes\n- **Custom:** `POST /api/auth/register`, `PATCH /api/users/me`, `GET /api/github/repos`, `GET /api/projects`, `GET`/`PUT`/`DELETE /api/projects/{id}`\n- **NextAuth v4** (`app/api/auth/[...nextauth]/route.ts`): everything else under `/api/auth/*`, with\n  Credentials (email + password), Google and GitHub providers. The sign-in page is `/`.\n\n## Calling protected routes\nSign in at http://localhost:3000 in the same browser first. Pages under `/dashboard/*` and `/workspace/*`\nredirect to `/` without a valid login token (`proxy.ts`).\n"
   },
   "servers": [
     {
@@ -27,6 +27,10 @@
     {
       "name": "GitHub",
       "description": "Data from the user's linked GitHub account"
+    },
+    {
+      "name": "Projects",
+      "description": "Saved architectures (diagrams) of the signed-in user"
     },
     {
       "name": "NextAuth",
@@ -526,6 +530,287 @@
           }
         }
       }
+    },
+    "/api/projects": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "listProjects",
+        "summary": "List the signed-in user's projects",
+        "description": "Every project of the signed-in user, most recently changed first. Stored in the PostgreSQL `projects` table, one row per project with the diagram in a `jsonb` column.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The user's projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "projects": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Project"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unable to load your projects."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Project id, generated by the browser (UUID). Letters, digits, '-' and '_', at most 100 characters.",
+          "schema": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,100}$"
+          },
+          "example": "ce8672d2-cc09-4e77-a3f3-767458b9c36a"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "getProject",
+        "summary": "Get one project",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "description": "No project with this id belongs to the user (another user's project is also reported as not found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Project not found."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unable to load the project."
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "saveProject",
+        "summary": "Create or replace a project",
+        "description": "Creates the project with this id, or replaces it if the user already has it. The browser generates the id, so creating offline and retrying a failed save are both safe: sending the same project twice stores it once.\n\nThe diagram is validated against docs/graph-spec.md (section 5): known component types, labels of 1-60 characters, unique node and edge ids, edges between existing nodes, no self-connections or repeated connections, settings within each component's range, and `data.implementation` must exist and belong to the node's type. At most 500 nodes and 2,000 edges.\n\nThe canvas calls this automatically: every change is synced in the background.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Replaced an existing project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created a new project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id or body. The message names the first problem and where it is.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "badType": {
+                    "value": {
+                      "error": "graph.nodes[0].data.type \"firewall\" is not a known component type."
+                    }
+                  },
+                  "dangling": {
+                    "value": {
+                      "error": "graph.edges[0].target must be the id of a node in this graph."
+                    }
+                  },
+                  "selfLoop": {
+                    "value": {
+                      "error": "graph.edges[0] connects a node to itself."
+                    }
+                  },
+                  "range": {
+                    "value": {
+                      "error": "graph.nodes[1].data.properties.replicas: Replicas must be at most 1000."
+                    }
+                  },
+                  "implementation": {
+                    "value": {
+                      "error": "Implementation \"redis\" is a cache, not a database."
+                    }
+                  },
+                  "title": {
+                    "value": {
+                      "error": "title must be 1-80 characters."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "description": "The id belongs to another user's project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Project not found."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unable to save the project."
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "deleteProject",
+        "summary": "Delete a project",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "description": "No project with this id belongs to the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Project not found."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Database error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Unable to delete the project."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -748,6 +1033,290 @@
                 "format": "uri"
               }
             }
+          }
+        }
+      },
+      "GraphNode": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "position",
+          "data"
+        ],
+        "additionalProperties": false,
+        "description": "One component on the canvas (React Flow node). See docs/graph-spec.md section 2.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "example": "database-1"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "architecture"
+            ]
+          },
+          "position": {
+            "type": "object",
+            "required": [
+              "x",
+              "y"
+            ],
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "type",
+              "label"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Component type name (component_types.name)",
+                "enum": [
+                  "client",
+                  "web-app",
+                  "mobile-app",
+                  "cdn",
+                  "dns",
+                  "server",
+                  "api-gateway",
+                  "load-balancer",
+                  "database",
+                  "cache",
+                  "queue",
+                  "worker",
+                  "object-storage",
+                  "search",
+                  "auth"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60,
+                "example": "Orders DB"
+              },
+              "implementation": {
+                "type": "string",
+                "description": "component_implementations.id of the chosen technology; omitted means the type's default",
+                "example": "postgresql"
+              },
+              "properties": {
+                "type": "object",
+                "description": "User overrides, e.g. replicas, capacity, cacheHitRate. Ranges per component type in docs/graph-spec.md section 4.",
+                "additionalProperties": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "example": {
+                  "replicas": 2
+                }
+              }
+            }
+          }
+        }
+      },
+      "GraphEdge": {
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "target"
+        ],
+        "additionalProperties": false,
+        "description": "A connection, pointing in the direction requests flow.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "server-1->database-1"
+          },
+          "source": {
+            "type": "string",
+            "example": "server-1"
+          },
+          "target": {
+            "type": "string",
+            "example": "database-1"
+          },
+          "sourceHandle": {
+            "type": "string"
+          },
+          "targetHandle": {
+            "type": "string"
+          }
+        }
+      },
+      "GraphDocument": {
+        "type": "object",
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "additionalProperties": false,
+        "description": "A saved diagram, as defined in docs/graph-spec.md.",
+        "properties": {
+          "schemaVersion": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "nodes": {
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            }
+          },
+          "edges": {
+            "type": "array",
+            "maxItems": 2000,
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            }
+          }
+        }
+      },
+      "ProjectInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "mode",
+          "graph",
+          "createdAt",
+          "updatedAt",
+          "lastOpenedAt"
+        ],
+        "additionalProperties": false,
+        "description": "Body of PUT /api/projects/{id}. An `id` field may be included but must match the URL.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "Shop"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "learn",
+              "challenge"
+            ]
+          },
+          "learnSkipped": {
+            "type": "boolean",
+            "default": false
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "blank",
+              "duplicate",
+              "template",
+              "shared"
+            ]
+          },
+          "graph": {
+            "$ref": "#/components/schemas/GraphDocument"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the title or diagram last changed"
+          },
+          "lastOpenedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "mode",
+          "learnSkipped",
+          "graph",
+          "createdAt",
+          "updatedAt",
+          "lastOpenedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ce8672d2-cc09-4e77-a3f3-767458b9c36a"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "Shop"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "learn",
+              "challenge"
+            ]
+          },
+          "learnSkipped": {
+            "type": "boolean",
+            "default": false
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "blank",
+              "duplicate",
+              "template",
+              "shared"
+            ]
+          },
+          "graph": {
+            "$ref": "#/components/schemas/GraphDocument"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the title or diagram last changed"
+          },
+          "lastOpenedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

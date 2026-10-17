@@ -2,8 +2,9 @@
 //
 //   npx prisma db seed
 //
-// Safe to run any number of times: rows are upserted by id, so re-running updates
-// existing rows to match prisma/seed/componentLibrary.ts and never creates duplicates.
+// Safe to run any number of times: types are upserted by name and implementations by id, so
+// re-running updates existing rows to match prisma/seed/componentLibrary.ts and never
+// creates duplicates.
 // Rows that are no longer in the seed file are left alone (delete them by hand if needed).
 import "dotenv/config";
 
@@ -26,10 +27,10 @@ function validate(
   implementations: readonly ComponentImplementationSeed[],
 ): void {
   const problems: string[] = [];
-  const typeIds = new Set<string>();
+  const typeKeys = new Set<string>();
   for (const type of types) {
-    if (typeIds.has(type.id)) problems.push(`Duplicate component type id "${type.id}".`);
-    typeIds.add(type.id);
+    if (typeKeys.has(type.name)) problems.push(`Duplicate component type name "${type.name}".`);
+    typeKeys.add(type.name);
   }
 
   const implementationIds = new Set<string>();
@@ -39,8 +40,8 @@ function validate(
       problems.push(`Duplicate implementation id "${implementation.id}".`);
     }
     implementationIds.add(implementation.id);
-    if (!typeIds.has(implementation.componentTypeId)) {
-      problems.push(`"${implementation.id}" refers to unknown type "${implementation.componentTypeId}".`);
+    if (!typeKeys.has(implementation.componentType)) {
+      problems.push(`"${implementation.id}" refers to unknown type "${implementation.componentType}".`);
     }
     if (implementation.availability <= 0 || implementation.availability > 1) {
       problems.push(`"${implementation.id}" availability must be in (0, 1].`);
@@ -49,15 +50,15 @@ function validate(
       problems.push(`"${implementation.id}" hitRate must be in [0, 1].`);
     }
     if (implementation.isDefault) {
-      const count = defaultsPerType.get(implementation.componentTypeId) ?? 0;
-      defaultsPerType.set(implementation.componentTypeId, count + 1);
+      const count = defaultsPerType.get(implementation.componentType) ?? 0;
+      defaultsPerType.set(implementation.componentType, count + 1);
     }
   }
 
-  for (const typeId of typeIds) {
-    const defaults = defaultsPerType.get(typeId) ?? 0;
+  for (const typeKey of typeKeys) {
+    const defaults = defaultsPerType.get(typeKey) ?? 0;
     if (defaults !== 1) {
-      problems.push(`Type "${typeId}" needs exactly one default implementation (found ${defaults}).`);
+      problems.push(`Type "${typeKey}" needs exactly one default implementation (found ${defaults}).`);
     }
   }
 
@@ -74,32 +75,33 @@ async function main(): Promise<void> {
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
   try {
-    // Position within each type, in seed-file order.
-    const positionInType = new Map<string, number>();
-    const implementationRows = COMPONENT_IMPLEMENTATIONS.map((implementation) => {
-      const sortOrder = positionInType.get(implementation.componentTypeId) ?? 0;
-      positionInType.set(implementation.componentTypeId, sortOrder + 1);
-      return { ...implementation, sortOrder };
-    });
+    // One transaction: either the whole library is written or nothing is. Types go first
+    // so each implementation can look up its type's numeric id by name.
+    await prisma.$transaction(
+      async (tx) => {
+        const typeIdByKey = new Map<string, number>();
+        for (const [sortOrder, type] of COMPONENT_TYPES.entries()) {
+          const data = { label: type.label, family: type.family, description: type.description, sortOrder };
+          const row = await tx.componentType.upsert({
+            where: { name: type.name },
+            create: { name: type.name, ...data },
+            update: data,
+            select: { id: true },
+          });
+          typeIdByKey.set(type.name, row.id);
+        }
 
-    // One transaction: either the whole library is written or nothing is.
-    await prisma.$transaction([
-      ...COMPONENT_TYPES.map((type, sortOrder) => {
-        const data = { label: type.label, family: type.family, description: type.description, sortOrder };
-        return prisma.componentType.upsert({
-          where: { id: type.id },
-          create: { id: type.id, ...data },
-          update: data,
-        });
-      }),
-      ...implementationRows.map(({ id, ...data }) =>
-        prisma.componentImplementation.upsert({
-          where: { id },
-          create: { id, ...data },
-          update: data,
-        }),
-      ),
-    ]);
+        // Position within each type, in seed-file order.
+        const positionInType = new Map<string, number>();
+        for (const { id, componentType, ...fields } of COMPONENT_IMPLEMENTATIONS) {
+          const sortOrder = positionInType.get(componentType) ?? 0;
+          positionInType.set(componentType, sortOrder + 1);
+          const data = { ...fields, sortOrder, componentTypeId: typeIdByKey.get(componentType) as number };
+          await tx.componentImplementation.upsert({ where: { id }, create: { id, ...data }, update: data });
+        }
+      },
+      { timeout: 30_000 },
+    );
 
     console.log(
       `Seeded ${COMPONENT_TYPES.length} component types and ${COMPONENT_IMPLEMENTATIONS.length} implementations.`,
