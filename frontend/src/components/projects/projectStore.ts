@@ -26,6 +26,7 @@ API + Database
 
 import type { Edge } from "@xyflow/react";
 
+import { isImplementationOf } from "../../lib/architecture/componentLibrary.ts";
 import { sanitizeNodeProperties } from "../../lib/architecture/nodeProperties.ts";
 import { COMPONENT_CATALOG } from "../workspace/componentCatalog.ts";
 import type {
@@ -184,6 +185,9 @@ function parseNode(raw: unknown): ArchitectureFlowNode | null {
   // Properties are optional. Projects saved before they existed have none, and invalid
   // entries are dropped rather than failing the whole node.
   const properties = sanitizeNodeProperties(data.properties);
+  // The chosen technology is kept only when it is a real implementation of this type;
+  // anything else falls back to the default (by leaving it out).
+  const implementation = isImplementationOf(data.type, data.implementation) ? data.implementation : undefined;
   return {
     id: raw.id,
     type: "architecture",
@@ -191,6 +195,7 @@ function parseNode(raw: unknown): ArchitectureFlowNode | null {
     data: {
       type: data.type,
       label: data.label,
+      ...(implementation ? { implementation } : {}),
       ...(properties ? { properties } : {}),
     },
   };

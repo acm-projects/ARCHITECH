@@ -22,10 +22,11 @@ import {
   resetComponentProperty,
 } from "../../../lib/architecture/propertyEditing";
 import ComponentGlyph from "../ComponentGlyph";
+import { TechnologyChooser } from "../TechnologyPicker";
+import { resolveImplementation } from "../../../lib/architecture/componentLibrary";
 import {
   COMPONENT_CATALOG,
   FAMILY_COLORS,
-  FAMILY_LABELS,
 } from "../componentCatalog";
 import {
   ConfigureCard,
@@ -40,6 +41,9 @@ export type { ArchitectureNodeType };
 export type ArchitectureNodeData = {
   label: string;
   type: ArchitectureNodeType;
+  // Chosen technology: a component implementation id (lib/architecture/componentLibrary.ts).
+  // Absent means the type's default implementation.
+  implementation?: string;
   // Saved component configuration. Absent until a component is configured.
   properties?: NodeProperties;
 };
@@ -109,8 +113,10 @@ export default function ArchitectureNode({
     .join(" ");
 
   const { family, label: typeLabel } = COMPONENT_CATALOG[data.type];
-  // Secondary line: the component type when the node was renamed, otherwise its family.
-  const meta = data.label === typeLabel ? FAMILY_LABELS[family] : typeLabel;
+  // Secondary line: the technology behind the component (its chosen implementation, or the
+  // type's default), after the component type when the node was renamed.
+  const technology = resolveImplementation(data.type, data.implementation).name;
+  const meta = data.label === typeLabel ? technology : `${typeLabel} · ${technology}`;
   // Settings are edited through the same pure operations as everything else, on the current
   // nodes, so one finished edit is one change to the graph (one undo step, one autosave).
   // A refused or unchanged edit changes nothing.
@@ -182,9 +188,12 @@ export default function ArchitectureNode({
             type={data.type}
             name={data.label}
             onRename={(label) => updateNodeData(id, { label })}
-            properties={buildPropertyViews(data.type, data.properties)}
+            properties={buildPropertyViews(data.type, data.properties, {}, data.implementation)}
             onSetProperty={setProperty}
             onResetProperty={resetProperty}
+            technology={
+              <TechnologyChooser nodeId={id} type={data.type} implementation={data.implementation} />
+            }
           />
         )}
       </NodeToolbar>

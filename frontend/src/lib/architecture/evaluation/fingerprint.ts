@@ -1,4 +1,5 @@
 import { createDirectedGraph } from "../graph.ts";
+import { resolveImplementation } from "../componentLibrary.ts";
 import { configureNode } from "./capabilities.ts";
 import { usableGraph } from "./input.ts";
 import { sanitizeTraffic } from "./traffic.ts";
@@ -8,8 +9,8 @@ import { sanitizeTraffic } from "./traffic.ts";
 // fingerprint of the live design with the one stored with a result says whether the result
 // is still current.
 //
-// It covers: each node's id, type and the configuration the engine actually uses (instance
-// count, capacity, cache hit rate, after the same defaults and limits the engine applies),
+// It covers: each node's id, type, chosen non-default implementation and the configuration
+// the engine actually uses (instance count, capacity, cache hit rate, after the same defaults and limits the engine applies),
 // the connections the engine would use, and the traffic after sanitizing. It does not
 // cover names, positions, selection, measured sizes, dragging, viewport, properties the
 // engine ignores, or the order nodes and edges happen to be listed in.
@@ -23,7 +24,11 @@ export function canonicalEvaluationInput(input: { graph: unknown; traffic?: unkn
   const nodes = [...graph.nodes.values()]
     .map((node) => {
       const config = configureNode(node);
-      if (config.role === "entry") return [node.id, config.type];
+      // A chosen non-default technology changes latency, cost and availability, so it is part
+      // of the identity. The default adds nothing, so older fingerprints stay the same.
+      const implementation = resolveImplementation(config.type, node.data.implementation);
+      const chosen = implementation.isDefault ? [] : [implementation.id];
+      if (config.role === "entry") return [node.id, config.type, ...chosen];
       const cached = config.role === "cache" || config.role === "edge";
       return [
         node.id,
@@ -31,6 +36,7 @@ export function canonicalEvaluationInput(input: { graph: unknown; traffic?: unkn
         config.instances,
         config.capacityPerInstance,
         cached ? config.hitRate : null,
+        ...chosen,
       ];
     })
     .sort((a, b) => compare(String(a[0]), String(b[0])));

@@ -3,7 +3,7 @@
 //   npx prisma db seed
 //
 // Safe to run any number of times: types are upserted by name and implementations by id, so
-// re-running updates existing rows to match prisma/seed/componentLibrary.ts and never
+// re-running updates existing rows to match src/lib/architecture/componentLibrary.ts and never
 // creates duplicates.
 // Rows that are no longer in the seed file are left alone (delete them by hand if needed).
 import "dotenv/config";
@@ -17,7 +17,7 @@ import {
   COMPONENT_TYPES,
   type ComponentImplementationSeed,
   type ComponentTypeSeed,
-} from "./seed/componentLibrary.ts";
+} from "../src/lib/architecture/componentLibrary.ts";
 
 const { PrismaClient } = prismaClientPackage;
 

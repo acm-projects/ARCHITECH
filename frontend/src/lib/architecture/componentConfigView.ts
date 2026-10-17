@@ -38,9 +38,10 @@ export function buildPropertyViews(
   type: ArchitectureNodeType,
   properties: NodeProperties | undefined,
   drafts: Partial<Record<string, string>> = {},
+  implementation?: string,
 ): PropertyView[] {
-  const effective = getEffectiveProperties(type, properties);
-  return getPropertyDefinitions(type).map((definition) => {
+  const effective = getEffectiveProperties(type, properties, implementation);
+  return getPropertyDefinitions(type, implementation).map((definition) => {
     const overridden = isOverridden(type, properties, definition.key);
     const draft = drafts[definition.key];
     const parsed = draft === undefined ? null : parsePropertyInput(type, definition.key, draft);

@@ -4,7 +4,9 @@ import type { ArchitectureNodeType, NodeProperties } from "./types.ts";
 // passed in directly and everything here stays pure and independent of the UI.
 export type GraphNode = {
   id: string;
-  data: { type: ArchitectureNodeType; label?: string; properties?: NodeProperties };
+  // implementation: a component_implementations id (componentLibrary.ts); optional, the
+  // type's default when missing or not an implementation of this type.
+  data: { type: ArchitectureNodeType; label?: string; implementation?: string; properties?: NodeProperties };
 };
 export type GraphEdge = { source: string; target: string };
 export type GraphInput = {

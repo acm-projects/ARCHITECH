@@ -12,7 +12,7 @@ export type NodeLike = {
   type?: string;
   selected?: boolean;
   position: { x: number; y: number };
-  data: { type: ArchitectureNodeType; label: string; properties?: NodeProperties };
+  data: { type: ArchitectureNodeType; label: string; implementation?: string; properties?: NodeProperties };
 };
 export type EdgeLike = {
   id: string;

@@ -100,6 +100,7 @@ export function projectToPayload(project: Project): ProjectPayload {
         data: {
           type: node.data.type,
           label: node.data.label,
+          ...(node.data.implementation ? { implementation: node.data.implementation } : {}),
           ...(node.data.properties ? { properties: node.data.properties } : {}),
         },
       })),
