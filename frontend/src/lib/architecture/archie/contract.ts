@@ -30,6 +30,7 @@ export type ExplanationKind =
   | "database-redundancy"
   | "missing-cache"
   | "low-benefit-cache"
+  | "static-on-servers"
   | "slow-requests"
   | "long-path"
   | "low-availability"

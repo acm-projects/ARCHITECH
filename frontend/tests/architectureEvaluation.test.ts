@@ -22,8 +22,9 @@ const n = (id: string, type: string, properties?: Record<string, unknown>, label
 });
 const e = (source: string, target: string) => ({ source, target });
 const graphOf = (nodes: N[], edges: { source: string; target: string }[]) => ({ nodes, edges });
+// These scenarios are about API load, so unless a test says otherwise there are no static files.
 const run = (graph: unknown, traffic: Record<string, unknown> = {}) =>
-  evaluateArchitecture({ graph: graph as never, traffic });
+  evaluateArchitecture({ graph: graph as never, traffic: { staticShare: 0, ...traffic } });
 
 const simple = () =>
   graphOf([n("c", "client"), n("s", "server"), n("d", "database")], [e("c", "s"), e("s", "d")]);
@@ -547,6 +548,18 @@ test("a queue ends the synchronous path", () => {
   );
   const result = run(g, { readRatio: 0, requestsPerSecond: 200 });
   assert.deepEqual(result.criticalPath, ["c", "s", "q"]);
+});
+
+test("background work behind a queue never adds to p95 latency", () => {
+  const queued = (worker: Record<string, unknown>) =>
+    graphOf(
+      [n("c", "client"), n("s", "server", { replicas: 4 }), n("q", "queue"), n("w", "worker", worker), n("d", "database")],
+      [e("c", "s"), e("s", "q"), e("q", "w"), e("w", "d")],
+    );
+  // An overloaded consumer is far slower, but the client never waits for it.
+  const fast = run(queued({ replicas: 20 }), { readRatio: 0, requestsPerSecond: 2_000 });
+  const slow = run(queued({ replicas: 1 }), { readRatio: 0, requestsPerSecond: 2_000 });
+  assert.equal(slow.metrics.p95LatencyMs, fast.metrics.p95LatencyMs);
 });
 
 test("client network latency is part of p95", () => {

@@ -65,7 +65,7 @@ const result = (evaluation: ReturnType<typeof evaluate>, id: string) =>
 // A challenge with a single condition, to test one kind of requirement at a time.
 const only = (
   requirement: ChallengeRequirement,
-  traffic: ChallengeDefinition["traffic"] = { requestsPerSecond: 1000 },
+  traffic: ChallengeDefinition["traffic"] = { requestsPerSecond: 1000, staticShare: 0 },
 ): ChallengeDefinition => ({
   id: "t",
   title: "Test",

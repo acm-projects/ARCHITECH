@@ -98,7 +98,7 @@ These line up with `ArchitectureNodeType` in `src/lib/architecture/types.ts` and
 | `search` | Search | data | `elasticsearch` |
 | `auth` | Authentication | backend | `authjs` |
 
-All the implementations are listed in `prisma/seed/componentLibrary.ts`.
+All the implementations are listed in `src/lib/architecture/componentLibrary.ts` (the seed and the metrics engine both read it).
 
 ### Fields we don't save
 
@@ -141,13 +141,14 @@ Storage limits, for any key:
 - Values are a string (max 200 characters), a finite number, or a boolean. No nested objects, arrays, or `null`.
 - Max 32 entries.
 
-The metrics engine only reads three keys. Anything else is kept but ignored.
+The metrics engine only reads four keys. Anything else is kept but ignored.
 
 | Key | Meaning |
 |---|---|
 | `replicas` | Number of instances running in parallel. On a `database` this means read replicas (in addition to the primary), which is why it can be 0. |
 | `capacity` | Requests/s a single instance can handle (operations/s for a database). Overrides the default. Raising it also raises cost proportionally. |
-| `cacheHitRate` | Fraction of reads served without going further downstream (0.7 = 70%). |
+| `cacheHitRate` | Fraction of reads served without going further downstream (0.7 = 70%). On a `cdn`, the fraction of static-file requests answered at the edge (API requests always pass through). |
+| `authCheckRate` | `auth` only. Fraction of requests that call the auth service (0.05 = JWT: only sign-ins and token refreshes; 1 = session lookup on every request). |
 
 Which properties each type accepts comes from `getPropertyDefinitions` in
 `src/lib/architecture/componentProperties.ts`. These are the same limits the property panel
@@ -156,7 +157,7 @@ enforces.
 | `data.type` | Properties (min–max, default) |
 |---|---|
 | `client`, `web-app`, `mobile-app` | none |
-| `cdn` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (50,000); `cacheHitRate` 0–1 (0.5) |
+| `cdn` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (50,000); `cacheHitRate` 0–1 (0.95) |
 | `dns` | `replicas` 1–1000 (1) |
 | `server` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (2,500) |
 | `api-gateway` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (10,000) |
@@ -167,7 +168,7 @@ enforces.
 | `worker` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (1,500) |
 | `object-storage` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (12,000) |
 | `search` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (1,500) |
-| `auth` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (4,000) |
+| `auth` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (4,000); `authCheckRate` 0–1 (0.05) |
 
 `replicas` has to be an integer. Note the database range is 0–50, not 1–1000 like the rest.
 Defaults are taken from each type's default implementation.
@@ -175,9 +176,8 @@ Defaults are taken from each type's default implementation.
 How `data.implementation` (new) fits in: picking a non-default implementation changes the
 baseline, not the user's overrides. The implementation's `capacity_per_instance`,
 `latency_ms`, `monthly_cost_per_instance`, `availability` and `hit_rate` replace the type
-defaults, but a stored `capacity` or `cacheHitRate` still takes priority. The metrics engine
-doesn't read implementations yet, so for now `data.implementation` is saved and displayed but
-doesn't change any numbers.
+defaults, but a stored `capacity` or `cacheHitRate` still takes priority. An unknown id, or one
+belonging to another type, is treated as the type's default.
 
 ## Validation
 

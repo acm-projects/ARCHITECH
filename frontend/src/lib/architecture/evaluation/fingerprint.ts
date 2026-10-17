@@ -37,6 +37,8 @@ export function canonicalEvaluationInput(input: { graph: unknown; traffic?: unkn
         config.capacityPerInstance,
         cached ? config.hitRate : null,
         ...chosen,
+        // Only authentication has a check rate other than 1, so other nodes are unchanged.
+        ...(config.type === "auth" ? [config.checkRate] : []),
       ];
     })
     .sort((a, b) => compare(String(a[0]), String(b[0])));
@@ -51,6 +53,7 @@ export function canonicalEvaluationInput(input: { graph: unknown; traffic?: unkn
     t.concurrentUsers,
     t.datasetGb,
     t.readRatio,
+    t.staticShare,
     t.networkLatencyMs,
   ];
 

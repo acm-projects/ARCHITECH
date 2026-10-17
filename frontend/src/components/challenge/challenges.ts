@@ -38,6 +38,8 @@ export const urlShortenerDefinition: ChallengeDefinition = {
   traffic: {
     requestsPerSecond: 11_500,
     readRatio: 91,
+    // Redirects are API requests; a URL shortener serves no static files at this scale.
+    staticShare: 0,
     datasetGb: 200,
     networkLatencyMs: 40,
   },

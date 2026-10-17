@@ -102,14 +102,14 @@ export const COMPONENT_IMPLEMENTATIONS: readonly ComponentImplementationSeed[] =
   {
     id: "cloudflare-cdn", componentType: "cdn", name: "Cloudflare CDN", vendor: "Cloudflare",
     description: "Global edge network that caches static content and absorbs traffic spikes.",
-    isDefault: true, capacityPerInstance: 50_000, connectionsPerInstance: null, latencyMs: 10, monthlyCostPerInstance: 40, availability: 0.9999, hitRate: 0.5,
+    isDefault: true, capacityPerInstance: 50_000, connectionsPerInstance: null, latencyMs: 10, monthlyCostPerInstance: 40, availability: 0.9999, hitRate: 0.95,
     strengths: ["Very large edge network", "DDoS protection included"],
     tradeoffs: ["Only helps content that can be cached", "Cache invalidation adds a deploy step"],
   },
   {
     id: "amazon-cloudfront", componentType: "cdn", name: "Amazon CloudFront", vendor: "AWS",
     description: "AWS's CDN, integrated with S3 and other AWS services.",
-    isDefault: false, capacityPerInstance: 50_000, connectionsPerInstance: null, latencyMs: 12, monthlyCostPerInstance: 45, availability: 0.9999, hitRate: 0.5,
+    isDefault: false, capacityPerInstance: 50_000, connectionsPerInstance: null, latencyMs: 12, monthlyCostPerInstance: 45, availability: 0.9999, hitRate: 0.93,
     strengths: ["Tight integration with S3 and AWS load balancers", "Fine-grained cache rules"],
     tradeoffs: ["Pay-per-request pricing is harder to predict", "Ties the design more closely to AWS"],
   },

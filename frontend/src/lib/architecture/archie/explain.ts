@@ -51,6 +51,7 @@ const PREFIX_KINDS: [string, ExplanationKind][] = [
   ["unreachable-data-", "unreachable-data"],
   ["entry-disconnected-", "disconnected-client"],
   ["cache-low-benefit-", "low-benefit-cache"],
+  ["static-on-servers-", "static-on-servers"],
   ["overprovisioned-", "over-provisioned"],
   ["spof-", "single-point-of-failure"],
   ["database-redundancy-", "database-redundancy"],
@@ -431,6 +432,18 @@ function explainFinding(f: EvaluationFinding, kind: ExplanationKind, context: Co
       };
     }
 
+    case "static-on-servers":
+      return {
+        what: `${upperFirst(who)} spends its work handing out static files.`,
+        why: "Images, scripts and styles are the same for every user, but each request for one still goes through your API servers.",
+        impact:
+          "Those servers fill up sooner and cost more, and users far away wait longer for files that could be served near them.",
+        suggestion:
+          "Store static files in object storage (like S3) and put a CDN in front of it, so the client gets them from the edge and your servers only handle API requests.",
+        tradeoff:
+          "A CDN serves cached copies, so when you deploy new files you have to version their names or invalidate the cache.",
+      };
+
     case "over-provisioned": {
       const stats = nodeEvaluation(evaluation, id);
       return {
@@ -543,6 +556,8 @@ function titleOf(kind: ExplanationKind, f: EvaluationFinding, context: Context):
       return f.nodeIds.length === 1 ? `${label()} serves no requests` : `${f.nodeIds.length} components serve no requests`;
     case "over-provisioned":
       return `${label()} has more capacity than it needs`;
+    case "static-on-servers":
+      return `${label()} serves static files`;
     default:
       return f.title;
   }
@@ -584,6 +599,8 @@ function actionKey(e: Explanation, context: Context): string {
       return `remove:${id}`;
     case "over-provisioned":
       return `shrink:${id}`;
+    case "static-on-servers":
+      return "cdn";
     case "idle-components":
       return "remove-idle";
     case "unreachable-data":

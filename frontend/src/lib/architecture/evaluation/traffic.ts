@@ -7,8 +7,12 @@ export type TrafficProfile = {
   // Users connected at the same time. Limits connection-bound tiers.
   concurrentUsers: number;
   datasetGb: number;
-  // Percent of requests that are reads (the rest are writes), 0-100.
+  // Percent of the API requests that are reads (the rest are writes), 0-100.
   readRatio: number;
+  // Percent of all requests that are static files (images, scripts, styles, video), 0-100.
+  // A page load is mostly static files with a few API calls; across a session the API calls
+  // catch up, so 60 is a middle estimate.
+  staticShare: number;
   // Round trip between a client and the system.
   networkLatencyMs: number;
 };
@@ -18,6 +22,7 @@ export const DEFAULT_TRAFFIC: TrafficProfile = {
   concurrentUsers: 5_000,
   datasetGb: 100,
   readRatio: 80,
+  staticShare: 60,
   networkLatencyMs: 40,
 };
 
@@ -26,6 +31,7 @@ export const TRAFFIC_LIMITS: Record<keyof TrafficProfile, { min: number; max: nu
   concurrentUsers: { min: 0, max: 1_000_000_000 },
   datasetGb: { min: 0, max: 1_000_000 },
   readRatio: { min: 0, max: 100 },
+  staticShare: { min: 0, max: 100 },
   networkLatencyMs: { min: 0, max: 5_000 },
 };
 
@@ -83,6 +89,7 @@ export function sanitizeTraffic(input: unknown): {
       concurrentUsers: users,
       datasetGb: parsed.datasetGb.value ?? DEFAULT_TRAFFIC.datasetGb,
       readRatio: parsed.readRatio.value ?? DEFAULT_TRAFFIC.readRatio,
+      staticShare: parsed.staticShare.value ?? DEFAULT_TRAFFIC.staticShare,
       networkLatencyMs: parsed.networkLatencyMs.value ?? DEFAULT_TRAFFIC.networkLatencyMs,
     },
     adjusted,
