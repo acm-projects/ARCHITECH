@@ -23,8 +23,17 @@ export type DirectedGraph = {
   incoming: ReadonlyMap<string, ReadonlySet<string>>;
 };
 
+const byId = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+// Nodes are kept in id order and edges in (source, target) order, whatever order the canvas
+// lists them in. Everything built on this graph (the simulation, the analysis, the
+// fingerprint) walks it in that one order, so where a choice has to be made (which
+// connection cuts a loop, which of two equally slow paths is the p95), the same design always
+// gets the same answer, however it was built.
 export function createDirectedGraph(input: GraphInput): DirectedGraph {
-  const nodes = new Map(input.nodes.map((node) => [node.id, node]));
+  const sortedNodes = [...input.nodes].sort((a, b) => byId(a.id, b.id));
+  const sortedEdges = [...input.edges].sort((a, b) => byId(a.source, b.source) || byId(a.target, b.target));
+  const nodes = new Map(sortedNodes.map((node) => [node.id, node]));
   const outgoing = new Map<string, Set<string>>();
   const incoming = new Map<string, Set<string>>();
   for (const id of nodes.keys()) {
@@ -33,7 +42,7 @@ export function createDirectedGraph(input: GraphInput): DirectedGraph {
   }
 
   const edges: GraphEdge[] = [];
-  for (const { source, target } of input.edges) {
+  for (const { source, target } of sortedEdges) {
     if (!nodes.has(source) || !nodes.has(target) || source === target) continue;
     if (outgoing.get(source)?.has(target)) continue;
     outgoing.get(source)?.add(target);
