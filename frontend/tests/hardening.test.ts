@@ -700,7 +700,7 @@ test("every button in the new app does something, or is disabled and says why", 
   assert.deepEqual(offenders, []);
 });
 
-test("controls that are intentionally disabled are the ones we know about", () => {
+test("controls that are permanently disabled are the ones we know about", () => {
   const known = new Map<string, number>([
     ["src/components/dashboard/SystemTutorials.tsx", 2],
     ["src/components/workspace/NodeContextUi.tsx", 1],
@@ -709,7 +709,9 @@ test("controls that are intentionally disabled are the ones we know about", () =
   for (const file of sourceFiles("src/components")) {
     const normalized = file.replace(/\\/g, "/");
     if (/\/ui\.tsx$/.test(normalized)) continue;
-    const count = buttonTags(readFileSync(file, "utf8")).filter((tag) => /(?<![-\w])disabled\b/.test(tag)).length;
+    // Pending actions may disable themselves temporarily; this inventory is for
+    // controls that are unavailable regardless of application state.
+    const count = buttonTags(readFileSync(file, "utf8")).filter((tag) => /(?<![-\w])disabled\b(?!\s*=)/.test(tag)).length;
     if (count > 0) found.set(normalized, count);
   }
   assert.deepEqual([...found.entries()].sort(), [...known.entries()].sort());
