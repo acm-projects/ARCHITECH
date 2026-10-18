@@ -65,6 +65,26 @@ export const authOptions: NextAuthOptions = {
       }
     })
   ],
+  events: {
+    // The Prisma adapter stores a provider's tokens only when the account is first linked.
+    // GitHub tokens expire, so save the fresh ones on every GitHub sign-in; otherwise the
+    // GitHub routes (/api/github/repos, /api/github/import) keep using an expired token.
+    async signIn({ account }) {
+      if (account?.provider !== "github") return;
+      await prisma.account.updateMany({
+        where: { provider: "github", providerAccountId: account.providerAccountId },
+        data: {
+          access_token: account.access_token ?? null,
+          refresh_token: account.refresh_token ?? null,
+          expires_at: account.expires_at ?? null,
+          refresh_token_expires_in:
+            typeof account.refresh_token_expires_in === "number" ? account.refresh_token_expires_in : null,
+          token_type: account.token_type ?? null,
+          scope: account.scope ?? null,
+        },
+      });
+    },
+  },
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (token.sub && (user || trigger === "update")) {
