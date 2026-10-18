@@ -20,7 +20,7 @@ export default async function DashboardPage() {
         </nav>
       </header>
 
-      <DashboardMotion className="flex min-h-0 flex-1 flex-col">
+      <DashboardMotion className="ax-dashboard-content">
         <RecentProjects />
         <SystemTutorials />
       </DashboardMotion>
