@@ -25,6 +25,7 @@ import {
   MAX_PROPERTY_STRING_LENGTH,
 } from "../architecture/nodeProperties.ts";
 import type { ArchitectureNodeType, NodeProperties } from "../architecture/types.ts";
+import { customTechnologiesProblem, type CustomTechnology } from "./customTechnologies.ts";
 
 export const GRAPH_SCHEMA_VERSION = 1;
 const MAX_LABEL_LENGTH = 60;
@@ -34,7 +35,7 @@ export const MAX_EDGES = 2_000;
 // Project ids are generated in the browser (crypto.randomUUID, or "p-..." as a fallback).
 const PROJECT_ID_PATTERN = /^[A-Za-z0-9_-]{1,100}$/;
 const PROPERTY_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
-const PROJECT_SOURCES: readonly ProjectSource[] = ["blank", "duplicate", "template", "shared"];
+const PROJECT_SOURCES: readonly ProjectSource[] = ["blank", "duplicate", "template", "shared", "github"];
 
 export type GraphNodePayload = {
   id: string;
@@ -60,6 +61,8 @@ export type GraphDocument = {
   schemaVersion: typeof GRAPH_SCHEMA_VERSION;
   nodes: GraphNodePayload[];
   edges: GraphEdgePayload[];
+  // Optional: technologies from an imported repository the app does not model.
+  customTechnologies?: CustomTechnology[];
 };
 
 export type ProjectPayload = {
@@ -111,6 +114,7 @@ export function projectToPayload(project: Project): ProjectPayload {
         ...(typeof edge.sourceHandle === "string" ? { sourceHandle: edge.sourceHandle } : {}),
         ...(typeof edge.targetHandle === "string" ? { targetHandle: edge.targetHandle } : {}),
       })),
+      ...(project.customTechnologies?.length ? { customTechnologies: project.customTechnologies } : {}),
     },
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
@@ -125,6 +129,7 @@ export function payloadToStoredProject(payload: ProjectPayload): Record<string, 
     title: payload.title,
     nodes: payload.graph.nodes,
     edges: payload.graph.edges,
+    ...(payload.graph.customTechnologies ? { customTechnologies: payload.graph.customTechnologies } : {}),
     mode: payload.mode,
     ...(payload.learnSkipped ? { learnSkipped: true } : {}),
     ...(payload.source ? { source: payload.source } : {}),
@@ -272,7 +277,7 @@ function checkEdge(
 export function validateGraph(raw: unknown): Validation<GraphDocument> {
   try {
     if (!isRecord(raw)) return fail("graph must be an object.");
-    onlyKeys(raw, ["schemaVersion", "nodes", "edges"], "graph");
+    onlyKeys(raw, ["schemaVersion", "nodes", "edges", "customTechnologies"], "graph");
     // A graph saved before schemaVersion existed is version 1 (spec section 1).
     if (raw.schemaVersion !== undefined && raw.schemaVersion !== GRAPH_SCHEMA_VERSION) {
       fail(`graph.schemaVersion must be ${GRAPH_SCHEMA_VERSION}.`);
@@ -289,7 +294,21 @@ export function validateGraph(raw: unknown): Validation<GraphDocument> {
     const edgeIds = new Set<string>();
     const connections = new Set<string>();
     const edges = rawEdges.map((edge, index) => checkEdge(edge, index, nodeIds, edgeIds, connections));
-    return { ok: true, value: { schemaVersion: GRAPH_SCHEMA_VERSION, nodes, edges } };
+    if (raw.customTechnologies !== undefined) {
+      const problem = customTechnologiesProblem(raw.customTechnologies, "graph.customTechnologies");
+      if (problem) fail(problem);
+    }
+    return {
+      ok: true,
+      value: {
+        schemaVersion: GRAPH_SCHEMA_VERSION,
+        nodes,
+        edges,
+        ...(Array.isArray(raw.customTechnologies) && raw.customTechnologies.length > 0
+          ? { customTechnologies: raw.customTechnologies as CustomTechnology[] }
+          : {}),
+      },
+    };
   } catch (error) {
     if (error instanceof Invalid) return { ok: false, error: error.message };
     throw error;

@@ -8,6 +8,7 @@ export type ArchitectureNodeType =
   | "dns"
   | "server"
   | "api-gateway"
+  | "api"
   | "load-balancer"
   | "database"
   | "cache"
@@ -15,7 +16,10 @@ export type ArchitectureNodeType =
   | "worker"
   | "object-storage"
   | "search"
-  | "auth";
+  | "auth"
+  // A technology the app does not model (found when importing a repository). It is drawn
+  // and connected like any component; Run Design passes traffic through it unmeasured.
+  | "custom";
 
 // A component's saved configuration, for example `{ replicas: 3 }`. Flat on purpose:
 // every value is a string, finite number or boolean. See nodeProperties.ts.

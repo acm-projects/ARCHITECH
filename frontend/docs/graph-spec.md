@@ -89,6 +89,8 @@ These line up with `ArchitectureNodeType` in `src/lib/architecture/types.ts` and
 | `dns` | DNS | infrastructure | `amazon-route-53` |
 | `server` | API Server | backend | `nodejs-express` |
 | `api-gateway` | API Gateway | backend | `amazon-api-gateway` |
+| `api` | API | backend | `rest-api` (also `graphql-api`, `grpc-api`, `websocket-api`) |
+| `custom` | Custom | general | `custom-technology`: a technology the app does not model (from an imported repository). Its name is in `data.properties.technology`. Not shown in the library; Run Design passes traffic through it unmeasured. |
 | `load-balancer` | Load Balancer | infrastructure | `nginx` |
 | `database` | Database | data | `postgresql` |
 | `cache` | Cache | data | `redis` |
@@ -161,6 +163,7 @@ enforces.
 | `dns` | `replicas` 1–1000 (1) |
 | `server` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (2,500) |
 | `api-gateway` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (10,000) |
+| `api` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (8,000) |
 | `load-balancer` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (12,000) |
 | `database` | `replicas` 0–50 (0); `capacity` 1–10,000,000 (5,000) |
 | `cache` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (40,000); `cacheHitRate` 0–1 (0.7) |
@@ -270,3 +273,12 @@ Adding a new component type touches four places: `ArchitectureNodeType` (`types.
 canvas catalog (`componentCatalog.ts`), `SIMULATION_PROFILES` (`capabilities.ts`), and the seed
 (`prisma/seed/componentLibrary.ts`). Don't forget to add it to the `enum` in
 `graph.schema.json` too.
+
+## Custom technologies (imported repositories)
+
+A graph may carry an optional `customTechnologies` array: technologies an imported repository
+uses that ARCHITECH does not model, such as an unknown docker-compose service or a .NET worker.
+Each entry is `{ "id": "traefik", "name": "Traefik", "evidence": ["docker-compose.yml runs the \"traefik\" image"] }`
+(id: lowercase letters, digits and `-`; name 1-60 characters; at most 5 evidence lines; at most
+30 entries). They are listed in the project's sidebar under "From your repo"; dragging one adds a
+`custom` node with `data.properties.technology` set to its name.

@@ -47,6 +47,9 @@ export function rowToPayload(row: ProjectRow): ProjectPayload {
       schemaVersion: GRAPH_SCHEMA_VERSION,
       nodes: Array.isArray(graph.nodes) ? graph.nodes : [],
       edges: Array.isArray(graph.edges) ? graph.edges : [],
+      ...(Array.isArray(graph.customTechnologies) && graph.customTechnologies.length > 0
+        ? { customTechnologies: graph.customTechnologies }
+        : {}),
     },
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

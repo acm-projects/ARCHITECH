@@ -28,6 +28,10 @@ import type { Edge } from "@xyflow/react";
 
 import { isImplementationOf } from "../../lib/architecture/componentLibrary.ts";
 import { sanitizeNodeProperties } from "../../lib/architecture/nodeProperties.ts";
+import {
+  sanitizeCustomTechnologies,
+  type CustomTechnology,
+} from "../../lib/projects/customTechnologies.ts";
 import { COMPONENT_CATALOG } from "../workspace/componentCatalog.ts";
 import type {
   ArchitectureFlowNode,
@@ -40,7 +44,8 @@ import { STARTER_EDGES, STARTER_NODES } from "./starterArchitecture.ts";
 export type ProjectMode = "learn" | "challenge";
 
 // Keeps track of how the project was originally created.
-export type ProjectSource = "blank" | "duplicate" | "template" | "shared";
+// "github": built by importing a GitHub repository (POST /api/github/import).
+export type ProjectSource = "blank" | "duplicate" | "template" | "shared" | "github";
 
 const PROJECT_MODES: readonly ProjectMode[] = ["learn", "challenge"];
 export const DEFAULT_PROJECT_MODE: ProjectMode = "learn";
@@ -49,6 +54,7 @@ const PROJECT_SOURCES: readonly ProjectSource[] = [
   "duplicate",
   "template",
   "shared",
+  "github",
 ];
 
 // This is the main saved shape of a project.
@@ -68,6 +74,9 @@ export type Project = {
   mode: ProjectMode;
   learnSkipped?: boolean;
   source?: ProjectSource;
+  // Technologies from an imported repository that the app does not model; listed in the
+  // sidebar under "From your repo". See lib/projects/customTechnologies.ts.
+  customTechnologies?: CustomTechnology[];
   createdAt: string;
   updatedAt: string;
   lastOpenedAt: string;
@@ -308,6 +317,7 @@ export function parseProject(raw: unknown): Project | null {
   if (!isDateString(createdAt) || !isDateString(updatedAt)) return null;
 
   const cleanNodes = sanitizeNodes(nodes);
+  const customTechnologies = sanitizeCustomTechnologies(raw.customTechnologies);
   return {
     id,
     title,
@@ -316,6 +326,7 @@ export function parseProject(raw: unknown): Project | null {
     mode: isProjectMode(mode) ? mode : DEFAULT_PROJECT_MODE,
     ...(typeof raw.learnSkipped === "boolean" ? { learnSkipped: raw.learnSkipped } : {}),
     ...(isProjectSource(source) ? { source } : {}),
+    ...(customTechnologies ? { customTechnologies } : {}),
     createdAt,
     updatedAt,
     lastOpenedAt: isDateString(lastOpenedAt) ? lastOpenedAt : updatedAt,
@@ -636,6 +647,7 @@ export function createProjectStore(options: ProjectStoreOptions) {
       edges: copy(existing.edges),
       mode: existing.mode,
       ...(existing.learnSkipped !== undefined ? { learnSkipped: existing.learnSkipped } : {}),
+      ...(existing.customTechnologies ? { customTechnologies: copy(existing.customTechnologies) } : {}),
       source: "duplicate",
       createdAt: timestamp,
       updatedAt: timestamp,

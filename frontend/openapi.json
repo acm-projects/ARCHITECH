@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ARCHITECH API",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "contact": {
       "name": "ARCHITECH team (ACM Projects, UT Dallas)",
       "url": "https://github.com/acm-projects/ARCHITECH"
@@ -811,6 +811,113 @@
           }
         }
       }
+    },
+    "/api/github/import": {
+      "post": {
+        "tags": [
+          "GitHub"
+        ],
+        "operationId": "importGithubRepo",
+        "summary": "Build a design from a GitHub repository",
+        "description": "Uses the GitHub account the user connected at sign-in (its token in the `accounts` table) to read the repository through GitHub's GraphQL API (`POST https://api.github.com/graphql`): one query for the top-level file list and stack files, and one for the same files in up to 8 top-level folders (monorepos).\n\nStack files read: package.json, docker-compose.yml / compose.yml, prisma/schema.prisma, requirements.txt, pyproject.toml, go.mod, pom.xml, build.gradle.\n\nDetection rules map what they use to components and technologies (for example `next` → Web App (Next.js), `ioredis` → Cache (Redis), `@apollo/server` → API (GraphQL), a `postgres` image → Database (PostgreSQL)), each with its evidence. The design is laid out left to right with typical connections, validated against docs/graph-spec.md and saved as a new project (`source: \"github\"`, opens in free play). Connections are a best guess to adjust on the canvas.\n\nTechnologies the repository uses that ARCHITECH does not model (for example a Traefik or ClickHouse service, or a .NET worker) are returned as `customTechnologies` and saved with the project, so they appear in its sidebar under \"From your repo\" and can be dragged onto the canvas as unmeasured custom components. A repository with only such technologies still imports.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GithubImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new project and what was detected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GithubImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid owner or repo name.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the GitHub authorization expired (reconnect GitHub).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No GitHub account connected, or the repository was not found / is not visible to the account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The linked GitHub account has no access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Neither recognizable components nor unmodeled stacks/services were found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "GitHub is rate-limiting requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "GitHub returned an error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1092,6 +1199,7 @@
                   "dns",
                   "server",
                   "api-gateway",
+                  "api",
                   "load-balancer",
                   "database",
                   "cache",
@@ -1099,7 +1207,8 @@
                   "worker",
                   "object-storage",
                   "search",
-                  "auth"
+                  "auth",
+                  "custom"
                 ]
               },
               "label": {
@@ -1196,6 +1305,14 @@
             "items": {
               "$ref": "#/components/schemas/GraphEdge"
             }
+          },
+          "customTechnologies": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {
+              "$ref": "#/components/schemas/CustomTechnology"
+            },
+            "description": "Optional. Technologies from an imported repository that the app does not model."
           }
         }
       },
@@ -1238,7 +1355,8 @@
               "blank",
               "duplicate",
               "template",
-              "shared"
+              "shared",
+              "github"
             ]
           },
           "graph": {
@@ -1299,7 +1417,8 @@
               "blank",
               "duplicate",
               "template",
-              "shared"
+              "shared",
+              "github"
             ]
           },
           "graph": {
@@ -1317,6 +1436,138 @@
           "lastOpenedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "DetectedComponent": {
+        "type": "object",
+        "required": [
+          "nodeId",
+          "label",
+          "type",
+          "technology",
+          "evidence"
+        ],
+        "properties": {
+          "nodeId": {
+            "type": "string",
+            "description": "The node it became in the project's graph.",
+            "example": "database-1"
+          },
+          "label": {
+            "type": "string",
+            "example": "PostgreSQL"
+          },
+          "type": {
+            "type": "string",
+            "description": "Component type (component_types.name).",
+            "example": "database"
+          },
+          "technology": {
+            "type": "string",
+            "example": "PostgreSQL"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "backend/package.json uses \"pg\"",
+              "docker-compose.yml runs the \"postgres\" image"
+            ]
+          }
+        }
+      },
+      "GithubImportRequest": {
+        "type": "object",
+        "required": [
+          "owner",
+          "repo"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "GitHub user or organization.",
+            "example": "octocat"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name.",
+            "example": "shop"
+          }
+        }
+      },
+      "GithubImportResult": {
+        "type": "object",
+        "required": [
+          "project",
+          "detected",
+          "scannedFiles",
+          "customTechnologies"
+        ],
+        "properties": {
+          "project": {
+            "$ref": "#/components/schemas/Project"
+          },
+          "detected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DetectedComponent"
+            }
+          },
+          "scannedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Stack files that were read.",
+            "example": [
+              "backend/package.json",
+              "docker-compose.yml"
+            ]
+          },
+          "customTechnologies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomTechnology"
+            },
+            "description": "Unknown docker-compose services and app folders in stacks the app does not model (.NET, Rust, Ruby, PHP, Elixir, C++). Also saved in project.graph.customTechnologies."
+          }
+        }
+      },
+      "CustomTechnology": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "evidence"
+        ],
+        "additionalProperties": false,
+        "description": "A technology from an imported repository that ARCHITECH does not model. Listed in the project's sidebar under \"From your repo\"; dragged onto the canvas it becomes a `custom` node (`data.properties.technology` = name) that Run Design passes traffic through without measuring.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,59}$",
+            "example": "traefik"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "example": "Traefik"
+          },
+          "evidence": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "example": [
+              "docker-compose.yml runs the \"traefik\" image"
+            ]
           }
         }
       }

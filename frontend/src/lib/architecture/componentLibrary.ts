@@ -52,6 +52,8 @@ export const COMPONENT_TYPES: readonly ComponentTypeSeed[] = [
   { name: "dns", label: "DNS", family: "infrastructure", description: "Resolves domain names to the addresses of servers or load balancers." },
   { name: "server", label: "API Server", family: "backend", description: "Runs application logic and handles requests from clients." },
   { name: "api-gateway", label: "API Gateway", family: "backend", description: "Single entry point that routes, authenticates and rate-limits API traffic." },
+  { name: "custom", label: "Custom", family: "general", description: "A technology ARCHITECH does not model, such as one found in an imported repository. Drawn and connected, but not measured." },
+  { name: "api", label: "API", family: "backend", description: "How clients call your services: REST, GraphQL, gRPC or WebSocket. Pick the protocol as its technology." },
   { name: "load-balancer", label: "Load Balancer", family: "infrastructure", description: "Distributes incoming traffic across multiple servers." },
   { name: "database", label: "Database", family: "data", description: "Stores persistent application data." },
   { name: "cache", label: "Cache", family: "data", description: "Stores frequently accessed data so requests can be served faster." },
@@ -160,6 +162,45 @@ export const COMPONENT_IMPLEMENTATIONS: readonly ComponentImplementationSeed[] =
     isDefault: true, capacityPerInstance: 10_000, connectionsPerInstance: 100_000, latencyMs: 8, monthlyCostPerInstance: 54, availability: 0.9995, hitRate: null,
     strengths: ["Fully managed, scales automatically", "Built-in throttling and auth"],
     tradeoffs: ["Adds a hop of latency to every request", "Per-request pricing at high volume"],
+  },
+
+  // ---- Custom (a technology the app does not model; carries no numbers) ----
+  {
+    id: "custom-technology", componentType: "custom", name: "Custom technology", vendor: null,
+    description: "Not measured: passes requests on with no cost, latency or capacity limit of its own.",
+    isDefault: true, capacityPerInstance: null, connectionsPerInstance: null, latencyMs: 0, monthlyCostPerInstance: 0, availability: 1, hitRate: null,
+    strengths: [],
+    tradeoffs: ["Not measured, so Run Design cannot tell you its cost or limits"],
+  },
+
+  // ---- API (the protocol clients use to call your services) ----
+  {
+    id: "rest-api", componentType: "api", name: "REST", vendor: null,
+    description: "Resources over HTTP with JSON: one URL per resource, standard verbs and status codes.",
+    isDefault: true, capacityPerInstance: 8_000, connectionsPerInstance: null, latencyMs: 3, monthlyCostPerInstance: 30, availability: 0.9995, hitRate: null,
+    strengths: ["Simple and universally supported", "Responses cache well with HTTP caching and CDNs"],
+    tradeoffs: ["Screens often need several requests", "Responses can include more data than needed"],
+  },
+  {
+    id: "graphql-api", componentType: "api", name: "GraphQL", vendor: null,
+    description: "One endpoint where the client asks for exactly the fields a screen needs (e.g. Apollo Router).",
+    isDefault: false, capacityPerInstance: 5_000, connectionsPerInstance: null, latencyMs: 6, monthlyCostPerInstance: 36, availability: 0.9995, hitRate: null,
+    strengths: ["One request fetches exactly what the screen needs", "Typed schema shared by frontend and backend"],
+    tradeoffs: ["Planning and resolving queries costs more server work", "Harder to cache than plain HTTP responses"],
+  },
+  {
+    id: "grpc-api", componentType: "api", name: "gRPC", vendor: null,
+    description: "Binary calls over HTTP/2 with a typed contract, mostly between services.",
+    isDefault: false, capacityPerInstance: 15_000, connectionsPerInstance: null, latencyMs: 1.5, monthlyCostPerInstance: 30, availability: 0.9995, hitRate: null,
+    strengths: ["Lowest latency and smallest messages", "Streaming and strict contracts between services"],
+    tradeoffs: ["Browsers need a proxy (gRPC-Web)", "Binary messages are harder to inspect and debug"],
+  },
+  {
+    id: "websocket-api", componentType: "api", name: "WebSocket", vendor: null,
+    description: "A connection each client keeps open, so the server can push updates instantly.",
+    isDefault: false, capacityPerInstance: 10_000, connectionsPerInstance: 50_000, latencyMs: 2, monthlyCostPerInstance: 40, availability: 0.999, hitRate: null,
+    strengths: ["Real-time push (chat, live tracking, notifications)", "No polling overhead"],
+    tradeoffs: ["Every connected user holds a connection open", "Harder to load-balance and scale than requests"],
   },
 
   // ---- Load Balancer ----

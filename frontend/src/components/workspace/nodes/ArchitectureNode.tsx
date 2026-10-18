@@ -56,6 +56,8 @@ export const NODE_TYPE_LABELS: Record<ArchitectureNodeType, string> = {
   dns: "DNS",
   server: "API Server",
   "api-gateway": "API Gateway",
+  api: "API",
+  custom: "Custom",
   "load-balancer": "Load Balancer",
   database: "Database",
   cache: "Cache",
@@ -115,8 +117,16 @@ export default function ArchitectureNode({
   const { family, label: typeLabel } = COMPONENT_CATALOG[data.type];
   // Secondary line: the technology behind the component (its chosen implementation, or the
   // type's default), after the component type when the node was renamed.
-  const technology = resolveImplementation(data.type, data.implementation).name;
-  const meta = data.label === typeLabel ? technology : `${typeLabel} · ${technology}`;
+  // A custom component names its own technology and is marked as not measured.
+  const customTechnology =
+    data.type === "custom" && typeof data.properties?.technology === "string" ? data.properties.technology : null;
+  const technology = customTechnology ?? resolveImplementation(data.type, data.implementation).name;
+  const meta =
+    data.type === "custom"
+      ? `${data.label === customTechnology ? "Custom" : (customTechnology ?? "Custom")} · not measured`
+      : data.label === typeLabel
+        ? technology
+        : `${typeLabel} · ${technology}`;
   // Settings are edited through the same pure operations as everything else, on the current
   // nodes, so one finished edit is one change to the graph (one undo step, one autosave).
   // A refused or unchanged edit changes nothing.

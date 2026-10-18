@@ -9,15 +9,30 @@
   "properties": {
     "schemaVersion": { "const": 1 },
     "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
-    "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } }
+    "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+    "customTechnologies": {
+      "description": "Optional. Technologies from an imported repository that the app does not model (sidebar: From your repo).",
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,59}$" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "evidence": { "type": "array", "maxItems": 5, "items": { "type": "string", "maxLength": 200 } }
+        }
+      }
+    }
   },
   "$defs": {
     "componentTypeId": {
       "description": "Same values as ArchitectureNodeType (src/lib/architecture/types.ts) and component_types.name.",
       "enum": [
         "client", "web-app", "mobile-app", "cdn", "dns", "server", "api-gateway",
-        "load-balancer", "database", "cache", "queue", "worker", "object-storage",
-        "search", "auth"
+        "api", "load-balancer", "database", "cache", "queue", "worker", "object-storage",
+        "search", "auth", "custom"
       ]
     },
     "node": {

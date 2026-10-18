@@ -51,7 +51,7 @@ function buildDefinitions(
 ): ComponentPropertyDefinition[] {
   const profile = profileOf(type, implementation);
   const role = roleOf(type);
-  if (role === "entry") return [];
+  if (role === "entry" || role === "custom") return [];
 
   const definitions: ComponentPropertyDefinition[] = [];
 

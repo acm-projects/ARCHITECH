@@ -66,7 +66,8 @@ export type NodeRole =
   | "queue"
   | "cache"
   | "database"
-  | "storage";
+  | "storage"
+  | "custom";
 
 const ROLE_BY_TYPE: Record<ArchitectureNodeType, NodeRole> = {
   client: "entry",
@@ -75,6 +76,7 @@ const ROLE_BY_TYPE: Record<ArchitectureNodeType, NodeRole> = {
   cdn: "edge",
   dns: "edge",
   "api-gateway": "ingress",
+  api: "ingress",
   "load-balancer": "ingress",
   server: "compute",
   worker: "compute",
@@ -84,6 +86,7 @@ const ROLE_BY_TYPE: Record<ArchitectureNodeType, NodeRole> = {
   cache: "cache",
   database: "database",
   "object-storage": "storage",
+  custom: "custom",
 };
 
 export function roleOf(type: ArchitectureNodeType): NodeRole {
@@ -222,7 +225,8 @@ export function analyzeGraph(
           .sort((a, b) => degreeOf(b.id) - degreeOf(a.id))
           .slice(0, MAX_SPOF_CANDIDATES);
   for (const node of candidates) {
-    if (roleOf(node.data.type) === "entry" || !baselineReach.has(node.id)) continue;
+    // Custom components are not measured, so they are not judged as failure points either.
+    if (roleOf(node.data.type) === "entry" || roleOf(node.data.type) === "custom" || !baselineReach.has(node.id)) continue;
     if (options.redundantNodeIds?.has(node.id)) continue;
     const reduced = reachableFrom(graph, entryIds, { without: node.id });
     const lost = [...baselineReach].filter(

@@ -422,7 +422,7 @@ function Workspace({ project }: { project: Project }) {
 
         <div className="relative flex min-h-0 flex-1 flex-col bg-(--ax-canvas)">
           {/* Components are dragged from here onto the shared project canvas. */}
-          <ComponentToolbox />
+          <ComponentToolbox customTechnologies={project.customTechnologies} />
 
           <main className="relative min-h-0 min-w-0 flex-1 bg-(--ax-canvas)">
             {/* React Flow is only responsible for displaying/interacting with the graph.

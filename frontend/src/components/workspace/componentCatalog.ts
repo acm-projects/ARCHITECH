@@ -33,6 +33,9 @@ export const FAMILY_COLORS: Record<ComponentFamily, string> = {
 export type ComponentDefinition = ArchitectureNodeData & {
   family: ComponentFamily;
   description: string;
+  // Not listed in the library: only reachable some other way (custom components come from
+  // an imported repository's "From your repo" section).
+  hidden?: boolean;
 };
 
 // Ordered by typical request path: origin, edge, services, data.
@@ -81,6 +84,13 @@ const COMPONENTS: readonly ComponentDefinition[] = [
     label: "API Gateway",
     description:
       "Single entry point that routes, authenticates and rate-limits API traffic.",
+  },
+  {
+    type: "api",
+    family: "backend",
+    label: "API",
+    description:
+      "How clients call your services: REST, GraphQL, gRPC or WebSocket. Pick the protocol as its technology.",
   },
   {
     type: "load-balancer",
@@ -134,6 +144,14 @@ const COMPONENTS: readonly ComponentDefinition[] = [
     description:
       "Verifies who a user is and issues credentials for later requests.",
   },
+  {
+    type: "custom",
+    family: "general",
+    label: "Custom",
+    description:
+      "A technology ARCHITECH does not model, found in an imported repository. Drawn and connected, but not measured.",
+    hidden: true,
+  },
 ];
 
 export const COMPONENT_CATALOG = Object.fromEntries(
@@ -180,7 +198,7 @@ export function componentGroups(query: string): ComponentGroup[] {
     family,
     label: FAMILY_LABELS[family],
     components: COMPONENTS.filter(
-      (component) => component.family === family && matches(component),
+      (component) => component.family === family && !component.hidden && matches(component),
     ),
   })).filter((group) => group.components.length > 0);
 }
@@ -201,6 +219,10 @@ export function writeComponentDragData(
     type: component.type,
     label: component.label,
     ...(component.implementation ? { implementation: component.implementation } : {}),
+    // A custom component (from the project's "From your repo" list) carries its technology name.
+    ...(component.type === "custom" && typeof component.properties?.technology === "string"
+      ? { properties: { technology: component.properties.technology } }
+      : {}),
   };
   dataTransfer.setData(COMPONENT_DRAG_MIME, JSON.stringify(payload));
   dataTransfer.effectAllowed = "copy";
@@ -220,7 +242,7 @@ export function readComponentDragData(
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return null;
-    const { type, label, implementation } = parsed as Record<string, unknown>;
+    const { type, label, implementation, properties } = parsed as Record<string, unknown>;
     if (!isNodeType(type)) return null;
     if (
       typeof label !== "string" ||
@@ -230,10 +252,14 @@ export function readComponentDragData(
       return null;
     }
     // An unknown technology, or one of another type, is dropped: the node gets the default.
+    const technology = (properties as { technology?: unknown } | undefined)?.technology;
     return {
       type,
       label: label.trim(),
       ...(isImplementationOf(type, implementation) ? { implementation } : {}),
+      ...(type === "custom" && typeof technology === "string" && technology.trim() && technology.length <= MAX_LABEL_LENGTH
+        ? { properties: { technology: technology.trim() } }
+        : {}),
     };
   } catch {
     return null;
