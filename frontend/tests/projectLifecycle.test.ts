@@ -222,6 +222,62 @@ test("the create action reports failure instead of a project to open", () => {
 
 // ---- Loading ----
 
+test("tutorial skip survives autosave, mode changes, reload and reopen without changing the graph", () => {
+  const storage = fakeStorage();
+  const store = makeStore(storage);
+  const project = store.createProject({ nodes: [], edges: [] });
+  const other = store.createProject({ nodes: [], edges: [] });
+  const skipped = store.setLearnSkipped(project.id, true);
+  assert.deepEqual(skipped, { ...project, learnSkipped: true });
+  assert.equal(store.getProject(other.id)?.learnSkipped, undefined);
+  store.updateProject(project.id, { title: "My design" });
+  store.setProjectMode(project.id, "challenge");
+  store.setProjectMode(project.id, "learn");
+  const reloaded = reopen(storage);
+  assert.equal(reloaded.getProject(project.id)?.learnSkipped, true);
+  reloaded.markProjectOpened(project.id);
+  assert.equal(reopen(storage).getProject(project.id)?.learnSkipped, true);
+  assert.deepEqual(reloaded.getProject(project.id)?.nodes, []);
+  assert.equal(reloaded.duplicateProject(project.id)?.learnSkipped, true);
+  reloaded.setLearnSkipped(project.id, false);
+  assert.equal(reopen(storage).getProject(project.id)?.learnSkipped, false);
+});
+
+test("tutorial skip validates stored preferences and does not write unchanged values", () => {
+  const storage = fakeStorage();
+  const store = makeStore(storage);
+  const project = store.createProject();
+  const writes = storage.writes;
+  store.setLearnSkipped(project.id, false);
+  assert.equal(storage.writes, writes);
+  assert.throws(() => store.setLearnSkipped(project.id, "true" as unknown as boolean), /Invalid tutorial preference/);
+  storage.data.set(STORAGE_KEY, JSON.stringify({ projects: [{ ...project, learnSkipped: "true" }] }));
+  assert.equal(reopen(storage).getProject(project.id)?.learnSkipped, undefined);
+});
+
+test("failed skip and restart actions keep the persisted preference and allow retry", () => {
+  const storage = fakeStorage();
+  const store = makeStore(storage);
+  const actions = createProjectActions(store);
+  const project = store.createProject({ nodes: [], edges: [] });
+  const errors = silenceConsoleError();
+  try {
+    storage.failWrites = true;
+    assert.equal(actions.setLearnSkipped(project.id, true).ok, false);
+    assert.equal(reopen(storage).getProject(project.id)?.learnSkipped, undefined);
+    storage.failWrites = false;
+    assert.equal(actions.setLearnSkipped(project.id, true).ok, true);
+    storage.failWrites = true;
+    assert.equal(actions.setLearnSkipped(project.id, false).ok, false);
+    assert.equal(reopen(storage).getProject(project.id)?.learnSkipped, true);
+    storage.failWrites = false;
+    assert.equal(actions.setLearnSkipped(project.id, false).ok, true);
+    assert.equal(actions.setLearnSkipped("missing", true).ok, false);
+  } finally {
+    errors.mock.restore();
+  }
+});
+
 test("a stored project loads as ready, and the state is stable between reads", () => {
   const storage = fakeStorage();
   const project = makeStore(storage).createProject();

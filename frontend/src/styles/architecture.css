@@ -1166,16 +1166,6 @@
     width: auto;
   }
 }
-.system-node .node-kicker {
-  color: var(--neutral-500);
-  font-size: 8px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: .12em;
-}
-.system-node.node-hot .node-kicker {
-  color: var(--neutral-300);
-}
 .architecture-findings > button:hover {
   background: var(--neutral-50);
   transform: none;

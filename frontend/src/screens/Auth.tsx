@@ -1,7 +1,9 @@
 // useState - lets page remember temporary values while user interacts
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import Image from "next/image";
 
-import { ArchieMark, Icon, StatusMessage } from "../components/ui";
+import { Icon, Logo, StatusMessage } from "../components/ui";
+import { OnboardingArchie, useArchieEyes } from "../components/auth/OnboardingArchie";
 
 // just for the frontend stage
 import {
@@ -55,8 +57,12 @@ const SOCIAL_PROVIDERS = [
   { name: "GitHub", Mark: GitHubMark },
   { name: "Google", Mark: GoogleMark },
 ] as const;
+
+const SYSTEM_BRANDS = [
+  "YouTube", "Netflix", "Spotify", "Uber", "Airbnb", "Instagram", "Dropbox", "Discord",
+] as const;
 /*App.tsx -> sends information/functions -> AuthPage
-  AuthPage receives four props: 
+  AuthPage receives four props:
   1. kind: "signin" | "signup" - tells this component which version it should display
   2. back: () => void - go back to the previous page
   3. done: () => void - auth is done, move to next
@@ -87,7 +93,9 @@ export function AuthPage({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // to make password hidden by default
   const [remember, setRemember] = useState(false); // for backend, not functioning yet
-  const [message, setMessage] = useState(""); 
+  const [orbitPaused, setOrbitPaused] = useState(false);
+  // Some messages include a logo, so they aren't all strings.
+  const [message, setMessage] = useState<ReactNode>("");
 
   // determines whether the main button should be enabled
   // have to meet requirements to enable the main button
@@ -100,7 +108,7 @@ export function AuthPage({
   // runs when someone click main button (submit)
   /* BACKED INTEGRATION - EMAIL AUTHENTICATION
      This function currently simulates signup/signin using local storage.
-     
+
      Sign up - frontend provides name, email, and password, which are stored locally.
      Backend should:
      1. validate the request
@@ -111,7 +119,7 @@ export function AuthPage({
      6. return the created user
 
      Expected frontend flow:
-     - post/api/auth/signup 
+     - post/api/auth/signup
      - success
      - done
      - onboarding
@@ -122,12 +130,12 @@ export function AuthPage({
      2. validate the pwd
      3. create/return an auth session
 
-     Error handling - backend errors should be returned in a form that the frontend can display to the user.    
+     Error handling - backend errors should be returned in a form that the frontend can display to the user.
                       can display using setMessage()
   */
   const submit = (event?: FormEvent) => {
     event?.preventDefault(); // prevent refresh, make user to stay on page
-    setMessage(""); // clear message before moving on to next 
+    setMessage(""); // clear message before moving on to next
 
     // show message if the form cannot be submitted
     if (!canSubmit) {
@@ -140,7 +148,7 @@ export function AuthPage({
     }
 
     /*
-      ARCHITECT currently uses a local browser profile rather than
+      ARCHITECH currently uses a local browser profile rather than
       a real authentication backend.
 
       For now, signup stores the profile locally and signin checks
@@ -170,7 +178,7 @@ export function AuthPage({
     */
     if (!existing.name) {
       setMessage(
-        "No ARCHITECT profile exists in this browser yet. Create an account first.",
+        <>No <Logo variant="archie-without-props" size="inline" /> profile exists in this browser yet. Create an account first.</>,
       );
       return;
     }
@@ -190,28 +198,55 @@ export function AuthPage({
 
   return (
     <main className="auth-page">
+      <header className="page-header auth-header">
       {/* logo works as back button to return to the home page */}
-      <button
-        type="button"
+      <Logo
+        variant="with-archie"
         className="auth-brand"
         onClick={back}
-        aria-label="Back to ARCHITECT home"
-      >
-        <ArchieMark size={24} />
-        <span>ARCHITECT</span>
-      </button>
+        aria-label="Back to ARCHITECH home"
+      />
+
+      </header>
 
       {/* authentication form section */}
       <section className="auth-shell">
+        {/* Counter-rotation keeps the logos upright as the circle turns. */}
+        <div className="auth-orbit" data-paused={orbitPaused}>
+          <div className="auth-orbit-ring" aria-hidden="true">
+            {SYSTEM_BRANDS.map((brand, index) => (
+              <span
+                key={brand}
+                className="auth-orbit-slot"
+                style={{ transform: `rotate(${index * 45}deg) translateY(calc(-1 * var(--orbit-radius))) rotate(${-index * 45}deg)` }}
+              >
+                <Image
+                  className="auth-orbit-logo"
+                  src={`/auth-logos/${brand.toLowerCase()}.svg`}
+                  alt=""
+                  width={48}
+                  height={48}
+                />
+              </span>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="auth-orbit-toggle auth-text-button"
+            aria-pressed={orbitPaused}
+            onClick={() => setOrbitPaused((paused) => !paused)}
+          >
+            {orbitPaused ? "Resume rotation" : "Pause rotation"}
+          </button>
+        </div>
         <form className="auth-form" onSubmit={submit}>
           {/* Heading */}
           <div className="auth-heading">
             <h1>{isSignup ? "Create your account" : "Welcome back"}</h1>
 
             <p>
-              {isSignup
-                ? "Start building better systems with ARCHITECT."
-                : "Sign in to continue to ARCHITECT."}
+              {isSignup ? "Start building better systems with " : "Sign in to continue to "}
+              <Logo variant="archie-without-props" size="inline" />.
             </p>
           </div>
 
@@ -327,8 +362,9 @@ export function AuthPage({
           {message && (
             <StatusMessage
               tone={
-                message.includes("will be") || // ex) Google auth will be ... -> info
-                message.includes("available")
+                // Check the wording only when the message is plain text.
+                typeof message === "string" &&
+                (message.includes("will be") || message.includes("available"))
                   ? undefined
                   : "error" // ex) No profile exists -> error
               }
@@ -347,7 +383,7 @@ export function AuthPage({
           {/* Legal */}
           {isSignup && (
             <p className="auth-legal">
-              By creating an account, you agree to ARCHITECT&apos;s{" "}
+              By creating an account, you agree to <Logo variant="archie-without-props" size="inline" />&apos;s{" "}
               <button type="button">Terms of Service</button> and{" "}
               <button type="button">Privacy Policy</button>.
             </p>
@@ -355,7 +391,7 @@ export function AuthPage({
 
           {/* Switch */}
           <p className="auth-switch">
-            {isSignup ? "Already have an account?" : "New to ARCHITECT?"}{" "}
+            {isSignup ? "Already have an account?" : <>New to <Logo variant="archie-without-props" size="inline" />?</>}{" "}
             <button type="button" onClick={switchKind}>
               {isSignup ? "Sign in" : "Create account"}
             </button>
@@ -366,15 +402,15 @@ export function AuthPage({
   );
 }
 
-// Step 1 rows; order and copy are presentation only, the value is the ExperienceLevel
+// Experience choices share the same values used by the saved profile.
 const EXPERIENCE_OPTIONS: ReadonlyArray<{
   level: ExperienceLevel;
-  index: string;
+  image: string;
   description: string;
 }> = [
-  { level: "Beginner", index: "01", description: "I'm learning how systems fit together." },
-  { level: "Intermediate", index: "02", description: "I understand the basics and want to practice designing systems." },
-  { level: "Advanced", index: "03", description: "I'm comfortable with system design and want more challenging scenarios." },
+  { level: "Beginner", image: "/onboarding/beginner.svg", description: "I'm learning how systems fit together." },
+  { level: "Intermediate", image: "/onboarding/intermediate.svg", description: "I understand the basics and want to practice designing systems." },
+  { level: "Advanced", image: "/onboarding/advanced.svg", description: "I'm comfortable with system design and want more challenging scenarios." },
 ];
 
 /* BACKEND INTEGRATION:
@@ -397,6 +433,8 @@ export function Onboarding({
   // Step 1 = experience level
   // Step 2 = optional GitHub connection
   const [step, setStep] = useState<1 | 2>(1);
+  const optionsRef = useRef<HTMLFieldSetElement>(null);
+  useArchieEyes(optionsRef, step === 1);
 
   // Message shown on the GitHub step.
   // For now this is only used to explain that OAuth is not connected yet.
@@ -414,17 +452,17 @@ export function Onboarding({
 
   /*
      BACKEND INTEGRATION — EXPERIENCE LEVEL
-    
+
      The selected experience level should eventually be saved to the
      authenticated user's profile before moving to Step 2.
-    
+
      Frontend provides:
      {
        experienceLevel: level
      }
-    
+
      Example future flow:
-    
+
      PATCH /api/users/me
             ↓
      backend saves experience level
@@ -432,7 +470,7 @@ export function Onboarding({
      success
             ↓
      setStep(2)
-    
+
      For now, the level remains in frontend state and we immediately
      continue to Step 2.
    */
@@ -442,23 +480,23 @@ export function Onboarding({
 
   /*
      BACKEND INTEGRATION — GITHUB OAUTH
-    
+
      This is currently only a frontend placeholder.
-    
+
      Future expected flow:
-    
+
      User clicks "Connect GitHub"
             ↓
      Start GitHub OAuth
             ↓
-     User authorizes ARCHITECT
+     User authorizes ARCHITECH
             ↓
      Backend receives OAuth callback
             ↓
      Backend associates GitHub account with authenticated user
             ↓
      Frontend continues to Home
-    
+
      Do not treat the account as connected until OAuth succeeds.
    */
   const connectGitHub = () => {
@@ -469,10 +507,10 @@ export function Onboarding({
 
   /*
      GitHub is optional.
-    
+
      If the user skips this step, onboarding is considered complete
      and App.tsx's done() callback sends the user to Home.
-    
+
      No GitHub account should be stored for users who skip.
    */
   const skipGitHub = () => {
@@ -481,11 +519,10 @@ export function Onboarding({
 
   return (
     <main className="onboarding">
-      <header className="onboarding-bar">
-        {/* ARCHITECT branding */}
-        <div className="onboarding-brand">
-          <ArchieMark size={24} />
-          <span>ARCHITECT</span>
+      <header className="page-header onboarding-bar">
+        {/* One header for both onboarding steps. */}
+        <div className="onboarding-brand logo">
+          <Logo variant="with-archie" />
         </div>
 
         {/* Step counter: 01 / 02 -> 02 / 02 */}
@@ -502,15 +539,14 @@ export function Onboarding({
             <>
               <div className="onboarding-heading">
                 <h1 ref={headingRef} tabIndex={-1}>
-                  What best describes your <br />
-                  system design experience?
+                  What best describes your system design experience?
                 </h1>
 
-                <p>We&apos;ll tailor ARCHITECT to your experience.</p>
+                <p>We&apos;ll tailor <Logo variant="archie-without-props" size="inline" /> to your experience.</p>
               </div>
 
               {/* native radios: one selection, arrow-key navigation */}
-              <fieldset className="onboarding-options">
+              <fieldset ref={optionsRef} className="onboarding-options">
                 <legend className="onboarding-sr-only">System design experience</legend>
 
                 {EXPERIENCE_OPTIONS.map((option) => {
@@ -530,9 +566,8 @@ export function Onboarding({
                         onChange={() => setLevel(option.level)}
                       />
 
-                      <span className="onboarding-option-index" aria-hidden="true">
-                        {option.index}
-                      </span>
+                      {/* The label already names the level, so the illustration is decorative. */}
+                      <OnboardingArchie src={option.image} />
 
                       <span className="onboarding-option-copy">
                         <span className="onboarding-option-title">{option.level}</span>
@@ -540,8 +575,6 @@ export function Onboarding({
                           {option.description}
                         </span>
                       </span>
-
-                      <span className="onboarding-option-radio" aria-hidden="true" />
                     </label>
                   );
                 })}
@@ -575,7 +608,7 @@ export function Onboarding({
 
                 <p>
                   Connect GitHub to link your development workflow with
-                  ARCHITECT.
+                  {" "}<Logo variant="archie-without-props" size="inline" />.
                 </p>
               </div>
 
@@ -587,7 +620,7 @@ export function Onboarding({
                 </li>
                 <li>
                   <Icon name="check" size={14} />
-                  Bring project context into ARCHITECT
+                  Bring project context into <Logo variant="archie-without-props" size="inline" />
                 </li>
                 <li>
                   <Icon name="check" size={14} />

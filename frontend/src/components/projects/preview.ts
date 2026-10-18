@@ -57,6 +57,43 @@ export function computePreview(
   return { nodes: placed, lines };
 }
 
+// Preview-only emphasis: prefer connectivity, then visual centrality, then ID.
+// Unique neighbors prevent duplicate/reversed edges from biasing the result.
+export function selectPreviewAccent(
+  nodes: readonly PreviewNode[],
+  edges: readonly EvalEdge[],
+): string | null {
+  if (nodes.length === 0) return null;
+
+  const neighbors = new Map(nodes.map(node => [node.id, new Set<string>()]));
+  for (const { source, target } of edges) {
+    if (source === target || !neighbors.has(source) || !neighbors.has(target)) continue;
+    neighbors.get(source)!.add(target);
+    neighbors.get(target)!.add(source);
+  }
+
+  const centerX = (Math.min(...nodes.map(node => node.x)) + Math.max(...nodes.map(node => node.x))) / 2;
+  const centerY = (Math.min(...nodes.map(node => node.y)) + Math.max(...nodes.map(node => node.y))) / 2;
+  let selectedId: string | null = null;
+  let bestDegree = -1;
+  let bestDistance = Infinity;
+
+  for (const node of nodes) {
+    const degree = neighbors.get(node.id)!.size;
+    const distance = (node.x - centerX) ** 2 + (node.y - centerY) ** 2;
+    if (
+      degree > bestDegree ||
+      (degree === bestDegree && distance < bestDistance) ||
+      (degree === bestDegree && distance === bestDistance && (selectedId === null || node.id < selectedId))
+    ) {
+      selectedId = node.id;
+      bestDegree = degree;
+      bestDistance = distance;
+    }
+  }
+  return selectedId;
+}
+
 const UNITS: readonly [limitMs: number, divisorMs: number, suffix: string][] = [
   [60_000, 1_000, "s"],
   [3_600_000, 60_000, "m"],

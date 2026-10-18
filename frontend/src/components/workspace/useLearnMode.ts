@@ -1,10 +1,12 @@
 import type { Edge } from "@xyflow/react";
+import { useState } from "react";
 
 import {
   firstWebSystemLesson,
   type Lesson,
 } from "../learn/lessons";
 import { useLessonEngine } from "../learn/useLessonEngine";
+import { projectActions } from "../projects/projectActions";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 import { useRunSession } from "./useRunSession";
 
@@ -22,36 +24,48 @@ export function useLearnMode({
   nodes,
   edges,
   lesson = firstWebSystemLesson,
+  initiallySkipped = false,
 }: {
   enabled: boolean;
   scopeKey: string | null;
   nodes: ArchitectureFlowNode[];
   edges: Edge[];
   lesson?: Lesson;
+  initiallySkipped?: boolean;
 }) {
-  // The lesson engine watches the live graph and figures out which tutorial step
-  // the learner is on, whether the step is complete, and what feedback/hints to show.
+  const [skipped, setSkipped] = useState(initiallySkipped);
+  const [tutorialError, setTutorialError] = useState<string | null>(null);
+  function setTutorialSkipped(next: boolean): boolean {
+    if (scopeKey) {
+      const result = projectActions.setLearnSkipped(scopeKey, next);
+      if (!result.ok) {
+        setTutorialError(result.message);
+        return false;
+      }
+    }
+    setSkipped(next);
+    setTutorialError(null);
+    return true;
+  }
+
+  // Skipping disables guidance without changing objective completion. Progress still
+  // follows the graph, just as it does while Challenge mode is open.
   const engine = useLessonEngine(
     lesson,
     nodes,
     edges,
-    enabled,
+    enabled && !skipped,
   );
 
-  // freePlay becomes true once the guided lesson is finished.
-  // restartLesson lets Reset take Learn back to the beginning.
-  const {
-    freePlay,
-    reset: restartLesson,
-  } = engine;
+  const freePlay = enabled && (skipped || engine.freePlay);
 
-  // Run Design is only available after the tutorial is finished.
+  // Run Design is available after completing or skipping the tutorial.
   //
   // This gets its own run session, separate from Challenge, so a Challenge
   // submission/result can never accidentally appear inside Learn mode.
   const runs = useRunSession({
     scopeKey,
-    enabled: enabled && freePlay,
+    enabled: freePlay,
     nodes,
     edges,
   });
@@ -68,7 +82,11 @@ export function useLearnMode({
     engine,
     freePlay,
     runs,
-    restartLesson,
+    restartLesson: engine.reset,
     clearAnalysis,
+    skipped,
+    tutorialError,
+    // Persist the return to guidance before the workspace replaces the graph.
+    prepareReset: () => !skipped || setTutorialSkipped(false),
   };
 }

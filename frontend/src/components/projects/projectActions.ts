@@ -67,6 +67,9 @@ export function createProjectActions(store: ProjectStore) {
         () => store.setProjectMode(id, mode),
       ),
 
+    setLearnSkipped: (id: string, skipped: boolean): ActionResult<Project> =>
+      run("Couldn't save the tutorial preference.", () => store.setLearnSkipped(id, skipped)),
+
     // Tracks when a project was last opened so Recent Projects can be ordered correctly.
     markOpened: (id: string): ActionResult<Project> =>
       run(

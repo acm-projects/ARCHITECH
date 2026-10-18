@@ -38,7 +38,7 @@ export type ComponentDefinition = ArchitectureNodeData & {
 const COMPONENTS: readonly ComponentDefinition[] = [
   {
     type: "client",
-    family: "general",
+    family: "frontend",
     label: "Client",
     description: "The user-facing device or application that starts a request.",
   },

@@ -48,7 +48,7 @@ export const firstWebSystemLesson: Lesson = {
       title: "Add a Client",
       description:
         "Every system starts with someone using it. The client is the browser or app that sends requests.",
-      instruction: "Drag Client from Components onto the canvas.",
+      instruction: "Drag Client onto the canvas.",
       successMessage: "Client added",
       successExplanation: "Requests have to start somewhere: the client is where every request in your system begins.",
       objective: { kind: "node", componentType: "client" },
@@ -58,7 +58,7 @@ export const firstWebSystemLesson: Lesson = {
       title: "Add an API Server",
       description:
         "The API server receives requests and runs your application logic.",
-      instruction: "Drag an API Server onto the canvas.",
+      instruction: "Drag API Server onto the canvas.",
       successMessage: "API Server added",
       successExplanation:
         "Your logic needs somewhere to run, apart from the client, so you can change and scale it on its own.",
@@ -100,7 +100,7 @@ export const firstWebSystemLesson: Lesson = {
       title: "Add a Database",
       description:
         "Your application needs somewhere to persist data. A server forgets everything when it restarts.",
-      instruction: "Drag a Database onto the canvas.",
+      instruction: "Drag Database onto the canvas.",
       successMessage: "Database added",
       successExplanation: "A database keeps your data safe even when servers come and go.",
       objective: { kind: "node", componentType: "database" },
@@ -110,7 +110,7 @@ export const firstWebSystemLesson: Lesson = {
       title: "Connect API Server to Database",
       description:
         "Connect your backend to persistent storage, so it can read and store data.",
-      instruction: "Connect the API Server to the Database.",
+      instruction: "Drag from the API Server's right handle to the Database's left handle.",
       successMessage: "Connection created",
       successExplanation:
         "Only your server talks to the database, which keeps access to your data in one place you control.",
@@ -141,7 +141,7 @@ export const firstWebSystemLesson: Lesson = {
       title: "Add a Cache",
       description:
         "Most systems read data far more often than they change it. A cache keeps frequently read data in fast memory, so the database is asked less often.",
-      instruction: "Drag a Cache onto the canvas.",
+      instruction: "Drag Cache onto the canvas.",
       successMessage: "Cache added",
       successExplanation:
         "A cache can answer repeated reads without bothering the database, which makes reads faster and takes load off it.",
@@ -152,7 +152,7 @@ export const firstWebSystemLesson: Lesson = {
       title: "Put the Cache in the Read Path",
       description:
         "A cache only helps if requests can reach it. Your server should check the cache before it asks the database.",
-      instruction: "Connect the API Server to the Cache.",
+      instruction: "Drag from the API Server's right handle to the Cache's left handle.",
       successMessage: "Cache connected",
       successExplanation:
         "Now the server can ask the cache first. Reads it can answer never reach the database.",

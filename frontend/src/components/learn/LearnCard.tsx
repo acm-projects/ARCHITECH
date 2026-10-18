@@ -1,5 +1,10 @@
+import Image from "next/image";
+import { useEffect, useState } from "react";
+
 import { FREE_PLAY_BODY, FREE_PLAY_TITLE, type ConnectionFeedback, type Lesson } from "./lessons";
 import type { LessonStatus } from "./useLessonEngine";
+import { CATEGORY_ICONS } from "../workspace/toolbox/categoryIcons";
+import { COMPONENT_CATALOG, FAMILY_COLORS, FAMILY_LABELS } from "../workspace/componentCatalog";
 
 type LearnCardProps = {
   lesson: Lesson;
@@ -7,52 +12,113 @@ type LearnCardProps = {
   status: LessonStatus;
   // The tutorial is finished and the design is free to change: replaces the step.
   freePlay?: boolean;
+  skipped?: boolean;
+  onContinue: () => void;
+  error?: string | null;
   feedback?: ConnectionFeedback | null;
   // A hint worked out from the design, shown when the learner is stuck.
   hint?: string | null;
   onDismissFeedback?: () => void;
 };
 
-// Small floating card over the canvas; the canvas stays fully interactive around it.
+function DialogueText({ text }: { text: string }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const start = performance.now();
+    const finish = () => {
+      clearInterval(timer);
+      setCount(text.length);
+    };
+    const timer = window.setInterval(() => {
+      const next = Math.min(text.length, Math.floor((performance.now() - start) / 18));
+      setCount(next);
+      if (next === text.length) clearInterval(timer);
+    }, 18);
+    const onVisibility = () => { if (document.hidden) finish(); };
+    if (motion.matches || document.hidden) finish();
+    motion.addEventListener("change", finish);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearInterval(timer);
+      motion.removeEventListener("change", finish);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [text]);
+
+  return <>
+    <span className="sr-only">{text}</span>
+    <span aria-hidden="true" className="ax-learn-typed">
+      {count >= text.length ? text : <>
+        {text.slice(0, count)}<span style={{ visibility: "hidden" }}>{text.slice(count)}</span>
+      </>}
+    </span>
+  </>;
+}
+
+// Keep Archie's explanation distinct from the action the learner should take.
+function ArchieDialogue({ children }: { children: string }) {
+  return (
+    <div className="ax-learn-dialogue">
+      <div className="ax-learn-speech">
+        <span className="sr-only">Archie: </span>
+        <p className="ax-card-body">
+          <DialogueText key={children} text={children} />
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// The canvas stays interactive while the current instruction remains visible.
 export default function LearnCard({
   lesson,
   stepIndex,
   status,
   freePlay = false,
+  skipped = false,
+  onContinue,
+  error,
   feedback,
   hint,
   onDismissFeedback,
 }: LearnCardProps) {
-  const count = lesson.steps.length;
   const step = lesson.steps[stepIndex];
-  const isComplete = freePlay || status === "complete";
+  // Add-component instructions follow the catalog when a component moves categories.
+  const category = step.objective.kind === "node"
+    ? COMPONENT_CATALOG[step.objective.componentType].family
+    : null;
+  const CategoryIcon = category ? CATEGORY_ICONS[category] : null;
+  const heading = freePlay
+    ? skipped ? "Free play" : FREE_PLAY_TITLE
+    : feedback ? feedback.title : step.title;
 
   return (
     <div className="ax-card ax-learn" aria-live="polite" data-learn-phase={freePlay ? "free-play" : "guided"}>
-      <div className="flex items-baseline justify-between">
-        <span className="ax-panel-title">Learn</span>
-        <span className="ax-card-label">
-          {isComplete ? count : stepIndex + 1} / {count}
+      <div className="ax-learn-header" data-celebrating={status === "success"}>
+        <p className="ax-card-title">{heading}</p>
+        <span key={`${step.id}-${status}`} className="ax-learn-portrait" aria-hidden="true">
+          <Image src="/archie.svg" alt="" width={518} height={400} />
         </span>
       </div>
 
       {freePlay ? (
         <>
-          <p className="ax-card-title mt-4">{FREE_PLAY_TITLE}</p>
-          <p className="ax-card-body">{FREE_PLAY_BODY}</p>
+          <ArchieDialogue>{skipped
+            ? "Build, configure, and test your architecture."
+            : FREE_PLAY_BODY}</ArchieDialogue>
         </>
       ) : status === "success" ? (
         <>
-          <p className="ax-card-title mt-4 text-(--ax-accent)">
-            ✓ {step.successMessage}
-          </p>
-          <p className="ax-card-body">{step.title}</p>
-          <p className="ax-card-label mt-2">{step.successExplanation}</p>
+          <ArchieDialogue>{step.successExplanation}</ArchieDialogue>
+          <button type="button" className="ax-learn-continue" onClick={onContinue}>
+            Continue
+          </button>
         </>
       ) : feedback ? (
-        <div className="ax-feedback mt-4">
-          <p className="ax-card-title">{feedback.title}</p>
-          <p className="ax-card-body">{feedback.explanation}</p>
+        <div>
+          <ArchieDialogue>{feedback.explanation}</ArchieDialogue>
           <button
             type="button"
             onClick={onDismissFeedback}
@@ -63,38 +129,24 @@ export default function LearnCard({
         </div>
       ) : (
         <>
-          <p className="ax-card-title mt-4">{step.title}</p>
-          <p className="ax-card-body">{step.description}</p>
-          <p className="mt-3 text-[10px]">{step.instruction}</p>
-          {hint && <p className="ax-card-label mt-2">Hint: {hint}</p>}
+          <ArchieDialogue>{step.description}</ArchieDialogue>
+          <div className="ax-learn-instruction">
+            {CategoryIcon && category && <p>
+              Open{" "}<span className="ax-learn-category">
+                <CategoryIcon size={16} color={FAMILY_COLORS[category]} aria-hidden="true" />
+                <span>{FAMILY_LABELS[category]}</span>
+              </span>{" "}in the left toolbar.
+            </p>}
+            <p>{step.instruction}</p>
+          </div>
+          {hint && <details className="ax-learn-hint">
+            <summary>Hint</summary>
+            <p className="ax-card-body">{hint}</p>
+          </details>}
         </>
       )}
 
-      <ol className="mt-4 flex gap-1.5" aria-label="Lesson progress">
-        {lesson.steps.map((lessonStep, index) => {
-          const done =
-            isComplete ||
-            index < stepIndex ||
-            (index === stepIndex && status === "success");
-          const state = done
-            ? "is-done"
-            : index === stepIndex
-              ? "is-current"
-              : "";
-          return (
-            <li
-              key={lessonStep.id}
-              className={`ax-dot ${state}`}
-              aria-current={index === stepIndex && !done ? "step" : undefined}
-            >
-              <span className="sr-only">
-                Step {index + 1}
-                {done ? ", done" : ""}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
+      {error && <p className="ax-card-body mt-2" role="alert">{error}</p>}
     </div>
   );
 }

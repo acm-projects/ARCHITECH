@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next";
 import "../src/index.css";
 
 export const metadata: Metadata = {
-  title: "ARCHITECT · Build systems. Break systems.",
+  title: "ARCHITECH · Build systems. Break systems.",
   icons: { icon: { url: "/archie.svg", type: "image/svg+xml" } },
 };
 
