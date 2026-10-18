@@ -1,8 +1,7 @@
 /*
  * Visual system for the shared architecture workspace (/workspace, /learn, /challenge).
  *
- * Composition: one warm surface. The header, the tool palette and the canvas share the
- * same tone and are separated by spacing and a single hairline, not by boxes. Type is
+ * Composition: one warm canvas with floating tool surfaces and pill handles. Type is
  * small and contrast comes from size, not weight. Elevation is reserved for the one
  * thing that floats over content: popovers. Blue means selection, focus or the primary
  * action; family colors appear only on tiny glyphs.
@@ -97,11 +96,8 @@
 /* ---- Header: top chrome, no container ---- */
 
 .ax-workspace .ax-brand {
-  font-size: var(--ax-t-sm);
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+  display: inline-flex;
+  flex-shrink: 0;
 }
 
 .ax-workspace .ax-title {
@@ -181,12 +177,151 @@
   color: var(--ax-danger);
 }
 
-/* ---- Tool palette: same surface as the canvas, one hairline edge ---- */
+/* Floating canvas tools share one surface and one pill handle. */
+/* Let canvas interactions pass through the gap between the rail and its flyout.
+   The visible surfaces below opt back into pointer events. */
+.ax-workspace .ax-canvas-panel {
+  /* Panel text stays readable independently of the smaller diagram and header type. */
+  --ax-t-micro: 12px;
+  --ax-t-xs: 13px;
+  --ax-t-sm: 14px;
+  --ax-t-md: 15px;
+  --ax-t-lg: 16px;
+  --ax-muted: #4a4a46;
+  --ax-subtle: #62625c;
 
-.ax-workspace .ax-toolbox {
-  border-right: 1px solid var(--ax-line);
+  position: absolute;
+  z-index: 20;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-height: calc(100% - 32px);
+  pointer-events: none;
+}
+.ax-workspace .ax-canvas-panel[data-side="right"] {
+  left: auto;
+  right: 16px;
+  flex-direction: row-reverse;
+}
+.ax-workspace .ax-panel-rail {
+  padding: 5px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 999px;
+  background: var(--ax-surface);
+  pointer-events: auto;
+}
+.ax-workspace .ax-panel-handle,
+.ax-workspace .ax-panel-rail .ax-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
   background: transparent;
+  color: var(--ax-ink-soft);
+}
+.ax-workspace .ax-panel-rail .ax-item .ax-item-glyph { width: 16px; height: 16px; }
+.ax-workspace .ax-panel-rail ul { margin: 0; padding: 0; list-style: none; }
+.ax-workspace [data-side="left"] .ax-panel-rail ul { display: grid; gap: 2px; }
+.ax-workspace .ax-component-menu ul { margin: 0; padding: 0; list-style: none; }
+.ax-workspace .ax-component-menu { overflow: hidden; }
+.ax-workspace .ax-component-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ax-line-strong) transparent;
+}
+.ax-workspace .ax-component-list::-webkit-scrollbar { width: 6px; }
+.ax-workspace .ax-component-list::-webkit-scrollbar-thumb { background: var(--ax-line-strong); }
+.ax-workspace .ax-component-list::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+.ax-workspace .ax-component-menu .ax-section-label { padding: 8px 4px 2px; font-weight: 500; color: var(--ax-ink-soft); }
+.ax-workspace .ax-component-menu .ax-panel-title { padding-left: 4px; font-size: var(--ax-t-md); }
+.ax-workspace .ax-component-menu .ax-item { margin: 0; padding: 6px 4px; gap: 8px; min-height: 32px; height: auto; }
+.ax-workspace .ax-component-menu .ax-component-name { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.4; }
+.ax-workspace .ax-component-menu .ax-search { margin: 0 4px; }
+/* Hover names do not capture the pointer or become another clickable surface.
+   Buttons retain their accessible names even while these visual labels are hidden. */
+.ax-workspace .ax-rail-name,
+.ax-workspace .ax-panel-rail .ax-component-name {
+  display: none;
+  position: absolute;
+  left: calc(100% + 12px);
+  padding: 6px 10px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 999px;
+  background: var(--ax-surface);
   color: var(--ax-ink);
+  font-size: var(--ax-t-md);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ax-workspace [data-side="right"] .ax-rail-name { left: auto; right: calc(100% + 12px); }
+.ax-workspace .ax-panel-handle[aria-expanded="false"]:focus-visible .ax-rail-name { display: block; }
+@media (hover: hover) {
+  /* Hover flyouts show their contents directly; a label would flash before React opens them. */
+  .ax-workspace .ax-canvas-panel:not([data-hover-flyout]) .ax-panel-handle[aria-expanded="false"]:hover .ax-rail-name,
+  .ax-workspace .ax-panel-rail .ax-item:hover .ax-component-name { display: block; }
+}
+.ax-workspace .ax-panel-handle:hover,
+.ax-workspace .ax-panel-handle[aria-expanded="true"] { background: var(--ax-line); }
+.ax-workspace .ax-panel-handle[aria-expanded="true"] { outline: 1px solid var(--ax-ink-soft); }
+.ax-workspace .ax-panel-content {
+  width: 190px;
+  font-size: var(--ax-t-sm);
+  line-height: 1.5;
+  max-height: calc(100dvh - 120px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 16px;
+  background: var(--ax-surface);
+  pointer-events: auto;
+}
+/* Explicitly preserve hidden behavior against the legacy global surface styles. */
+.ax-workspace .ax-panel-content[hidden] { display: none; }
+/* Absolute placement keeps the rail still as categories change height. The transparent
+   bridge lets the pointer cross the gap without dismissing the hover menu. */
+.ax-workspace .ax-canvas-panel[data-hover-flyout] .ax-panel-content {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: var(--ax-flyout-offset);
+  max-height: min(420px, calc(50dvh - var(--ax-flyout-offset) + 60px));
+}
+.ax-workspace .ax-canvas-panel[data-hover-flyout]:has(.ax-panel-content:not([hidden]))::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: 10px;
+  height: 100%;
+  pointer-events: auto;
+}
+.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content { overflow: hidden; }
+.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:not([hidden]) { display: flex; flex-direction: column; }
+.ax-workspace .ax-canvas-panel[data-wide="true"] .ax-panel-content { width: 200px; }
+.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content { width: 310px; }
+.ax-workspace .ax-panel-content .ax-search-input { height: 34px; }
+.ax-workspace .ax-panel-content .ax-panel-title { font-weight: 500; color: var(--ax-ink-soft); }
+.ax-workspace .ax-panel-content .ax-card { width: 100%; border: 0; border-radius: 0; animation: none; }
+.ax-workspace .ax-panel-content .ax-card + .ax-card { border-top: 1px solid var(--ax-line); }
+@media (max-width: 767px) {
+  .ax-workspace .ax-canvas-panel { top: 12px; left: 12px; transform: none; align-items: flex-start; }
+  .ax-workspace .ax-canvas-panel[data-side="left"] { position: relative; top: auto; left: auto; margin: 12px; }
+  .ax-workspace .ax-canvas-panel[data-hover-flyout] { width: max-content; }
+  .ax-workspace .ax-canvas-panel[data-hover-flyout] .ax-panel-content { max-height: 32dvh; }
+  .ax-workspace .ax-canvas-panel[data-side="right"] { right: 12px; }
+  .ax-workspace .ax-panel-content,
+  .ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content { width: min(310px, calc(100vw - 78px)); max-height: 32dvh; }
+  .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content { width: min(190px, calc(100vw - 78px)); }
+  .ax-workspace .ax-canvas-panel[data-wide="true"] .ax-panel-content { width: min(200px, calc(100vw - 78px)); }
 }
 
 .ax-workspace .ax-panel-title {
@@ -211,67 +346,6 @@
 }
 .ax-workspace .ax-icon-btn:hover {
   color: var(--ax-ink);
-}
-
-/*
- * Collapse tab: a small rounded tab straddling the palette edge with an SVG chevron.
- * Collapsed, it becomes the whole rail: a pill attached to the left edge of the screen.
- */
-.ax-workspace .ax-collapse {
-  position: absolute;
-  top: 50%;
-  right: -9px;
-  transform: translateY(-50%);
-  z-index: 30;
-  width: 18px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: 999px;
-  background: var(--ax-surface);
-  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.06);
-  padding: 0;
-  color: var(--ax-ink-soft);
-  opacity: 0.6;
-  transition:
-    opacity var(--ax-fast) var(--ax-ease),
-    color var(--ax-fast) var(--ax-ease),
-    border-color var(--ax-fast) var(--ax-ease);
-}
-.ax-workspace .ax-rail:hover .ax-collapse,
-.ax-workspace .ax-collapse:hover,
-.ax-workspace .ax-collapse:focus-visible {
-  opacity: 1;
-}
-.ax-workspace .ax-collapse:hover {
-  border-color: var(--ax-accent);
-  color: var(--ax-accent);
-}
-.ax-workspace .ax-collapse svg {
-  display: block;
-}
-.ax-workspace .ax-rail[data-collapsed="true"] .ax-collapse {
-  left: 0;
-  right: auto;
-  width: 26px;
-  height: 80px;
-  border-color: var(--ax-brand);
-  border-left: 0;
-  border-radius: 0 16px 16px 0;
-  background: var(--ax-brand);
-  color: #fff;
-  box-shadow: none;
-  opacity: 1;
-}
-.ax-workspace .ax-rail[data-collapsed="true"] .ax-collapse:hover {
-  border-color: var(--ax-brand);
-  color: #fff;
-  filter: brightness(1.15);
-}
-/* Collapsed, the palette's own hairline goes away; only the tab remains. */
-.ax-workspace .ax-rail[data-collapsed="true"] .ax-toolbox {
-  border-right-color: transparent;
 }
 
 /* Search: a line of interface text with a hairline underneath. */
@@ -357,8 +431,7 @@
   cursor: grab;
   transition:
     background-color var(--ax-fast) var(--ax-ease),
-    color var(--ax-fast) var(--ax-ease),
-    opacity var(--ax-fast) var(--ax-ease);
+    color var(--ax-fast) var(--ax-ease);
 }
 .ax-workspace .ax-item .ax-item-glyph {
   flex: none;
@@ -376,10 +449,6 @@
   opacity: 1;
 }
 .ax-workspace .ax-item:active {
-  cursor: grabbing;
-}
-.ax-workspace .ax-item.is-dragging {
-  opacity: 0.45;
   cursor: grabbing;
 }
 .ax-workspace .ax-item:focus-visible {
@@ -409,6 +478,11 @@
 /* ---- React Flow: canvas, controls, attribution ---- */
 
 .ax-workspace .react-flow {
+  /* Uniform graph-paper squares. */
+  background-image:
+    linear-gradient(to right, rgba(17, 17, 17, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17, 17, 17, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
   --xy-background-color: var(--ax-canvas);
   --xy-edge-stroke: #b4b4af;
   --xy-edge-stroke-selected: var(--ax-accent);
@@ -748,9 +822,112 @@
 /* ---- Learn and Challenge annotations over the canvas ---- */
 
 .ax-workspace .ax-learn {
-  width: 232px;
+  width: 100%;
   border-color: var(--ax-line);
   background: var(--ax-surface);
+}
+
+/* Guided lessons leave more of the canvas exposed than the analysis panels. */
+.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content:has(> .ax-learn[data-learn-phase="guided"]) {
+  width: min(290px, calc(100vw - 78px));
+}
+
+.ax-workspace .ax-learn[data-learn-phase="guided"] { padding: 14px 12px; }
+
+@media (min-width: 768px) {
+  .ax-workspace .ax-learn[data-learn-phase="guided"] {
+    display: flex;
+    flex-direction: column;
+    row-gap: 8px;
+  }
+
+
+}
+
+/* A dialogue portrait accompanies explanations; task controls stay outside it. */
+.ax-workspace .ax-learn-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 10px;
+}
+
+.ax-workspace .ax-learn-dialogue {
+  margin-top: 10px;
+}
+
+.ax-workspace .ax-learn-portrait {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border: 2px solid var(--ax-ink);
+  border-radius: 50%;
+  background: #fff;
+}
+
+.ax-workspace .ax-learn-portrait img {
+  position: absolute;
+  width: 179%;
+  max-width: none;
+  height: auto;
+  left: -39%;
+  top: -5%;
+}
+
+.ax-workspace .ax-learn-instruction {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  font-size: var(--ax-t-sm);
+  line-height: 1.6;
+}
+
+.ax-workspace .ax-learn-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  vertical-align: middle;
+}
+
+.ax-workspace .ax-learn-continue {
+  display: block;
+  margin-top: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--ax-ink);
+  border-radius: 3px;
+  background: var(--ax-ink);
+  color: var(--ax-surface);
+  font-size: var(--ax-t-sm);
+  font-weight: 500;
+}
+
+.ax-workspace .ax-learn-continue:hover { background: var(--ax-ink-soft); }
+.ax-workspace .ax-learn-continue:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 3px; }
+
+.ax-workspace .ax-learn-hint {
+  margin-top: 12px;
+  font-size: var(--ax-t-xs);
+  color: var(--ax-muted);
+}
+
+.ax-workspace .ax-learn-hint summary { cursor: pointer; }
+
+.ax-workspace .ax-learn-header[data-celebrating="true"] .ax-learn-portrait img {
+  transform-origin: 50% 65%;
+  animation: ax-learn-nod 480ms ease-in-out 1;
+}
+
+@keyframes ax-learn-nod {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  35% { transform: translateY(2px) rotate(5deg); }
+  70% { transform: translateY(-1px) rotate(-2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-workspace .ax-learn-header[data-celebrating="true"] .ax-learn-portrait img {
+    animation: none;
+  }
 }
 .ax-workspace .ax-feedback {
   padding-left: var(--ax-s3);
