@@ -205,3 +205,33 @@ test("copy and paste keep the implementation", () => {
   assert.equal(next.nodes.length, 2);
   assert.equal(next.nodes[1].data.implementation, "mongodb");
 });
+
+// ---- The API component: REST, GraphQL, gRPC, WebSocket ----
+
+test("the API component's protocol changes latency, capacity and connection limits", () => {
+  const apiDesign = (protocol?: string, users = 5_000) => ({
+    graph: {
+      nodes: [n("c", "client"), n("api", "api", protocol), n("s", "server", undefined, { replicas: 10 }), n("d", "database", undefined, { replicas: 3 })],
+      edges: [e("c", "api"), e("api", "s"), e("s", "d")],
+    },
+    traffic: { ...traffic, concurrentUsers: users },
+  });
+  const rest = configureNode(n("api", "api"));
+  const graphql = configureNode(n("api", "api", "graphql-api"));
+  const grpc = configureNode(n("api", "api", "grpc-api"));
+  const websocket = configureNode(n("api", "api", "websocket-api"));
+  assert.equal(resolveImplementation("api", undefined).id, "rest-api");
+  assert.ok(grpc.latencyMs < rest.latencyMs && rest.latencyMs < graphql.latencyMs);
+  assert.ok(grpc.capacityPerInstance! > rest.capacityPerInstance! && rest.capacityPerInstance! > graphql.capacityPerInstance!);
+  assert.equal(websocket.connectionsPerInstance, 50_000);
+  assert.equal(rest.connectionsPerInstance, null);
+
+  const at = (protocol?: string, users?: number) => {
+    const { graph, traffic: t } = apiDesign(protocol, users);
+    return evaluateArchitecture({ graph: graph as never, traffic: t });
+  };
+  assert.ok(at("grpc-api").metrics.p95LatencyMs < at("graphql-api").metrics.p95LatencyMs);
+  // Each WebSocket instance holds 50,000 open connections: 200,000 users need more than one.
+  assert.ok(at("websocket-api", 200_000).findings.some((finding) => finding.id === "saturated-api"));
+  assert.ok(!at(undefined, 200_000).findings.some((finding) => finding.id === "saturated-api"));
+});

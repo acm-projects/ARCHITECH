@@ -20,6 +20,8 @@ import type { TrafficProfile } from "./traffic.ts";
 //    when it is connected to one; a CDN answers its hit rate of them at the edge; a service
 //    reads them from object storage when connected to it, otherwise serves them itself.
 //    readRatio is the read share of the remaining (API) requests.
+//  - A custom component (a technology the app does not model) passes requests on like a
+//    service, with no capacity limit, latency, cost or downtime of its own: it is not measured.
 //  - Support services (auth, search) are called alongside; authentication only for its
 //    check rate (with JWTs, sign-ins and refreshes).
 // Cycles are cut where they close, so the flow always ends.
@@ -193,7 +195,8 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
   // How a service or gateway divides its requests between downstream services and data.
   const sharesOf = (id: string, groups: Groups) => {
     const hasData = groups.caches.length + groups.queues.length + groups.stores.length > 0;
-    if (groups.forward.length > 0 && (roleOf(id) === "ingress" || !hasData)) {
+    // Gateways, load balancers and unmeasured custom components pass every request onward.
+    if (groups.forward.length > 0 && (roleOf(id) === "ingress" || roleOf(id) === "custom" || !hasData)) {
       return { forwardShare: 1, dataShare: 0 };
     }
     if (groups.forward.length > 0) return { forwardShare: 0.5, dataShare: 0.5 };
@@ -267,7 +270,7 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
     // Static files: read from object storage when connected to it; a gateway or load balancer
     // otherwise passes them on; a service otherwise serves them itself (they end here).
     const storages = groups.stores.filter(isStorage);
-    const forwardAssets = storages.length === 0 && config.role === "ingress";
+    const forwardAssets = storages.length === 0 && (config.role === "ingress" || config.role === "custom");
     for (const storage of storages) out.push([storage, mix(flow, 0, 0, 1 / storages.length)]);
 
     for (const target of groups.forward) {
@@ -486,7 +489,12 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
       // Static files it holds keep working when the origin is down; API requests do not.
       const onward = alternatives(targets, pathAvailability);
       downstream = staticShare * (config.hitRate + (1 - config.hitRate) * onward) + (1 - staticShare) * onward;
-    } else if (config.role === "compute" || config.role === "ingress" || config.role === "support") {
+    } else if (
+      config.role === "compute" ||
+      config.role === "ingress" ||
+      config.role === "support" ||
+      config.role === "custom"
+    ) {
       const groups = groupsOf(id);
       const { forwardShare, dataShare } = sharesOf(id, groups);
       // A request fails when a support service it calls is down; requests that do not call it
@@ -516,7 +524,7 @@ export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation
       const assets =
         storages.length > 0
           ? alternatives(storages, pathAvailability)
-          : config.role === "ingress" && groups.forward.length > 0
+          : (config.role === "ingress" || config.role === "custom") && groups.forward.length > 0
             ? forward
             : 1;
       downstream = (1 - staticShare) * api + staticShare * assets;

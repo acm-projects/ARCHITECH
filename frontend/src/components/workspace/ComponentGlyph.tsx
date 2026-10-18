@@ -49,6 +49,18 @@ const GLYPH_PATHS: Record<ArchitectureNodeType, ReactNode> = {
       <path d="M7 2v12M1.5 8h4M10 8h4.5M12.5 5.5L15 8l-2.5 2.5" />
     </>
   ),
+  // A puzzle piece: something brought in from outside the library.
+  custom: (
+    <>
+      <path d="M3 4.5h3a1.5 1.5 0 1 1 3 0h3v3a1.5 1.5 0 1 1 0 3v3H9a1.5 1.5 0 1 0-3 0H3v-3a1.5 1.5 0 1 0 0-3z" />
+    </>
+  ),
+  // Braces: an interface definition.
+  api: (
+    <>
+      <path d="M5.5 2.5c-1.4 0-2 .7-2 2V6c0 .9-.6 1.6-1.5 2 .9.4 1.5 1.1 1.5 2v1.5c0 1.3.6 2 2 2M10.5 2.5c1.4 0 2 .7 2 2V6c0 .9.6 1.6 1.5 2-.9.4-1.5 1.1-1.5 2v1.5c0 1.3-.6 2-2 2" />
+    </>
+  ),
   "load-balancer": (
     <>
       <path d="M2 8h4l5-4M6 8l5 4" />

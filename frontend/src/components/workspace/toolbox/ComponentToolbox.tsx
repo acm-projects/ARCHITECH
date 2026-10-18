@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 
-import { ChevronDown, Layers, MoreHorizontal, X } from "lucide-react";
+import { ChevronDown, Layers, MoreHorizontal, Puzzle, X } from "lucide-react";
 
 import CanvasPanel from "./CanvasPanel";
 import ComponentGlyph from "../ComponentGlyph";
@@ -16,6 +16,7 @@ import {
 } from "../componentCatalog";
 import { setComponentDragImage } from "./dragPreview";
 import { TechnologyDragList } from "../TechnologyPicker";
+import type { CustomTechnology } from "../../../lib/projects/customTechnologies";
 
 // One draggable row, used by both category panels and the full library. Dragging onto the
 // canvas is the only way to add a component: rows have no click or keyboard action. The
@@ -67,25 +68,65 @@ function ComponentRow({
   );
 }
 
+// One technology from the project's imported repository that the app does not model. Dragging
+// it places a Custom component named after it (drawn and connected, not measured).
+function CustomTechnologyRow({ technology }: { technology: CustomTechnology }) {
+  return (
+    <div
+      draggable
+      aria-label={technology.name}
+      title={technology.evidence.join("\n")}
+      onDragStart={(event) => {
+        writeComponentDragData(event.dataTransfer, {
+          type: "custom",
+          label: technology.name,
+          properties: { technology: technology.name },
+        });
+        setComponentDragImage(
+          event.dataTransfer,
+          technology.name,
+          event.currentTarget.querySelector("svg"),
+          FAMILY_COLORS.general,
+        );
+      }}
+      style={{ "--ax-family": FAMILY_COLORS.general } as CSSProperties}
+      className="ax-item"
+    >
+      <ComponentGlyph type="custom" className="ax-item-glyph" />
+      <span className="ax-component-name min-w-0 flex-1 truncate">{technology.name}</span>
+    </div>
+  );
+}
+
 // Match the catalog's families; component definitions and ordering stay in the catalog.
 const CATEGORIES = componentGroups("");
 
-export default function ComponentToolbox() {
-  // null closes the flyout; a family opens only its components; "all" is the More library.
-  const [category, setCategory] = useState<ComponentFamily | "all" | null>(null);
+export default function ComponentToolbox({
+  customTechnologies = [],
+}: {
+  // Technologies from the project's imported repository; shown under "From your repo".
+  customTechnologies?: readonly CustomTechnology[];
+}) {
+  // null closes the flyout; a family opens only its components; "all" is the More library;
+  // "repo" is the imported repository's own technologies.
+  const [category, setCategory] = useState<ComponentFamily | "all" | "repo" | null>(null);
   const [query, setQuery] = useState("");
   const [flyoutOffset, setFlyoutOffset] = useState(6);
   // The one component whose technologies are showing, if any.
   const [technologiesOf, setTechnologiesOf] = useState<ComponentDefinition["type"] | null>(null);
-  const groups = componentGroups(query).filter((group) => category === "all" || group.family === category);
-  const title = CATEGORIES.find((group) => group.family === category)?.label ?? "Components";
+  const groups =
+    category === "repo" ? [] : componentGroups(query).filter((group) => category === "all" || group.family === category);
+  const title =
+    category === "repo"
+      ? "From your repo"
+      : (CATEGORIES.find((group) => group.family === category)?.label ?? "Components");
   const alignFlyout = (button: HTMLButtonElement) => {
     const rail = button.closest(".ax-panel-rail");
     if (rail) setFlyoutOffset(button.getBoundingClientRect().top - rail.getBoundingClientRect().top);
   };
   // Clicking the active category closes it. Clear the old search when switching so
   // a query from More cannot accidentally hide the next category's components.
-  const selectCategory = (next: ComponentFamily | "all" | null) => {
+  const selectCategory = (next: ComponentFamily | "all" | "repo" | null) => {
     setCategory(next === category ? null : next);
     setQuery("");
   };
@@ -102,7 +143,8 @@ export default function ComponentToolbox() {
       rail={
         <ul aria-label="Component categories">
           {[...CATEGORIES.map(({ family, label }) => ({ key: family, label, Icon: CATEGORY_ICONS[family] })),
-            { key: "all" as const, label: "More", Icon: MoreHorizontal }].map(({ key, label, Icon }) => (
+            { key: "all" as const, label: "More", Icon: MoreHorizontal },
+            ...(customTechnologies.length > 0 ? [{ key: "repo" as const, label: "From your repo", Icon: Puzzle }] : [])].map(({ key, label, Icon }) => (
             <li key={key}>
               <button type="button" className="ax-panel-handle" aria-label={label}
                 aria-expanded={category === key}
@@ -118,7 +160,7 @@ export default function ComponentToolbox() {
                     if (category !== key) { setCategory(key); setQuery(""); }
                   } else selectCategory(key);
                 }}>
-                <Icon size={16} color={key === "all" ? undefined : FAMILY_COLORS[key]} aria-hidden="true" />
+                <Icon size={16} color={key === "all" || key === "repo" ? undefined : FAMILY_COLORS[key]} aria-hidden="true" />
                 <span className="ax-rail-name" aria-hidden="true">{label}</span>
               </button>
             </li>
@@ -141,7 +183,19 @@ export default function ComponentToolbox() {
         </div>
         {/* Only the list scrolls; the title, close control, and search remain available. */}
         <div className="ax-component-list">
-          {groups.length === 0 && <p className="ax-card-body">No matching components</p>}
+          {category === "repo" && (
+            <section aria-label="From your repo">
+              <p className="ax-tech-basis">Found in your imported repository. Drawn and connected, but not measured in Run Design.</p>
+              <ul>
+                {customTechnologies.map((technology) => (
+                  <li key={technology.id}>
+                    <CustomTechnologyRow technology={technology} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {category !== "repo" && groups.length === 0 && <p className="ax-card-body">No matching components</p>}
           {groups.map((group) => (
             <section key={group.family} aria-label={group.label}>
               {category === "all" && <h3 className="ax-section-label">{group.label}</h3>}

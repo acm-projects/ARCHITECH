@@ -163,7 +163,8 @@ export function TechnologyChooser({
   // selected and re-renders when its data changes, so this is the graph on screen. A few
   // small simulations per option; cheap enough to redo on each render.
   const comparison = compareTechnologiesForNode({ nodes: getNodes(), edges: getEdges() }, traffic, nodeId);
-  if (!comparison) return null;
+  // A custom component has no technologies to choose from.
+  if (!comparison || type === "custom") return null;
 
   const current = currentImplementationId(type, implementation);
   const selected = comparison.options.find((option) => option.implementation.id === current) ?? comparison.options[0];
