@@ -158,6 +158,7 @@ model Project {
   syncedAt     DateTime @updatedAt @map("synced_at")
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   aiConversation AiConversation?
+  versions       ProjectVersion[]
 
   @@index([userId])
   @@map("projects")
@@ -215,4 +216,23 @@ model AiConversation {
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("ai_conversations")
+}
+
+// A snapshot of a project (title and diagram) with the engine's headline numbers then, for the
+// version history (src/lib/projects/versions.ts). kind: "auto", "manual" or "before-restore".
+// fingerprint: the evaluation fingerprint, so unchanged designs are not snapshotted twice.
+model ProjectVersion {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  title       String
+  graph       Json
+  fingerprint String
+  summary     Json
+  kind        String
+  label       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("project_versions")
 }

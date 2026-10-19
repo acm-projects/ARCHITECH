@@ -41,6 +41,7 @@ import StressTestPanel from "./StressTestPanel";
 import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
+import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import { LiveMetricsBar } from "./LiveMetricsBar";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
@@ -112,6 +113,8 @@ function Workspace({ project }: { project: Project }) {
   const [title, setTitle] = useState(project.title);
   // The AI Architect panel, docked to the right of the canvas when open.
   const [aiOpen, setAiOpen] = useState(false);
+  // Version history, docked in the same place (one side panel at a time).
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // Autosave watches the real project content and saves changes in the background.
   // Ctrl+S uses saveNow to force any pending save immediately.
@@ -483,7 +486,22 @@ function Workspace({ project }: { project: Project }) {
               </p>
             )}
 
-            <ArchitectToggle open={aiOpen} onToggle={() => setAiOpen(true)} />
+            <div className="ax-canvas-dock">
+              <HistoryToggle
+                open={historyOpen}
+                onToggle={() => {
+                  setAiOpen(false);
+                  setHistoryOpen(true);
+                }}
+              />
+              <ArchitectToggle
+                open={aiOpen}
+                onToggle={() => {
+                  setHistoryOpen(false);
+                  setAiOpen(true);
+                }}
+              />
+            </div>
 
             {/* Keep the current lesson visible when the canvas opens. */}
             <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
@@ -557,6 +575,9 @@ function Workspace({ project }: { project: Project }) {
               onApply={replaceGraph}
               customTechnologies={project.customTechnologies}
             />
+          )}
+          {historyOpen && (
+            <HistoryPanel projectId={project.id} onClose={() => setHistoryOpen(false)} onRestore={replaceGraph} />
           )}
         </div>
       </div>
