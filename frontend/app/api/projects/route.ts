@@ -3,10 +3,11 @@ import { NextResponse } from "next/server";
 
 import { authOptions } from "../auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { PROJECT_SELECT, rowToPayload } from "@/lib/projects/projectRecords";
+import { PROJECT_SELECT, revisionOf, rowToPayload } from "@/lib/projects/projectRecords";
 import { serverError } from "@/lib/server/log";
 
-// GET /api/projects: every project of the signed-in user, most recently changed first.
+// GET /api/projects: every project of the signed-in user, most recently changed first, and
+// each one's revision ({ projects, revisions: { [id]: revision } }) for If-Match on save.
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
       orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json(
-      { projects: rows.map(rowToPayload) },
+      { projects: rows.map(rowToPayload), revisions: Object.fromEntries(rows.map((row) => [row.id, revisionOf(row)])) },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

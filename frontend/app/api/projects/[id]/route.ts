@@ -7,7 +7,10 @@ import { isValidProjectId, validateProjectInput } from "@/lib/projects/projectPa
 import {
   PROJECT_SELECT,
   checkImplementations,
+  etag,
+  ifMatchRevision,
   inputToData,
+  revisionOf,
   rowToPayload,
 } from "@/lib/projects/projectRecords";
 import { serverError } from "@/lib/server/log";
@@ -34,7 +37,7 @@ export async function GET(request: Request, { params }: Context) {
   try {
     const row = await prisma.project.findFirst({ where: { id, userId }, select: PROJECT_SELECT });
     if (!row) return NextResponse.json(NOT_FOUND, { status: 404 });
-    return NextResponse.json(rowToPayload(row), { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(rowToPayload(row), { headers: { "Cache-Control": "no-store", ETag: etag(revisionOf(row)) } });
   } catch (error) {
     return serverError(request, "Failed to load project.", error, "Unable to load the project.");
   }
@@ -43,6 +46,10 @@ export async function GET(request: Request, { params }: Context) {
 // PUT /api/projects/[id]: create the project with this id, or replace it. The id comes from
 // the browser (a UUID), so creating offline and retrying are both safe: sending the same
 // project twice stores it once.
+// Overwrite protection: send `If-Match: "<revision>"` (the ETag of the copy the edit started
+// from). If the project changed on the server since (another device saved it), the save is
+// refused with 409 and the server's copy: { error, project, revision }. Without If-Match the
+// project is replaced as before. Every success returns the new revision as the ETag.
 export async function PUT(request: Request, { params }: Context) {
   const userId = await currentUserId();
   if (!userId) return unauthenticated();
@@ -75,10 +82,29 @@ export async function PUT(request: Request, { params }: Context) {
     }
 
     const data = inputToData(input);
-    const row = existing
-      ? await prisma.project.update({ where: { id }, data, select: PROJECT_SELECT })
-      : await prisma.project.create({ data: { id, userId, ...data }, select: PROJECT_SELECT });
-    return NextResponse.json(rowToPayload(row), { status: existing ? 200 : 201 });
+    const expected = ifMatchRevision(request.headers.get("if-match"));
+    let row;
+    if (existing && expected !== null) {
+      // Atomic: only replaces the row if it is still at the expected revision.
+      const { count } = await prisma.project.updateMany({
+        where: { id, userId, syncedAt: new Date(Number(expected)) },
+        data,
+      });
+      const current = await prisma.project.findUnique({ where: { id }, select: PROJECT_SELECT });
+      if (count === 0 && current) {
+        return NextResponse.json(
+          { error: "This project was changed on another device.", project: rowToPayload(current), revision: revisionOf(current) },
+          { status: 409, headers: { ETag: etag(revisionOf(current)) } },
+        );
+      }
+      // Deleted in the meantime: store it again.
+      row = current ?? (await prisma.project.create({ data: { id, userId, ...data }, select: PROJECT_SELECT }));
+    } else {
+      row = existing
+        ? await prisma.project.update({ where: { id }, data, select: PROJECT_SELECT })
+        : await prisma.project.create({ data: { id, userId, ...data }, select: PROJECT_SELECT });
+    }
+    return NextResponse.json(rowToPayload(row), { status: existing ? 200 : 201, headers: { ETag: etag(revisionOf(row)) } });
   } catch (error) {
     return serverError(request, "Failed to save project.", error, "Unable to save the project.");
   }
