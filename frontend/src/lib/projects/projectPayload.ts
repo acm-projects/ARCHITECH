@@ -87,6 +87,36 @@ export const isValidProjectId = (id: unknown): id is string =>
 
 // ---- Conversions between the browser's Project and the API payload ----
 
+// The canvas as a graph document (graph spec format): what is saved, synced and sent to the AI.
+export function graphFromCanvas(
+  nodes: Project["nodes"],
+  edges: Project["edges"],
+  customTechnologies?: Project["customTechnologies"],
+): GraphDocument {
+  return {
+    schemaVersion: GRAPH_SCHEMA_VERSION,
+    nodes: nodes.map((node) => ({
+      id: node.id,
+      type: "architecture",
+      position: { x: node.position.x, y: node.position.y },
+      data: {
+        type: node.data.type,
+        label: node.data.label,
+        ...(node.data.implementation ? { implementation: node.data.implementation } : {}),
+        ...(node.data.properties ? { properties: node.data.properties } : {}),
+      },
+    })),
+    edges: edges.map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      ...(typeof edge.sourceHandle === "string" ? { sourceHandle: edge.sourceHandle } : {}),
+      ...(typeof edge.targetHandle === "string" ? { targetHandle: edge.targetHandle } : {}),
+    })),
+    ...(customTechnologies?.length ? { customTechnologies } : {}),
+  };
+}
+
 export function projectToPayload(project: Project): ProjectPayload {
   return {
     id: project.id,
@@ -94,28 +124,7 @@ export function projectToPayload(project: Project): ProjectPayload {
     mode: project.mode,
     learnSkipped: project.learnSkipped ?? false,
     ...(project.source ? { source: project.source } : {}),
-    graph: {
-      schemaVersion: GRAPH_SCHEMA_VERSION,
-      nodes: project.nodes.map((node) => ({
-        id: node.id,
-        type: "architecture",
-        position: { x: node.position.x, y: node.position.y },
-        data: {
-          type: node.data.type,
-          label: node.data.label,
-          ...(node.data.implementation ? { implementation: node.data.implementation } : {}),
-          ...(node.data.properties ? { properties: node.data.properties } : {}),
-        },
-      })),
-      edges: project.edges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        ...(typeof edge.sourceHandle === "string" ? { sourceHandle: edge.sourceHandle } : {}),
-        ...(typeof edge.targetHandle === "string" ? { targetHandle: edge.targetHandle } : {}),
-      })),
-      ...(project.customTechnologies?.length ? { customTechnologies: project.customTechnologies } : {}),
-    },
+    graph: graphFromCanvas(project.nodes, project.edges, project.customTechnologies),
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
     lastOpenedAt: project.lastOpenedAt,

@@ -51,6 +51,7 @@ model User {
   accounts        Account[]
   sessions        Session[]
   projects        Project[]
+  aiRequests      AiRequest[]
 
   @@map("users")
 }
@@ -159,4 +160,31 @@ model Project {
 
   @@index([userId])
   @@map("projects")
+}
+
+// One AI Architect request by a user, for rate limiting (cached replies are recorded too,
+// marked, and do not count toward the limits).
+model AiRequest {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  cached    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("ai_requests")
+}
+
+// A complete AI Architect reply (its events), keyed by a hash of the model, experience level,
+// design, traffic and conversation, so the same question about the same design is answered
+// from here instead of calling the model again. Entries older than a day are ignored, and deleted
+// about once an hour.
+model AiReplyCache {
+  key       String   @id
+  events    Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("ai_reply_cache")
 }
