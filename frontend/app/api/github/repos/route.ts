@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "../../auth/[...nextauth]/route";
-import { prisma } from "@/lib/prisma";
+import { githubAccessTokenFor } from "@/lib/github/githubTokenServer";
 
 export async function GET() {
   try {
@@ -12,21 +12,10 @@ export async function GET() {
       return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     }
 
-    const githubAccount = await prisma.account.findFirst({
-      where: { userId, provider: "github" },
-      select: { access_token: true },
-    });
-    if (!githubAccount) {
-      return NextResponse.json(
-        { error: "Connect your GitHub account to access repositories." },
-        { status: 404 },
-      );
-    }
-    if (!githubAccount.access_token) {
-      return NextResponse.json(
-        { error: "The linked GitHub account has no access token. Reconnect GitHub." },
-        { status: 409 },
-      );
+    // The user's GitHub token, refreshed automatically when it has expired.
+    const githubToken = await githubAccessTokenFor(userId);
+    if (!githubToken.ok) {
+      return NextResponse.json({ error: githubToken.error }, { status: githubToken.status });
     }
 
     const githubResponse = await fetch(
@@ -34,7 +23,7 @@ export async function GET() {
       {
         headers: {
           Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${githubAccount.access_token}`,
+          Authorization: `Bearer ${githubToken.token}`,
           "X-GitHub-Api-Version": "2022-11-28",
         },
         cache: "no-store",
