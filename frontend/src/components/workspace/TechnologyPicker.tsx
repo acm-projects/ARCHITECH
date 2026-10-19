@@ -27,6 +27,9 @@ import {
   type ComponentDefinition,
 } from "./componentCatalog";
 import { DesignTrafficContext } from "./DesignTrafficContext";
+import { DesignComparisonTable } from "./DesignComparisonTable";
+import { compareTechnologiesInDesign } from "../../lib/architecture/evaluation/whatIf";
+import "./live-metrics.css";
 import type { ArchitectureFlowNode, ArchitectureNodeType } from "./nodes/ArchitectureNode";
 import { setComponentDragImage } from "./toolbox/dragPreview";
 
@@ -162,7 +165,10 @@ export function TechnologyChooser({
   // Measured in the design as it is now. The card is open only while this component is
   // selected and re-renders when its data changes, so this is the graph on screen. A few
   // small simulations per option; cheap enough to redo on each render.
-  const comparison = compareTechnologiesForNode({ nodes: getNodes(), edges: getEdges() }, traffic, nodeId);
+  const graph = { nodes: getNodes(), edges: getEdges() };
+  const comparison = compareTechnologiesForNode(graph, traffic, nodeId);
+  // Each technology's effect on the whole design (memoized by fingerprint, so cheap to redo).
+  const whatIf = compareTechnologiesInDesign(graph, traffic, nodeId);
   // A custom component has no technologies to choose from.
   if (!comparison || type === "custom") return null;
 
@@ -236,6 +242,7 @@ export function TechnologyChooser({
           </p>
         </>
       )}
+      {whatIf && <DesignComparisonTable whatIf={whatIf} onChoose={choose} />}
       {error && (
         <p role="alert" className="ax-card-label mt-1">
           {error}

@@ -40,6 +40,14 @@ const LATENCY_ZERO_MS = 2_000;
 // Availability counts "nines" (99% = 2, 99.9% = 3), 25 points each up to four nines.
 const NINES_FOR_FULL_SCORE = 4;
 
+// The rules above, for the generated model documentation (docs/metrics-model.md).
+export const SCORING_RULES = {
+  costZeroMultiple: COST_ZERO_MULTIPLE,
+  latencyFullScoreMs: LATENCY_FULL_SCORE_MS,
+  latencyZeroMs: LATENCY_ZERO_MS,
+  ninesForFullScore: NINES_FOR_FULL_SCORE,
+} as const;
+
 const clamp = (value: number, min = 0, max = 100) =>
   Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min;
 
@@ -114,6 +122,13 @@ const CRITICAL_AVAILABILITY = 0.99;
 const WARNING_AVAILABILITY = 0.999;
 const CRITICAL_LATENCY_MS = 1_000;
 const WARNING_LATENCY_MS = 400;
+export const HEALTH_THRESHOLDS = {
+  criticalUtilization: CRITICAL_UTILIZATION,
+  criticalAvailability: CRITICAL_AVAILABILITY,
+  warningAvailability: WARNING_AVAILABILITY,
+  criticalLatencyMs: CRITICAL_LATENCY_MS,
+  warningLatencyMs: WARNING_LATENCY_MS,
+} as const;
 
 export function assessHealth(
   sim: Simulation,
