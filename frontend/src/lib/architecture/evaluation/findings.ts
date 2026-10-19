@@ -35,6 +35,19 @@ const LOW_READ_SHARE = 0.3;
 const STATIC_ON_SERVER_SHARE = 0.25;
 const IDLE_COST_SHARE_FOR_MEDIUM = 0.2;
 
+// The thresholds above, for the generated model documentation (docs/metrics-model.md).
+export const FINDING_THRESHOLDS = {
+  slowMediumMs: SLOW_MEDIUM_MS,
+  slowHighMs: SLOW_HIGH_MS,
+  longPathComponents: LONG_PATH_COMPONENTS,
+  lowAvailability: LOW_AVAILABILITY,
+  veryLowAvailability: VERY_LOW_AVAILABILITY,
+  overprovisionedUtilization: OVERPROVISIONED_UTILIZATION,
+  lowReadShare: LOW_READ_SHARE,
+  staticOnServerShare: STATIC_ON_SERVER_SHARE,
+  idleCostShareForMedium: IDLE_COST_SHARE_FOR_MEDIUM,
+} as const;
+
 const percent = (value: number) => `${Math.round(value * 100)}%`;
 const money = (value: number) => `$${Math.round(value).toLocaleString("en-US")}`;
 const rps = (value: number) => `${Math.round(value).toLocaleString("en-US")} req/s`;

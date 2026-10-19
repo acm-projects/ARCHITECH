@@ -12,7 +12,8 @@
     "check": "npm run test && npm run typecheck && npm run build",
     "format:check": "oxfmt --check src app",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "test:integration": "node --experimental-strip-types --test --test-concurrency=1 tests/integration/*.test.ts"
+    "test:integration": "node --experimental-strip-types --test --test-concurrency=1 tests/integration/*.test.ts",
+    "docs:metrics": "node --experimental-strip-types scripts/write-metrics-doc.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

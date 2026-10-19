@@ -41,7 +41,9 @@ import StressTestPanel from "./StressTestPanel";
 import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
+import { LiveMetricsBar } from "./LiveMetricsBar";
 import { useLearnMode } from "./useLearnMode";
+import { useLiveMetrics } from "./useLiveMetrics";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
@@ -162,6 +164,8 @@ function Workspace({ project }: { project: Project }) {
   // Challenge has its own Submit flow instead.
   const activeRuns = mode === "learn" ? learn.runs : challenge.runs;
   const canRunDesign = mode === "learn" && learn.freePlay;
+  // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
+  const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
 
   // Check a connection before React Flow lets the user create it.
   // We read the current graph directly from React Flow so this never validates
@@ -461,6 +465,15 @@ function Workspace({ project }: { project: Project }) {
             </ReactFlow>
 
             {/* If saving the selected mode fails, show the error without breaking the editor. */}
+            {canRunDesign && (
+              <LiveMetricsBar
+                result={live.result}
+                changes={live.changes}
+                requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+              />
+            )}
+
             {modeError && (
               <p
                 role="alert"
