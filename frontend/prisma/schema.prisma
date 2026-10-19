@@ -188,3 +188,18 @@ model AiReplyCache {
   @@index([createdAt])
   @@map("ai_reply_cache")
 }
+
+// Sign-in and sign-up attempts, for throttling (src/lib/auth/attemptLimits.ts). The key is a
+// SHA-256 hash of the email or IP address, never the raw value. Rows older than a day are deleted.
+model AuthAttempt {
+  id        String   @id @default(cuid())
+  // "login-email", "login-ip" or "signup-ip".
+  kind      String
+  keyHash   String   @map("key_hash")
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([kind, keyHash, createdAt])
+  @@index([createdAt])
+  @@map("auth_attempts")
+}
