@@ -54,6 +54,7 @@ function defineTests(dbUrl: string) {
   const VALID_TOKENS = new Set(["good-token", "fresh-token"]);
   let modelCalls = 0;
   let lastSystemPrompt = "";
+  let latestMigration = "";
   // A fake Claude: Anthropic's streaming Messages API (server-sent events). Asked about a
   // cache, it answers and proposes adding one; otherwise it only answers.
   function fakeClaude(raw: string, response: http.ServerResponse) {
@@ -138,10 +139,14 @@ function defineTests(dbUrl: string) {
   }
 
   // ---- Helpers ----
-  const call = async (method: string, route: string, options: { cookie?: string; body?: unknown } = {}) => {
+  // Each call comes from its own address unless a test names one, so the sign-up and sign-in
+  // limits (per IP) only apply where a test means them to.
+  const randomIp = () => `10.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
+  const call = async (method: string, route: string, options: { cookie?: string; body?: unknown; ip?: string } = {}) => {
     const response = await fetch(`${base}${route}`, {
       method,
       headers: {
+        "X-Forwarded-For": options.ip ?? randomIp(),
         ...(options.body === undefined ? {} : { "Content-Type": "application/json" }),
         ...(options.cookie ? { Cookie: `next-auth.session-token=${options.cookie}` } : {}),
       },
@@ -159,7 +164,7 @@ function defineTests(dbUrl: string) {
     return { status: response.status, json: json as never };
   };
   const register = async (name: string) => {
-    const email = `${name.toLowerCase()}-${randomUUID().slice(0, 8)}@example.com`;
+    const email = `${name.toLowerCase().replace(/\s+/g, "-")}-${randomUUID().slice(0, 8)}@example.com`;
     const created = await call("POST", "/api/auth/register", { body: { name, email, password: "secret123" } });
     assert.equal(created.status, 201, JSON.stringify(created.json));
     const { rows } = await db.query("select id from users where email = $1", [email]);
@@ -199,9 +204,19 @@ function defineTests(dbUrl: string) {
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort();
+    // Recorded the way `prisma migrate` does, so /api/health sees a migrated database.
+    await db.query(`create table "_prisma_migrations" (
+      id varchar(36) primary key, checksum varchar(64) not null, finished_at timestamptz,
+      migration_name varchar(255) not null, logs text, rolled_back_at timestamptz,
+      started_at timestamptz not null default now(), applied_steps_count integer not null default 0)`);
     for (const migration of migrations) {
       await db.query(readFileSync(path.join(FRONTEND, "prisma/migrations", migration, "migration.sql"), "utf8"));
+      await db.query(
+        `insert into "_prisma_migrations" (id, checksum, finished_at, migration_name, applied_steps_count) values ($1, 'test', now(), $2, 1)`,
+        [randomUUID(), migration],
+      );
     }
+    latestMigration = migrations.at(-1)!;
     await run(["node", "--experimental-strip-types", "prisma/seed.ts"], { DATABASE_URL: dbUrl });
 
     github = http.createServer(fakeGitHub);
@@ -287,6 +302,121 @@ function defineTests(dbUrl: string) {
     assert.equal(rows[0].experienceLevel, "Advanced");
   });
 
+  // Signs in through NextAuth's credentials flow; returns the error message, or null on success.
+  const signInWithPassword = async (email: string, password: string, ip: string): Promise<string | null> => {
+    const csrf = await fetch(`${base}/api/auth/csrf`, { headers: { "X-Forwarded-For": ip } });
+    const { csrfToken } = (await csrf.json()) as { csrfToken: string };
+    const cookies = csrf.headers.getSetCookie().map((cookie) => cookie.split(";")[0]).join("; ");
+    const response = await fetch(`${base}/api/auth/callback/credentials`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: cookies, "X-Forwarded-For": ip },
+      body: new URLSearchParams({ csrfToken, email, password, json: "true" }),
+      redirect: "manual",
+    });
+    const location = response.headers.get("location") ?? ((await response.json().catch(() => ({}))) as { url?: string }).url ?? "";
+    const error = new URL(location, base).searchParams.get("error");
+    return error;
+  };
+
+  test("too many sign-ups from one network are refused", T, async () => {
+    const ip = "203.0.113.7";
+    for (let i = 0; i < 5; i += 1) {
+      const created = await call("POST", "/api/auth/register", { ip, body: { name: "Net", email: `net-${i}-${randomUUID().slice(0, 6)}@example.com`, password: "secret123" } });
+      assert.equal(created.status, 201);
+    }
+    const refused = await call("POST", "/api/auth/register", { ip, body: { name: "Net", email: `net-x-${randomUUID().slice(0, 6)}@example.com`, password: "secret123" } });
+    assert.equal(refused.status, 429);
+    assert.match((refused.json as { error: string }).error, /Too many accounts .* Try again in \d+ minutes?/);
+    const elsewhere = await call("POST", "/api/auth/register", { body: { name: "Net", email: `net-y-${randomUUID().slice(0, 6)}@example.com`, password: "secret123" } });
+    assert.equal(elsewhere.status, 201, "other networks are not affected");
+    const { rows } = await db.query("select key_hash from auth_attempts where kind = 'signup-ip' limit 1");
+    assert.match(rows[0].key_hash, /^[0-9a-f]{64}$/, "addresses are stored only as hashes");
+  });
+
+  test("an account is locked after 5 failed sign-ins, and a success resets the count", T, async () => {
+    const user = await register("Lock");
+    assert.equal(await signInWithPassword(user.email, "secret123", "198.51.100.1"), null, "the right password works");
+    for (let i = 0; i < 4; i += 1) assert.equal(await signInWithPassword(user.email, "wrong", "198.51.100.2"), "Invalid email or password");
+    assert.equal(await signInWithPassword(user.email, "secret123", "198.51.100.2"), null, "4 failures: still allowed, and it resets");
+    for (let i = 0; i < 5; i += 1) assert.equal(await signInWithPassword(user.email, "wrong", "198.51.100.3"), "Invalid email or password");
+    const locked = await signInWithPassword(user.email, "secret123", "198.51.100.4");
+    assert.match(locked ?? "", /Too many failed sign-in attempts for this account\. Try again in \d+ minutes?/, "even the right password waits");
+  });
+
+  // ---- Operations ----
+
+  test("the health check reports the database, migrations and AI, without secrets", T, async () => {
+    const health = await call("GET", "/api/health");
+    assert.equal(health.status, 200);
+    const report = health.json as {
+      status: string;
+      version: string;
+      checks: { database: { ok: boolean; latencyMs: number }; migrations: { ok: boolean; detail: string }; ai: { configured: boolean; provider: string } };
+    };
+    assert.equal(report.status, "ok");
+    assert.equal(report.checks.database.ok, true);
+    assert.equal(report.checks.migrations.detail, `latest: ${latestMigration}`);
+    assert.deepEqual(report.checks.ai, { configured: true, provider: "anthropic" });
+    const text = JSON.stringify(report);
+    for (const secret of ["test-key", "postgres://", "postgresql://", SECRET]) assert.ok(!text.includes(secret), `no ${secret}`);
+  });
+
+  // ---- Challenges ----
+
+  const strongDesign = {
+    schemaVersion: 1,
+    nodes: [
+      { id: "client-1", type: "architecture", position: { x: 0, y: 0 }, data: { type: "client", label: "Users" } },
+      { id: "lb-1", type: "architecture", position: { x: 1, y: 0 }, data: { type: "load-balancer", label: "LB", properties: { replicas: 2 } } },
+      { id: "s-1", type: "architecture", position: { x: 2, y: 0 }, data: { type: "server", label: "API", properties: { replicas: 8 } } },
+      { id: "c-1", type: "architecture", position: { x: 3, y: 0 }, data: { type: "cache", label: "Cache", properties: { replicas: 2 } } },
+      { id: "db-1", type: "architecture", position: { x: 4, y: 0 }, data: { type: "database", label: "DB", properties: { replicas: 2 } } },
+    ],
+    edges: [
+      { id: "e1", source: "client-1", target: "lb-1" },
+      { id: "e2", source: "lb-1", target: "s-1" },
+      { id: "e3", source: "s-1", target: "c-1" },
+      { id: "e4", source: "c-1", target: "db-1" },
+    ],
+  };
+  const weakDesign = { schemaVersion: 1, nodes: strongDesign.nodes.slice(0, 3).map((n) => ({ ...n, data: { ...n.data, properties: undefined } })), edges: strongDesign.edges.slice(0, 2) };
+
+  test("challenge submissions are graded on the server and ranked on a leaderboard", T, async () => {
+    const ada = await register("Ada Lovelace");
+    const bo = await register("Bo Strong");
+    const url = "/api/challenges/url-shortener";
+    assert.equal((await call("POST", `${url}/submissions`, { body: { graph: strongDesign } })).status, 401);
+    assert.equal((await call("POST", "/api/challenges/nope/submissions", { cookie: ada.cookie, body: { graph: strongDesign } })).status, 404);
+    assert.equal((await call("POST", `${url}/submissions`, { cookie: ada.cookie, body: { graph: { nodes: "x" } } })).status, 400);
+
+    // A score sent by the browser is ignored: the server grades the design itself.
+    const weak = await call("POST", `${url}/submissions`, { cookie: ada.cookie, body: { graph: weakDesign, score: 100, passed: true } });
+    assert.equal(weak.status, 400, "unknown fields are refused");
+    const adaWeak = await call("POST", `${url}/submissions`, { cookie: ada.cookie, body: { graph: weakDesign } });
+    assert.equal(adaWeak.status, 201, JSON.stringify(adaWeak.json));
+    const boStrong = await call("POST", `${url}/submissions`, { cookie: bo.cookie, body: { graph: strongDesign } });
+    const boResult = boStrong.json as { submission: { score: number }; rank: number };
+    const adaResult = adaWeak.json as { submission: { score: number; passed: boolean } };
+    assert.ok(boResult.submission.score > adaResult.submission.score, "a better design scores higher");
+    assert.equal(boResult.rank, 1);
+
+    const board = await call("GET", `${url}/leaderboard`, { cookie: ada.cookie });
+    const top = (board.json as { top: { rank: number; name: string; score: number; you: boolean }[]; me: { rank: number } }).top;
+    const names = top.map((e) => e.name);
+    assert.ok(names.includes("Bo S.") && names.includes("Ada L."), names.join());
+    assert.ok(!JSON.stringify(board.json).includes("@example.com"), "no emails");
+    assert.ok(top.findIndex((e) => e.name === "Bo S.") < top.findIndex((e) => e.name === "Ada L."));
+    assert.ok(top.find((e) => e.name === "Ada L.")!.you);
+
+    // Ada improves: her best counts, not her latest.
+    await call("POST", `${url}/submissions`, { cookie: ada.cookie, body: { graph: strongDesign } });
+    await call("POST", `${url}/submissions`, { cookie: ada.cookie, body: { graph: weakDesign } });
+    const mine = await call("GET", `${url}/submissions`, { cookie: ada.cookie });
+    assert.equal((mine.json as { submissions: unknown[] }).submissions.length, 3);
+    const after = (await call("GET", `${url}/leaderboard`, { cookie: ada.cookie })).json as { me: { score: number } };
+    assert.equal(after.me.score, boResult.submission.score, "the best submission counts");
+  });
+
   // ---- Projects ----
 
   test("projects need a signed-in user", T, async () => {
@@ -298,7 +428,7 @@ function defineTests(dbUrl: string) {
   test("a project is created, replaced, listed, read and deleted", T, async () => {
     const user = await register("Cal");
     const id = randomUUID();
-    assert.deepEqual((await call("GET", "/api/projects", { cookie: user.cookie })).json, { projects: [] });
+    assert.deepEqual((await call("GET", "/api/projects", { cookie: user.cookie })).json, { projects: [], revisions: {} });
 
     const created = await call("PUT", `/api/projects/${id}`, { cookie: user.cookie, body: projectBody("Shop") });
     assert.equal(created.status, 201);
@@ -321,7 +451,137 @@ function defineTests(dbUrl: string) {
     assert.equal((await call("GET", `/api/projects/${id}`, { cookie: user.cookie })).status, 404);
   });
 
-  test("one user cannot see, overwrite or delete another user's project", T, async () => {
+  test("a project's AI conversation is saved, restored, cleared, private, and deleted with it", T, async () => {
+    const user = await register("Chat");
+    const other = await register("Peek");
+    const id = randomUUID();
+    assert.equal((await call("PUT", `/api/projects/${id}`, { cookie: user.cookie, body: projectBody("Chatty") })).status, 201);
+    const url = `/api/projects/${id}/conversation`;
+    assert.equal((await call("GET", url)).status, 401);
+    assert.deepEqual((await call("GET", url, { cookie: user.cookie })).json, { turns: [], updatedAt: null });
+
+    const turns = [
+      { role: "user", text: "What breaks first?", focusCount: 0 },
+      { role: "assistant", text: "Your server.", suggestions: [], notes: [], applied: {} },
+    ];
+    assert.equal((await call("PUT", url, { cookie: user.cookie, body: { turns: [{ role: "bot" }] } })).status, 400);
+    assert.equal((await call("PUT", url, { cookie: user.cookie, body: { turns } })).status, 200);
+    assert.deepEqual(((await call("GET", url, { cookie: user.cookie })).json as { turns: unknown[] }).turns, turns);
+
+    assert.equal((await call("GET", url, { cookie: other.cookie })).status, 404, "another user cannot read it");
+    assert.equal((await call("PUT", url, { cookie: other.cookie, body: { turns } })).status, 404);
+    assert.equal((await call("GET", `/api/projects/${randomUUID()}/conversation`, { cookie: user.cookie })).status, 404);
+
+    assert.equal((await call("DELETE", url, { cookie: user.cookie })).status, 204);
+    assert.deepEqual(((await call("GET", url, { cookie: user.cookie })).json as { turns: unknown[] }).turns, []);
+
+    assert.equal((await call("PUT", url, { cookie: user.cookie, body: { turns } })).status, 200);
+    assert.equal((await call("DELETE", `/api/projects/${id}`, { cookie: user.cookie })).status, 204);
+    const { rows } = await db.query("select count(*)::int as n from ai_conversations where project_id = $1", [id]);
+    assert.equal(rows[0].n, 0, "deleted with the project");
+  });
+
+  test("version history: automatic on change, manual on request, private, and deleted with the project", T, async () => {
+    const user = await register("Ver");
+    const other = await register("Spy");
+    const id = randomUUID();
+    const save = (body: unknown) => call("PUT", `/api/projects/${id}`, { cookie: user.cookie, body });
+    const versions = async () =>
+      ((await call("GET", `/api/projects/${id}/versions`, { cookie: user.cookie })).json as {
+        versions: { id: string; kind: string; label: string | null; summary: { score: number; components: number } }[];
+      }).versions;
+
+    assert.equal((await save(projectBody("History"))).status, 201);
+    assert.deepEqual((await versions()).map((v) => v.kind), ["auto"], "the first save is recorded");
+    const moved = projectBody("History renamed");
+    (moved.graph.nodes[1] as { position: { x: number } }).position.x = 999;
+    await save(moved);
+    assert.equal((await versions()).length, 1, "a rename or move is not a new version");
+
+    // A real change soon after: not recorded automatically (at most every 10 minutes)…
+    const scaled = projectBody("History");
+    (scaled.graph.nodes[1].data as { properties: { replicas: number } }).properties.replicas = 4;
+    await save(scaled);
+    assert.equal((await versions()).length, 1);
+    // …but "Save version" always is, with the current numbers.
+    const created = await call("POST", `/api/projects/${id}/versions`, { cookie: user.cookie, body: { label: "Four servers" } });
+    assert.equal(created.status, 201);
+    const list = await versions();
+    assert.deepEqual(list.map((v) => [v.kind, v.label]), [["manual", "Four servers"], ["auto", null]]);
+    assert.notEqual(list[0].summary.score, undefined);
+    assert.equal(list[0].summary.components, 2);
+
+    const one = await call("GET", `/api/projects/${id}/versions/${list[1].id}`, { cookie: user.cookie });
+    assert.equal(one.status, 200);
+    assert.equal(((one.json as { graph: { nodes: { data: { properties?: { replicas: number } } }[] } }).graph.nodes[1].data.properties?.replicas), 2, "the old design is kept");
+
+    assert.equal((await call("POST", `/api/projects/${id}/versions`, { cookie: user.cookie, body: { kind: "auto" } })).status, 400);
+    assert.equal((await call("GET", `/api/projects/${id}/versions`, { cookie: other.cookie })).status, 404);
+    assert.equal((await call("GET", `/api/projects/${id}/versions/${list[0].id}`, { cookie: other.cookie })).status, 404);
+    assert.equal((await call("GET", `/api/projects/${id}/versions/nope`, { cookie: user.cookie })).status, 404);
+
+    assert.equal((await call("DELETE", `/api/projects/${id}`, { cookie: user.cookie })).status, 204);
+    const { rows } = await db.query("select count(*)::int as n from project_versions where project_id = $1", [id]);
+    assert.equal(rows[0].n, 0);
+  });
+
+  test("a project downloads as a starter docker-compose.yml", T, async () => {
+    const user = await register("Ops");
+    const id = randomUUID();
+    await call("PUT", `/api/projects/${id}`, { cookie: user.cookie, body: projectBody("Compose me") });
+    assert.equal((await call("GET", `/api/projects/${id}/export/docker-compose`)).status, 401);
+    const response = await fetch(`${base}/api/projects/${id}/export/docker-compose`, { headers: { Cookie: `next-auth.session-token=${user.cookie}` } });
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") ?? "", /text\/yaml/);
+    assert.match(response.headers.get("content-disposition") ?? "", /docker-compose\.yml/);
+    const text = await response.text();
+    assert.match(text, /generated by ARCHITECH/);
+    assert.match(text, /build: \.\/api/, "the API server is a build service");
+  });
+
+  test("a save based on an outdated copy is refused, so another device's work is not overwritten", T, async () => {
+    const user = await register("Two");
+    const id = randomUUID();
+    const put = (title: string, ifMatch?: string) =>
+      fetch(`${base}/api/projects/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: `next-auth.session-token=${user.cookie}`,
+          ...(ifMatch ? { "If-Match": ifMatch } : {}),
+        },
+        body: JSON.stringify(projectBody(title)),
+      });
+    const created = await put("First");
+    assert.equal(created.status, 201);
+    const first = created.headers.get("etag")!;
+    assert.match(first, /^"\d+"$/);
+
+    const list = await call("GET", "/api/projects", { cookie: user.cookie });
+    assert.equal(`"${(list.json as { revisions: Record<string, string> }).revisions[id]}"`, first, "the list reports revisions");
+
+    // Laptop saves on top of the first version.
+    const laptop = await put("Laptop edit", first);
+    assert.equal(laptop.status, 200);
+    const second = laptop.headers.get("etag")!;
+    assert.notEqual(second, first);
+
+    // Phone still had the first version.
+    const phone = await put("Phone edit", first);
+    assert.equal(phone.status, 409);
+    const conflict = (await phone.json()) as { error: string; project: { title: string }; revision: string };
+    assert.match(conflict.error, /another device/);
+    assert.equal(conflict.project.title, "Laptop edit", "the 409 carries the server's copy");
+    assert.equal(`"${conflict.revision}"`, second);
+    const stored = await call("GET", `/api/projects/${id}`, { cookie: user.cookie });
+    assert.equal((stored.json as { title: string }).title, "Laptop edit", "nothing was overwritten");
+
+    // Saving again from the server's revision works; no If-Match keeps the old behaviour.
+    assert.equal((await put("Phone edit", second)).status, 200);
+    assert.equal((await put("Plain save")).status, 200);
+  });
+
+    test("one user cannot see, overwrite or delete another user's project", T, async () => {
     const owner = await register("Dee");
     const other = await register("Eve");
     const id = randomUUID();
@@ -329,7 +589,7 @@ function defineTests(dbUrl: string) {
     assert.equal((await call("GET", `/api/projects/${id}`, { cookie: other.cookie })).status, 404);
     assert.equal((await call("PUT", `/api/projects/${id}`, { cookie: other.cookie, body: projectBody("Hijack") })).status, 404);
     assert.equal((await call("DELETE", `/api/projects/${id}`, { cookie: other.cookie })).status, 404);
-    assert.deepEqual((await call("GET", "/api/projects", { cookie: other.cookie })).json, { projects: [] });
+    assert.deepEqual((await call("GET", "/api/projects", { cookie: other.cookie })).json, { projects: [], revisions: {} });
     const { rows } = await db.query("select title from projects where id = $1", [id]);
     assert.equal(rows[0].title, "Private");
   });
