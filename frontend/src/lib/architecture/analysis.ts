@@ -226,7 +226,10 @@ export function analyzeGraph(
           .slice(0, MAX_SPOF_CANDIDATES);
   for (const node of candidates) {
     // Custom components are not measured, so they are not judged as failure points either.
-    if (roleOf(node.data.type) === "entry" || roleOf(node.data.type) === "custom" || !baselineReach.has(node.id)) continue;
+    // CDNs and DNS are global managed networks, not single machines, so they are not
+    // single points of failure either (their availability still counts in uptime).
+    const role = roleOf(node.data.type);
+    if (role === "entry" || role === "custom" || role === "edge" || !baselineReach.has(node.id)) continue;
     if (options.redundantNodeIds?.has(node.id)) continue;
     const reduced = reachableFrom(graph, entryIds, { without: node.id });
     const lost = [...baselineReach].filter(

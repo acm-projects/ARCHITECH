@@ -129,7 +129,7 @@ export type NodeSimulationConfig = {
   availability: number;
   hitRate: number;
   // Share of the requests passing a caller that it sends to this component. 1 for everything
-  // except authentication, where it is the `authCheckRate` setting.
+  // except authentication (`authCheckRate`) and search (`searchRate`).
   checkRate: number;
 };
 
@@ -137,12 +137,15 @@ export type NodeSimulationConfig = {
 // default) the gateway or service verifies the signed token itself; only sign-ins and token
 // refreshes reach the identity service. Session lookups would be 1 (every request).
 export const AUTH_CHECK_RATE_DEFAULT = 0.05;
+// Share of requests that run a search by default (search boxes, filters, autocomplete).
+export const SEARCH_RATE_DEFAULT = 0.1;
 
 // Properties understood, all optional:
 //   replicas      Instances to run (a database: read replicas). Whole number, default 1 (database 0).
 //   capacity      Work per second per instance, replacing the type's default.
 //   cacheHitRate  Share of reads a cache or CDN serves, 0-1.
 //   authCheckRate Authentication only: share of requests that call it, 0-1 (default 0.05, JWT).
+//   searchRate    Search only: share of requests that run a search, 0-1 (default 0.1).
 // A larger `capacity` also costs proportionally more.
 export function configureNode(node: GraphNode): NodeSimulationConfig {
   const type = node.data.type;
@@ -190,7 +193,9 @@ export function configureNode(node: GraphNode): NodeSimulationConfig {
     checkRate:
       type === "auth"
         ? numberProperty(node, "authCheckRate", { min: 0, max: 1, fallback: AUTH_CHECK_RATE_DEFAULT })
-        : 1,
+        : type === "search"
+          ? numberProperty(node, "searchRate", { min: 0, max: 1, fallback: SEARCH_RATE_DEFAULT })
+          : 1,
   };
 }
 

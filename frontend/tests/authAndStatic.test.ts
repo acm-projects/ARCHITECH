@@ -153,3 +153,21 @@ test("the static share is part of the fingerprint", () => {
     canonicalEvaluationInput({ graph, traffic: staticTraffic({ staticShare: 20 }) }),
   );
 });
+
+// ---- Search: only the requests that search reach it ----
+
+test("by default 10% of requests run a search; the setting raises it for search-heavy apps", () => {
+  const withSearch = (search?: NodeProperties) => ({
+    nodes: [n("c", "client"), n("s", "server", { replicas: 4 }), n("q", "search", search), n("d", "database")],
+    edges: [e("c", "s"), e("s", "q"), e("s", "d")],
+  });
+  assert.equal(configureNode(n("q", "search")).checkRate, 0.1);
+  assert.ok(Math.abs(nodeOf(withSearch(), "q").demandRps - 2_000 * 0.1) < 1e-6);
+  assert.ok(Math.abs(nodeOf(withSearch({ searchRate: 0.6 }), "q").demandRps - 2_000 * 0.6) < 1e-6);
+  assert.ok(getPropertyDefinitions("search").some((definition) => definition.key === "searchRate"));
+  assert.equal(validatePropertyValue("search", "searchRate", 1.5).ok, false);
+  assert.notEqual(
+    canonicalEvaluationInput({ graph: withSearch({ searchRate: 0.6 }) }),
+    canonicalEvaluationInput({ graph: withSearch() }),
+  );
+});

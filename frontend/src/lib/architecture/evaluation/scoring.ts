@@ -26,7 +26,11 @@ export const SCORE_WEIGHTS: CategoryScores = {
 export const ARCHITECTURE_PENALTY = { high: 8, medium: 4, low: 1, max: 15 } as const;
 
 // What a design "should" cost: a fixed floor plus a cost per thousand requests per second.
-export const COST_REFERENCE = { baseMonthly: 80, perThousandRps: 40 } as const;
+// The floor includes basic redundancy (two of each tier), so a production-style design is
+// not scored as waste just for having a load balancer and replicas.
+export const COST_REFERENCE = { baseMonthly: 200, perThousandRps: 60 } as const;
+// The cost score falls from 100 at the reference to 0 at this many times it.
+const COST_ZERO_MULTIPLE = 4;
 
 // Latency at or below this scores 100, and every doubling above it costs the same, down
 // to 0 at LATENCY_ZERO_MS.
@@ -72,13 +76,13 @@ export function performanceScore(sim: Simulation): number {
   return clamp(100 * (1 - Math.log2(sim.p95LatencyMs / LATENCY_FULL_SCORE_MS) / span));
 }
 
-// Cost against the reference for this load: at or under it is 100, three times it is 0.
+// Cost against the reference for this load: at or under it is 100, COST_ZERO_MULTIPLE times it is 0.
 // Paying for something that cannot serve the load counts against it in proportion.
 export function costEfficiencyScore(sim: Simulation): number {
   const reference =
     COST_REFERENCE.baseMonthly + (sim.requestedRps / 1_000) * COST_REFERENCE.perThousandRps;
   const ratio = sim.monthlyCost / reference;
-  const base = ratio <= 1 ? 100 : (100 * (3 - ratio)) / 2;
+  const base = ratio <= 1 ? 100 : (100 * (COST_ZERO_MULTIPLE - ratio)) / (COST_ZERO_MULTIPLE - 1);
   const served = sim.requestedRps > 0 ? sim.effectiveRps / sim.requestedRps : 1;
   return clamp(base * clamp(served, 0, 1));
 }

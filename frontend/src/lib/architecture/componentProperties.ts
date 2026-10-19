@@ -5,6 +5,7 @@ import {
   DATABASE_REPLICAS_MAX,
   REPLICAS_MAX,
   AUTH_CHECK_RATE_DEFAULT,
+  SEARCH_RATE_DEFAULT,
   profileOf,
   configureNode,
 } from "./evaluation/capabilities.ts";
@@ -21,7 +22,7 @@ import type { NodeProperties, ArchitectureNodeType } from "./types.ts";
 // so what is stored is always what the engine will use. (The generic sanitizer in
 // nodeProperties.ts stays the storage-level guard; this is the per-property layer on top.)
 
-export type ComponentPropertyKey = "replicas" | "capacity" | "cacheHitRate" | "authCheckRate";
+export type ComponentPropertyKey = "replicas" | "capacity" | "cacheHitRate" | "authCheckRate" | "searchRate";
 
 // integer: a whole number. number: any number in range. rate: a fraction from 0 to 1
 // (0.7 means 70%), the same representation the engine reads.
@@ -40,7 +41,7 @@ export type ComponentPropertyDefinition = {
   unit?: string;
 };
 
-const DEFINITION_ORDER: ComponentPropertyKey[] = ["replicas", "capacity", "cacheHitRate", "authCheckRate"];
+const DEFINITION_ORDER: ComponentPropertyKey[] = ["replicas", "capacity", "cacheHitRate", "authCheckRate", "searchRate"];
 
 // Components whose capacity is not worth configuring: name lookups are never the limit.
 const NO_CAPACITY_CONTROL = new Set<ArchitectureNodeType>(["dns"]);
@@ -125,6 +126,20 @@ function buildDefinitions(
     });
   }
 
+  if (type === "search") {
+    definitions.push({
+      key: "searchRate",
+      label: "Requests that search",
+      description:
+        "Share of requests that run a search, from 0 to 1 (0.1 is 10%). Raise it for search-first apps such as a store catalog; most other requests never reach search.",
+      kind: "rate",
+      min: 0,
+      max: 1,
+      step: 0.05,
+      defaultValue: SEARCH_RATE_DEFAULT,
+    });
+  }
+
   return definitions.sort(
     (a, b) => DEFINITION_ORDER.indexOf(a.key) - DEFINITION_ORDER.indexOf(b.key),
   );
@@ -184,8 +199,10 @@ export function getEffectiveProperties(
       values.capacity = config.capacityPerInstance ?? definition.defaultValue;
     } else if (definition.key === "cacheHitRate") {
       values.cacheHitRate = config.hitRate;
-    } else {
+    } else if (definition.key === "authCheckRate") {
       values.authCheckRate = config.checkRate;
+    } else {
+      values.searchRate = config.checkRate;
     }
   }
   return values;

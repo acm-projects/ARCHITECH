@@ -1224,7 +1224,7 @@
               },
               "properties": {
                 "type": "object",
-                "description": "User overrides, e.g. replicas, capacity, cacheHitRate, authCheckRate. Ranges per component type in docs/graph-spec.md section 4.",
+                "description": "User overrides, e.g. replicas, capacity, cacheHitRate, authCheckRate, searchRate. Ranges per component type in docs/graph-spec.md section 4.",
                 "additionalProperties": {
                   "oneOf": [
                     {

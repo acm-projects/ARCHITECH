@@ -143,13 +143,14 @@ Storage limits, for any key:
 - Values are a string (max 200 characters), a finite number, or a boolean. No nested objects, arrays, or `null`.
 - Max 32 entries.
 
-The metrics engine only reads four keys. Anything else is kept but ignored.
+The metrics engine only reads five keys (plus `technology` on a `custom` node, its name). Anything else is kept but ignored.
 
 | Key | Meaning |
 |---|---|
 | `replicas` | Number of instances running in parallel. On a `database` this means read replicas (in addition to the primary), which is why it can be 0. |
 | `capacity` | Requests/s a single instance can handle (operations/s for a database). Overrides the default. Raising it also raises cost proportionally. |
 | `cacheHitRate` | Fraction of reads served without going further downstream (0.7 = 70%). On a `cdn`, the fraction of static-file requests answered at the edge (API requests always pass through). |
+| `searchRate` | `search` only. Fraction of requests that run a search (0.1 = 10%). |
 | `authCheckRate` | `auth` only. Fraction of requests that call the auth service (0.05 = JWT: only sign-ins and token refreshes; 1 = session lookup on every request). |
 
 Which properties each type accepts comes from `getPropertyDefinitions` in
@@ -170,7 +171,7 @@ enforces.
 | `queue` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (8,000) |
 | `worker` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (1,500) |
 | `object-storage` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (12,000) |
-| `search` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (1,500) |
+| `search` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (1,500); `searchRate` 0–1 (0.1) |
 | `auth` | `replicas` 1–1000 (1); `capacity` 1–10,000,000 (4,000); `authCheckRate` 0–1 (0.05) |
 
 `replicas` has to be an integer. Note the database range is 0–50, not 1–1000 like the rest.
