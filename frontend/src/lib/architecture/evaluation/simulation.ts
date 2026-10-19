@@ -22,8 +22,8 @@ import type { TrafficProfile } from "./traffic.ts";
 //    readRatio is the read share of the remaining (API) requests.
 //  - A custom component (a technology the app does not model) passes requests on like a
 //    service, with no capacity limit, latency, cost or downtime of its own: it is not measured.
-//  - Support services (auth, search) are called alongside; authentication only for its
-//    check rate (with JWTs, sign-ins and refreshes).
+//  - Support services are called alongside: authentication for its check rate (with JWTs,
+//    sign-ins and refreshes), search for the share of requests that search.
 // Cycles are cut where they close, so the flow always ends.
 //
 // Flow is linear in the requested rate, so it is computed once per 1 request/s and scaled.

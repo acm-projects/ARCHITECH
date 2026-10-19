@@ -12,8 +12,8 @@ import type { ArchitectureNodeType, NodeProperties } from "../src/lib/architectu
 //   2. The lessons between designs (a load balancer adds uptime, a cache adds read capacity,
 //      a CDN takes static files off the servers, a queue absorbs writes), which must hold
 //      whatever the exact numbers become.
-// Known modelling gaps are recorded as `todo` tests: they report the gap without failing the
-// suite, and start passing once it is fixed.
+// Three gaps these designs exposed are fixed and pinned at the end: redundancy is not scored
+// as waste, a CDN is not a single point of failure, and search only receives searches.
 
 const n = (id: string, type: ArchitectureNodeType, properties?: NodeProperties) => ({
   id,
@@ -80,16 +80,16 @@ function expectNear(name: string, result: ArchitectureEvaluation, expected: Expe
 }
 
 test("reference numbers at the default traffic (1,000 req/s, 60% static files)", () => {
-  expectNear("monolith", run(monolith), { score: 90, p95: 67, capacity: 2_500, cost: 142, uptime: 99.86 });
-  expectNear("three-tier", run(threeTier), { score: 85, p95: 72.5, capacity: 7_500, cost: 412, uptime: 100 });
-  expectNear("three-tier + cache", run(threeTierCache), { score: 85, p95: 72.5, capacity: 7_500, cost: 462, uptime: 100 });
-  expectNear("+ CDN and object storage", run(withCdn), { score: 85, p95: 72.5, capacity: 18_750, cost: 544, uptime: 100 });
-  expectNear("delivery app", run(delivery), { score: 85, p95: 82.5, capacity: 11_250, cost: 1_541, uptime: 100 });
+  expectNear("monolith", run(monolith), { score: 91, p95: 67, capacity: 2_500, cost: 142, uptime: 99.86 });
+  expectNear("three-tier", run(threeTier), { score: 97, p95: 72.5, capacity: 7_500, cost: 412, uptime: 100 });
+  expectNear("three-tier + cache", run(threeTierCache), { score: 96, p95: 72.5, capacity: 7_500, cost: 462, uptime: 100 });
+  expectNear("+ CDN and object storage", run(withCdn), { score: 95, p95: 72.5, capacity: 18_750, cost: 544, uptime: 100 });
+  expectNear("delivery app", run(delivery), { score: 85, p95: 82.5, capacity: 21_429, cost: 1_541, uptime: 100 });
 });
 
 test("reference numbers at each design's own traffic", () => {
-  expectNear("url shortener", run(urlShortener, URL_SHORTENER_TRAFFIC), { score: 92, p95: 75.9, capacity: 16_913, cost: 772, uptime: 100 });
-  expectNear("write-heavy with a queue", run(writeQueue, WRITE_HEAVY), { score: 86, p95: 83.5, capacity: 10_000, cost: 778, uptime: 100 });
+  expectNear("url shortener", run(urlShortener, URL_SHORTENER_TRAFFIC), { score: 95, p95: 75.9, capacity: 16_913, cost: 772, uptime: 100 });
+  expectNear("write-heavy with a queue", run(writeQueue, WRITE_HEAVY), { score: 93, p95: 83.5, capacity: 10_000, cost: 778, uptime: 100 });
 });
 
 test("every reference design is ready to evaluate and has no structural problems", () => {
@@ -148,7 +148,7 @@ test("the URL shortener reference meets its challenge load with headroom", () =>
 });
 
 test("session lookups on every request make auth the delivery app's limit, JWTs do not", () => {
-  // Without search, which is a known gap below and would otherwise be the limit either way.
+  // Without search, so auth is the only support service in play.
   const noSearch = (auth: NodeProperties): Graph => ({
     nodes: delivery.nodes
       .filter((node) => node.id !== "search")
@@ -164,23 +164,17 @@ test("session lookups on every request make auth the delivery app's limit, JWTs 
   assert.ok(!jwt.findings.some((finding) => finding.id === "saturated-a"));
 });
 
-// ---- Known modelling gaps (reported, not failing) ----
+// ---- Fixed modelling gaps ----
 
-test("a redundant three-tier design scores at least as well as a single server", {
-  todo: "Cost efficiency drops to 0 for redundancy at low load and outweighs reliability (85 vs 90).",
-}, () => {
+test("a redundant three-tier design scores at least as well as a single server", () => {
   assert.ok(run(threeTier).overallScore >= run(monolith).overallScore);
 });
 
-test("a CDN is not reported as a single point of failure", {
-  todo: "A CDN with 1 'instance' is flagged as a single point of failure, but it is a global network.",
-}, () => {
+test("a CDN is not reported as a single point of failure", () => {
   assert.ok(!run(withCdn).findings.some((finding) => finding.id === "spof-cdn"));
 });
 
-test("search only receives search requests, not every request a service handles", {
-  todo: "Support services other than auth receive 100% of a service's requests; the delivery app's search saturates at 20k req/s.",
-}, () => {
+test("search only receives search requests, not every request a service handles", () => {
   const result = run(delivery, { requestsPerSecond: 20_000 });
   assert.ok(!result.findings.some((finding) => finding.id === "saturated-search"));
 });

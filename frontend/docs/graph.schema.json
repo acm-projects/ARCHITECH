@@ -92,7 +92,8 @@
         "replicas": { "type": "integer", "minimum": 0, "maximum": 1000 },
         "capacity": { "type": "number", "minimum": 1, "maximum": 10000000 },
         "cacheHitRate": { "type": "number", "minimum": 0, "maximum": 1 },
-        "authCheckRate": { "type": "number", "minimum": 0, "maximum": 1 }
+        "authCheckRate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "searchRate": { "type": "number", "minimum": 0, "maximum": 1 }
       }
     },
     "edge": {
