@@ -75,7 +75,6 @@ export function DesignComparisonTable({ whatIf, onChoose }: { whatIf: WhatIf; on
           ))}
         </tbody>
       </table>
-      <p className="ax-whatif-note">The whole design at the current traffic. Green is better than your current choice, red is worse.</p>
     </details>
   );
 }
