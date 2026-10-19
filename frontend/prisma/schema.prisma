@@ -52,6 +52,7 @@ model User {
   sessions        Session[]
   projects        Project[]
   aiRequests      AiRequest[]
+  challengeSubmissions ChallengeSubmission[]
 
   @@map("users")
 }
@@ -235,4 +236,27 @@ model ProjectVersion {
 
   @@index([projectId, createdAt])
   @@map("project_versions")
+}
+
+// A design submitted to a challenge, graded on the server with the app's evaluator
+// (src/lib/architecture/challenge/submissions.ts). The leaderboard uses each user's best.
+model ChallengeSubmission {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  challengeId       String   @map("challenge_id")
+  // The project it was submitted from, if any (not a foreign key: projects can be deleted).
+  projectId         String?  @map("project_id")
+  graph             Json
+  fingerprint       String
+  score             Int
+  passed            Boolean
+  requirementScore  Int      @map("requirement_score")
+  architectureScore Int      @map("architecture_score")
+  metrics           Json
+  createdAt         DateTime @default(now()) @map("created_at")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId, score])
+  @@index([userId, createdAt])
+  @@map("challenge_submissions")
 }

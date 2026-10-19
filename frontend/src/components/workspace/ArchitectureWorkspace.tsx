@@ -42,6 +42,7 @@ import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
 import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
+import { ChallengeLeaderboard } from "../challenge/ChallengeLeaderboard";
 import { ExportButton } from "./ExportButton";
 import { LiveMetricsBar } from "./LiveMetricsBar";
 import { useLearnMode } from "./useLearnMode";
@@ -520,6 +521,11 @@ function Workspace({ project }: { project: Project }) {
                       stale={challenge.view?.isStale}
                       running={challenge.view?.isRunning}
                       error={challenge.view?.error}
+                    />
+                    <ChallengeLeaderboard
+                      challengeId={challenge.challenge.id}
+                      official={challenge.official}
+                      version={challenge.leaderboardVersion}
                     />
                   </>
                 )}
