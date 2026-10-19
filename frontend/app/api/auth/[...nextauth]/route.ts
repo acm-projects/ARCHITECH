@@ -6,6 +6,10 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { isValidAuthEmail, normalizeAuthEmail } from "@/lib/authEmail";
 import { isExperienceLevel } from "@/lib/experienceLevel";
+import { attemptLimitsFromEnv, checkLogin, clientIp, createAttemptPruner, recordLogin } from "@/lib/auth/attemptLimits";
+import { attemptStore } from "@/lib/auth/attemptStore";
+
+const pruneAttempts = createAttemptPruner(attemptStore);
 import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 
@@ -36,7 +40,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (
           typeof credentials?.email !== "string" ||
           typeof credentials.password !== "string" ||
@@ -46,18 +50,23 @@ export const authOptions: NextAuthOptions = {
         }
 
         const email = normalizeAuthEmail(credentials.email);
+        // Throttle guessing: 5 failures per email and 20 per network in 15 minutes
+        // (src/lib/auth/attemptLimits.ts). The message is shown on the sign-in form.
+        const ip = clientIp(req?.headers);
+        pruneAttempts();
+        const verdict = await checkLogin(attemptStore, email, ip, attemptLimitsFromEnv());
+        if (!verdict.ok) throw new Error(verdict.error);
+
         const user = await prisma.user.findFirst({
           where: { email: { equals: email, mode: "insensitive" } },
         });
 
-        if (!user || !user.passwordHash) {
-          throw new Error("Invalid email or password");
-        }
-
         //Compare the hashed password
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.passwordHash);
+        const isPasswordValid = !!user?.passwordHash && (await bcrypt.compare(credentials.password, user.passwordHash));
+        // Unknown emails count as failures too, so the limit cannot be used to find accounts.
+        await recordLogin(attemptStore, email, ip, isPasswordValid);
 
-        if (!isPasswordValid) {
+        if (!user || !isPasswordValid) {
           throw new Error("Invalid email or password");
         }
 
