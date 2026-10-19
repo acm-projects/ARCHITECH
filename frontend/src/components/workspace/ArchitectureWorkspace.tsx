@@ -552,6 +552,7 @@ function Workspace({ project }: { project: Project }) {
 
           {aiOpen && (
             <ArchitectPanel
+              projectId={project.id}
               onClose={() => setAiOpen(false)}
               onApply={replaceGraph}
               customTechnologies={project.customTechnologies}

@@ -118,3 +118,33 @@ export async function askArchitect(input: {
     if (done) break;
   }
 }
+
+// ---- The project's saved conversation (/api/projects/[id]/conversation) ----
+
+const conversationUrl = (projectId: string) => `/api/projects/${encodeURIComponent(projectId)}/conversation`;
+
+// The saved turns, or null when there are none or they cannot be read (offline, not saved yet).
+export async function loadConversation(projectId: string, signal?: AbortSignal): Promise<unknown[] | null> {
+  try {
+    const response = await fetch(conversationUrl(projectId), { signal, cache: "no-store" });
+    if (!response.ok) return null;
+    const body = (await response.json()) as { turns?: unknown };
+    return Array.isArray(body.turns) && body.turns.length > 0 ? body.turns : null;
+  } catch {
+    return null;
+  }
+}
+
+// Best effort: a failed save only means the chat is not restored next time.
+export async function saveConversation(projectId: string, turns: unknown[]): Promise<boolean> {
+  try {
+    const response = await fetch(conversationUrl(projectId), {
+      method: turns.length === 0 ? "DELETE" : "PUT",
+      headers: { "Content-Type": "application/json" },
+      ...(turns.length === 0 ? {} : { body: JSON.stringify({ turns }) }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}

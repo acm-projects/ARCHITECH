@@ -4,11 +4,19 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import type { Edge } from "@xyflow/react";
 import { useOnSelectionChange, useReactFlow } from "@xyflow/react";
-import { BoxSelect, Send, Sparkles, Square, X } from "lucide-react";
+import { BoxSelect, MessageSquarePlus, Send, Sparkles, Square, X } from "lucide-react";
 
 import type { ChatMessage, MetricsSnapshot, SuggestionEvent } from "../../../lib/ai/architectChat";
 import { applyChanges } from "../../../lib/ai/changes";
-import { askArchitect, fetchUsage, usageLabel, type UsageInfo } from "../../../lib/ai/chatClient";
+import {
+  askArchitect,
+  fetchUsage,
+  loadConversation,
+  saveConversation,
+  usageLabel,
+  type UsageInfo,
+} from "../../../lib/ai/chatClient";
+import { validateConversation, type SavedTurn } from "../../../lib/ai/conversation";
 import { MAX_MESSAGES } from "../../../lib/ai/architectChat";
 import type { CustomTechnology } from "../../../lib/projects/customTechnologies";
 import { graphFromCanvas } from "../../../lib/projects/projectPayload";
@@ -42,6 +50,26 @@ const STARTERS = ["What breaks first as traffic grows?", "How can I make this mo
 const FOCUS_STARTERS = ["Explain this part of the system", "What goes in and out of this part?", "Is this part a bottleneck or a single point of failure?"];
 
 const components = (count: number) => `${count} component${count === 1 ? "" : "s"}`;
+
+// Saved form: finished turns only, without the panel's ids.
+function toSaved(turns: readonly Turn[]): SavedTurn[] {
+  return turns.flatMap((turn): SavedTurn[] => {
+    if (turn.role === "user") return [{ role: "user", text: turn.text, focusCount: turn.focusCount }];
+    if (!turn.done) return [];
+    const { text, suggestions, notes, applied, error } = turn;
+    return [{ role: "assistant", text, suggestions, notes, applied, ...(error ? { error } : {}) }];
+  });
+}
+
+function fromSaved(saved: readonly SavedTurn[], nextId: () => number): Turn[] {
+  return saved.map((turn) =>
+    turn.role === "user"
+      ? { id: nextId(), role: "user", text: turn.text, focusCount: turn.focusCount }
+      : { id: nextId(), role: "assistant", text: turn.text, suggestions: turn.suggestions, notes: turn.notes, applied: turn.applied, done: true, ...(turn.error ? { error: turn.error } : {}) },
+  );
+}
+
+const SAVE_DELAY_MS = 600;
 
 export function ArchitectToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   if (open) return null;
@@ -135,10 +163,13 @@ function history(turns: readonly Turn[], question: string): ChatMessage[] {
 }
 
 export default function ArchitectPanel({
+  projectId,
   onClose,
   onApply,
   customTechnologies,
 }: {
+  // The conversation is saved with this project and restored when the panel opens.
+  projectId: string;
   onClose: () => void;
   // Replaces the design in one undo step.
   onApply: (next: { nodes: ArchitectureFlowNode[]; edges: Edge[] }) => void;
@@ -162,6 +193,40 @@ export default function ArchitectPanel({
     list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [turns]);
   useEffect(() => () => abort.current?.abort(), []);
+
+  // Restore the saved conversation once, then save after each finished answer or applied
+  // suggestion (only when something changed).
+  const [restored, setRestored] = useState(false);
+  const lastSaved = useRef("[]");
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadConversation(projectId, controller.signal).then((raw) => {
+      if (controller.signal.aborted) return;
+      const parsed = raw ? validateConversation({ turns: raw }) : null;
+      if (parsed?.ok) {
+        lastSaved.current = JSON.stringify(parsed.value);
+        setTurns((current) => (current.length === 0 ? fromSaved(parsed.value, () => nextId.current++) : current));
+      }
+      setRestored(true);
+    });
+    return () => controller.abort();
+  }, [projectId]);
+  useEffect(() => {
+    if (!restored || busy) return;
+    const saved = toSaved(turns);
+    const text = JSON.stringify(saved);
+    if (text === lastSaved.current) return;
+    const timer = setTimeout(() => {
+      void saveConversation(projectId, saved).then((ok) => {
+        if (ok) lastSaved.current = text;
+      });
+    }, SAVE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [turns, busy, restored, projectId]);
+  const newChat = () => {
+    abort.current?.abort();
+    setTurns([]);
+  };
   // Questions left today: read when the panel opens, then from each answer's headers.
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   useEffect(() => {
@@ -240,9 +305,16 @@ export default function ArchitectPanel({
           <Sparkles size={15} aria-hidden="true" />
           AI Architect
         </p>
-        <button type="button" className="ax-icon-btn" aria-label="Close the AI Architect" onClick={onClose}>
-          <X size={14} aria-hidden="true" />
-        </button>
+        <span className="ax-ai-header-actions">
+          {turns.length > 0 && (
+            <button type="button" className="ax-icon-btn" aria-label="Start a new conversation" title="New chat" onClick={newChat} disabled={busy}>
+              <MessageSquarePlus size={14} aria-hidden="true" />
+            </button>
+          )}
+          <button type="button" className="ax-icon-btn" aria-label="Close the AI Architect" onClick={onClose}>
+            <X size={14} aria-hidden="true" />
+          </button>
+        </span>
       </div>
 
       <div className="ax-ai-focus-bar">
