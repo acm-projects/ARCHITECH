@@ -38,7 +38,7 @@ export default function ProfileMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={handleToggle}
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0A0A0A] text-[11px] font-semibold tracking-widest text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+        className="ax-dashboard-avatar flex h-9 w-9 items-center justify-center rounded-full bg-[#0A0A0A] text-lg font-semibold leading-none text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
       >
         {userInitial}
       </button>

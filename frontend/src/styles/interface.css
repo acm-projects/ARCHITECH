@@ -5975,8 +5975,8 @@ body,
 
 .onboarding-heading h1 {
   margin: 0;
-  font-size: 30px;
-  font-weight: 600;
+  font-size: 32px;
+  font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.025em;
 }
@@ -6365,6 +6365,8 @@ body,
 }
 
 .ax-daily-challenge .ax-learn-speech::before {
+  border-color: var(--color-line);
+  background: var(--color-surface);
   top: calc(50% - 4px);
   right: -5px;
   transform: rotate(225deg);
@@ -6385,9 +6387,12 @@ body,
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
 }
 
-.ax-daily-challenge .ax-card-body { grid-column: 1; }
+.ax-daily-challenge .ax-card-body { grid-column: 1; font-weight: 600; color: var(--color-ink); }
 .ax-daily-challenge > img { flex-shrink: 0; }
 .ax-daily-challenge-action { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
 
@@ -6395,4 +6400,270 @@ body,
   .ax-daily-challenge .ax-learn-speech { grid-template-columns: minmax(0, 1fr); }
   .ax-daily-challenge-action { grid-column: 1; grid-row: auto; }
   .ax-daily-challenge > img { width: 72px; height: auto; }
+}
+
+/* Dashboard controls override the shared square button reset locally. */
+.ax-dashboard-avatar {
+  border-radius: 50%;
+  color: var(--neutral-0);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.ax-dashboard-tutorial {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+
+/* Brand artwork remains legible while the control stays unavailable. */
+.ax-dashboard-tutorial:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.ax-dashboard-tutorial-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: clamp(88px, 11vh, 150px);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.ax-dashboard-tutorial-brand {
+  width: 76%;
+  height: 68%;
+  object-fit: contain;
+}
+
+.ax-dashboard-tutorial-company {
+  display: block;
+  margin-top: 8px;
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.ax-dashboard-tutorial-topic {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.ax-dashboard-project-create {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-panel);
+  background: var(--dashboard-action, rgb(21 93 252));
+  color: var(--neutral-0);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.ax-dashboard-project-create:hover {
+  background: rgb(20 71 230);
+}
+
+.ax-dashboard-project-create:focus-visible {
+  outline: 2px solid var(--dashboard-action, rgb(21 93 252));
+  outline-offset: 3px;
+}
+
+.ax-dashboard-challenge-start {
+  border-radius: var(--radius-panel);
+  color: var(--neutral-0);
+  font-size: 14px;
+}
+
+.ax-dashboard-section-title {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+/* The project pane keeps two visible rows on desktop. */
+.ax-dashboard-project-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: 160px;
+  gap: 20px;
+  max-height: 348px;
+  margin: 0;
+  padding: 4px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .ax-dashboard-project-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .ax-dashboard-project-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Match the grid's padding and reserved scrollbar gutter. */
+.ax-dashboard-project-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+}
+
+.ax-dashboard-project-heading .ax-dashboard-project-create {
+  margin-left: auto;
+}
+
+.ax-dashboard-project-create:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+.ax-dashboard-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.ax-dashboard-projects {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.ax-dashboard-project-heading { flex-shrink: 0; }
+
+.ax-dashboard-project-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  transition: border-color 140ms ease;
+}
+
+.ax-dashboard-project-card:hover,
+.ax-dashboard-project-card:focus-within {
+  border-color: var(--canvas-accent);
+}
+
+.ax-dashboard-project-preview-link { flex: 1; min-height: 0; }
+
+.ax-dashboard-project-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  --tile: var(--canvas-surface-soft);
+  background: var(--tile);
+}
+
+.ax-preview-accent-node {
+  fill: var(--preview-accent);
+  stroke: var(--preview-accent);
+  paint-order: stroke fill;
+}
+
+.ax-dashboard-project-card:hover .ax-preview-accent-node,
+.ax-dashboard-project-card:focus-within .ax-preview-accent-node {
+  stroke: color-mix(in srgb, var(--preview-accent) 30%, transparent);
+  stroke-width: 2.5px;
+}
+
+.ax-dashboard-project-metadata {
+  flex-shrink: 0;
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--color-line);
+}
+
+.ax-dashboard-tutorials {
+  min-height: 0;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.ax-dashboard-tutorial-heading { margin-bottom: 12px; }
+.ax-dashboard-learning-content { display: grid; gap: 16px; }
+
+.ax-dashboard-learning-content .ax-daily-challenge {
+  width: min(100%, 320px);
+  margin: 0 0 0 auto;
+  padding-top: 0;
+  align-self: start;
+}
+
+.ax-dashboard-learning-content .ax-daily-challenge > img {
+  width: 64px;
+  height: auto;
+}
+
+.ax-dashboard-learning-content .ax-daily-challenge .ax-learn-speech {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ax-dashboard-learning-content .ax-daily-challenge-action {
+  grid-column: 1;
+  grid-row: auto;
+}
+
+.ax-dashboard-learning-content .ax-dashboard-challenge-start {
+  height: 32px;
+  padding: 0 16px;
+  font-size: 12px;
+}
+
+@media (min-width: 1024px) {
+  .ax-dashboard-content {
+    display: grid;
+    grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
+  }
+
+  .ax-dashboard-project-grid {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    grid-auto-rows: max(160px, calc((100% - 20px) / 2));
+    align-content: start;
+  }
+
+  .ax-dashboard-tutorials { overflow-y: auto; }
+
+  .ax-dashboard-learning-content {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    align-items: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-dashboard-project-card,
+  .ax-dashboard-project-preview { transition: none; }
 }
