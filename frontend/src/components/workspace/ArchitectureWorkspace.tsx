@@ -483,11 +483,9 @@ function Workspace({ project }: { project: Project }) {
               </p>
             )}
 
-            <ArchitectToggle open={aiOpen} onToggle={() => setAiOpen(true)} />
-
-            {/* Keep the current lesson visible when the canvas opens. */}
+            {/* Guidance and AI Architect share the same floating panel. */}
             <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
-              <div className="ax-panel-content">
+              <div className="ax-panel-content" hidden={aiOpen}>
                 {/* Challenge keeps its own brief/submission flow around the same project canvas. */}
                 {mode === "challenge" && (
                   <>
@@ -546,17 +544,19 @@ function Workspace({ project }: { project: Project }) {
                     )}
                   </>
                 )}
+                <ArchitectToggle open={aiOpen} onToggle={() => setAiOpen(true)} />
               </div>
+              {aiOpen && (
+                <div className="ax-panel-content" data-architect>
+                  <ArchitectPanel
+                    onClose={() => setAiOpen(false)}
+                    onApply={replaceGraph}
+                    customTechnologies={project.customTechnologies}
+                  />
+                </div>
+              )}
             </aside>
           </main>
-
-          {aiOpen && (
-            <ArchitectPanel
-              onClose={() => setAiOpen(false)}
-              onApply={replaceGraph}
-              customTechnologies={project.customTechnologies}
-            />
-          )}
         </div>
       </div>
       </DesignTrafficContext.Provider>
