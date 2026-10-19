@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { isExperienceLevel } from "@/lib/experienceLevel";
 import { prisma } from "@/lib/prisma";
+import { serverError } from "@/lib/server/log";
 
 export async function PATCH(request: Request) {
   const session = await getServerSession(authOptions);
@@ -35,7 +36,6 @@ export async function PATCH(request: Request) {
     });
     return NextResponse.json({ experienceLevel: user.experienceLevel });
   } catch (error) {
-    console.error("Failed to save the user's experience level.", error);
-    return NextResponse.json({ error: "Unable to save your experience level." }, { status: 500 });
+    return serverError(request, "Failed to save the user's experience level.", error, "Unable to save your experience level.");
   }
 }
