@@ -719,22 +719,21 @@
   display: flex;
   align-items: center;
   gap: 1px;
-  height: 22px;
-  padding: 0 2px;
+  height: 28px;
+  padding: 2px;
   border: 1px solid var(--ax-line);
-  border-radius: 5px;
+  border-radius: 3px;
   background: var(--ax-surface);
-  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04);
   white-space: nowrap;
 }
 /* Small to look at, with padding inside each button so the hit area stays comfortable. */
 .ax-workspace .ax-nodebar button {
-  height: 18px;
-  padding: 0 7px;
+  height: 22px;
+  padding: 0 9px;
   border: 0;
   border-radius: 3px;
   background: transparent;
-  font-size: 8.5px;
+  font-size: 10px;
   color: var(--ax-muted);
   transition:
     background-color var(--ax-fast) var(--ax-ease),
@@ -817,6 +816,96 @@
 .ax-workspace .ax-card-link:disabled {
   color: var(--ax-subtle);
   cursor: not-allowed;
+}
+
+/* Component inspector: the same controls, arranged around the comparison table. */
+.ax-workspace .ax-card.ax-configure {
+  --ax-t-micro: 10.5px;
+  --ax-t-xs: 11px;
+  --ax-t-sm: 11px;
+  --ax-t-md: 11px;
+  width: min(324px, calc(100vw - 24px));
+  max-height: calc(100dvh - 144px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 12px;
+  border-color: var(--ax-line-strong);
+  border-radius: 3px;
+  box-shadow: none;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.ax-workspace .ax-configure > .ax-card-eyebrow {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ax-line);
+  color: var(--ax-ink);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.ax-workspace .ax-configure .ax-card-label { color: var(--ax-ink-soft); }
+.ax-workspace .ax-configure .ax-card-section { margin-top: 8px; padding-top: 10px; }
+.ax-workspace .ax-configure-identity {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 10px;
+  margin-top: 10px;
+}
+.ax-workspace .ax-configure-property,
+.ax-workspace .ax-configure-type { min-width: 0; }
+.ax-workspace .ax-configure .ax-field,
+.ax-workspace .ax-configure-type-value {
+  min-height: 28px;
+  margin-top: 4px;
+  padding: 5px 8px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 2px;
+  background: var(--ax-surface);
+  font-size: 11px;
+  line-height: 16px;
+}
+.ax-workspace .ax-configure-type-value {
+  background: var(--ax-canvas);
+  color: var(--ax-ink-soft);
+}
+.ax-workspace .ax-configure .ax-field:hover { border-color: var(--ax-muted); }
+.ax-workspace .ax-configure .ax-field:focus-visible {
+  border-color: var(--ax-accent);
+  outline: 1px solid var(--ax-accent);
+  outline-offset: 1px;
+}
+.ax-workspace .ax-configure .ax-field[aria-invalid="true"] { border-color: var(--ax-danger); }
+.ax-workspace .ax-configure [role="alert"] { color: var(--ax-danger); }
+.ax-workspace .ax-configure .ax-tech-basis { color: var(--ax-muted); padding-bottom: 4px; }
+.ax-workspace .ax-configure-technology > .ax-field { margin-top: 4px; }
+.ax-workspace .ax-configure-technology > .ax-tech-meta { margin-top: 4px; }
+.ax-workspace .ax-configure-properties {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.ax-workspace .ax-configure-property > .ax-card-label:last-child:not(:first-child) {
+  color: var(--ax-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.ax-workspace .ax-configure .ax-tech-option { padding: 8px; border-radius: 2px; }
+@media (max-width: 600px) {
+  /* Above floating canvas controls, below the Architect drawer. */
+  .ax-workspace .react-flow:has(.ax-configure) { z-index: 26 !important; }
+  .ax-workspace .react-flow__node-toolbar:has(> .ax-configure) {
+    position: fixed !important;
+    top: auto !important;
+    right: 12px;
+    bottom: 12px;
+    left: 12px !important;
+    transform: none !important;
+  }
+  .ax-workspace .ax-card.ax-configure {
+    width: min(324px, 100%);
+    margin-inline: auto;
+    max-height: calc(100dvh - 120px);
+  }
 }
 
 /* ---- Learn and Challenge annotations over the canvas ---- */

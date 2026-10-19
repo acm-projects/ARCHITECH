@@ -182,7 +182,7 @@ function PropertyField({ type, view, onCommit, onReset }: PropertyFieldProps) {
   };
 
   return (
-    <div className="mt-3">
+    <div className="ax-configure-property">
       <label htmlFor={inputId} className="ax-card-label block" title={view.description}>
         {view.label}
       </label>
@@ -242,38 +242,42 @@ export function ConfigureCard({
   const [draft, setDraft] = useState(name);
 
   return (
-    <div className="ax-card ax-popover nodrag nopan nowheel">
+    <div className="ax-card ax-popover ax-configure nodrag nopan nowheel">
       <p className="ax-card-eyebrow">Configure</p>
 
-      <label htmlFor="node-name" className="ax-card-label mt-3 block">
-        Name
-      </label>
-      <input
-        id="node-name"
-        value={draft}
-        maxLength={MAX_NAME_LENGTH}
-        autoComplete="off"
-        onChange={(event) => {
-          setDraft(event.target.value);
-          const next = event.target.value.trim();
-          if (next) onRename(next);
-        }}
-        onBlur={() => setDraft(name)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") event.currentTarget.blur();
-        }}
-        className="ax-field"
-      />
+      <div className="ax-configure-identity">
+        <div className="ax-configure-property">
+          <label htmlFor="node-name" className="ax-card-label block">
+            Name
+          </label>
+          <input
+            id="node-name"
+            value={draft}
+            maxLength={MAX_NAME_LENGTH}
+            autoComplete="off"
+            onChange={(event) => {
+              setDraft(event.target.value);
+              const next = event.target.value.trim();
+              if (next) onRename(next);
+            }}
+            onBlur={() => setDraft(name)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+            className="ax-field"
+          />
+        </div>
 
-      <div className="ax-card-section">
-        <p className="ax-card-label">Type</p>
-        <p className="mt-1 text-[10px]">{COMPONENT_CATALOG[type].label}</p>
+        <div className="ax-configure-type">
+          <p className="ax-card-label">Type</p>
+          <p className="ax-configure-type-value">{COMPONENT_CATALOG[type].label}</p>
+        </div>
       </div>
 
       {technology}
 
       {properties.length > 0 && (
-        <div className="ax-card-section">
+        <div className="ax-card-section ax-configure-properties">
           {properties.map((view) => (
             <PropertyField
               key={view.key}
