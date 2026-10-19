@@ -145,7 +145,8 @@ test("onboarding keeps its two questions and its experience levels", () => {
   // The token comes from the shared helper, which refreshes it when it has expired.
   assert.match(githubRepos, /githubAccessTokenFor\(userId\)/);
   assert.match(githubRepos, /status: githubToken\.status/);
-  assert.match(githubRepos, /https:\/\/api\.github\.com\/user\/repos\?sort=updated&per_page=3/);
+  assert.match(githubRepos, /\/user\/repos\?sort=updated&per_page=3/);
+  assert.match(read("src/lib/github/endpoints.ts"), /https:\/\/api\.github\.com/);
   assert.match(githubRepos, /Authorization: `Bearer \$\{githubToken\.token\}`/);
   const tokenServer = read("src/lib/github/githubTokenServer.ts");
   assert.match(tokenServer, /provider: "github"/);

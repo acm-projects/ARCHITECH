@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
 
 import { authOptions } from "../../auth/[...nextauth]/route";
+import { githubApiUrl } from "@/lib/github/endpoints";
 import { githubAccessTokenFor } from "@/lib/github/githubTokenServer";
 
 export async function GET() {
@@ -19,7 +20,7 @@ export async function GET() {
     }
 
     const githubResponse = await fetch(
-      "https://api.github.com/user/repos?sort=updated&per_page=3",
+      `${githubApiUrl()}/user/repos?sort=updated&per_page=3`,
       {
         headers: {
           Accept: "application/vnd.github+json",
