@@ -1,10 +1,10 @@
-/* AI Architect panel (ArchitectPanel.tsx). Uses the workspace's tokens (--ax-*). */
+/* Archie panel (ArchitectPanel.tsx). Uses the workspace's tokens (--ax-*). */
 
 .ax-workspace .ax-ai-toggle {
   display: flex;
   width: 100%;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 10px 12px;
   border: 0;
   border-top: 1px solid var(--ax-line);
@@ -14,11 +14,16 @@
 }
 .ax-workspace .ax-ai-toggle:hover { background: #fff; }
 .ax-workspace .ax-ai-toggle:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: -3px; }
+.ax-workspace .ax-ai-portrait { flex-shrink: 0; }
+.ax-workspace .ax-ai-toggle .ax-ai-portrait { width: 26px; height: 26px; border-width: 1px; }
 
 .ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content[data-architect] {
   height: min(560px, calc(100dvh - 120px));
   max-height: calc(100dvh - 120px);
   overflow: hidden;
+}
+.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content[data-architect]:has(.ax-ai-panel[data-empty="true"]) {
+  height: min(450px, calc(100dvh - 120px));
 }
 
 .ax-workspace .ax-ai-panel {
@@ -41,7 +46,7 @@
   padding: 10px 12px;
   border-bottom: 1px solid var(--ax-line);
 }
-.ax-workspace .ax-ai-title { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; }
+.ax-workspace .ax-ai-title { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; }
 .ax-workspace .ax-ai-messages {
   flex: 1;
   min-height: 0;
@@ -55,27 +60,42 @@
   scrollbar-width: thin;
 }
 .ax-workspace .ax-ai-empty { color: var(--ax-muted); line-height: 1.55; }
-.ax-workspace .ax-ai-starters { display: grid; gap: 6px; margin-top: 10px; }
+.ax-workspace .ax-ai-intro { margin-top: 4px; padding: 10px; border-radius: 3px; color: var(--ax-ink-soft); }
+.ax-workspace .ax-ai-intro::before { right: auto; left: 20px; }
+.ax-workspace .ax-ai-starters { display: grid; margin-top: 10px; }
 .ax-workspace .ax-ai-starter {
-  padding: 5px 10px;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: 3px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 12px;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 8px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--ax-line);
+  border-radius: 0;
   background: transparent;
   color: var(--ax-ink-soft);
   font-size: 12px;
+  line-height: 1.45;
   text-align: left;
 }
+.ax-workspace .ax-ai-starter:last-child { border-bottom: 0; }
+.ax-workspace .ax-ai-starter svg { color: var(--ax-subtle); }
+.ax-workspace .ax-ai-starter:focus-visible { outline-offset: -1px; }
 .ax-workspace .ax-ai-starter:hover { background: rgba(17, 17, 17, 0.035); color: var(--ax-ink); }
 .ax-workspace .ax-ai-user {
   justify-self: end;
   max-width: 85%;
   padding: 8px 11px;
-  border-radius: 12px 12px 3px 12px;
-  background: #eef1f8;
+  border: 1px solid var(--ax-line);
+  border-radius: 3px;
+  background: var(--ax-canvas);
   white-space: pre-wrap;
   line-height: 1.5;
 }
 .ax-workspace .ax-ai-answer { white-space: pre-wrap; line-height: 1.6; color: var(--ax-ink); }
+.ax-workspace .ax-ai-assistant { display: grid; gap: 8px; min-width: 0; }
+.ax-workspace .ax-ai-speaker { font-size: 12px; font-weight: 500; color: var(--ax-ink-soft); }
 .ax-workspace .ax-ai-note { font-size: 12px; color: var(--ax-muted); }
 .ax-workspace .ax-ai-error { font-size: 12px; color: var(--ax-danger); }
 .ax-workspace .ax-ai-thinking { font-size: 12px; color: var(--ax-subtle); }
@@ -83,7 +103,7 @@
 .ax-workspace .ax-ai-suggestion {
   padding: 11px 12px;
   border: 1px solid var(--ax-line-strong);
-  border-radius: var(--ax-radius-md);
+  border-radius: 3px;
   background: #fff;
 }
 .ax-workspace .ax-ai-suggestion-title { font-weight: 500; line-height: 1.4; }
@@ -97,7 +117,7 @@
 .ax-workspace .ax-ai-apply {
   padding: 5px 12px;
   border: 1px solid var(--ax-ink);
-  border-radius: 999px;
+  border-radius: 3px;
   background: var(--ax-ink);
   color: #fff;
   font-size: 12px;
@@ -113,7 +133,7 @@
   resize: vertical;
   padding: 8px 10px;
   border: 1px solid var(--ax-line-strong);
-  border-radius: var(--ax-radius-md);
+  border-radius: 3px;
   background: #fff;
   font: inherit;
   line-height: 1.45;
@@ -126,12 +146,14 @@
   align-items: center;
   gap: 5px;
   padding: 5px 12px;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: 999px;
-  background: var(--ax-surface);
+  border: 1px solid var(--ax-ink);
+  border-radius: 3px;
+  background: var(--ax-ink);
+  color: var(--ax-surface);
   font-size: 12px;
 }
-.ax-workspace .ax-ai-send:disabled { opacity: 0.45; cursor: default; }
+.ax-workspace .ax-ai-send:enabled:hover { background: var(--ax-ink-soft); }
+.ax-workspace .ax-ai-send:disabled { background: var(--ax-canvas); border-color: var(--ax-line); color: var(--ax-subtle); cursor: default; }
 
 /* Focus: ask about the part of the canvas inside a selection box. */
 .ax-workspace .ax-ai-focus-bar {
@@ -148,15 +170,19 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  max-width: 100%;
   padding: 4px 4px 4px 10px;
-  border-radius: 999px;
-  background: #eef1f8;
+  border: 1px solid var(--ax-line);
+  border-radius: 3px;
+  background: var(--ax-canvas);
   color: var(--ax-ink);
   font-size: 12px;
   font-weight: 500;
 }
+.ax-workspace .ax-ai-focus-name { min-width: 0; overflow-wrap: anywhere; }
 .ax-workspace .ax-ai-focus-chip button {
   display: inline-flex;
+  flex-shrink: 0;
   padding: 2px;
   border: 0;
   border-radius: 999px;
