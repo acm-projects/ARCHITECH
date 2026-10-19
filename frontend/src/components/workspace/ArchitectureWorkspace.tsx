@@ -42,6 +42,7 @@ import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
 import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
+import { ExportButton } from "./ExportButton";
 import { LiveMetricsBar } from "./LiveMetricsBar";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
@@ -487,6 +488,7 @@ function Workspace({ project }: { project: Project }) {
             )}
 
             <div className="ax-canvas-dock">
+              <ExportButton title={title} />
               <HistoryToggle
                 open={historyOpen}
                 onToggle={() => {
