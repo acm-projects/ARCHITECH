@@ -4,8 +4,9 @@ import { NextResponse } from "next/server";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { githubApiUrl } from "@/lib/github/endpoints";
 import { githubAccessTokenFor } from "@/lib/github/githubTokenServer";
+import { log, requestIdOf } from "@/lib/server/log";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
@@ -57,7 +58,7 @@ export async function GET() {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
-    console.error("Failed to retrieve GitHub repositories.", error);
+    log.error("Failed to retrieve GitHub repositories.", error, { requestId: requestIdOf(request) });
     return NextResponse.json(
       { error: "Unable to retrieve GitHub repositories. Please try again." },
       { status: 502 },

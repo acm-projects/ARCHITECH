@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { isValidAuthEmail, normalizeAuthEmail } from "@/lib/authEmail";
 import { prisma } from "@/lib/prisma";
+import { serverError } from "@/lib/server/log";
 
 export async function POST(req: Request) {
   let body: unknown;
@@ -56,7 +57,6 @@ export async function POST(req: Request) {
     ) {
       return NextResponse.json({ error: "Email already in use." }, { status: 400 });
     }
-    console.error("Account registration failed.", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return serverError(req, "Account registration failed.", error, "Server error");
   }
 }

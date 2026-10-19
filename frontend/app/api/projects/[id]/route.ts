@@ -10,6 +10,7 @@ import {
   inputToData,
   rowToPayload,
 } from "@/lib/projects/projectRecords";
+import { serverError } from "@/lib/server/log";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -24,7 +25,7 @@ const unauthenticated = () =>
   NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
 // GET /api/projects/[id]: one project. Another user's project is reported as not found.
-export async function GET(_request: Request, { params }: Context) {
+export async function GET(request: Request, { params }: Context) {
   const userId = await currentUserId();
   if (!userId) return unauthenticated();
   const { id } = await params;
@@ -35,8 +36,7 @@ export async function GET(_request: Request, { params }: Context) {
     if (!row) return NextResponse.json(NOT_FOUND, { status: 404 });
     return NextResponse.json(rowToPayload(row), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    console.error("Failed to load project.", error);
-    return NextResponse.json({ error: "Unable to load the project." }, { status: 500 });
+    return serverError(request, "Failed to load project.", error, "Unable to load the project.");
   }
 }
 
@@ -80,13 +80,12 @@ export async function PUT(request: Request, { params }: Context) {
       : await prisma.project.create({ data: { id, userId, ...data }, select: PROJECT_SELECT });
     return NextResponse.json(rowToPayload(row), { status: existing ? 200 : 201 });
   } catch (error) {
-    console.error("Failed to save project.", error);
-    return NextResponse.json({ error: "Unable to save the project." }, { status: 500 });
+    return serverError(request, "Failed to save project.", error, "Unable to save the project.");
   }
 }
 
 // DELETE /api/projects/[id]: delete one of the user's projects.
-export async function DELETE(_request: Request, { params }: Context) {
+export async function DELETE(request: Request, { params }: Context) {
   const userId = await currentUserId();
   if (!userId) return unauthenticated();
   const { id } = await params;
@@ -97,7 +96,6 @@ export async function DELETE(_request: Request, { params }: Context) {
     if (count === 0) return NextResponse.json(NOT_FOUND, { status: 404 });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error("Failed to delete project.", error);
-    return NextResponse.json({ error: "Unable to delete the project." }, { status: 500 });
+    return serverError(request, "Failed to delete project.", error, "Unable to delete the project.");
   }
 }
