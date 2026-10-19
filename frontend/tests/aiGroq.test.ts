@@ -127,3 +127,41 @@ test("the provider's own rate limit is 'busy' with its wait, not a failure", asy
   assert.equal(new ModelBusyError(null).retryAfterSeconds, 30, "a default wait when the provider gives none");
   assert.equal(new ModelBusyError(0.2).retryAfterSeconds, 1);
 });
+
+test("a malformed tool call is retried, then answered without the tool; streamed text is kept", async () => {
+  const failure = () =>
+    new Response(JSON.stringify({ error: { message: "Failed to call a function. Please adjust your prompt.", code: "tool_use_failed" } }), { status: 400 });
+  const answer = (text: string) => new Response(sse([data({ choices: [{ delta: { content: text } }] }), "data: [DONE]\n"]), { status: 200 });
+  const run = async (responses: (() => Response)[]) => {
+    const bodies: Record<string, unknown>[] = [];
+    const fakeFetch = (async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      return responses[bodies.length - 1]();
+    }) as unknown as typeof fetch;
+    const model = groqModelFromEnv({ GROQ_API_KEY: "gk" }, fakeFetch)!;
+    const events = await collect(model({ system: "SYS", messages: [{ role: "user", content: "q" }], tools: [PROPOSE_CHANGES_TOOL], maxTokens: 10 }));
+    return { events, bodies };
+  };
+
+  const once = await run([failure, () => answer("Second try.")]);
+  assert.deepEqual(once.events, [{ type: "text", text: "Second try." }]);
+  assert.equal(once.bodies.length, 2);
+  assert.ok(once.bodies[1].tools, "the retry still offers the tool");
+
+  const twice = await run([failure, failure, () => answer("In words: add a replica.")]);
+  assert.deepEqual(twice.events, [{ type: "text", text: "In words: add a replica." }]);
+  assert.equal(twice.bodies.length, 3);
+  assert.ok(!("tools" in twice.bodies[2]), "the last try has no tool");
+  assert.match(String((twice.bodies[2].messages as { content: string }[])[0].content), /Tools are unavailable/);
+
+  // Text first, then Groq reports the broken tool call in the stream: keep the text, no error.
+  const late = await run([
+    () => new Response(sse([data({ choices: [{ delta: { content: "Checkout API is a single point of failure." } }] }), data({ error: { message: "Failed to call a function.", code: "tool_use_failed" } })]), { status: 200 }),
+  ]);
+  assert.deepEqual(late.events, [{ type: "text", text: "Checkout API is a single point of failure." }]);
+  assert.equal(late.bodies.length, 1, "not asked again, so the text is not repeated");
+
+  // Other errors are not retried.
+  const fakeFetch = (async () => new Response(JSON.stringify({ error: { message: "Invalid API Key" } }), { status: 401 })) as unknown as typeof fetch;
+  await assert.rejects(collect(groqModelFromEnv({ GROQ_API_KEY: "bad" }, fakeFetch)!({ system: "s", messages: [{ role: "user", content: "q" }], tools: [], maxTokens: 10 })), /401/);
+});
