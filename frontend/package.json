@@ -11,7 +11,8 @@
     "format": "oxfmt src app",
     "check": "npm run test && npm run typecheck && npm run build",
     "format:check": "oxfmt --check src app",
-    "test": "node --experimental-strip-types --test tests/*.test.ts"
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:integration": "node --experimental-strip-types --test --test-concurrency=1 tests/integration/*.test.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

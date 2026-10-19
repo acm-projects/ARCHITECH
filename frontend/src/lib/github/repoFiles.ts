@@ -1,3 +1,5 @@
+import { githubApiUrl } from "./endpoints.ts";
+
 // Reading a GitHub repository's stack files through GitHub's GraphQL API.
 //
 // Two requests at most:
@@ -138,7 +140,7 @@ export async function readRepoFiles(graphql: GitHubGraphql, owner: string, name:
 // The real GraphQL call, with the user's GitHub token. Server-only.
 export function githubGraphql(token: string, fetchImpl: typeof fetch = fetch): GitHubGraphql {
   return async (query, variables) => {
-    const response = await fetchImpl("https://api.github.com/graphql", {
+    const response = await fetchImpl(`${githubApiUrl()}/graphql`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

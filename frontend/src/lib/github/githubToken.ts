@@ -23,6 +23,8 @@ export type GitHubTokenDeps = {
     tokens: { access_token: string; refresh_token: string | null; expires_at: number | null; refresh_token_expires_in: number | null; scope: string | null; token_type: string | null },
   ) => Promise<void>;
   fetch: typeof fetch;
+  // Default https://github.com/login/oauth/access_token.
+  tokenUrl?: string;
   clientId: string | undefined;
   clientSecret: string | undefined;
   // Seconds since the epoch.
@@ -54,7 +56,7 @@ export async function getGitHubAccessToken(userId: string, deps: GitHubTokenDeps
   if (!account.refresh_token || !deps.clientId || !deps.clientSecret) return { ok: false, status: 401, error: RECONNECT };
   let body: Record<string, unknown>;
   try {
-    const response = await deps.fetch("https://github.com/login/oauth/access_token", {
+    const response = await deps.fetch(deps.tokenUrl ?? "https://github.com/login/oauth/access_token", {
       method: "POST",
       headers: { Accept: "application/json", "Content-Type": "application/json" },
       body: JSON.stringify({
