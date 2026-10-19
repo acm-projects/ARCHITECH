@@ -1,11 +1,8 @@
-import { Nunito } from "next/font/google"
 import { useEffect, useState } from "react"
 
 import { Button, Icon, Logo } from "../components/ui"
 import SystemStory from "./SystemStory/SystemStory"
-
-const heroVerbs = ["Build", "Break", "Understand"] as const
-const nunito = Nunito({ subsets: ["latin"], weight: "400", display: "swap" })
+import { ArchieHero } from "../components/marketing/archie-hero/ArchieHero"
 
 export function Landing({
   signUp,
@@ -16,31 +13,6 @@ export function Landing({
   demo: () => void
 }) {
   const [navVisible, setNavVisible] = useState(false)
-  const [heroVerbIndex, setHeroVerbIndex] = useState(0)
-
-  const heroVerb = heroVerbs[heroVerbIndex]
-
-  useEffect(() => {
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
-
-    let interval: number | undefined
-    const updateMotion = () => {
-      window.clearInterval(interval)
-      if (reduceMotion.matches) {
-        setHeroVerbIndex(0)
-        return
-      }
-      interval = window.setInterval(() => {
-        setHeroVerbIndex((index) => (index + 1) % heroVerbs.length)
-      }, 2400)
-    }
-    updateMotion()
-    reduceMotion.addEventListener("change", updateMotion)
-    return () => {
-      window.clearInterval(interval)
-      reduceMotion.removeEventListener("change", updateMotion)
-    }
-  }, [])
 
   useEffect(() => {
     let pointerNearTop = false
@@ -94,41 +66,7 @@ export function Landing({
         </div>
       </nav>
 
-      <section className="landing-intro" data-verb={heroVerb} aria-labelledby="landing-intro-title">
-        <div className="landing-intro-copy">
-          <h1
-            id="landing-intro-title"
-            className="landing-intro-title"
-            aria-label="Build, break, understand systems."
-          >
-            <span className="landing-intro-verb-slot" aria-hidden="true">
-              <span key={heroVerb} className="landing-intro-verb" data-verb={heroVerb}>
-                {heroVerb}
-              </span>
-            </span>
-            <span className="landing-intro-system" aria-hidden="true">
-              systems.
-            </span>
-          </h1>
-          <p className={`landing-intro-description ${nunito.className}`}>
-            Think like an architect.
-          </p>
-          <div className="landing-intro-actions">
-            {actions}
-          </div>
-        </div>
-      </section>
-
-
-      {/* =====================================
-          INTERACTIVE PRODUCT STORY
-
-          01 BUILD
-          02 BREAK
-          03 SOLVE
-          04 LEARN
-          05 CHALLENGE
-      ====================================== */}
+      <ArchieHero start={signUp} demo={demo} />
 
       <SystemStory onGetStarted={signUp} />
 
