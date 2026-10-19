@@ -63,11 +63,13 @@ function defineTests(dbUrl: string) {
     const question = String(body.messages.at(-1)?.content ?? "");
     if (/provider busy/i.test(question)) {
       response.writeHead(429, { "Content-Type": "application/json", "retry-after": "7", "retry-after-ms": "5" });
-      return response.end(JSON.stringify({ type: "error", error: { type: "rate_limit_error", message: "Rate limited" } }));
+      response.end(JSON.stringify({ type: "error", error: { type: "rate_limit_error", message: "Rate limited" } }));
+      return;
     }
     if (/provider down/i.test(question)) {
       response.writeHead(400, { "Content-Type": "application/json" });
-      return response.end(JSON.stringify({ type: "error", error: { type: "invalid_request_error", message: "Broken" } }));
+      response.end(JSON.stringify({ type: "error", error: { type: "invalid_request_error", message: "Broken" } }));
+      return;
     }
     const events: unknown[] = [
       { type: "message_start", message: { id: "msg_1", type: "message", role: "assistant", model: body.model, content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 10, output_tokens: 1 } } },
