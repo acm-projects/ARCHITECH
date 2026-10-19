@@ -13,7 +13,8 @@ import {
   revisionOf,
   rowToPayload,
 } from "@/lib/projects/projectRecords";
-import { serverError } from "@/lib/server/log";
+import { log, requestIdOf, serverError } from "@/lib/server/log";
+import { recordVersion } from "@/lib/projects/versionStore";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -104,6 +105,11 @@ export async function PUT(request: Request, { params }: Context) {
         ? await prisma.project.update({ where: { id }, data, select: PROJECT_SELECT })
         : await prisma.project.create({ data: { id, userId, ...data }, select: PROJECT_SELECT });
     }
+    // Version history: an automatic snapshot when the design changed (best effort: a failure
+    // here never fails the save).
+    await recordVersion({ id, title: row.title, graph: input.graph }, "auto").catch((error) =>
+      log.error("Recording a project version failed.", error, { requestId: requestIdOf(request), projectId: id }),
+    );
     return NextResponse.json(rowToPayload(row), { status: existing ? 200 : 201, headers: { ETag: etag(revisionOf(row)) } });
   } catch (error) {
     return serverError(request, "Failed to save project.", error, "Unable to save the project.");
