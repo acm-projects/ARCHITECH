@@ -1,0 +1,112 @@
+.animated-hero {
+  --hero-build: #0878ff;
+  --hero-break: #e99a13;
+  --hero-understand: #8250ef;
+  --hero-design: #0ab987;
+  --hero-explore: #f33c7d;
+  --hero-muted: #7b86a5;
+  --hero-component-fill: #f1ebfe;
+  --hero-processor-fill: #fff5db;
+  --hero-database-fill: #e5faf2;
+  --hero-analytics-fill: #e8f3ff;
+  --hero-wire: #cbd3e2;
+  --hero-guide: #aebbe0;
+  --hero-annotation: #929ab1;
+  --hero-distance-fill: #eef0fb;
+  --hero-distance-line: #dfe4f5;
+  --hero-snap: #b89aef;
+}
+
+.animated-hero { --ah-accent: var(--hero-build); --ah-wire-opacity: 0; --ah-fragments: 0; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: center; max-width: 1440px; min-height: calc(100svh - 130px); margin: auto; padding: 30px 5vw 100px; }
+.ah-copy { position: relative; z-index: 1; min-width: 0; }
+.ah-copy h1 { margin: 0; font-family: var(--font-sans); font-size: clamp(46px, 6.5vw, 94px); font-weight: 800; letter-spacing: -.065em; line-height: .98; }
+.ah-word-slot { display: block; position: relative; height: 1.08em; overflow: hidden; }
+.ah-word-slot > span { position: absolute; inset: 0 auto auto 0; white-space: nowrap; will-change: transform, opacity; }
+.ah-systems { display: block; }
+.ah-tagline { margin: 24px 0 0; color: var(--hero-muted); font-family: "Nunito", var(--font-sans); font-size: clamp(18px, 1.8vw, 25px); font-weight: 500; letter-spacing: -.02em; }
+.ah-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 38px; }
+.ah-stage { min-width: 0; position: relative; }
+.ah-scene { display: block; width: 100%; overflow: visible; }
+.ah-node { stroke: currentColor; stroke-width: 2; }
+.ah-node-face { stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+.ah-node-side { stroke-width: 1.5; fill: currentColor; fill-opacity: .3; }
+.ah-component { color: var(--hero-understand); }
+.ah-component .ah-node-face { fill: var(--hero-component-fill); }
+.ah-processor { color: var(--hero-break); }
+.ah-processor .ah-node-face { fill: var(--hero-processor-fill); }
+.ah-database { color: var(--hero-design); }
+.ah-database .ah-node-face { fill: var(--hero-database-fill); }
+.ah-analytics { color: var(--hero-build); }
+.ah-analytics .ah-node-face { fill: var(--hero-analytics-fill); }
+.ah-node-visual > circle { fill: currentColor; stroke: none; }
+.ah-placement-guide { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-dasharray: 4 5; opacity: 0; pointer-events: none; }
+.ah-guide-grid { stroke-width: .8; stroke-dasharray: 2 6; opacity: .3; }
+.ah-node-activation, .ah-node-focus, .ah-node-scan { fill: none; stroke: var(--ah-accent); stroke-width: 2.5; opacity: 0; pointer-events: none; }
+.ah-node-focus { stroke-linecap: square; }
+.ah-node-scan { stroke-width: 3; }
+.ah-connector { opacity: var(--ah-wire-opacity); }
+.ah-connector > path { fill: none; stroke: var(--hero-wire); stroke-width: 2; }
+.ah-connector .ah-flow { stroke: var(--ah-accent); stroke-width: 2.5; stroke-dasharray: 9 91; transition: stroke .6s; }
+.ah-magnifier, .ah-aha { opacity: 0; }
+.animated-hero[data-playing="false"] * { animation-play-state: paused; }
+@media (max-width: 760px) {
+  .animated-hero { grid-template-columns: 1fr; align-content: center; padding: 35px 6vw 35px; gap: 20px; min-height: calc(100svh - 100px); }
+  .ah-copy h1 { font-size: clamp(44px, 10.5vw, 78px); }
+  .ah-tagline { margin-top: 18px; }
+  .ah-actions { margin-top: 25px; gap: 4px; }
+  .ah-stage { width: 100%; max-width: 560px; justify-self: center; }
+  .ah-floor { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animated-hero *, .animated-hero *::before, .animated-hero *::after { transition: none; animation: none; }
+}
+
+.ah-component .ah-node-icon { opacity: var(--ah-component-icon, 1); transition: opacity .3s; }
+.ah-diagram-labels { position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 650 / 500; opacity: 0; visibility: hidden; pointer-events: none; }
+@font-face {
+  font-family: "Nunito";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./assets/nunito-latin-500.woff2") format("woff2");
+}
+.ah-diagram-labels span { position: absolute; transform: translate(-50%, -100%); transform-origin: center bottom; padding: 0; color: var(--color-ink); font: 500 13px/1.2 "Nunito", var(--font-sans); white-space: nowrap; }
+.ah-label-component { left: 47.69%; top: 54.4%; }
+.ah-label-analytics { left: 56.15%; top: 19.4%; }
+.ah-label-processor { left: 76.15%; top: 44.4%; }
+.ah-label-database { left: 75.38%; top: 76.4%; }
+.animated-hero[data-phase="understand"] .ah-connector > path { stroke: var(--hero-guide); stroke-width: 2.5; }
+.animated-hero[data-phase="understand"] .ah-connector .ah-flow { stroke: var(--ah-accent); stroke-width: 3; }
+@media (max-width: 760px) {
+  .ah-diagram-labels span { font-size: 11px; line-height: 1; }
+  .animated-hero { gap: 34px; }
+}
+
+/* Overlay the supplied Archie clip within the existing illustration coordinates. */
+.ah-video-overlay {
+  position: absolute;
+  inset: 0 0 auto;
+  aspect-ratio: 650 / 500;
+  pointer-events: none;
+}
+.ah-archie-video,
+.ah-character-frame {
+  position: absolute;
+  height: auto;
+  display: block;
+}
+
+/* The source-frame matte retains only Archie and his magnifier. The entire
+   diagram, including the held tile and its label, stays in the live SVG layer. */
+.animated-hero[data-video-ready="true"] [data-actor="archie"],
+.animated-hero[data-video-ready="true"] .ah-ground-shadow,
+.animated-hero[data-video-ready="true"] .ah-aha {
+  visibility: hidden;
+}
+.animated-hero:not([data-video-ready="true"]) .ah-video-overlay,
+.animated-hero[data-video-failed="true"] .ah-video-overlay {
+  visibility: hidden;
+}
+
+/* Video is a native-rate decoder; the complete character is composited once. */
+.ah-archie-video { opacity: 0; }
