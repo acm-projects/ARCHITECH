@@ -33,7 +33,10 @@ export const PROJECT_SELECT = {
   createdAt: true,
   updatedAt: true,
   lastOpenedAt: true,
+  syncedAt: true,
 } as const;
+
+export { etag, ifMatchRevision, revisionOf } from "./revisions.ts";
 
 export function rowToPayload(row: ProjectRow): ProjectPayload {
   const graph = (row.graph ?? {}) as Partial<GraphDocument>;

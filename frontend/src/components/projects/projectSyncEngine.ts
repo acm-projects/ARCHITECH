@@ -6,8 +6,13 @@
 //      (src/lib/projects/syncPlan.ts decides what wins), then upload anything only here.
 //   2. After that: every change the store makes is uploaded (or deleted) in the background.
 //      Failed requests are retried, so a dropped connection only delays saving.
+//   3. Each save says which server revision it was based on (If-Match). If another device
+//      saved the project since, the server refuses (409) and sends its copy: that copy is kept
+//      as a new project "… (from another device)", and this browser's version is saved over
+//      the original. Nothing is lost, and the open canvas is not touched.
 
 import {
+  MAX_TITLE_LENGTH,
   PROJECTS_CHANGED_EVENT,
   STORAGE_KEY,
   parseProject,
@@ -20,6 +25,7 @@ import {
   type ProjectPayload,
 } from "../../lib/projects/projectPayload.ts";
 import {
+  conflictCopy,
   fingerprint,
   planInitialMerge,
   planPendingChanges,
@@ -32,7 +38,8 @@ const STORAGE_VERSION = 1;
 const DEBOUNCE_MS = 400;
 const RETRY_MS = [2_000, 5_000, 15_000, 30_000];
 
-type SyncState = { owner: string; synced: SyncedFingerprints };
+// revisions: the server revision (ETag) each project was last synced at, for If-Match.
+type SyncState = { owner: string; synced: SyncedFingerprints; revisions?: Record<string, string> };
 
 function readSyncState(storage: Storage): SyncState | null {
   try {
@@ -97,13 +104,26 @@ class SyncError extends Error {
   }
 }
 
-async function upload(project: ProjectPayload): Promise<void> {
+class ConflictError extends Error {
+  constructor(readonly server: ProjectPayload, readonly revision: string) {
+    super(`"${server.title}" was changed on another device.`);
+  }
+}
+
+const revisionFrom = (response: Response): string | null => response.headers.get("etag")?.replace(/^W\//, "").replace(/"/g, "") || null;
+
+// Returns the new server revision.
+async function upload(project: ProjectPayload, revision: string | undefined): Promise<string | null> {
   const response = await request(`/api/projects/${encodeURIComponent(project.id)}`, {
     method: "PUT",
     body: JSON.stringify(project),
+    headers: revision ? { "If-Match": `"${revision}"` } : {},
   });
-  if (response.ok) return;
+  if (response.ok) return revisionFrom(response);
   const body = await response.json().catch(() => ({}));
+  if (response.status === 409 && body.project && typeof body.revision === "string") {
+    throw new ConflictError(body.project as ProjectPayload, body.revision);
+  }
   const message = `Saving "${project.title}" failed (${response.status}): ${body.error ?? "unknown error"}`;
   // 400 means the data itself was refused, so retrying the same data cannot help.
   throw new SyncError(message, response.status !== 400);
@@ -141,7 +161,17 @@ export function startProjectSync(userId: string): () => void {
   const state: SyncState = {
     owner: userId,
     synced: previous && previous.owner === userId ? previous.synced : {},
+    revisions: previous && previous.owner === userId ? (previous.revisions ?? {}) : {},
   };
+  const revisions = () => (state.revisions ??= {});
+
+  // Keep the other device's version as its own project, then save ours over the original.
+  function resolveConflict(conflict: ConflictError) {
+    const copy = conflictCopy(conflict.server, crypto.randomUUID(), MAX_TITLE_LENGTH);
+    revisions()[conflict.server.id] = conflict.revision;
+    replaceLocalProjects(storage, [...localPayloads(), copy]);
+    again = true;
+  }
 
   function scheduleRetry() {
     clearTimeout(retry);
@@ -165,10 +195,16 @@ export function startProjectSync(userId: string): () => void {
         const print = fingerprint(project);
         if (refused.get(project.id) === print) continue;
         try {
-          await upload(project);
+          const revision = await upload(project, revisions()[project.id]);
           state.synced[project.id] = print;
+          if (revision) revisions()[project.id] = revision;
           refused.delete(project.id);
         } catch (error) {
+          if (error instanceof ConflictError) {
+            console.warn(error.message, "Keeping both versions.");
+            resolveConflict(error);
+            continue;
+          }
           console.error(error);
           if (error instanceof SyncError && !error.retry) refused.set(project.id, print);
           else failed = true;
@@ -179,6 +215,7 @@ export function startProjectSync(userId: string): () => void {
         try {
           await remove(id);
           delete state.synced[id];
+          delete revisions()[id];
         } catch (error) {
           console.error(error);
           failed = true;
@@ -209,8 +246,12 @@ export function startProjectSync(userId: string): () => void {
     try {
       const response = await request("/api/projects");
       if (!response.ok) throw new SyncError(`Loading projects failed (${response.status}).`, true);
-      const { projects: server } = (await response.json()) as { projects: ProjectPayload[] };
+      const { projects: server, revisions: serverRevisions } = (await response.json()) as {
+        projects: ProjectPayload[];
+        revisions?: Record<string, string>;
+      };
       if (stopped) return;
+      state.revisions = { ...(serverRevisions ?? {}) };
 
       const plan = planInitialMerge(localPayloads(), server, state.synced);
       state.synced = plan.synced;
