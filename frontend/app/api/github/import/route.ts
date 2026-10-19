@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { GitHubError, importRepository, validateImportRequest } from "@/lib/github/importRepo";
 import { githubGraphql } from "@/lib/github/repoFiles";
+import { githubAccessTokenFor } from "@/lib/github/githubTokenServer";
 import { prisma } from "@/lib/prisma";
 import { PROJECT_SELECT, inputToData, rowToPayload } from "@/lib/projects/projectRecords";
 
@@ -38,19 +39,11 @@ export async function POST(request: Request) {
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
   try {
-    // The same token lookup as GET /api/github/repos.
-    const githubAccount = await prisma.account.findFirst({
-      where: { userId, provider: "github" },
-      select: { access_token: true },
-    });
-    if (!githubAccount) {
-      return NextResponse.json({ error: "Connect your GitHub account to import repositories." }, { status: 404 });
-    }
-    if (!githubAccount.access_token) {
-      return NextResponse.json({ error: "The linked GitHub account has no access token. Reconnect GitHub." }, { status: 409 });
-    }
+    // The user's GitHub token, refreshed automatically when it has expired.
+    const githubToken = await githubAccessTokenFor(userId);
+    if (!githubToken.ok) return NextResponse.json({ error: githubToken.error }, { status: githubToken.status });
 
-    const result = await importRepository(githubGraphql(githubAccount.access_token), parsed.value);
+    const result = await importRepository(githubGraphql(githubToken.token), parsed.value);
     const now = new Date().toISOString();
     const row = await prisma.project.create({
       data: {

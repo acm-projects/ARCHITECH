@@ -142,11 +142,14 @@ test("onboarding keeps its two questions and its experience levels", () => {
   const githubRepos = read("app/api/github/repos/route.ts");
   assert.match(githubRepos, /getServerSession\(authOptions\)/);
   assert.match(githubRepos, /status: 401/);
-  assert.match(githubRepos, /provider: "github"/);
-  assert.match(githubRepos, /select: \{ access_token: true \}/);
-  assert.match(githubRepos, /status: 404/);
+  // The token comes from the shared helper, which refreshes it when it has expired.
+  assert.match(githubRepos, /githubAccessTokenFor\(userId\)/);
+  assert.match(githubRepos, /status: githubToken\.status/);
   assert.match(githubRepos, /https:\/\/api\.github\.com\/user\/repos\?sort=updated&per_page=3/);
-  assert.match(githubRepos, /Authorization: `Bearer \$\{githubAccount\.access_token\}`/);
+  assert.match(githubRepos, /Authorization: `Bearer \$\{githubToken\.token\}`/);
+  const tokenServer = read("src/lib/github/githubTokenServer.ts");
+  assert.match(tokenServer, /provider: "github"/);
+  assert.match(read("src/lib/github/githubToken.ts"), /status: 404/);
   assert.match(githubRepos, /status: 502/);
 });
 
