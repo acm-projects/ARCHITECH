@@ -6,6 +6,7 @@ import {
   MarkerType,
   ReactFlow,
   ReactFlowProvider,
+  SelectionMode,
   useEdgesState,
   useNodesState,
   useReactFlow,
@@ -34,6 +35,7 @@ import {
 } from "./componentCatalog";
 import { ArchieContext } from "./ArchieContext";
 import { DesignTrafficContext } from "./DesignTrafficContext";
+import ArchitectPanel, { ArchitectToggle } from "./ai/ArchitectPanel";
 import RunResultsPanel from "./RunResultsPanel";
 import StressTestPanel from "./StressTestPanel";
 import { useChallengeMode } from "./useChallengeMode";
@@ -106,6 +108,8 @@ function Workspace({ project }: { project: Project }) {
   );
 
   const [title, setTitle] = useState(project.title);
+  // The AI Architect panel, docked to the right of the canvas when open.
+  const [aiOpen, setAiOpen] = useState(false);
 
   // Autosave watches the real project content and saves changes in the background.
   // Ctrl+S uses saveNow to force any pending save immediately.
@@ -420,7 +424,7 @@ function Workspace({ project }: { project: Project }) {
           saveStatus={saveStatus}
         />
 
-        <div className="relative flex min-h-0 flex-1 flex-col bg-(--ax-canvas)">
+        <div className="relative flex min-h-0 flex-1 flex-row bg-(--ax-canvas)">
           {/* Components are dragged from here onto the shared project canvas. */}
           <ComponentToolbox customTechnologies={project.customTechnologies} />
 
@@ -443,6 +447,15 @@ function Workspace({ project }: { project: Project }) {
               defaultEdgeOptions={defaultEdgeOptions}
               fitView
               fitViewOptions={FIT_VIEW_OPTIONS}
+              // Figma-style navigation. Click-dragging empty canvas (on a touchpad: hold with one
+              // finger, drag with another) draws a selection box that picks every component it
+              // touches; the AI Architect then explains that part. Pan with a two-finger swipe,
+              // the mouse wheel, Space+drag, or a middle/right-button drag. Zoom with a pinch or
+              // Ctrl/Cmd+scroll. Dragging a component still moves it.
+              selectionOnDrag
+              selectionMode={SelectionMode.Partial}
+              panOnDrag={[1, 2]}
+              panOnScroll
             >
               <Controls showInteractive={false} />
             </ReactFlow>
@@ -456,6 +469,8 @@ function Workspace({ project }: { project: Project }) {
                 {modeError}
               </p>
             )}
+
+            <ArchitectToggle open={aiOpen} onToggle={() => setAiOpen(true)} />
 
             {/* Keep the current lesson visible when the canvas opens. */}
             <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
@@ -521,6 +536,14 @@ function Workspace({ project }: { project: Project }) {
               </div>
             </aside>
           </main>
+
+          {aiOpen && (
+            <ArchitectPanel
+              onClose={() => setAiOpen(false)}
+              onApply={replaceGraph}
+              customTechnologies={project.customTechnologies}
+            />
+          )}
         </div>
       </div>
       </DesignTrafficContext.Provider>
