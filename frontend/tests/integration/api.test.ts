@@ -52,6 +52,54 @@ function defineTests(dbUrl: string) {
     "tester/notes": { entries: [], files: { "README.md": "# notes" } },
   };
   const VALID_TOKENS = new Set(["good-token", "fresh-token"]);
+  let modelCalls = 0;
+  let lastSystemPrompt = "";
+  // A fake Claude: Anthropic's streaming Messages API (server-sent events). Asked about a
+  // cache, it answers and proposes adding one; otherwise it only answers.
+  function fakeClaude(raw: string, response: http.ServerResponse) {
+    modelCalls += 1;
+    const body = JSON.parse(raw);
+    lastSystemPrompt = typeof body.system === "string" ? body.system : JSON.stringify(body.system);
+    const question = String(body.messages.at(-1)?.content ?? "");
+    if (/provider busy/i.test(question)) {
+      response.writeHead(429, { "Content-Type": "application/json", "retry-after": "7", "retry-after-ms": "5" });
+      return response.end(JSON.stringify({ type: "error", error: { type: "rate_limit_error", message: "Rate limited" } }));
+    }
+    if (/provider down/i.test(question)) {
+      response.writeHead(400, { "Content-Type": "application/json" });
+      return response.end(JSON.stringify({ type: "error", error: { type: "invalid_request_error", message: "Broken" } }));
+    }
+    const events: unknown[] = [
+      { type: "message_start", message: { id: "msg_1", type: "message", role: "assistant", model: body.model, content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 10, output_tokens: 1 } } },
+      { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+      { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "Your server " } },
+      { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "is the bottleneck." } },
+      { type: "content_block_stop", index: 0 },
+    ];
+    if (/cache/i.test(question)) {
+      const input = JSON.stringify({
+        title: "Add a Redis cache",
+        reason: "Takes reads off the database.",
+        changes: [
+          { op: "add_component", ref: "new-cache", type: "cache", implementation: "redis" },
+          { op: "connect", from: "server-1", to: "new-cache" },
+        ],
+      });
+      events.push(
+        { type: "content_block_start", index: 1, content_block: { type: "tool_use", id: "toolu_1", name: "propose_changes", input: {} } },
+        { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: input.slice(0, 40) } },
+        { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: input.slice(40) } },
+        { type: "content_block_stop", index: 1 },
+      );
+    }
+    events.push(
+      { type: "message_delta", delta: { stop_reason: "end_turn", stop_sequence: null }, usage: { output_tokens: 20 } },
+      { type: "message_stop" },
+    );
+    response.writeHead(200, { "Content-Type": "text/event-stream" });
+    for (const event of events) response.write(`event: ${(event as { type: string }).type}\ndata: ${JSON.stringify(event)}\n\n`);
+    response.end();
+  }
   function fakeGitHub(request: http.IncomingMessage, response: http.ServerResponse) {
     let raw = "";
     request.on("data", (chunk) => (raw += chunk));
@@ -61,6 +109,7 @@ function defineTests(dbUrl: string) {
         response.writeHead(status, { "Content-Type": "application/json" });
         response.end(JSON.stringify(body));
       };
+      if (request.url === "/v1/messages") return fakeClaude(raw, response);
       if (request.url === "/login/oauth/access_token") {
         const body = JSON.parse(raw);
         return body.refresh_token === "refresh-1"
@@ -174,6 +223,14 @@ function defineTests(dbUrl: string) {
         GITHUB_SECRET: "test-secret",
         NEXT_DIST_DIR: ".next-integration",
         NEXT_TELEMETRY_DISABLED: "1",
+        ANTHROPIC_API_KEY: "test-key",
+        ANTHROPIC_BASE_URL: githubUrl,
+        ANTHROPIC_MODEL: "claude-test",
+        // Always the fake Claude, whatever provider the developer's .env picks.
+        AI_PROVIDER: "anthropic",
+        GROQ_API_KEY: "",
+        AI_LIMIT_PER_MINUTE: "3",
+        AI_LIMIT_PER_DAY: "50",
       },
     });
     let log = "";
@@ -342,6 +399,128 @@ function defineTests(dbUrl: string) {
     assert.ok(load.ms < 1_000, `loading took ${load.ms.toFixed(0)} ms`);
     assert.ok(list.ms < 1_500, `listing 22 projects took ${list.ms.toFixed(0)} ms`);
     console.log(`save ${save.ms.toFixed(0)} ms · load ${load.ms.toFixed(0)} ms · list ${list.ms.toFixed(0)} ms`);
+  });
+
+  // ---- AI Architect ----
+
+  const chat = async (cookie: string | undefined, question: string, focus?: unknown) => {
+    const response = await fetch(`${base}/api/ai/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(cookie ? { Cookie: `next-auth.session-token=${cookie}` } : {}) },
+      body: JSON.stringify({
+        graph: projectBody("x").graph,
+        messages: [{ role: "user", content: question }],
+        ...(focus === undefined ? {} : { focus }),
+      }),
+    });
+    const text = await response.text();
+    const events = response.headers.get("content-type")?.includes("ndjson")
+      ? text.trim().split("\n").map((line) => JSON.parse(line))
+      : [];
+    return {
+      status: response.status,
+      cache: response.headers.get("x-ai-cache"),
+      retryAfter: response.headers.get("retry-after"),
+      remaining: response.headers.get("x-ai-remaining-today"),
+      events,
+      text,
+    };
+  };
+
+  test("the AI Architect streams an answer and a checked, previewed suggestion", T, async () => {
+    const user = await register("Ada");
+    assert.equal((await chat(undefined, "Hi")).status, 401);
+    const bad = await fetch(`${base}/api/ai/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: `next-auth.session-token=${user.cookie}` },
+      body: JSON.stringify({ messages: [] }),
+    });
+    assert.equal(bad.status, 400);
+
+    const reply = await chat(user.cookie, "Should I add a cache?");
+    assert.equal(reply.status, 200, reply.text);
+    assert.equal(reply.cache, "miss");
+    assert.deepEqual(reply.events.map((event: { type: string }) => event.type), ["text", "text", "suggestion", "done"]);
+    assert.equal(reply.events.filter((e: { type: string }) => e.type === "text").map((e: { text: string }) => e.text).join(""), "Your server is the bottleneck.");
+    const suggestion = reply.events[2];
+    assert.equal(suggestion.title, "Add a Redis cache");
+    assert.equal(suggestion.changes[0].op, "add_component");
+    assert.ok(typeof suggestion.preview.before.score === "number" && typeof suggestion.preview.after.score === "number");
+    assert.ok(suggestion.preview.after.monthlyCost > suggestion.preview.before.monthlyCost);
+  });
+
+  test("the same question about the same design is answered from the cache", T, async () => {
+    const user = await register("Bo");
+    const first = await chat(user.cookie, "What breaks first?");
+    assert.equal(first.cache, "miss");
+    const callsBefore = modelCalls;
+    const again = await chat(user.cookie, "What breaks first?");
+    assert.equal(again.status, 200);
+    assert.equal(again.cache, "hit");
+    assert.deepEqual(again.events, first.events);
+    assert.equal(modelCalls, callsBefore, "the model was not called again");
+    const { rows } = await db.query("select cached from ai_requests where user_id = $1 order by created_at", [user.id]);
+    assert.deepEqual(rows.map((row) => row.cached), [false, true]);
+  });
+
+  test("each user is rate limited, and cached answers do not use up the limit", T, async () => {
+    const user = await register("Cy");
+    for (const question of ["One?", "Two?", "Three?"]) assert.equal((await chat(user.cookie, question)).status, 200);
+    const limited = await chat(user.cookie, "Four?");
+    assert.equal(limited.status, 429);
+    const wait = Number(limited.retryAfter);
+    assert.ok(wait >= 1 && wait <= 60, `the exact wait for the oldest question to leave the minute (${wait})`);
+    assert.match(limited.text, /3 questions a minute\. Try again in \d+ seconds?/);
+    assert.equal(limited.remaining, "47");
+    assert.equal((await chat(user.cookie, "One?")).cache, "hit", "a cached answer is still served");
+    const other = await register("Di");
+    assert.equal((await chat(other.cookie, "Four?")).status, 200, "limits are per user");
+  });
+
+  test("questions sent at the same moment cannot slip past the limit", T, async () => {
+    const user = await register("Gus");
+    const replies = await Promise.all(["A?", "B?", "C?", "D?", "E?", "F?"].map((question) => chat(user.cookie, question)));
+    const statuses = replies.map((reply) => reply.status).sort();
+    assert.deepEqual(statuses, [200, 200, 200, 429, 429, 429], "exactly the 3-a-minute limit is answered");
+    const { rows } = await db.query("select count(*)::int as n from ai_requests where user_id = $1 and not cached", [user.id]);
+    assert.equal(rows[0].n, 3);
+  });
+
+  test("questions left are reported, and failed questions are refunded", T, async () => {
+    const user = await register("Fay");
+    assert.equal((await call("GET", "/api/ai/usage")).status, 401);
+    const usage = await call("GET", "/api/ai/usage", { cookie: user.cookie });
+    assert.equal(usage.status, 200);
+    assert.deepEqual(usage.json, { configured: true, remainingToday: 50, perDay: 50, perMinute: 3 });
+
+    assert.equal((await chat(user.cookie, "First?")).remaining, "49");
+    const busy = await chat(user.cookie, "provider busy?");
+    assert.equal(busy.status, 429);
+    assert.equal(busy.retryAfter, "7", "the provider's own wait");
+    assert.match(busy.text, /busy right now.*didn't count/);
+    assert.equal(busy.remaining, "49");
+    const down = await chat(user.cookie, "provider down?");
+    assert.equal(down.status, 502);
+    const { rows } = await db.query("select count(*)::int as n from ai_requests where user_id = $1 and not cached", [user.id]);
+    assert.equal(rows[0].n, 1, "only the answered question counts");
+    assert.equal(((await call("GET", "/api/ai/usage", { cookie: user.cookie })).json as { remainingToday: number }).remainingToday, 49);
+  });
+
+  test("a question about a boxed part of the design sends that part to the model", T, async () => {
+    const user = await register("Eve");
+    const nodeIds = projectBody("x").graph.nodes.map((node: { id: string }) => node.id);
+    const focused = nodeIds.filter((id: string) => id !== "client-1").slice(0, 2);
+    const bad = await chat(user.cookie, "Explain this part", { nodeIds: ["ghost-1"] });
+    assert.equal(bad.status, 400);
+    assert.match(JSON.parse(bad.text).error, /"ghost-1" is not a component/);
+
+    const reply = await chat(user.cookie, "Explain this part", { nodeIds: focused });
+    assert.equal(reply.status, 200, reply.text);
+    assert.match(lastSystemPrompt, /<focus>/);
+    for (const id of focused) assert.ok(lastSystemPrompt.split("<focus>\n")[1].includes(`"id":"${id}"`));
+    const whole = await chat(user.cookie, "Explain this part");
+    assert.equal(whole.cache, "miss", "the same question about the whole design is a different answer");
+    assert.ok(!lastSystemPrompt.includes("<focus>"));
   });
 
   // ---- GitHub ----

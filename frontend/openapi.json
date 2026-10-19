@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ARCHITECH API",
-    "version": "0.4.0",
+    "version": "0.6.0",
     "contact": {
       "name": "ARCHITECH team (ACM Projects, UT Dallas)",
       "url": "https://github.com/acm-projects/ARCHITECH"
@@ -35,6 +35,10 @@
     {
       "name": "NextAuth",
       "description": "Built-in NextAuth endpoints (sign-in, sign-out, session)"
+    },
+    {
+      "name": "AI Architect",
+      "description": "Chat with an AI system-design mentor about the design on the canvas. Answers use the metrics engine's evaluation of that design; suggested changes are checked and previewed before they reach the user."
     }
   ],
   "paths": {
@@ -918,6 +922,197 @@
           }
         }
       }
+    },
+    "/api/ai/chat": {
+      "post": {
+        "tags": [
+          "AI Architect"
+        ],
+        "operationId": "chatWithArchitect",
+        "summary": "Ask the AI Architect about a design (streamed)",
+        "description": "Validates the design like a saved project, evaluates it with the metrics engine at the given traffic (as Run Design does), and asks the configured model (Claude or Groq). The prompt contains the design (component ids, technologies, settings, connections), the evaluation (scores, metrics, per-component load, findings), the component library and the user's experience level.\n\nWith `focus`, the prompt also gets the selected part (its components with their load, the connections inside it, and every connection in from and out to the rest of the design) and the answer is about that part only.\n\nThe model can propose changes with a tool; each is checked against the design (graph spec rules) and previewed with the engine (score, capacity, p95, cost, uptime before and after) before it is sent. The canvas applies a suggestion with the same function (src/lib/ai/changes.ts) as one undo step.\n\nThe response is newline-delimited JSON (`application/x-ndjson`), one `ChatEvent` per line: `text` parts of the answer, `suggestion`s, `note`s for proposed changes that could not be used, and finally `done` (or `error` if the model stopped part-way).\n\nLimits (model calls; cached answers and failed calls do not count): 5 a minute and 50 a day per user (AI_LIMIT_PER_MINUTE, AI_LIMIT_PER_DAY), and 1000 a day for the whole app (AI_LIMIT_GLOBAL_PER_DAY). Windows slide (the last 60 seconds / 24 hours). Reserving a question is atomic, so simultaneous questions cannot slip past a limit. If the AI provider fails or is busy, the question is refunded. Every response carries `X-AI-Remaining-Today` and `X-AI-Limit-Per-Day`.\n\nThe same design + conversation (+ focus) within 24 hours is answered from a cache (header `X-AI-Cache: hit`) without calling the model or counting toward the limits. Layout (positions, edge ids) does not affect the cache. Old cache entries and usage rows are deleted about once an hour.\n\nServer configuration: AI_PROVIDER = anthropic | groq (if unset: Anthropic when ANTHROPIC_API_KEY is set, else Groq when GROQ_API_KEY is set). Anthropic: ANTHROPIC_API_KEY, ANTHROPIC_MODEL (default claude-sonnet-5-5). Groq (free plan): GROQ_API_KEY, GROQ_MODEL (default openai/gpt-oss-120b). Keys never reach the browser.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The answer, streamed as one JSON event per line.",
+            "headers": {
+              "X-AI-Cache": {
+                "description": "hit or miss",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "hit",
+                    "miss"
+                  ]
+                }
+              },
+              "X-AI-Remaining-Today": {
+                "description": "Questions left today for this user (after this one).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-AI-Limit-Per-Day": {
+                "description": "The user's daily limit.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatEvent"
+                },
+                "example": "{\"type\":\"text\",\"text\":\"Your database is the bottleneck.\"}\n{\"type\":\"done\"}\n"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or design. The message names the first problem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "429": {
+            "description": "A limit was reached (per minute, per day, or the app's daily budget), or the AI provider is busy (its own rate limit; the question does not count). `Retry-After` is the exact wait in seconds.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a question is allowed again.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-AI-Remaining-Today": {
+                "description": "Questions left today for this user (after this one).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-AI-Limit-Per-Day": {
+                "description": "The user's daily limit.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The usage check failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The model failed before replying (bad key, outage).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The AI Architect is not configured (no ANTHROPIC_API_KEY or GROQ_API_KEY for the chosen provider).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/usage": {
+      "get": {
+        "tags": [
+          "AI Architect"
+        ],
+        "summary": "Questions left today",
+        "description": "How many AI Architect questions the signed-in user has left today (the smaller of their own daily limit and the app's daily budget). The panel shows this as “42 of 50 questions left today”.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "configured",
+                    "remainingToday",
+                    "perDay",
+                    "perMinute"
+                  ],
+                  "properties": {
+                    "configured": {
+                      "type": "boolean",
+                      "description": "Whether an AI provider is configured on the server."
+                    },
+                    "remainingToday": {
+                      "type": "integer",
+                      "example": 42
+                    },
+                    "perDay": {
+                      "type": "integer",
+                      "example": 50
+                    },
+                    "perMinute": {
+                      "type": "integer",
+                      "example": 5
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in."
+          },
+          "500": {
+            "description": "Usage could not be read."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1568,6 +1763,247 @@
             "example": [
               "docker-compose.yml runs the \"traefik\" image"
             ]
+          }
+        }
+      },
+      "ChatMessage": {
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        }
+      },
+      "TrafficProfile": {
+        "type": "object",
+        "description": "Load to evaluate the design at, as in Run Design. Every field is optional.",
+        "properties": {
+          "requestsPerSecond": {
+            "type": "number",
+            "minimum": 0,
+            "default": 1000
+          },
+          "concurrentUsers": {
+            "type": "number",
+            "minimum": 0,
+            "default": 5000
+          },
+          "datasetGb": {
+            "type": "number",
+            "minimum": 0,
+            "default": 100
+          },
+          "readRatio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 80
+          },
+          "staticShare": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 60
+          },
+          "networkLatencyMs": {
+            "type": "number",
+            "minimum": 0,
+            "default": 40
+          }
+        }
+      },
+      "ChatRequest": {
+        "type": "object",
+        "required": [
+          "graph",
+          "messages"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "graph": {
+            "$ref": "#/components/schemas/GraphDocument"
+          },
+          "traffic": {
+            "$ref": "#/components/schemas/TrafficProfile"
+          },
+          "messages": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "description": "The conversation so far, oldest first; starts and ends with a user message.",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            }
+          },
+          "focus": {
+            "type": "object",
+            "required": [
+              "nodeIds"
+            ],
+            "additionalProperties": false,
+            "description": "Optional. The part of the canvas the user boxed (selected). The answer explains only that part: its components, how they connect to each other, what comes in from and goes out to the rest of the design, and its role in the whole system. Suggestions may only change selected components, add components, or connect to the selection; others become notes.",
+            "properties": {
+              "nodeIds": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                },
+                "description": "Ids of components in graph.nodes.",
+                "example": [
+                  "server-1",
+                  "database-1"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "DesignChange": {
+        "type": "object",
+        "required": [
+          "op"
+        ],
+        "description": "One operation of a suggested change. Components added by the suggestion are named by refs like \"new-cache\".",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "add_component",
+              "remove_component",
+              "connect",
+              "disconnect",
+              "set_setting",
+              "set_technology"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "pattern": "^new-[a-z0-9-]{1,30}$"
+          },
+          "type": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "implementation": {
+            "type": "string"
+          },
+          "settings": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "node": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number",
+            "nullable": true
+          }
+        }
+      },
+      "MetricsSnapshot": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "integer"
+          },
+          "p95LatencyMs": {
+            "type": "number"
+          },
+          "monthlyCost": {
+            "type": "number"
+          },
+          "capacityRps": {
+            "type": "number",
+            "nullable": true
+          },
+          "uptimePercent": {
+            "type": "number"
+          }
+        }
+      },
+      "ChatEvent": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "description": "One line of the response stream.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "suggestion",
+              "note",
+              "error",
+              "done"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "text / note"
+          },
+          "error": {
+            "type": "string",
+            "description": "error: the model stopped part-way"
+          },
+          "id": {
+            "type": "string",
+            "description": "suggestion"
+          },
+          "title": {
+            "type": "string",
+            "description": "suggestion"
+          },
+          "reason": {
+            "type": "string",
+            "description": "suggestion"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DesignChange"
+            },
+            "description": "suggestion"
+          },
+          "preview": {
+            "type": "object",
+            "description": "suggestion: the engine's numbers before and after applying it",
+            "properties": {
+              "before": {
+                "$ref": "#/components/schemas/MetricsSnapshot"
+              },
+              "after": {
+                "$ref": "#/components/schemas/MetricsSnapshot"
+              }
+            }
           }
         }
       }
