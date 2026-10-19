@@ -163,3 +163,4 @@
 .ax-workspace .ax-ai-focus-chip button:hover { color: var(--ax-ink); }
 .ax-workspace .ax-ai-user-focus { display: block; margin-bottom: 2px; font-size: 11px; color: var(--ax-muted); }
 .ax-workspace .ax-ai-usage-low { color: #b45309; font-weight: 500; }
+.ax-workspace .ax-ai-header-actions { display: inline-flex; align-items: center; gap: 4px; }

@@ -157,6 +157,7 @@ model Project {
   lastOpenedAt DateTime @map("last_opened_at")
   syncedAt     DateTime @updatedAt @map("synced_at")
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiConversation AiConversation?
 
   @@index([userId])
   @@map("projects")
@@ -202,4 +203,16 @@ model AuthAttempt {
   @@index([kind, keyHash, createdAt])
   @@index([createdAt])
   @@map("auth_attempts")
+}
+
+// The AI Architect conversation of a project (one per project), so it survives a reload.
+// turns: the panel's turns (questions, answers, suggestions and whether they were applied),
+// validated by src/lib/ai/conversation.ts. Deleted with the project.
+model AiConversation {
+  projectId String   @id @map("project_id")
+  turns     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("ai_conversations")
 }
