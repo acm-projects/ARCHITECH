@@ -1,8 +1,7 @@
 import { heroVideoLayout } from "./heroModel"
 import { connectorPath, phases, sampleTimeline, sketchNode, nodeKinds, type NodeKind, type Pose } from "./heroModel"
 import "./archie-hero.css"
-import { useId, useRef } from "react"
-import { Button, Icon } from "@/components/ui"
+import { useId, useRef, type ReactNode } from "react"
 import { useHeroPlayback } from "./useHeroPlayback"
 
 const videoUrl = "/archie-hero/archie-hero.mp4"
@@ -16,48 +15,41 @@ const videoPosition = {
   width: `${heroVideoLayout.width / 650 * 100}%`,
 }
 export function ArchieHero({
-  start,
-  demo,
+  actions,
 }: {
-  start: () => void
-  demo: () => void
+  actions: ReactNode
 }) {
   const inkFilter = useId()
   const ref = useRef<HTMLElement>(null)
   useHeroPlayback(ref)
   return (
     <section
-      className="animated-hero"
+      className="landing-intro animated-hero"
       ref={ref}
       data-phase="build"
       data-playing="false"
       aria-label="Build, break, and understand systems"
     >
-      <div className="ah-copy">
-        <h1 aria-label="Build, break, and understand systems">
+      <div className="landing-intro-copy ah-copy">
+        <h1 className="landing-intro-title" aria-label="Build, break, understand systems.">
           <span className="ah-word-slot" aria-hidden="true">
             {phases.map((phase, i) => (
               <span
                 data-word={i}
                 key={phase.name}
-                style={{ color: phase.color, opacity: i === 0 ? 1 : 0 }}
+                style={{ opacity: i === 0 ? 1 : 0 }}
               >
                 {phase.name}
               </span>
             ))}
           </span>
           <span className="ah-systems" aria-hidden="true">
-            systems
+            systems.
           </span>
         </h1>
-        <p className="ah-tagline">Think like an architect</p>
-        <div className="ah-actions">
-          <Button onClick={start}>
-            Start building <Icon name="arrow" />
-          </Button>
-          <Button variant="ghost" onClick={demo}>
-            Explore a system <Icon name="arrow" />
-          </Button>
+        <p className="landing-intro-description ah-tagline">Think like an architect.</p>
+        <div className="landing-intro-actions">
+          {actions}
         </div>
       </div>
       <div className="ah-stage">
@@ -68,12 +60,6 @@ export function ArchieHero({
               <feDisplacementMap in="SourceGraphic" in2="ink" scale="2.2" xChannelSelector="R" yChannelSelector="G" />
             </filter>
           </defs>
-          <path
-            className="ah-floor"
-            d="M0 440h650M0 470h650M60 500l180-120M240 500l100-120M420 500l20-120M600 500l-60-120"
-            fill="none"
-            stroke="#e9edf5"
-          />
           <ellipse
             className="ah-ground-shadow"
             cx="153"
