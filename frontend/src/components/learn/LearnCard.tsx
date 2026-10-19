@@ -108,6 +108,9 @@ export default function LearnCard({
           <ArchieDialogue>{skipped
             ? "Build, configure, and test your architecture."
             : FREE_PLAY_BODY}</ArchieDialogue>
+          <button type="button" className="ax-learn-continue" onClick={onContinue}>
+            Continue exploring
+          </button>
         </>
       ) : status === "success" ? (
         <>

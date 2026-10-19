@@ -163,7 +163,7 @@ function Workspace({ project }: { project: Project }) {
   // Learn gets the normal Run Design tools after the guided tutorial is finished.
   // Challenge has its own Submit flow instead.
   const activeRuns = mode === "learn" ? learn.runs : challenge.runs;
-  const canRunDesign = mode === "learn" && learn.freePlay;
+  const canRunDesign = mode === "learn" && learn.exploring;
   // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
   const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
 
@@ -397,7 +397,7 @@ function Workspace({ project }: { project: Project }) {
   // In Learn it unlocks after the tutorial; in Challenge it unlocks after submission.
   const archie =
     mode === "learn"
-      ? learn.freePlay
+      ? learn.exploring
         ? learn.runs.archie
         : null
       : challenge.view?.hasResult
@@ -508,13 +508,13 @@ function Workspace({ project }: { project: Project }) {
                     once the learner finishes the tutorial. */}
                 {mode === "learn" && (
                   <>
-                    <LearnCard
+                    {!learn.exploring && <LearnCard
                       lesson={learn.lesson}
                       stepIndex={learn.engine.stepIndex}
                       status={learn.engine.status}
                       freePlay={learn.freePlay}
                       skipped={learn.skipped}
-                      onContinue={learn.engine.continueStep}
+                      onContinue={learn.freePlay ? learn.continueExploring : learn.engine.continueStep}
                       error={learn.tutorialError}
                       feedback={learn.engine.feedback}
                       hint={
@@ -523,11 +523,11 @@ function Workspace({ project }: { project: Project }) {
                           : null
                       }
                       onDismissFeedback={learn.engine.dismissFeedback}
-                    />
+                    />}
 
                     {/* After the tutorial, Learn becomes free-play and exposes the
                         same Run Design / Stress Test analysis tools used for experimenting. */}
-                    {learn.freePlay && (
+                    {learn.exploring && (
                       <>
                         <StressTestPanel
                           traffic={learn.runs.traffic}
