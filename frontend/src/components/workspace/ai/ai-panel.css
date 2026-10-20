@@ -17,12 +17,13 @@
 .ax-workspace .ax-ai-portrait { flex-shrink: 0; }
 .ax-workspace .ax-ai-toggle .ax-ai-portrait { width: 26px; height: 26px; border-width: 1px; }
 
-.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content[data-architect] {
+/* Keep the original guidance dock's sizing; the inspector owns its own frame. */
+.ax-workspace .ax-canvas-panel:not(.ax-inspector)[data-side="right"] .ax-panel-content[data-architect] {
   height: min(560px, calc(100dvh - 120px));
   max-height: calc(100dvh - 120px);
   overflow: hidden;
 }
-.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content[data-architect]:has(.ax-ai-panel[data-empty="true"]) {
+.ax-workspace .ax-canvas-panel:not(.ax-inspector)[data-side="right"] .ax-panel-content[data-architect]:has(.ax-ai-panel[data-empty="true"]) {
   height: min(450px, calc(100dvh - 120px));
 }
 

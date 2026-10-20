@@ -477,7 +477,8 @@
 
 /* ---- React Flow: canvas, controls, attribution ---- */
 
-.ax-workspace .react-flow {
+.ax-workspace .react-flow,
+.ax-workspace .ax-workspace-canvas {
   /* Uniform graph-paper squares. */
   background-image:
     linear-gradient(to right, rgba(17, 17, 17, 0.07) 1px, transparent 1px),

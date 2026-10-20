@@ -13,6 +13,7 @@ import {
 type StressTestPanelProps = {
   // The load the next run will use.
   traffic: TrafficProfile;
+  embedded?: boolean;
   running: boolean;
   // Changes the load without running (the result on screen then reads as out of date).
   onRateChange: (requestsPerSecond: number) => void;
@@ -29,6 +30,7 @@ const format = (value: number) => Math.round(value).toLocaleString("en-US");
 // system review.
 export default function StressTestPanel({
   traffic,
+  embedded = false,
   running,
   onRateChange,
   onRun,
@@ -48,10 +50,10 @@ export default function StressTestPanel({
   };
 
   return (
-    <div className="ax-card ax-learn" data-stress-panel>
-      <span className="ax-panel-title">Stress test</span>
+    <div className="ax-card ax-learn ax-stress" data-stress-panel data-embedded={embedded || undefined}>
+      <span className="ax-panel-title" hidden={embedded}>Stress test</span>
 
-      <label className="mt-3 flex items-baseline justify-between gap-3 text-(length:--ax-t-sm)">
+      <label className="ax-stress-rate mt-3 flex items-baseline justify-between gap-3 text-(length:--ax-t-sm)">
         <span>Request rate</span>
         <span className="flex items-baseline gap-1">
           <input
@@ -70,7 +72,7 @@ export default function StressTestPanel({
                 event.currentTarget.blur();
               }
             }}
-            className="ax-field w-20 py-0.5 text-right tabular-nums"
+            className="ax-field ax-stress-input w-20 py-0.5 text-right tabular-nums"
           />
           <span className="ax-card-label">req/s</span>
         </span>
@@ -81,7 +83,7 @@ export default function StressTestPanel({
         </p>
       )}
 
-      <ul className="mt-3 flex gap-1.5" aria-label="Traffic multiples of the baseline load">
+      <ul className="ax-stress-presets mt-3 flex gap-1.5" aria-label="Traffic multiples of the baseline load">
         {STRESS_MULTIPLIERS.map((multiplier) => {
           const target = stressRate(multiplier);
           return (
@@ -97,7 +99,7 @@ export default function StressTestPanel({
                   setError(null);
                   onRunAtRate(target);
                 }}
-                className="ax-action"
+                className="ax-action ax-stress-preset"
               >
                 {multiplier}×
               </button>
@@ -113,7 +115,7 @@ export default function StressTestPanel({
         onClick={() => {
           if (!running) onRun();
         }}
-        className="ax-card-link"
+        className="ax-card-link ax-stress-run"
       >
         Run at {format(rate)} req/s →
       </button>
