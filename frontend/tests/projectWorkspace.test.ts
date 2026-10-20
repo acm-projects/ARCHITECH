@@ -571,10 +571,11 @@ test("the load is session state: it is not part of the graph history, and not sa
   assert.match(hook, /setRequestRate/);
 });
 
-test("Stress test is reachable in Learn free play, next to the system review", () => {
+test("Stress test replaces Learn guidance after Continue exploring, next to the system review", () => {
   const workspace = read("src/components/workspace/ArchitectureWorkspace.tsx");
   assert.match(workspace, /<StressTestPanel/);
-  assert.match(workspace, /learn\.freePlay &&/);
+  assert.match(workspace, /!learn\.exploring && <LearnCard/);
+  assert.match(workspace, /learn\.exploring &&/);
   assert.match(workspace, /onRunAtRate=\{learn\.runs\.runAtRate\}/);
 });
 

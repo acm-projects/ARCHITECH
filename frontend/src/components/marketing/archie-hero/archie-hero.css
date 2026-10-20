@@ -17,15 +17,24 @@
   --hero-snap: #b89aef;
 }
 
-.animated-hero { --ah-accent: var(--hero-build); --ah-wire-opacity: 0; --ah-fragments: 0; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: center; max-width: 1440px; min-height: calc(100svh - 130px); margin: auto; padding: 30px 5vw 100px; }
+.landing-intro.animated-hero {
+  --ah-accent: var(--hero-build);
+  --ah-wire-opacity: 0;
+  --ah-fragments: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: clamp(32px, 4vw, 72px);
+  padding-inline: max(clamp(24px, 4vw, 64px), calc((100% - 1440px) / 2));
+}
+.animated-hero[data-phase="break"] { --intro-word-color: rgb(234 88 12); }
+.animated-hero[data-phase="understand"] { --intro-word-color: rgb(127 77 246); }
 .ah-copy { position: relative; z-index: 1; min-width: 0; }
-.ah-copy h1 { margin: 0; font-family: var(--font-sans); font-size: clamp(46px, 6.5vw, 94px); font-weight: 800; letter-spacing: -.065em; line-height: .98; }
-.ah-word-slot { display: block; position: relative; height: 1.08em; overflow: hidden; }
+.ah-word-slot { display: block; position: relative; height: 1.12em; overflow: hidden; color: var(--intro-word-color); }
 .ah-word-slot > span { position: absolute; inset: 0 auto auto 0; white-space: nowrap; will-change: transform, opacity; }
 .ah-systems { display: block; }
-.ah-tagline { margin: 24px 0 0; color: var(--hero-muted); font-family: "Nunito", var(--font-sans); font-size: clamp(18px, 1.8vw, 25px); font-weight: 500; letter-spacing: -.02em; }
-.ah-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 38px; }
-.ah-stage { min-width: 0; position: relative; }
+.ah-tagline { font-family: "Nunito", var(--font-sans); }
+.animated-hero .landing-intro-actions { margin-top: 32px; gap: 12px; }
+.ah-stage { min-width: 0; position: relative; width: 100%; max-width: 720px; justify-self: center; }
 .ah-scene { display: block; width: 100%; overflow: visible; }
 .ah-node { stroke: currentColor; stroke-width: 2; }
 .ah-node-face { stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
@@ -39,8 +48,7 @@
 .ah-analytics { color: var(--hero-build); }
 .ah-analytics .ah-node-face { fill: var(--hero-analytics-fill); }
 .ah-node-visual > circle { fill: currentColor; stroke: none; }
-.ah-placement-guide { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-dasharray: 4 5; opacity: 0; pointer-events: none; }
-.ah-guide-grid { stroke-width: .8; stroke-dasharray: 2 6; opacity: .3; }
+.ah-placement-guide { display: none; }
 .ah-node-activation, .ah-node-focus, .ah-node-scan { fill: none; stroke: var(--ah-accent); stroke-width: 2.5; opacity: 0; pointer-events: none; }
 .ah-node-focus { stroke-linecap: square; }
 .ah-node-scan { stroke-width: 3; }
@@ -49,13 +57,16 @@
 .ah-connector .ah-flow { stroke: var(--ah-accent); stroke-width: 2.5; stroke-dasharray: 9 91; transition: stroke .6s; }
 .ah-magnifier, .ah-aha { opacity: 0; }
 .animated-hero[data-playing="false"] * { animation-play-state: paused; }
-@media (max-width: 760px) {
-  .animated-hero { grid-template-columns: 1fr; align-content: center; padding: 35px 6vw 35px; gap: 20px; min-height: calc(100svh - 100px); }
-  .ah-copy h1 { font-size: clamp(44px, 10.5vw, 78px); }
-  .ah-tagline { margin-top: 18px; }
-  .ah-actions { margin-top: 25px; gap: 4px; }
-  .ah-stage { width: 100%; max-width: 560px; justify-self: center; }
-  .ah-floor { display: none; }
+@media (max-width: 900px) {
+  .landing-intro.animated-hero { grid-template-columns: 1fr; align-content: center; gap: 32px; }
+  .ah-copy { width: 100%; }
+  .ah-stage { max-width: 520px; }
+}
+@media (max-width: 600px) {
+  .landing-intro.animated-hero { padding-block: 72px 40px; gap: 28px; }
+  .animated-hero .landing-intro-description { margin-top: 20px; }
+  .animated-hero .landing-intro-actions { flex-direction: column; align-items: stretch; margin-top: 28px; gap: 8px; }
+  .animated-hero .landing-intro-actions .btn { justify-content: space-between; }
 }
 @media (prefers-reduced-motion: reduce) {
   .animated-hero *, .animated-hero *::before, .animated-hero *::after { transition: none; animation: none; }
@@ -79,7 +90,6 @@
 .animated-hero[data-phase="understand"] .ah-connector .ah-flow { stroke: var(--ah-accent); stroke-width: 3; }
 @media (max-width: 760px) {
   .ah-diagram-labels span { font-size: 11px; line-height: 1; }
-  .animated-hero { gap: 34px; }
 }
 
 /* Overlay the supplied Archie clip within the existing illustration coordinates. */
