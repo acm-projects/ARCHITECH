@@ -12,7 +12,8 @@
   color: var(--ax-ink);
   font-size: 13px;
 }
-.ax-workspace .ax-ai-toggle:hover { background: #fff; }
+.ax-workspace .ax-ai-toggle:hover:not(:disabled) { background: #fff; }
+.ax-workspace .ax-ai-toggle:disabled { opacity: .5; cursor: default; }
 .ax-workspace .ax-ai-toggle:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: -3px; }
 .ax-workspace .ax-ai-portrait { flex-shrink: 0; }
 .ax-workspace .ax-ai-toggle .ax-ai-portrait { width: 26px; height: 26px; border-width: 1px; }

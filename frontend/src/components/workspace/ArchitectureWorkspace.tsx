@@ -33,12 +33,12 @@ import {
   hasComponentDragData,
   readComponentDragData,
 } from "./componentCatalog";
-import { ArchieContext } from "./ArchieContext";
+import { ArchieContext, ArchieEnabledContext } from "./ArchieContext";
 import { DesignTrafficContext } from "./DesignTrafficContext";
 import { InspectorContext } from "./InspectorContext";
 import { useWorkspaceInspector } from "./useWorkspaceInspector";
 import WorkspaceInspector from "./WorkspaceInspector";
-import ArchitectPanel, { ArchitectToggle } from "./ai/ArchitectPanel";
+import { ArchitectToggle } from "./ai/ArchitectPanel";
 import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
@@ -135,7 +135,7 @@ function Workspace({ project }: { project: Project }) {
     hasSelection: nodes.some((node) => node.selected),
     onClearSelection: clearCanvasSelection,
   });
-  const { archieOpen: aiOpen, askArchie, reset: resetInspector } = inspector;
+  const { askArchie, reset: resetInspector } = inspector;
 
   // Autosave watches the real project content and saves changes in the background.
   // Ctrl+S uses saveNow to force any pending save immediately.
@@ -189,6 +189,7 @@ function Workspace({ project }: { project: Project }) {
   // Challenge has its own Submit flow instead.
   const activeRuns = mode === "learn" ? learn.runs : challenge.runs;
   const canRunDesign = mode === "learn" && learn.exploring;
+  const archieEnabled = mode !== "learn" || learn.exploring;
   const showInspector = mode === "challenge" || learn.exploring;
   // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
   const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
@@ -416,6 +417,7 @@ function Workspace({ project }: { project: Project }) {
         : null;
 
   return (
+    <ArchieEnabledContext.Provider value={archieEnabled}>
     <ArchieContext.Provider value={archie}>
       <DesignTrafficContext.Provider value={activeRuns.traffic}>
       <div className="ax-workspace flex h-screen flex-col overflow-hidden">
@@ -524,7 +526,7 @@ function Workspace({ project }: { project: Project }) {
               />
             ) : (
               <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
-                <div className="ax-panel-content" hidden={aiOpen}>
+                <div className="ax-panel-content">
                   <LearnCard
                     lesson={learn.lesson}
                     stepIndex={learn.engine.stepIndex}
@@ -537,17 +539,8 @@ function Workspace({ project }: { project: Project }) {
                     hint={learn.engine.hintVisible ? learn.engine.hint?.text : null}
                     onDismissFeedback={learn.engine.dismissFeedback}
                   />
-                  <ArchitectToggle open={aiOpen} onToggle={askArchie} />
+                  <ArchitectToggle open={false} onToggle={askArchie} />
                 </div>
-                {aiOpen && (
-                  <div className="ax-panel-content" data-architect>
-                    <ArchitectPanel
-                      onClose={inspector.closeArchie}
-                      onApply={replaceGraph}
-                      customTechnologies={project.customTechnologies}
-                    />
-                  </div>
-                )}
               </aside>
             )}
           </main>
@@ -555,6 +548,7 @@ function Workspace({ project }: { project: Project }) {
       </div>
       </DesignTrafficContext.Provider>
     </ArchieContext.Provider>
+    </ArchieEnabledContext.Provider>
   );
 }
 

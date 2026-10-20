@@ -9,7 +9,7 @@ import {
   type ComponentPropertyKey,
 } from "../../lib/architecture/componentProperties";
 import { finishDraft } from "../../lib/architecture/propertyEditing";
-import { ArchieContext } from "./ArchieContext";
+import { ArchieContext, ArchieEnabledContext } from "./ArchieContext";
 import ComponentGlyph from "./ComponentGlyph";
 import {
   COMPONENT_CATALOG,
@@ -36,11 +36,14 @@ export function NodeActionBar({
   onConfigure,
   onDelete,
 }: NodeActionBarProps) {
+  const archieEnabled = useContext(ArchieEnabledContext);
   return (
     <div className="ax-nodebar nodrag nopan" role="toolbar" aria-label="Component actions">
       <button
         type="button"
         onClick={onAskAi}
+        disabled={!archieEnabled}
+        title={!archieEnabled ? "Available after Continue exploring." : undefined}
         aria-pressed={panel === "ai"}
         className="ax-nodebar-ai"
       >
