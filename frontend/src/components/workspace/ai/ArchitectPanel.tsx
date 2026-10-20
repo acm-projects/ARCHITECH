@@ -5,7 +5,7 @@ import Image from "next/image";
 
 import type { Edge } from "@xyflow/react";
 import { useOnSelectionChange, useReactFlow, useStore } from "@xyflow/react";
-import { ArrowUpRight, BoxSelect, Send, Square, X } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, BoxSelect, Send, Square, X } from "lucide-react";
 
 import type { ChatMessage, MetricsSnapshot, SuggestionEvent } from "../../../lib/ai/architectChat";
 import { applyChanges } from "../../../lib/ai/changes";
@@ -145,10 +145,12 @@ function history(turns: readonly Turn[], question: string): ChatMessage[] {
 
 export default function ArchitectPanel({
   onClose,
+  backLabel,
   onApply,
   customTechnologies,
 }: {
   onClose: () => void;
+  backLabel?: string;
   // Replaces the design in one undo step.
   onApply: (next: { nodes: ArchitectureFlowNode[]; edges: Edge[] }) => void;
   customTechnologies?: readonly CustomTechnology[];
@@ -173,7 +175,7 @@ export default function ArchitectPanel({
   const list = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    list.current?.scrollTo({ top: list.current.scrollHeight });
+    if (turns.length > 0) list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [turns]);
   useEffect(() => () => abort.current?.abort(), []);
   // Questions left today: read when the panel opens, then from each answer's headers.
@@ -254,8 +256,8 @@ export default function ArchitectPanel({
           <ArchiePortrait />
           Archie
         </p>
-        <button type="button" className="ax-icon-btn" aria-label="Close Archie" onClick={onClose}>
-          <X size={14} aria-hidden="true" />
+        <button type="button" className="ax-icon-btn" aria-label={backLabel ?? "Close Archie"} title={backLabel} onClick={onClose}>
+          {backLabel ? <ArrowLeft size={14} aria-hidden="true" /> : <X size={14} aria-hidden="true" />}
         </button>
       </div>
 
