@@ -66,7 +66,7 @@ export function Landing({
         </div>
       </nav>
 
-      <ArchieHero start={signUp} demo={demo} />
+      <ArchieHero actions={actions} />
 
       <SystemStory onGetStarted={signUp} />
 

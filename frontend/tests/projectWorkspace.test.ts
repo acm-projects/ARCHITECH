@@ -35,6 +35,13 @@ import { applyReset, planReset, type ResetEffects, type ResetMode } from "../src
 import { HOME_ROUTE, RETIRED_ROUTES, projectRoute } from "../src/lib/routes.ts";
 import type { ArchitectureNodeType } from "../src/lib/architecture/types.ts";
 
+import {
+  INITIAL_INSPECTOR_STATE,
+  inspectorReducer,
+  reviewViewForRun,
+  type ReviewSelection,
+} from "../src/components/workspace/inspectorState.ts";
+
 // ---- Helpers ----
 
 type N = {
@@ -571,11 +578,70 @@ test("the load is session state: it is not part of the graph history, and not sa
   assert.match(hook, /setRequestRate/);
 });
 
-test("Stress test is reachable in Learn free play, next to the system review", () => {
+test("Run owns traffic settings after Continue exploring; Metrics retains all results", () => {
   const workspace = read("src/components/workspace/ArchitectureWorkspace.tsx");
-  assert.match(workspace, /<StressTestPanel/);
-  assert.match(workspace, /learn\.freePlay &&/);
-  assert.match(workspace, /onRunAtRate=\{learn\.runs\.runAtRate\}/);
+  const inspector = read("src/components/workspace/WorkspaceInspector.tsx");
+  const control = read("src/components/workspace/StressTestPanel.tsx");
+  assert.match(workspace, /testingEnabled=\{canRunDesign\}/);
+  assert.match(workspace, /const showInspector = mode === "challenge" \|\| learn\.exploring/);
+  assert.match(workspace, /runControl=\{canRunDesign \? \(/);
+  assert.match(workspace, /activeRuns\.runAtRate\(rate\)/);
+  assert.match(inspector, /title="Metrics"/);
+  assert.doesNotMatch(inspector, /title="Stress test"|title="Live estimates"|title="System review"|<StressTestPanel|role="tab"/);
+  assert.match(control, /popoverTarget="ax-run-settings"/);
+  assert.match(control, /popover="auto"/);
+});
+
+test("opening Metrics from selection or Archie expands it and running returns to Metrics", () => {
+  const collapsed = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "toggle-section", section: "metrics", hasSelection: false });
+  assert.equal(collapsed.section, null);
+  const archie = inspectorReducer(collapsed, { type: "open-archie" });
+  const metrics = inspectorReducer(archie, { type: "toggle-section", section: "metrics", hasSelection: false });
+  assert.deepEqual(metrics, INITIAL_INSPECTOR_STATE);
+  assert.deepEqual(inspectorReducer(metrics, { type: "toggle-section", section: "metrics", hasSelection: true }), metrics);
+  const review = inspectorReducer(archie, { type: "open-section", section: "metrics" });
+  assert.deepEqual(review, INITIAL_INSPECTOR_STATE);
+  assert.equal(inspectorReducer(archie, { type: "close-archie" }).archieOpen, false);
+  assert.deepEqual(inspectorReducer(archie, { type: "reset" }), INITIAL_INSPECTOR_STATE);
+});
+
+test("review selection survives stale traffic and resets only for a new completed run", async () => {
+  const graph = clientServerDb();
+  const session = createRunSession(evaluateDesign);
+  const input = { projectId: "p", ...graph, traffic: DEFAULT_TRAFFIC };
+  await session.run(input);
+  const completed = session.getState().current;
+  const selection: ReviewSelection = { run: completed, view: "metrics" };
+  const staleFingerprint = fingerprintEvaluationInput({ graph, traffic: withRequestRate(DEFAULT_TRAFFIC, 10_000) });
+  const stale = buildResultsView(session.getState(), staleFingerprint);
+  assert.equal(stale.isStale, true);
+  assert.equal(reviewViewForRun(selection, session.getState().current), "metrics");
+  const nextRun = session.run(input);
+  assert.equal(reviewViewForRun(selection, session.getState().current), "metrics");
+  await nextRun;
+  assert.notEqual(session.getState().current, completed);
+  assert.equal(reviewViewForRun(selection, session.getState().current), "overview");
+  assert.ok(buildResultsView(session.getState(), staleFingerprint).comparison);
+});
+
+test("a failed retry preserves the previous result and its selected review view", async () => {
+  let fail = false;
+  const session = createRunSession((request, options) => {
+    if (fail) throw new Error("Test failure");
+    return evaluateDesign(request, options);
+  });
+  const graph = clientServerDb();
+  const input = { projectId: "p", ...graph, traffic: DEFAULT_TRAFFIC };
+  await session.run(input);
+  const selection: ReviewSelection = { run: session.getState().current, view: "comparison" };
+  fail = true;
+  await session.run(input);
+  const view = buildResultsView(session.getState(), fingerprintEvaluationInput({ graph, traffic: DEFAULT_TRAFFIC }));
+  assert.equal(view.error, "Test failure");
+  assert.equal(view.hasResult, true);
+  assert.equal(reviewViewForRun(selection, session.getState().current), "comparison");
+  session.reset();
+  assert.equal(reviewViewForRun(selection, session.getState().current), "live");
 });
 
 // ---- 11. Cycle finding ----
