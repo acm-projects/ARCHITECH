@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type DragEvent } from "react";
+import { useCallback, useRef, useState, type DragEvent } from "react";
 import {
   Controls,
   MarkerType,
@@ -47,6 +47,7 @@ import { useLiveMetrics } from "./useLiveMetrics";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
+import { RunControl } from "./StressTestPanel";
 import ArchitectureNode, {
   type ArchitectureFlowNode,
   type ArchitectureNodeData,
@@ -110,6 +111,9 @@ function Workspace({ project }: { project: Project }) {
   );
 
   const [title, setTitle] = useState(project.title);
+  const runSettings = useRef<HTMLDivElement>(null);
+  const [runSettingsHeight, setRunSettingsHeight] = useState(0);
+  const openRunSettings = () => runSettings.current?.showPopover();
   // Clear node/edge selection without changing the architecture itself.
   const clearCanvasSelection = useCallback(() => {
     const next = clearSelection({
@@ -186,7 +190,6 @@ function Workspace({ project }: { project: Project }) {
   const activeRuns = mode === "learn" ? learn.runs : challenge.runs;
   const canRunDesign = mode === "learn" && learn.exploring;
   const showInspector = mode === "challenge" || learn.exploring;
-  const runDesign = () => inspector.runDesign(activeRuns.view, activeRuns.run);
   // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
   const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
 
@@ -431,8 +434,17 @@ function Workspace({ project }: { project: Project }) {
                 : undefined
               : challenge.challenge.title
           }
-          onRun={canRunDesign ? runDesign : undefined}
-          runState={activeRuns.view.runButtonState}
+          runControl={canRunDesign ? (
+            <RunControl
+              popoverRef={runSettings}
+              onHeightChange={setRunSettingsHeight}
+              traffic={activeRuns.traffic}
+              running={activeRuns.view.isRunning}
+              onRateChange={activeRuns.setRequestRate}
+              onRun={() => inspector.showResults(activeRuns.run)}
+              onRunAtRate={(rate) => inspector.showResults(() => activeRuns.runAtRate(rate))}
+            />
+          ) : undefined}
           saveStatus={saveStatus}
         />
 
@@ -490,6 +502,8 @@ function Workspace({ project }: { project: Project }) {
               <WorkspaceInspector
                 nodes={nodes}
                 controller={inspector}
+                runSettingsHeight={runSettingsHeight}
+                onConfigureRun={openRunSettings}
                 onClearSelection={clearCanvasSelection}
                 onApply={replaceGraph}
                 customTechnologies={project.customTechnologies}

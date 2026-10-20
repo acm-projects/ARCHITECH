@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useState, type RefObject } from "react";
+import { ChevronDown } from "lucide-react";
 
 import {
   BASELINE_REQUESTS_PER_SECOND,
@@ -14,6 +15,7 @@ type StressTestPanelProps = {
   // The load the next run will use.
   traffic: TrafficProfile;
   embedded?: boolean;
+  runLabel?: string;
   running: boolean;
   // Changes the load without running (the result on screen then reads as out of date).
   onRateChange: (requestsPerSecond: number) => void;
@@ -31,6 +33,7 @@ const format = (value: number) => Math.round(value).toLocaleString("en-US");
 export default function StressTestPanel({
   traffic,
   embedded = false,
+  runLabel,
   running,
   onRateChange,
   onRun,
@@ -117,8 +120,69 @@ export default function StressTestPanel({
         }}
         className="ax-card-link ax-stress-run"
       >
-        Run at {format(rate)} req/s →
+        {runLabel ?? `Run at ${format(rate)} req/s \u2192`}
       </button>
     </div>
+  );
+}
+
+// Keep the existing rate validation and presets mounted while the native popover is closed.
+// Only the explicit Run action or a preset calls the shared evaluation session.
+export function RunControl({ popoverRef, onHeightChange, onRun, onRunAtRate, ...props }: Omit<StressTestPanelProps, "embedded" | "runLabel"> & {
+  popoverRef: RefObject<HTMLDivElement | null>;
+  onHeightChange: (height: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  // Validation messages and wrapping can change the popup's height while it is open.
+  useLayoutEffect(() => {
+    const element = popoverRef.current;
+    if (!open || !element) return;
+    const measure = () => onHeightChange(element.getBoundingClientRect().height);
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    measure();
+    return () => {
+      observer.disconnect();
+      onHeightChange(0);
+    };
+  }, [open, popoverRef, onHeightChange]);
+  const run = (action: () => void) => {
+    if (props.running) return;
+    popoverRef.current?.hidePopover();
+    action();
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        popoverTarget="ax-run-settings"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-busy={props.running}
+        disabled={props.running}
+        className="ax-action ax-action-primary ax-run-trigger"
+      >
+        Run <ChevronDown size={12} aria-hidden="true" />
+      </button>
+      <div
+        id="ax-run-settings"
+        popover="auto"
+        role="dialog"
+        aria-label="Run settings"
+        ref={popoverRef}
+        onToggle={(event) => setOpen(event.currentTarget.matches(":popover-open"))}
+        className="ax-run-popover"
+      >
+        <h2>Stress test</h2>
+        <StressTestPanel
+          {...props}
+          embedded
+          runLabel="Run"
+          onRun={() => run(onRun)}
+          onRunAtRate={(rate) => run(() => onRunAtRate(rate))}
+        />
+      </div>
+    </>
   );
 }
