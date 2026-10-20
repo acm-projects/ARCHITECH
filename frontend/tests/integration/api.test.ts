@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import http from "node:http";
@@ -210,9 +210,11 @@ function defineTests(dbUrl: string) {
 
     const port = 4100 + Math.floor(Math.random() * 800);
     base = `http://localhost:${port}`;
-    server = spawn("npx", ["next", "dev", "-p", String(port), ...(process.env.INTEGRATION_NEXT_FLAGS?.split(" ").filter(Boolean) ?? [])], {
+    // Launch Next through Node so the runner also works without Unix's npx executable.
+    server = spawn(process.execPath, [path.join(FRONTEND, "node_modules/next/dist/bin/next"), "dev", "-p", String(port), ...(process.env.INTEGRATION_NEXT_FLAGS?.split(" ").filter(Boolean) ?? [])], {
       cwd: FRONTEND,
       detached: true,
+      windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
       env: {
         ...process.env,
@@ -253,7 +255,12 @@ function defineTests(dbUrl: string) {
   after(async () => {
     if (server?.pid) {
       try {
-        process.kill(-server.pid, "SIGTERM");
+        // Windows has no Unix process groups; stop only this test server's tree.
+        if (process.platform === "win32") {
+          spawnSync("taskkill", ["/PID", String(server.pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" });
+        } else {
+          process.kill(-server.pid, "SIGTERM");
+        }
       } catch {
         // already gone
       }
@@ -538,7 +545,7 @@ function defineTests(dbUrl: string) {
     const repos = await call("GET", "/api/github/repos", { cookie: user.cookie });
     assert.equal(repos.status, 200);
     assert.deepEqual((repos.json as { full_name: string }[]).map((repo) => repo.full_name), ["tester/shop", "tester/notes"]);
-    assert.deepEqual(githubCalls, ["POST /login/oauth/access_token", "GET /user/repos?sort=updated&per_page=3"]);
+    assert.deepEqual(githubCalls, ["POST /login/oauth/access_token", "GET /user/repos?sort=updated&per_page=100&page=1"]);
     const { rows } = await db.query("select access_token, refresh_token, expires_at from accounts where user_id = $1", [user.id]);
     assert.equal(rows[0].access_token, "fresh-token");
     assert.equal(rows[0].refresh_token, "refresh-2");
@@ -547,7 +554,15 @@ function defineTests(dbUrl: string) {
     // The fresh token is used directly next time.
     githubCalls.length = 0;
     assert.equal((await call("GET", "/api/github/repos", { cookie: user.cookie })).status, 200);
-    assert.deepEqual(githubCalls, ["GET /user/repos?sort=updated&per_page=3"]);
+    assert.deepEqual(githubCalls, ["GET /user/repos?sort=updated&per_page=100&page=1"]);
+
+    githubCalls.length = 0;
+    assert.equal((await call("GET", "/api/github/repos?page=2", { cookie: user.cookie })).status, 200);
+    assert.deepEqual(githubCalls, ["GET /user/repos?sort=updated&per_page=100&page=2"]);
+    for (const page of ["0", "-1", "1.5", "10000", "invalid"]) {
+      assert.equal((await call("GET", `/api/github/repos?page=${page}`, { cookie: user.cookie })).status, 400);
+    }
+    assert.equal(githubCalls.length, 1, "invalid page values never reach GitHub");
   });
 
   test("a refresh token GitHub rejects means reconnecting", T, async () => {

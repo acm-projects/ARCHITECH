@@ -25,6 +25,7 @@ import {
 import { applyReset, planReset } from "../../lib/architecture/reset";
 import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
+import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
 import LearnCard from "../learn/LearnCard";
 import { projectActions } from "../projects/projectActions";
 import type { Project, ProjectMode } from "../projects/projectStore";
@@ -421,6 +422,13 @@ function Workspace({ project }: { project: Project }) {
     <ArchieContext.Provider value={archie}>
       <DesignTrafficContext.Provider value={activeRuns.traffic}>
       <div className="ax-workspace flex h-screen flex-col overflow-hidden">
+        <ChallengeIntroduction
+          key={`${project.id}:${challenge.challenge.id}`}
+          enabled={mode === "challenge"}
+          projectId={project.id}
+          challengeId={challenge.challenge.id}
+          title={challenge.challenge.title}
+        />
         {/* The header owns project-level controls like title, mode, reset, Run Design,
             and save status. It does not own the graph itself. */}
         <WorkspaceHeader
