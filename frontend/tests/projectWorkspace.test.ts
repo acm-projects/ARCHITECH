@@ -592,6 +592,20 @@ test("Run owns traffic settings after Continue exploring; Metrics retains all re
   assert.match(control, /popover="auto"/);
 });
 
+test("both Archie entry points use the explicit tutorial availability rule", () => {
+  const workspace = read("src/components/workspace/ArchitectureWorkspace.tsx");
+  const actions = read("src/components/workspace/NodeContextUi.tsx");
+  const toggle = read("src/components/workspace/ai/ArchitectPanel.tsx");
+  assert.match(workspace, /const archieEnabled = mode !== "learn" \|\| learn\.exploring/);
+  assert.match(workspace, /<ArchieEnabledContext\.Provider value=\{archieEnabled\}/);
+  for (const source of [actions, toggle]) {
+    assert.match(source, /useContext\(ArchieEnabledContext\)/);
+    assert.match(source, /disabled=\{!archieEnabled\}/);
+  }
+  assert.doesNotMatch(actions, /disabled=\{!onAskAi\}/);
+  assert.doesNotMatch(workspace, /<ArchitectPanel/);
+});
+
 test("opening Metrics from selection or Archie expands it and running returns to Metrics", () => {
   const collapsed = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "toggle-section", section: "metrics", hasSelection: false });
   assert.equal(collapsed.section, null);

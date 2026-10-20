@@ -14,6 +14,7 @@ import { MAX_MESSAGES } from "../../../lib/ai/architectChat";
 import type { CustomTechnology } from "../../../lib/projects/customTechnologies";
 import { graphFromCanvas } from "../../../lib/projects/projectPayload";
 import { DesignTrafficContext } from "../DesignTrafficContext";
+import { ArchieEnabledContext } from "../ArchieContext";
 import type { ArchitectureFlowNode } from "../nodes/ArchitectureNode";
 import "./ai-panel.css";
 
@@ -53,9 +54,17 @@ function ArchiePortrait() {
 }
 
 export function ArchitectToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const archieEnabled = useContext(ArchieEnabledContext);
   if (open) return null;
   return (
-    <button type="button" className="ax-ai-toggle" onClick={onToggle} aria-label="Open Archie">
+    <button
+      type="button"
+      className="ax-ai-toggle"
+      onClick={onToggle}
+      aria-label="Open Archie"
+      disabled={!archieEnabled}
+      title={!archieEnabled ? "Available after Continue exploring." : undefined}
+    >
       <ArchiePortrait />
       Ask Archie
     </button>

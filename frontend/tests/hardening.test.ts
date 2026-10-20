@@ -710,7 +710,8 @@ test("controls that are permanently disabled are the ones we know about", () => 
     if (/\/ui\.tsx$/.test(normalized)) continue;
     // Pending actions may disable themselves temporarily; this inventory is for
     // controls that are unavailable regardless of application state.
-    const count = buttonTags(readFileSync(file, "utf8")).filter((tag) => /(?<![-\w])disabled\b(?!\s*=)/.test(tag)).length;
+    // Match the bare JSX attribute, not an identifier inside disabled={disabled}.
+    const count = buttonTags(readFileSync(file, "utf8")).filter((tag) => /(?:^|\s)disabled(?=\s|\/?>)/.test(tag)).length;
     if (count > 0) found.set(normalized, count);
   }
   assert.deepEqual([...found.entries()].sort(), [...known.entries()].sort());
