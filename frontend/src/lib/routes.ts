@@ -1,11 +1,12 @@
-// Every route in the product. ARCHITECH has one entry point (the dashboard) and one place
-// to work (a project), so there is no standalone workspace, Learn or Challenge page.
+// Project workspaces and read-only breakdowns share the authenticated workspace area.
 //
 //   /                       redirects to /dashboard
 //   /dashboard              project dashboard
 //   /workspace/[projectId]  a project, in Learn or Challenge mode
+//   /workspace/breakdowns/netflix  the guided Netflix example
 
 export const HOME_ROUTE = "/dashboard";
+export const NETFLIX_BREAKDOWN_ROUTE = "/workspace/breakdowns/netflix";
 
 // Routes that used to be standalone pages. They no longer exist; they only redirect home.
 export const RETIRED_ROUTES = ["/workspace", "/learn", "/challenge"] as const;

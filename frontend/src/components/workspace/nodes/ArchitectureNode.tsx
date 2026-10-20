@@ -65,7 +65,9 @@ export default function ArchitectureNode({
   id,
   data,
   selected,
-}: NodeProps<ArchitectureFlowNode>) {
+  readOnly = false,
+  subtitle,
+}: NodeProps<ArchitectureFlowNode> & { readOnly?: boolean; subtitle?: string }) {
   const { getNodes, setNodes, getEdges, setEdges } = useReactFlow<
     ArchitectureFlowNode,
     Edge
@@ -116,12 +118,12 @@ export default function ArchitectureNode({
   const customTechnology =
     data.type === "custom" && typeof data.properties?.technology === "string" ? data.properties.technology : null;
   const technology = customTechnology ?? resolveImplementation(data.type, data.implementation).name;
-  const meta =
+  const meta = subtitle ?? (
     data.type === "custom"
       ? `${data.label === customTechnology ? "Custom" : (customTechnology ?? "Custom")} · not measured`
       : data.label === typeLabel
         ? technology
-        : `${typeLabel} · ${technology}`;
+        : `${typeLabel} · ${technology}`);
   // The same operation as deleting with the keyboard, so both always give the same result:
   // the node and every edge attached to it go, in one change (one undo step, one autosave).
   const deleteThisNode = () => {
@@ -156,18 +158,18 @@ export default function ArchitectureNode({
       />
 
       {/* NodeToolbar keeps these attached to the node as it moves or the view changes. */}
-      <NodeToolbar position={Position.Top} offset={6}>
+      {!readOnly && <NodeToolbar position={Position.Top} offset={6}>
         <NodeActionBar
           panel={activePanel}
           onAskAi={inspector ? inspector.askArchie : () => togglePanel("ai")}
           onConfigure={inspector ? inspector.inspectComponent : () => togglePanel("configure")}
           onDelete={deleteThisNode}
         />
-      </NodeToolbar>
-      <NodeToolbar isVisible={selected && !inspector && panel !== "none"} position={Position.Bottom} offset={10}>
+      </NodeToolbar>}
+      {!readOnly && <NodeToolbar isVisible={selected && !inspector && panel !== "none"} position={Position.Bottom} offset={10}>
         {panel === "ai" && <ExplainCard type={data.type} nodeId={id} />}
         {configuredNode && <ComponentInspector node={configuredNode} showReview={false} />}
-      </NodeToolbar>
+      </NodeToolbar>}
     </div>
   );
 }
