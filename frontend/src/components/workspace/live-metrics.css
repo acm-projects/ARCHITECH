@@ -40,19 +40,21 @@
 }
 
 /* "In this design" comparison inside the technology picker (DesignComparisonTable.tsx). */
-.ax-workspace .ax-whatif { margin-top: 8px; font-size: 11px; }
-.ax-workspace .ax-whatif summary { cursor: pointer; color: var(--ax-muted); font-weight: 500; }
+.ax-workspace .ax-whatif { margin-top: 8px; font-size: 10.5px; }
+.ax-workspace .ax-whatif summary { padding-block: 2px; cursor: pointer; color: var(--ax-ink-soft); font-size: 11px; font-weight: 500; }
 .ax-workspace .ax-whatif table { width: 100%; margin-top: 4px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .ax-workspace .ax-whatif th,
-.ax-workspace .ax-whatif td { padding: 3px 4px; text-align: right; white-space: nowrap; }
+.ax-workspace .ax-whatif td { padding: 4px; text-align: right; white-space: nowrap; }
 .ax-workspace .ax-whatif th[scope="row"],
-.ax-workspace .ax-whatif thead th:first-child { text-align: left; font-weight: 500; white-space: normal; }
-.ax-workspace .ax-whatif thead th { color: var(--ax-muted); font-weight: 400; }
+.ax-workspace .ax-whatif thead th:first-child { width: 34%; padding-left: 8px; text-align: left; font-weight: 500; white-space: normal; }
+.ax-workspace .ax-whatif thead th { background: var(--ax-canvas); color: var(--ax-ink-soft); font-size: 10px; font-weight: 500; }
 .ax-workspace .ax-whatif tbody tr { cursor: pointer; border-top: 1px solid var(--ax-line); }
 .ax-workspace .ax-whatif tbody tr:hover { background: rgba(17, 17, 17, 0.035); }
-.ax-workspace .ax-whatif tbody tr[aria-current] { cursor: default; background: #eef1f8; }
-.ax-workspace .ax-whatif td[data-tone="better"] { color: #16a34a; }
+.ax-workspace .ax-whatif tbody tr[aria-current] { cursor: default; background: var(--ax-canvas); box-shadow: inset 2px 0 var(--ax-ink-soft); }
+.ax-workspace .ax-whatif tbody tr[aria-current] th { font-weight: 600; }
+.ax-workspace .ax-whatif tbody tr:focus-within { outline: 1px solid var(--ax-accent); outline-offset: -1px; }
+.ax-workspace .ax-whatif td[data-tone="better"] { color: #15803d; }
 .ax-workspace .ax-whatif td[data-tone="worse"] { color: var(--ax-danger); }
-.ax-workspace .ax-whatif-note { margin-top: 4px; color: var(--ax-muted); }
-.ax-workspace .ax-whatif-pick { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: underline dotted; cursor: pointer; }
+.ax-workspace .ax-whatif-pick { display: block; width: 100%; padding: 0; border: 0; border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.ax-workspace .ax-whatif-pick:hover { text-decoration: underline; text-underline-offset: 2px; }
 .ax-workspace .ax-whatif-pick:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 1px; }

@@ -44,7 +44,7 @@ export function NodeActionBar({
         aria-pressed={panel === "ai"}
         className="ax-nodebar-ai"
       >
-        Ask AI
+        Ask Archie
       </button>
       <span className="ax-nodebar-sep" aria-hidden="true" />
       <button
@@ -66,23 +66,40 @@ export function NodeActionBar({
 // Explanation of a component: its catalog description, and, in the free workspace, Archie's
 // explanation of it from the latest Run Design. Archie is deterministic: it explains the
 // evaluation's own findings, and no AI request is made.
-export function ExplainCard({ type, nodeId }: { type: ArchitectureNodeType; nodeId: string }) {
+export function ExplainCard({ type, nodeId, onAskArchie, compact = false }: {
+  type: ArchitectureNodeType;
+  nodeId: string;
+  onAskArchie?: () => void;
+  compact?: boolean;
+}) {
   const { label, description, family } = COMPONENT_CATALOG[type];
   const archie = useContext(ArchieContext);
   const answer = archie ? explainNodeInView(archie(), nodeId) : null;
+  const [reviewPart, setReviewPart] = useState("overview");
+  const explanations = answer && (answer.status === "findings" || answer.status === "no-findings")
+    ? answer.explanations.slice(0, 2) : [];
+  const activeReviewPart = explanations.some((explanation) => explanation.id === reviewPart) ? reviewPart : "overview";
 
   return (
-    <div className="ax-card ax-popover nodrag nopan nowheel">
-      <p className="ax-card-eyebrow">{FAMILY_LABELS[family]}</p>
-      <div className="mt-1 flex items-center gap-2">
-        <ComponentGlyph
-          type={type}
-          className="h-3 w-3"
-          style={{ color: FAMILY_COLORS[family] }}
-        />
-        <p className="ax-card-title">{label}</p>
+    <div className={`ax-card ax-popover nodrag nopan nowheel${compact ? " ax-explain-compact" : ""}`}>
+      {compact && explanations.length > 0 && (
+        <select className="ax-field" aria-label="Component review details" value={activeReviewPart} onChange={(event) => setReviewPart(event.target.value)}>
+          <option value="overview">Overview</option>
+          {explanations.map((explanation) => <option key={explanation.id} value={explanation.id}>{explanation.title}</option>)}
+        </select>
+      )}
+      <div hidden={compact && activeReviewPart !== "overview"}>
+        <p className="ax-card-eyebrow">{FAMILY_LABELS[family]}</p>
+        <div className="mt-1 flex items-center gap-2">
+          <ComponentGlyph
+            type={type}
+            className="h-3 w-3"
+            style={{ color: FAMILY_COLORS[family] }}
+          />
+          <p className="ax-card-title">{label}</p>
+        </div>
+        <p className="ax-card-body">{description}</p>
       </div>
-      <p className="ax-card-body">{description}</p>
       {answer && (
         <div className="ax-card-section">
           {(answer.status === "unavailable" || answer.status === "not-analyzed") && (
@@ -95,9 +112,9 @@ export function ExplainCard({ type, nodeId }: { type: ArchitectureNodeType; node
                   {STALE_NOTICE}
                 </p>
               )}
-              <p className="ax-card-body">{answer.summary}</p>
-              {answer.explanations.slice(0, 2).map((explanation) => (
-                <div key={explanation.id} className="mt-2">
+              <p className="ax-card-body" hidden={compact && activeReviewPart !== "overview"}>{answer.summary}</p>
+              {explanations.map((explanation) => (
+                <div key={explanation.id} className="mt-2" hidden={compact && activeReviewPart !== explanation.id}>
                   <p className="ax-card-title">{explanation.title}</p>
                   <p className="ax-card-body">
                     <b>What</b> {explanation.what}
@@ -122,16 +139,15 @@ export function ExplainCard({ type, nodeId }: { type: ArchitectureNodeType; node
           )}
         </div>
       )}
-      <div className="ax-card-section">
+      {onAskArchie && <div className="ax-card-section">
         <button
           type="button"
-          disabled
-          title="AI explanations are not connected yet"
+          onClick={onAskArchie}
           className="ax-card-link mt-0!"
         >
-          Ask AI →
+          Ask Archie →
         </button>
-      </div>
+      </div>}
     </div>
   );
 }
@@ -182,7 +198,7 @@ function PropertyField({ type, view, onCommit, onReset }: PropertyFieldProps) {
   };
 
   return (
-    <div className="mt-3">
+    <div className="ax-configure-property">
       <label htmlFor={inputId} className="ax-card-label block" title={view.description}>
         {view.label}
       </label>
@@ -242,38 +258,42 @@ export function ConfigureCard({
   const [draft, setDraft] = useState(name);
 
   return (
-    <div className="ax-card ax-popover nodrag nopan nowheel">
+    <div className="ax-card ax-popover ax-configure nodrag nopan nowheel">
       <p className="ax-card-eyebrow">Configure</p>
 
-      <label htmlFor="node-name" className="ax-card-label mt-3 block">
-        Name
-      </label>
-      <input
-        id="node-name"
-        value={draft}
-        maxLength={MAX_NAME_LENGTH}
-        autoComplete="off"
-        onChange={(event) => {
-          setDraft(event.target.value);
-          const next = event.target.value.trim();
-          if (next) onRename(next);
-        }}
-        onBlur={() => setDraft(name)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") event.currentTarget.blur();
-        }}
-        className="ax-field"
-      />
+      <div className="ax-configure-identity">
+        <div className="ax-configure-property">
+          <label htmlFor="node-name" className="ax-card-label block">
+            Name
+          </label>
+          <input
+            id="node-name"
+            value={draft}
+            maxLength={MAX_NAME_LENGTH}
+            autoComplete="off"
+            onChange={(event) => {
+              setDraft(event.target.value);
+              const next = event.target.value.trim();
+              if (next) onRename(next);
+            }}
+            onBlur={() => setDraft(name)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+            className="ax-field"
+          />
+        </div>
 
-      <div className="ax-card-section">
-        <p className="ax-card-label">Type</p>
-        <p className="mt-1 text-[10px]">{COMPONENT_CATALOG[type].label}</p>
+        <div className="ax-configure-type">
+          <p className="ax-card-label">Type</p>
+          <p className="ax-configure-type-value">{COMPONENT_CATALOG[type].label}</p>
+        </div>
       </div>
 
       {technology}
 
       {properties.length > 0 && (
-        <div className="ax-card-section">
+        <div className="ax-card-section ax-configure-properties">
           {properties.map((view) => (
             <PropertyField
               key={view.key}

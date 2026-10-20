@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 import type { Edge } from "@xyflow/react";
-import { useOnSelectionChange, useReactFlow } from "@xyflow/react";
-import { BoxSelect, Send, Sparkles, Square, X } from "lucide-react";
+import { useOnSelectionChange, useReactFlow, useStore } from "@xyflow/react";
+import { ArrowLeft, ArrowUpRight, BoxSelect, Send, Square, X } from "lucide-react";
 
 import type { ChatMessage, MetricsSnapshot, SuggestionEvent } from "../../../lib/ai/architectChat";
 import { applyChanges } from "../../../lib/ai/changes";
@@ -43,12 +44,20 @@ const FOCUS_STARTERS = ["Explain this part of the system", "What goes in and out
 
 const components = (count: number) => `${count} component${count === 1 ? "" : "s"}`;
 
+function ArchiePortrait() {
+  return (
+    <span className="ax-learn-portrait ax-ai-portrait" aria-hidden="true">
+      <Image src="/archie.svg" alt="" width={518} height={400} />
+    </span>
+  );
+}
+
 export function ArchitectToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   if (open) return null;
   return (
-    <button type="button" className="ax-ai-toggle" onClick={onToggle} aria-label="Open the AI Architect">
-      <Sparkles size={15} aria-hidden="true" />
-      AI Architect
+    <button type="button" className="ax-ai-toggle" onClick={onToggle} aria-label="Open Archie">
+      <ArchiePortrait />
+      Ask Archie
     </button>
   );
 }
@@ -136,10 +145,12 @@ function history(turns: readonly Turn[], question: string): ChatMessage[] {
 
 export default function ArchitectPanel({
   onClose,
+  backLabel,
   onApply,
   customTechnologies,
 }: {
   onClose: () => void;
+  backLabel?: string;
   // Replaces the design in one undo step.
   onApply: (next: { nodes: ArchitectureFlowNode[]; edges: Edge[] }) => void;
   customTechnologies?: readonly CustomTechnology[];
@@ -148,6 +159,11 @@ export default function ArchitectPanel({
   const [focus, setFocus] = useState<string[]>(() => getNodes().filter((node) => node.selected).map((node) => node.id));
   useOnSelectionChange({
     onChange: useCallback(({ nodes }: { nodes: { id: string }[] }) => setFocus(nodes.map((node) => node.id)), []),
+  });
+  const focusedName = useStore((state) => {
+    if (focus.length !== 1) return null;
+    const label = state.nodeLookup.get(focus[0])?.data.label;
+    return typeof label === "string" && label.trim() ? label : "Component";
   });
   const clearFocus = () => setNodes((all) => all.map((node) => (node.selected ? { ...node, selected: false } : node)));
   const traffic = useContext(DesignTrafficContext);
@@ -159,7 +175,7 @@ export default function ArchitectPanel({
   const list = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    list.current?.scrollTo({ top: list.current.scrollHeight });
+    if (turns.length > 0) list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [turns]);
   useEffect(() => () => abort.current?.abort(), []);
   // Questions left today: read when the panel opens, then from each answer's headers.
@@ -208,7 +224,7 @@ export default function ArchitectPanel({
       });
     } catch (error) {
       if (!controller.signal.aborted) {
-        updateAssistant(answerId, (turn) => ({ ...turn, error: "Could not reach the AI Architect. Check your connection and try again." }));
+        updateAssistant(answerId, (turn) => ({ ...turn, error: "Could not reach Archie. Check your connection and try again." }));
       } else {
         updateAssistant(answerId, (turn) => ({ ...turn, notes: [...turn.notes, "Stopped."] }));
       }
@@ -234,14 +250,14 @@ export default function ArchitectPanel({
   };
 
   return (
-    <aside className="ax-ai-panel" aria-label="AI Architect">
+    <aside className="ax-ai-panel" aria-label="Archie" data-empty={turns.length === 0}>
       <div className="ax-ai-header">
         <p className="ax-ai-title">
-          <Sparkles size={15} aria-hidden="true" />
-          AI Architect
+          <ArchiePortrait />
+          Archie
         </p>
-        <button type="button" className="ax-icon-btn" aria-label="Close the AI Architect" onClick={onClose}>
-          <X size={14} aria-hidden="true" />
+        <button type="button" className="ax-icon-btn" aria-label={backLabel ?? "Close Archie"} title={backLabel} onClick={onClose}>
+          {backLabel ? <ArrowLeft size={14} aria-hidden="true" /> : <X size={14} aria-hidden="true" />}
         </button>
       </div>
 
@@ -254,7 +270,7 @@ export default function ArchitectPanel({
         )}
         {focus.length > 0 && (
           <span className="ax-ai-focus-chip">
-            Focused on {components(focus.length)}
+            <span className="ax-ai-focus-name">{focusedName ?? components(focus.length)}</span>
             <button type="button" aria-label="Clear the selection and ask about the whole design" onClick={clearFocus}>
               <X size={11} aria-hidden="true" />
             </button>
@@ -265,15 +281,18 @@ export default function ArchitectPanel({
       <div className="ax-ai-messages" ref={list} aria-live="polite">
         {turns.length === 0 && (
           <div className="ax-ai-empty">
-            <p>
+            <p className="ax-learn-speech ax-ai-intro">
               {focus.length > 0
-                ? `Ask about the ${components(focus.length)} you selected: what they do, how they connect, and what goes in and out of them.`
-                : "Ask about your design. Answers use your design's real numbers from Run Design, and suggested changes can be applied with one click. To ask about one part, drag a box around it on the canvas."}
+                ? focus.length === 1
+                  ? "Ask how this component works, connects, or affects your system."
+                  : "Ask how these components work, connect, or affect your system."
+                : "Ask about traffic, reliability, or cost. Preview changes before applying them."}
             </p>
             <div className="ax-ai-starters">
               {(focus.length > 0 ? FOCUS_STARTERS : STARTERS).map((starter) => (
                 <button key={starter} type="button" className="ax-ai-starter" onClick={() => void ask(starter)}>
-                  {starter}
+                  <span>{starter}</span>
+                  <ArrowUpRight size={12} aria-hidden="true" />
                 </button>
               ))}
             </div>
@@ -286,7 +305,8 @@ export default function ArchitectPanel({
               {turn.text}
             </div>
           ) : (
-            <div key={turn.id} className="grid gap-2">
+            <div key={turn.id} className="ax-ai-assistant">
+              <span className="ax-ai-speaker">Archie</span>
               {turn.text && <p className="ax-ai-answer">{turn.text}</p>}
               {!turn.text && !turn.done && !turn.error && <p className="ax-ai-thinking">Looking at your design…</p>}
               {turn.suggestions.map((suggestion) => (
@@ -318,8 +338,8 @@ export default function ArchitectPanel({
           className="ax-ai-input"
           value={draft}
           maxLength={4_000}
-          placeholder={focus.length > 0 ? "Ask about the selected part…" : "Ask about your architecture…"}
-          aria-label="Ask the AI Architect"
+          placeholder={focus.length > 0 ? "Ask Archie about the selected part…" : "Ask Archie about your architecture…"}
+          aria-label="Ask Archie"
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
@@ -331,7 +351,9 @@ export default function ArchitectPanel({
         <div className="ax-ai-composer-row">
           <span className="ax-ai-hint">
             {usage ? (
-              <span className={usage.remainingToday <= 5 ? "ax-ai-usage-low" : undefined}>{usageLabel(usage)}</span>
+              <span className={usage.remainingToday <= 5 ? "ax-ai-usage-low" : undefined} title={usageLabel(usage)}>
+                {usage.remainingToday} question{usage.remainingToday === 1 ? "" : "s"} left today
+              </span>
             ) : (
               "Enter to send · Shift+Enter for a new line"
             )}
