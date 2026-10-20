@@ -48,16 +48,6 @@ export default function SystemTutorials() {
           Explore real-world systems.
         </p>
       </div>
-      <button
-        type="button"
-        // Tutorials are not available yet.
-
-        disabled
-        title="Not available yet"
-        className="ml-auto text-xs text-[#737373] disabled:cursor-not-allowed"
-      >
-        Explore all <span aria-hidden="true">→</span>
-      </button>
     </div>
 
     <div className="ax-dashboard-learning-content">

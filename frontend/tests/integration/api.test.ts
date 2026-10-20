@@ -538,7 +538,7 @@ function defineTests(dbUrl: string) {
     const repos = await call("GET", "/api/github/repos", { cookie: user.cookie });
     assert.equal(repos.status, 200);
     assert.deepEqual((repos.json as { full_name: string }[]).map((repo) => repo.full_name), ["tester/shop", "tester/notes"]);
-    assert.deepEqual(githubCalls, ["POST /login/oauth/access_token", "GET /user/repos?sort=updated&per_page=3"]);
+    assert.deepEqual(githubCalls, ["POST /login/oauth/access_token", "GET /user/repos?sort=updated&per_page=100&page=1"]);
     const { rows } = await db.query("select access_token, refresh_token, expires_at from accounts where user_id = $1", [user.id]);
     assert.equal(rows[0].access_token, "fresh-token");
     assert.equal(rows[0].refresh_token, "refresh-2");
@@ -547,7 +547,7 @@ function defineTests(dbUrl: string) {
     // The fresh token is used directly next time.
     githubCalls.length = 0;
     assert.equal((await call("GET", "/api/github/repos", { cookie: user.cookie })).status, 200);
-    assert.deepEqual(githubCalls, ["GET /user/repos?sort=updated&per_page=3"]);
+    assert.deepEqual(githubCalls, ["GET /user/repos?sort=updated&per_page=100&page=1"]);
   });
 
   test("a refresh token GitHub rejects means reconnecting", T, async () => {
