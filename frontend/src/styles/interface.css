@@ -6411,56 +6411,6 @@ body,
   line-height: 1;
 }
 
-.ax-dashboard-tutorial {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  text-align: left;
-}
-
-/* Brand artwork remains legible while the control stays unavailable. */
-.ax-dashboard-tutorial:disabled {
-  opacity: 1;
-  cursor: not-allowed;
-}
-
-.ax-dashboard-tutorial-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: clamp(88px, 11vh, 150px);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
-}
-
-.ax-dashboard-tutorial-brand {
-  width: 76%;
-  height: 68%;
-  object-fit: contain;
-}
-
-.ax-dashboard-tutorial-company {
-  display: block;
-  margin-top: 8px;
-  color: var(--color-ink);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.ax-dashboard-tutorial-topic {
-  display: block;
-  margin-top: 2px;
-  color: var(--color-muted);
-  font-size: 11px;
-  line-height: 1.3;
-}
-
 .ax-dashboard-project-create {
   display: inline-flex;
   align-items: center;
@@ -6613,6 +6563,22 @@ body,
 
 .ax-dashboard-tutorial-heading { margin-bottom: 12px; }
 .ax-dashboard-learning-content { display: grid; gap: 16px; }
+
+/* Breakdowns use the same preview/metadata boundary as saved projects. */
+.ax-breakdown-catalog { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.ax-breakdown-catalog-link { display: flex; height: 100%; flex-direction: column; color: inherit; text-decoration: none; }
+.ax-breakdown-catalog-preview { flex: 1; min-height: 92px; padding: 12px; }
+.ax-breakdown-catalog-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 500; }
+.ax-breakdown-catalog .ax-dashboard-project-metadata p { margin: 5px 0 0; color: var(--color-muted); font-size: 10px; line-height: 1.4; }
+.ax-breakdown-catalog-logo { width: 90px; height: 42px; object-fit: contain; filter: grayscale(1); opacity: 0.55; }
+.ax-breakdown-catalog-unavailable .ax-breakdown-catalog-title > span:last-child { color: var(--color-muted); font-size: 9px; font-weight: 400; }
+.ax-breakdown-catalog-unavailable:hover { border-color: var(--color-line); }
+.ax-breakdown-catalog-link:focus-visible { outline: 2px solid var(--canvas-accent); outline-offset: 3px; }
+
+@media (max-width: 639px) {
+  .ax-breakdown-catalog { grid-template-columns: minmax(0, 1fr); }
+  .ax-breakdown-catalog-preview { height: 100px; flex: none; }
+}
 
 .ax-dashboard-learning-content .ax-daily-challenge {
   width: min(100%, 320px);

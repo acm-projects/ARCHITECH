@@ -5,53 +5,14 @@
 // Captured once so relative times do not change during render.
 // A new project opens in Learn mode on an empty canvas; a repeat click is ignored.
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition, type CSSProperties } from "react";
-import { computePreview, formatRelativeTime, selectPreviewAccent } from "../projects/preview";
-import { previewNodeColor } from "../projects/previewColors";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { formatRelativeTime } from "../projects/preview";
+import TopologyPreview from "../projects/TopologyPreview";
 import { projectActions, type ActionResult } from "../projects/projectActions";
 import type { Project } from "../projects/projectStore";
 import { useProjectList, useProjectStorageIssue } from "../projects/useProjects";
 import { useStartProject } from "../projects/useStartProject";
 import { projectRoute } from "../../lib/routes";
-function TopologyPreview({ project }: { project: Project }) {
-  const preview = computePreview(project.nodes, project.edges);
-  const accentId = selectPreviewAccent(preview.nodes, project.edges);
-  const nodeTypes = new Map(project.nodes.map(node => [node.id, node.data.type]));
-
-  return (
-    <svg viewBox="0 0 200 64" className="ax-topology-preview h-full w-full" aria-hidden="true">
-      {preview.lines.map((line, index) => (
-        <line
-          key={index}
-          x1={line.x1}
-          y1={line.y1}
-          x2={line.x2}
-          y2={line.y2}
-          stroke="var(--canvas-line-strong)"
-          strokeWidth="0.75"
-        />
-      ))}
-      {preview.nodes.map(node => {
-        const color = previewNodeColor(nodeTypes.get(node.id) ?? "");
-        return (
-          <rect
-            key={node.id}
-            className={node.id === accentId ? "ax-preview-accent-node" : undefined}
-            style={{ "--preview-accent": color } as CSSProperties}
-            x={node.x - 6}
-            y={node.y - 4.5}
-            width="12"
-            height="9"
-            rx="1.5"
-            fill={color}
-            stroke={color}
-            strokeWidth="0.75"
-          />
-        );
-      })}
-    </svg>
-  );
-}
 
 type ProjectMenuProps = {
   project: Project;
@@ -235,7 +196,7 @@ export default function RecentProjects() {
             className="ax-dashboard-project-preview h-full w-full p-4 text-neutral-400"
           >
             {project.nodes.length > 0 ? (
-              <TopologyPreview project={project} />
+              <TopologyPreview nodes={project.nodes} edges={project.edges} />
             ) : (
               <span className="text-xs text-neutral-500">Empty canvas</span>
             )}

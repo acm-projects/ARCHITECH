@@ -701,9 +701,7 @@ test("every button in the new app does something, or is disabled and says why", 
 });
 
 test("controls that are permanently disabled are the ones we know about", () => {
-  const known = new Map<string, number>([
-    ["src/components/dashboard/SystemTutorials.tsx", 2],
-  ]);
+  const known = new Map<string, number>();
   const found = new Map<string, number>();
   for (const file of sourceFiles("src/components")) {
     const normalized = file.replace(/\\/g, "/");
