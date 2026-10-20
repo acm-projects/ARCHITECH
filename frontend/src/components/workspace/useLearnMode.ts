@@ -34,6 +34,7 @@ export function useLearnMode({
   initiallySkipped?: boolean;
 }) {
   const [skipped, setSkipped] = useState(initiallySkipped);
+  const [explorationStarted, setExplorationStarted] = useState(initiallySkipped);
   const [tutorialError, setTutorialError] = useState<string | null>(null);
   function setTutorialSkipped(next: boolean): boolean {
     if (scopeKey) {
@@ -58,14 +59,15 @@ export function useLearnMode({
   );
 
   const freePlay = enabled && (skipped || engine.freePlay);
+  const exploring = freePlay && explorationStarted;
 
-  // Run Design is available after completing or skipping the tutorial.
+  // Continue exploring dismisses the completion card and unlocks the run tools.
   //
   // This gets its own run session, separate from Challenge, so a Challenge
   // submission/result can never accidentally appear inside Learn mode.
   const runs = useRunSession({
     scopeKey,
-    enabled: freePlay,
+    enabled: exploring,
     nodes,
     edges,
   });
@@ -81,8 +83,15 @@ export function useLearnMode({
     lesson,
     engine,
     freePlay,
+    exploring,
+    continueExploring: () => {
+      if (freePlay) setExplorationStarted(true);
+    },
     runs,
-    restartLesson: engine.reset,
+    restartLesson: () => {
+      setExplorationStarted(false);
+      engine.reset();
+    },
     clearAnalysis,
     skipped,
     tutorialError,

@@ -183,7 +183,7 @@ export function TechnologyChooser({
   const basis = basisLine(comparison, traffic.datasetGb, usesStorage(type));
 
   return (
-    <div className="ax-card-section">
+    <div className="ax-card-section ax-configure-technology">
       <p className="ax-card-label">Technology</p>
       <p className="ax-tech-basis">{basis}</p>
 
