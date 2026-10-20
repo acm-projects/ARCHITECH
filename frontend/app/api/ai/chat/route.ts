@@ -18,6 +18,7 @@ import {
   type Usage,
 } from "@/lib/ai/usage";
 import { isExperienceLevel } from "@/lib/experienceLevel";
+import { log, requestIdOf, serverError } from "@/lib/server/log";
 
 // POST /api/ai/chat: one turn of the AI Architect conversation about the design on the canvas.
 // Body: { graph, traffic?, messages, focus? } (see src/lib/ai/architectChat.ts).
@@ -92,15 +93,14 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
-    console.error("AI Architect usage check failed.", error);
-    return NextResponse.json({ error: "The AI Architect is unavailable right now. Please try again." }, { status: 500 });
+    return serverError(request, "AI Architect usage check failed.", error, "The AI Architect is unavailable right now. Please try again.");
   }
   // The provider failed, so the question should not count.
   const refund = async () => {
     if (!requestId) return;
     const id = requestId;
     requestId = null;
-    await aiStore.release(id).catch((error) => console.error("Refunding an AI Architect question failed.", error));
+    await aiStore.release(id).catch((error) => log.error("Refunding an AI Architect question failed.", error, { requestId: requestIdOf(request) }));
     usage = { ...usage, remainingToday: usage.remainingToday + 1 };
   };
   const events = source[Symbol.asyncIterator]();
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
         { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds), ...usageHeaders(usage) } },
       );
     }
-    console.error("AI Architect request failed.", error);
+    log.error("AI Architect request failed.", error, { requestId: requestIdOf(request), provider: choice.provider });
     return unavailable();
   }
 
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
         // Stopped by the user: the provider did the work, so it counts. Otherwise refund it.
         if (!request.signal.aborted) {
           await refund();
-          console.error("AI Architect reply failed.", error);
+          log.error("AI Architect reply failed.", error, { requestId: requestIdOf(request), provider: choice.provider });
           controller.enqueue(line({ type: "error", error: "The AI Architect stopped unexpectedly. Please try again (this question didn't count)." }));
         }
       } finally {

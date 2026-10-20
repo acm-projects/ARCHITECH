@@ -9,6 +9,7 @@ import { githubGraphql } from "@/lib/github/repoFiles";
 import { githubAccessTokenFor } from "@/lib/github/githubTokenServer";
 import { prisma } from "@/lib/prisma";
 import { PROJECT_SELECT, inputToData, rowToPayload } from "@/lib/projects/projectRecords";
+import { serverError } from "@/lib/server/log";
 
 // POST /api/github/import  { owner, repo }
 // Reads the repository's stack files with GitHub's GraphQL API (using the GitHub account the
@@ -76,7 +77,6 @@ export async function POST(request: Request) {
     if (error instanceof GitHubError) {
       return NextResponse.json({ error: error.message }, { status: STATUS[error.kind] });
     }
-    console.error("GitHub import failed.", error);
-    return NextResponse.json({ error: "Unable to import the repository. Please try again." }, { status: 500 });
+    return serverError(request, "GitHub import failed.", error, "Unable to import the repository. Please try again.");
   }
 }

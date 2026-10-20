@@ -7,9 +7,14 @@ import { isValidProjectId, validateProjectInput } from "@/lib/projects/projectPa
 import {
   PROJECT_SELECT,
   checkImplementations,
+  etag,
+  ifMatchRevision,
   inputToData,
+  revisionOf,
   rowToPayload,
 } from "@/lib/projects/projectRecords";
+import { log, requestIdOf, serverError } from "@/lib/server/log";
+import { recordVersion } from "@/lib/projects/versionStore";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -24,7 +29,7 @@ const unauthenticated = () =>
   NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
 // GET /api/projects/[id]: one project. Another user's project is reported as not found.
-export async function GET(_request: Request, { params }: Context) {
+export async function GET(request: Request, { params }: Context) {
   const userId = await currentUserId();
   if (!userId) return unauthenticated();
   const { id } = await params;
@@ -33,16 +38,19 @@ export async function GET(_request: Request, { params }: Context) {
   try {
     const row = await prisma.project.findFirst({ where: { id, userId }, select: PROJECT_SELECT });
     if (!row) return NextResponse.json(NOT_FOUND, { status: 404 });
-    return NextResponse.json(rowToPayload(row), { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(rowToPayload(row), { headers: { "Cache-Control": "no-store", ETag: etag(revisionOf(row)) } });
   } catch (error) {
-    console.error("Failed to load project.", error);
-    return NextResponse.json({ error: "Unable to load the project." }, { status: 500 });
+    return serverError(request, "Failed to load project.", error, "Unable to load the project.");
   }
 }
 
 // PUT /api/projects/[id]: create the project with this id, or replace it. The id comes from
 // the browser (a UUID), so creating offline and retrying are both safe: sending the same
 // project twice stores it once.
+// Overwrite protection: send `If-Match: "<revision>"` (the ETag of the copy the edit started
+// from). If the project changed on the server since (another device saved it), the save is
+// refused with 409 and the server's copy: { error, project, revision }. Without If-Match the
+// project is replaced as before. Every success returns the new revision as the ETag.
 export async function PUT(request: Request, { params }: Context) {
   const userId = await currentUserId();
   if (!userId) return unauthenticated();
@@ -75,18 +83,41 @@ export async function PUT(request: Request, { params }: Context) {
     }
 
     const data = inputToData(input);
-    const row = existing
-      ? await prisma.project.update({ where: { id }, data, select: PROJECT_SELECT })
-      : await prisma.project.create({ data: { id, userId, ...data }, select: PROJECT_SELECT });
-    return NextResponse.json(rowToPayload(row), { status: existing ? 200 : 201 });
+    const expected = ifMatchRevision(request.headers.get("if-match"));
+    let row;
+    if (existing && expected !== null) {
+      // Atomic: only replaces the row if it is still at the expected revision.
+      const { count } = await prisma.project.updateMany({
+        where: { id, userId, syncedAt: new Date(Number(expected)) },
+        data,
+      });
+      const current = await prisma.project.findUnique({ where: { id }, select: PROJECT_SELECT });
+      if (count === 0 && current) {
+        return NextResponse.json(
+          { error: "This project was changed on another device.", project: rowToPayload(current), revision: revisionOf(current) },
+          { status: 409, headers: { ETag: etag(revisionOf(current)) } },
+        );
+      }
+      // Deleted in the meantime: store it again.
+      row = current ?? (await prisma.project.create({ data: { id, userId, ...data }, select: PROJECT_SELECT }));
+    } else {
+      row = existing
+        ? await prisma.project.update({ where: { id }, data, select: PROJECT_SELECT })
+        : await prisma.project.create({ data: { id, userId, ...data }, select: PROJECT_SELECT });
+    }
+    // Version history: an automatic snapshot when the design changed (best effort: a failure
+    // here never fails the save).
+    await recordVersion({ id, title: row.title, graph: input.graph }, "auto").catch((error) =>
+      log.error("Recording a project version failed.", error, { requestId: requestIdOf(request), projectId: id }),
+    );
+    return NextResponse.json(rowToPayload(row), { status: existing ? 200 : 201, headers: { ETag: etag(revisionOf(row)) } });
   } catch (error) {
-    console.error("Failed to save project.", error);
-    return NextResponse.json({ error: "Unable to save the project." }, { status: 500 });
+    return serverError(request, "Failed to save project.", error, "Unable to save the project.");
   }
 }
 
 // DELETE /api/projects/[id]: delete one of the user's projects.
-export async function DELETE(_request: Request, { params }: Context) {
+export async function DELETE(request: Request, { params }: Context) {
   const userId = await currentUserId();
   if (!userId) return unauthenticated();
   const { id } = await params;
@@ -97,7 +128,6 @@ export async function DELETE(_request: Request, { params }: Context) {
     if (count === 0) return NextResponse.json(NOT_FOUND, { status: 404 });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error("Failed to delete project.", error);
-    return NextResponse.json({ error: "Unable to delete the project." }, { status: 500 });
+    return serverError(request, "Failed to delete project.", error, "Unable to delete the project.");
   }
 }

@@ -52,6 +52,7 @@ model User {
   sessions        Session[]
   projects        Project[]
   aiRequests      AiRequest[]
+  challengeSubmissions ChallengeSubmission[]
 
   @@map("users")
 }
@@ -157,6 +158,8 @@ model Project {
   lastOpenedAt DateTime @map("last_opened_at")
   syncedAt     DateTime @updatedAt @map("synced_at")
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiConversation AiConversation?
+  versions       ProjectVersion[]
 
   @@index([userId])
   @@map("projects")
@@ -187,4 +190,73 @@ model AiReplyCache {
 
   @@index([createdAt])
   @@map("ai_reply_cache")
+}
+
+// Sign-in and sign-up attempts, for throttling (src/lib/auth/attemptLimits.ts). The key is a
+// SHA-256 hash of the email or IP address, never the raw value. Rows older than a day are deleted.
+model AuthAttempt {
+  id        String   @id @default(cuid())
+  // "login-email", "login-ip" or "signup-ip".
+  kind      String
+  keyHash   String   @map("key_hash")
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([kind, keyHash, createdAt])
+  @@index([createdAt])
+  @@map("auth_attempts")
+}
+
+// The AI Architect conversation of a project (one per project), so it survives a reload.
+// turns: the panel's turns (questions, answers, suggestions and whether they were applied),
+// validated by src/lib/ai/conversation.ts. Deleted with the project.
+model AiConversation {
+  projectId String   @id @map("project_id")
+  turns     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("ai_conversations")
+}
+
+// A snapshot of a project (title and diagram) with the engine's headline numbers then, for the
+// version history (src/lib/projects/versions.ts). kind: "auto", "manual" or "before-restore".
+// fingerprint: the evaluation fingerprint, so unchanged designs are not snapshotted twice.
+model ProjectVersion {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  title       String
+  graph       Json
+  fingerprint String
+  summary     Json
+  kind        String
+  label       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("project_versions")
+}
+
+// A design submitted to a challenge, graded on the server with the app's evaluator
+// (src/lib/architecture/challenge/submissions.ts). The leaderboard uses each user's best.
+model ChallengeSubmission {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  challengeId       String   @map("challenge_id")
+  // The project it was submitted from, if any (not a foreign key: projects can be deleted).
+  projectId         String?  @map("project_id")
+  graph             Json
+  fingerprint       String
+  score             Int
+  passed            Boolean
+  requirementScore  Int      @map("requirement_score")
+  architectureScore Int      @map("architecture_score")
+  metrics           Json
+  createdAt         DateTime @default(now()) @map("created_at")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId, score])
+  @@index([userId, createdAt])
+  @@map("challenge_submissions")
 }

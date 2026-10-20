@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from "react";
 import type { Edge } from "@xyflow/react";
 
 import { buildChallengeView } from "../../lib/architecture/challenge/view";
+import { submitToServer, type OfficialResult } from "../../lib/architecture/challenge/challengeClient";
+import { graphFromCanvas } from "../../lib/projects/projectPayload";
 import { toCardResult } from "../challenge/cardResult";
 import {
   urlShortenerChallenge,
@@ -80,10 +82,18 @@ export function useChallengeMode({
 
   // Submit the architecture exactly as it looks now.
   // Hide the brief and run the shared evaluator for this Challenge session.
+  // The server grades the same design too: that is the official score on the leaderboard.
+  const [official, setOfficial] = useState<OfficialResult | null>(null);
+  const [leaderboardVersion, setLeaderboardVersion] = useState(0);
   const submit = useCallback(() => {
     setShowBrief(false);
     run();
-  }, [run]);
+    setOfficial({ status: "pending" });
+    void submitToServer(challenge.id, graphFromCanvas(nodes, edges), scopeKey ?? undefined).then((result) => {
+      setOfficial(result);
+      if (result.status === "graded") setLeaderboardVersion((version) => version + 1);
+    });
+  }, [run, challenge.id, nodes, edges, scopeKey]);
 
   // Let the user look at the original challenge requirements again
   // without deleting their architecture or previous submission.
@@ -106,6 +116,11 @@ export function useChallengeMode({
 
     submit,
     backToBrief,
+
+    // The server-graded result of the last submission, and a counter that changes after each
+    // recorded submission so the leaderboard refreshes.
+    official,
+    leaderboardVersion,
 
     // Reset uses this to forget the previous submission/result.
     // The actual architecture reset is handled separately by ArchitectureWorkspace.

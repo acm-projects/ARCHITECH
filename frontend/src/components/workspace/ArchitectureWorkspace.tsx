@@ -25,6 +25,7 @@ import {
 import { applyReset, planReset } from "../../lib/architecture/reset";
 import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
+import { ChallengeLeaderboard } from "../challenge/ChallengeLeaderboard";
 import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
 import LearnCard from "../learn/LearnCard";
 import { projectActions } from "../projects/projectActions";
@@ -40,6 +41,8 @@ import { InspectorContext } from "./InspectorContext";
 import { useWorkspaceInspector } from "./useWorkspaceInspector";
 import WorkspaceInspector from "./WorkspaceInspector";
 import { ArchitectToggle } from "./ai/ArchitectPanel";
+import { ExportButton } from "./ExportButton";
+import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
@@ -510,6 +513,8 @@ function Workspace({ project }: { project: Project }) {
 
             {showInspector ? (
               <WorkspaceInspector
+                projectId={project.id}
+                projectTitle={title}
                 nodes={nodes}
                 controller={inspector}
                 runSettingsHeight={runSettingsHeight}
@@ -521,20 +526,30 @@ function Workspace({ project }: { project: Project }) {
                 runs={activeRuns}
                 live={live}
                 guidance={mode === "challenge" ? (
-                  <ChallengeCard
-                    challenge={challenge.challenge}
-                    result={challenge.cardResult}
-                    onRun={challenge.submit}
-                    onBack={challenge.backToBrief}
-                    stale={challenge.view?.isStale}
-                    running={challenge.view?.isRunning}
-                    error={challenge.view?.error}
-                  />
+                  <>
+                    <ChallengeCard
+                      challenge={challenge.challenge}
+                      result={challenge.cardResult}
+                      onRun={challenge.submit}
+                      onBack={challenge.backToBrief}
+                      stale={challenge.view?.isStale}
+                      running={challenge.view?.isRunning}
+                      error={challenge.view?.error}
+                    />
+                    <ChallengeLeaderboard
+                      challengeId={challenge.challenge.id}
+                      official={challenge.official}
+                      version={challenge.leaderboardVersion}
+                    />
+                  </>
                 ) : null}
               />
             ) : (
               <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
-                <div className="ax-panel-content">
+                <div className="ax-panel-content" data-architect={inspector.historyOpen || undefined}>
+                  {inspector.historyOpen ? (
+                    <HistoryPanel projectId={project.id} onClose={inspector.closeHistory} onRestore={replaceGraph} />
+                  ) : (
                   <LearnCard
                     lesson={learn.lesson}
                     stepIndex={learn.engine.stepIndex}
@@ -547,7 +562,10 @@ function Workspace({ project }: { project: Project }) {
                     hint={learn.engine.hintVisible ? learn.engine.hint?.text : null}
                     onDismissFeedback={learn.engine.dismissFeedback}
                   />
+                  )}
                   <ArchitectToggle open={false} onToggle={askArchie} />
+                  <HistoryToggle open={inspector.historyOpen} onToggle={inspector.openHistory} />
+                  <ExportButton title={title} />
                 </div>
               </aside>
             )}

@@ -619,6 +619,18 @@ test("opening Metrics from selection or Archie expands it and running returns to
   assert.deepEqual(inspectorReducer(archie, { type: "reset" }), INITIAL_INSPECTOR_STATE);
 });
 
+test("history, Archie and Metrics share the inspector and retain the current project", () => {
+  const history = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-history" });
+  assert.equal(history.historyOpen, true);
+  const archie = inspectorReducer(history, { type: "open-archie" });
+  assert.equal(archie.historyOpen, false);
+  assert.equal(archie.archieOpen, true);
+  assert.deepEqual(inspectorReducer(history, { type: "toggle-section", section: "metrics", hasSelection: false }), INITIAL_INSPECTOR_STATE);
+  const inspector = read("src/components/workspace/WorkspaceInspector.tsx");
+  assert.match(inspector, /<ArchitectPanel\s+key=\{projectId\}\s+projectId=\{projectId\}/);
+  assert.match(inspector, /<HistoryPanel projectId=\{projectId\}/);
+});
+
 test("review selection survives stale traffic and resets only for a new completed run", async () => {
   const graph = clientServerDb();
   const session = createRunSession(evaluateDesign);
