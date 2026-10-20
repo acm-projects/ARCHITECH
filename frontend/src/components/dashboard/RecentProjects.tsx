@@ -9,10 +9,11 @@ import { useEffect, useRef, useState, useTransition, type CSSProperties } from "
 import { computePreview, formatRelativeTime, selectPreviewAccent } from "../projects/preview";
 import { previewNodeColor } from "../projects/previewColors";
 import { projectActions, type ActionResult } from "../projects/projectActions";
-import type { Project } from "../projects/projectStore";
+import type { Project, ProjectMode } from "../projects/projectStore";
 import { useProjectList, useProjectStorageIssue } from "../projects/useProjects";
 import { useStartProject } from "../projects/useStartProject";
 import { projectRoute } from "../../lib/routes";
+import NewProjectDialog from "./NewProjectDialog";
 function TopologyPreview({ project }: { project: Project }) {
   const preview = computePreview(project.nodes, project.edges);
   const accentId = selectPreviewAccent(preview.nodes, project.edges);
@@ -175,17 +176,30 @@ export default function RecentProjects() {
   const storageIssue = useProjectStorageIssue();
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [resumeGit, setResumeGit] = useState(false);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("newProject") !== "git") return;
+    const frame = requestAnimationFrame(() => {
+      setResumeGit(true);
+      setShowNewProject(true);
+      url.searchParams.delete("newProject");
+      window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
   const [nowMs] = useState(() => Date.now());
   const [isOpening, startOpening] = useTransition();
   const [openingProjects, setOpeningProjects] = useState<Project[]>([]);
   // Storage publishes creation immediately; keep that new record out of the
   // dashboard while Next.js is transitioning to its workspace.
   const displayedProjects = isOpening ? openingProjects : projects;
-  const createProject = () => {
+  const createProject = (mode: ProjectMode) => {
     if (isOpening) return;
     setOpeningProjects(projects ?? []);
     startOpening(() => {
-      const result = startProject({ mode: "learn" });
+      const result = startProject({ mode });
       if (result) setError(result.ok ? null : result.message);
     });
   };
@@ -202,7 +216,12 @@ export default function RecentProjects() {
       </div>
       <button
         type="button"
-        onClick={createProject}
+        onClick={() => {
+          setError(null);
+          setResumeGit(false);
+          setShowNewProject(true);
+        }}
+        aria-haspopup="dialog"
         disabled={isOpening}
         aria-busy={isOpening}
         className="ax-dashboard-project-create"
@@ -211,6 +230,15 @@ export default function RecentProjects() {
         New project
       </button>
     </div>
+    {showNewProject && (
+      <NewProjectDialog
+        onDismiss={() => setShowNewProject(false)}
+        onStart={createProject}
+        isOpening={isOpening}
+        creationError={error}
+        initialGit={resumeGit}
+      />
+    )}
     {(error ?? (storageIssue ? STORAGE_ISSUE_MESSAGES[storageIssue] : null)) && (
       <p role="alert" className="mb-3 text-xs text-red-700">
         {error ?? (storageIssue ? STORAGE_ISSUE_MESSAGES[storageIssue] : null)}

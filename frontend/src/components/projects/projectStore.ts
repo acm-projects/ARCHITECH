@@ -657,8 +657,19 @@ export function createProjectStore(options: ProjectStoreOptions) {
     return clone;
   }
 
+  // Cache a server-created project before opening its workspace. Preserve local work.
+  function receiveProject(raw: unknown): Project {
+    const project = parseProject(raw);
+    if (!project) throw new Error("The imported project is invalid.");
+    const existing = getProject(project.id);
+    if (existing) return existing;
+    write([project, ...load().projects]);
+    return project;
+  }
+
   // Public project operations used by projectActions and the project-loading hooks.
   return {
+    receiveProject,
     listProjects,
     getProject,
     getProjectState,
