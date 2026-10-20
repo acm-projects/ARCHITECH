@@ -1,6 +1,6 @@
 import type { RunResult } from "../../lib/architecture/evaluation/runSession.ts";
 
-export type InspectorSectionId = "metrics" | "stress";
+export type InspectorSectionId = "metrics";
 export type InspectorState = {
   section: InspectorSectionId | null;
   archieOpen: boolean;
@@ -31,16 +31,6 @@ export function inspectorReducer(state: InspectorState, action: InspectorAction)
     case "reset":
       return INITIAL_INSPECTOR_STATE;
   }
-}
-
-export function inspectorRunAction(state: InspectorState, run: {
-  isRunning: boolean;
-  hasResult: boolean;
-  hasSelection: boolean;
-}): "ignore" | "configure" | "run" {
-  if (run.isRunning) return "ignore";
-  return run.hasResult && (state.section !== "stress" || state.archieOpen || run.hasSelection)
-    ? "configure" : "run";
 }
 
 export type ReviewView = "overview" | "metrics" | "comparison" | "live";

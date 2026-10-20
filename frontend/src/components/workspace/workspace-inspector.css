@@ -388,53 +388,6 @@
 .ax-workspace .ax-inspector .ax-ai-toggle:hover {
   background: var(--ax-canvas);
 }
-.ax-workspace .ax-stress[data-embedded="true"] {
-  width: 100%;
-  padding: 0 12px 12px;
-  border: 0;
-  border-radius: 0;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-rate {
-  gap: 12px;
-  font-size: 12px;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-rate > span:first-child {
-  white-space: nowrap;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-input {
-  width: 86px;
-  font-size: 13px;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-presets {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-preset {
-  width: 100%;
-  min-height: 30px;
-  padding: 4px;
-  border: 1px solid var(--ax-line);
-  border-radius: 3px;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-preset[aria-pressed="true"] {
-  border-color: var(--ax-ink);
-  box-shadow: inset 0 -1px var(--ax-ink);
-  color: var(--ax-ink);
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-run {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--ax-ink);
-  border-radius: 3px;
-  background: var(--ax-ink);
-  color: var(--ax-surface);
-  text-align: center;
-  font-size: 12px;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-run[aria-disabled="true"] {
-  opacity: .5;
-}
 @media (max-width: 767px) {
   .ax-workspace .ax-workspace-canvas[data-inspector="true"] .ax-diagram-viewport {
     height: 100%;
@@ -454,4 +407,13 @@
   .ax-workspace .ax-inspector-header {
     padding-block: 10px;
   }
+}
+
+/* Reserve the measured Run popup plus an 8px gap; closing it restores the centered dock. */
+.ax-workspace .ax-canvas-panel.ax-inspector[data-side="right"][data-run-settings-open="true"] {
+  top: calc(12px + var(--ax-run-settings-height) + 8px);
+  bottom: auto;
+  height: calc(100% - var(--ax-run-settings-height) - 32px);
+  transform: none;
+  align-items: flex-start;
 }

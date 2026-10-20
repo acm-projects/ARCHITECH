@@ -38,7 +38,6 @@ import type { ArchitectureNodeType } from "../src/lib/architecture/types.ts";
 import {
   INITIAL_INSPECTOR_STATE,
   inspectorReducer,
-  inspectorRunAction,
   reviewViewForRun,
   type ReviewSelection,
 } from "../src/components/workspace/inspectorState.ts";
@@ -579,40 +578,29 @@ test("the load is session state: it is not part of the graph history, and not sa
   assert.match(hook, /setRequestRate/);
 });
 
-test("Stress test replaces Learn guidance after Continue exploring, inside Metrics", () => {
+test("Run owns traffic settings after Continue exploring; Metrics retains all results", () => {
   const workspace = read("src/components/workspace/ArchitectureWorkspace.tsx");
   const inspector = read("src/components/workspace/WorkspaceInspector.tsx");
+  const control = read("src/components/workspace/StressTestPanel.tsx");
   assert.match(workspace, /testingEnabled=\{canRunDesign\}/);
   assert.match(workspace, /const showInspector = mode === "challenge" \|\| learn\.exploring/);
-  assert.match(workspace, /showInspector \? \(/);
-  assert.match(inspector, /testingEnabled &&/);
-  assert.match(inspector, /<StressTestPanel/);
+  assert.match(workspace, /runControl=\{canRunDesign \? \(/);
+  assert.match(workspace, /activeRuns\.runAtRate\(rate\)/);
   assert.match(inspector, /title="Metrics"/);
-  assert.doesNotMatch(inspector, /title="Live estimates"|title="System review"/);
-  assert.match(inspector, /runs\.runAtRate\(rate\)/);
-  assert.doesNotMatch(inspector, /role="tab"|ax-inspector-nav/);
+  assert.doesNotMatch(inspector, /title="Stress test"|title="Live estimates"|title="System review"|<StressTestPanel|role="tab"/);
+  assert.match(control, /popoverTarget="ax-run-settings"/);
+  assert.match(control, /popover="auto"/);
 });
 
-test("Run again opens stress settings, then running returns to review", () => {
-  const ready = { isRunning: false, hasResult: true, hasSelection: false };
-  assert.equal(inspectorRunAction(INITIAL_INSPECTOR_STATE, ready), "configure");
-  const stress = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-section", section: "stress" });
-  assert.equal(inspectorRunAction(stress, ready), "run");
-  const review = inspectorReducer(stress, { type: "open-section", section: "metrics" });
-  assert.equal(review.section, "metrics");
-  assert.equal(inspectorRunAction(review, { ...ready, isRunning: true }), "ignore");
-  assert.equal(inspectorRunAction(review, { ...ready, hasResult: false }), "run");
-});
-
-test("opening sections from selection or Archie expands them instead of collapsing them", () => {
-  const stress = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-section", section: "stress" });
-  const archie = inspectorReducer(stress, { type: "open-archie" });
-  assert.equal(archie.section, "stress");
-  assert.equal(inspectorRunAction(archie, { isRunning: false, hasResult: true, hasSelection: false }), "configure");
-  assert.deepEqual(inspectorReducer(archie, { type: "toggle-section", section: "stress", hasSelection: false }), stress);
-  assert.deepEqual(inspectorReducer(stress, { type: "toggle-section", section: "stress", hasSelection: true }), stress);
-  assert.equal(inspectorReducer(stress, { type: "toggle-section", section: "stress", hasSelection: false }).section, null);
-  assert.equal(inspectorRunAction(stress, { isRunning: false, hasResult: true, hasSelection: true }), "configure");
+test("opening Metrics from selection or Archie expands it and running returns to Metrics", () => {
+  const collapsed = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "toggle-section", section: "metrics", hasSelection: false });
+  assert.equal(collapsed.section, null);
+  const archie = inspectorReducer(collapsed, { type: "open-archie" });
+  const metrics = inspectorReducer(archie, { type: "toggle-section", section: "metrics", hasSelection: false });
+  assert.deepEqual(metrics, INITIAL_INSPECTOR_STATE);
+  assert.deepEqual(inspectorReducer(metrics, { type: "toggle-section", section: "metrics", hasSelection: true }), metrics);
+  const review = inspectorReducer(archie, { type: "open-section", section: "metrics" });
+  assert.deepEqual(review, INITIAL_INSPECTOR_STATE);
   assert.equal(inspectorReducer(archie, { type: "close-archie" }).archieOpen, false);
   assert.deepEqual(inspectorReducer(archie, { type: "reset" }), INITIAL_INSPECTOR_STATE);
 });

@@ -240,9 +240,9 @@ export default function MetricsPanel({ componentName = (id) => id, ...props }: M
           type="button"
           className="ax-review-configure"
           disabled={!view.canRun}
-          onClick={result ? props.onConfigureRun : props.onRun}
+          onClick={props.onConfigureRun}
         >
-          {result ? "Run again" : "Run design"} {"\u2192"}
+          Run
         </button>
       </div>
     </div>

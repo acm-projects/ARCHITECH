@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Logo } from "../ui";
 
-import type { RunButtonState } from "../../lib/architecture/evaluation/resultsView";
 import { HOME_ROUTE } from "../../lib/routes";
 import type { ProjectMode } from "../projects/projectStore";
 
@@ -18,24 +17,14 @@ type WorkspaceHeaderProps = {
   onModeChange: (mode: ProjectMode) => void;
   // Progress inside the mode, for example "Step 3 / 8".
   modeStatus?: string;
-  // Run Design. Absent where the action is not available (the guided lesson, and Challenge,
-  // which has its own Submit).
-  onRun?: () => void;
-  runState?: RunButtonState;
+  // The caller supplies Run only where testing is available.
+  runControl?: ReactNode;
 };
 
 const MODES: { mode: ProjectMode; label: string }[] = [
   { mode: "learn", label: "Learn" },
   { mode: "challenge", label: "Challenge" },
 ];
-
-const RUN_LABELS: Record<RunButtonState, string> = {
-  idle: "Run design",
-  analyzing: "Analyzing…",
-  ready: "Run again",
-  stale: "Run again",
-  error: "Retry",
-};
 
 const MAX_TITLE_LENGTH = 80;
 
@@ -47,8 +36,7 @@ export default function WorkspaceHeader({
   mode,
   onModeChange,
   modeStatus,
-  onRun,
-  runState = "idle",
+  runControl,
 }: WorkspaceHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(title);
@@ -133,17 +121,7 @@ export default function WorkspaceHeader({
         <button type="button" onClick={onReset} className="ax-action">
           Reset
         </button>
-        {onRun && (
-          <button
-            type="button"
-            onClick={() => onRun()}
-            aria-disabled={runState === "analyzing"}
-            data-run-state={runState}
-            className="ax-action ax-action-primary"
-          >
-            {RUN_LABELS[runState]} <span className="ax-arrow">→</span>
-          </button>
-        )}
+        {runControl}
       </div>
     </header>
   );
