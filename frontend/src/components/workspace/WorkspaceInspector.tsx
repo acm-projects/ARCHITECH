@@ -9,6 +9,8 @@ import ComponentInspector from "./ComponentInspector";
 import { COMPONENT_CATALOG, FAMILY_LABELS } from "./componentCatalog";
 import { LiveMetricsBar } from "./LiveMetricsBar";
 import MetricsPanel from "./MetricsPanel";
+import { ExportButton } from "./ExportButton";
+import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import type { InspectorSectionId } from "./inspectorState";
 import type { WorkspaceInspectorController } from "./useWorkspaceInspector";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
@@ -24,6 +26,8 @@ const REVIEW_STATUS_LABELS = {
 };
 
 type WorkspaceInspectorProps = {
+  projectId: string;
+  projectTitle: string;
   nodes: ArchitectureFlowNode[];
   controller: WorkspaceInspectorController;
   runSettingsHeight: number;
@@ -89,10 +93,11 @@ function useInspectorLayout(runSettingsHeight: number) {
 }
 
 export default function WorkspaceInspector({
+  projectId, projectTitle,
   nodes, controller, runSettingsHeight, onConfigureRun, onClearSelection, onApply, customTechnologies,
   guidance, testingEnabled, runs, live,
 }: WorkspaceInspectorProps) {
-  const { archieOpen, section: activeSection, askArchie, closeArchie, toggleSection, showResults } = controller;
+  const { archieOpen, historyOpen, section: activeSection, askArchie, closeArchie, openHistory, closeHistory, toggleSection, showResults } = controller;
   const { frameRef, compact } = useInspectorLayout(runSettingsHeight);
   const selected = nodes.filter((node) => node.selected);
   const component = selected.length === 1 ? selected[0] : null;
@@ -100,7 +105,7 @@ export default function WorkspaceInspector({
   const title = component?.data.label ?? (selected.length ? `${selected.length} components` : "System");
   const componentName = (id: string) => nodes.find((node) => node.id === id)?.data.label ?? id;
 
-  const expanded = (section: InspectorSectionId) => !compact && !archieOpen && selected.length === 0 && activeSection === section;
+  const expanded = (section: InspectorSectionId) => !compact && !archieOpen && !historyOpen && selected.length === 0 && activeSection === section;
   const reviewStatus = REVIEW_STATUS_LABELS[runs.view.runButtonState];
   const liveMetrics = (
     <LiveMetricsBar
@@ -185,9 +190,20 @@ export default function WorkspaceInspector({
         </div>
 
         <ArchitectToggle open={archieOpen && !compact} onToggle={askArchie} />
+        <div className="ax-inspector-project-actions">
+          <HistoryToggle open={historyOpen} onToggle={openHistory} />
+          <ExportButton title={projectTitle} />
+        </div>
+        {historyOpen && (
+          <div className="ax-panel-content ax-inspector-archie" hidden={compact}>
+            <HistoryPanel projectId={projectId} onClose={closeHistory} onRestore={onApply} />
+          </div>
+        )}
         {archieOpen && (
           <div className="ax-panel-content ax-inspector-archie" data-architect hidden={compact}>
             <ArchitectPanel
+              key={projectId}
+              projectId={projectId}
               onClose={closeArchie}
               backLabel="Back to inspector"
               onApply={onApply}

@@ -3,10 +3,12 @@ import { NextResponse } from "next/server";
 
 import { authOptions } from "../auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { PROJECT_SELECT, rowToPayload } from "@/lib/projects/projectRecords";
+import { PROJECT_SELECT, revisionOf, rowToPayload } from "@/lib/projects/projectRecords";
+import { serverError } from "@/lib/server/log";
 
-// GET /api/projects: every project of the signed-in user, most recently changed first.
-export async function GET() {
+// GET /api/projects: every project of the signed-in user, most recently changed first, and
+// each one's revision ({ projects, revisions: { [id]: revision } }) for If-Match on save.
+export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
@@ -19,11 +21,10 @@ export async function GET() {
       orderBy: { updatedAt: "desc" },
     });
     return NextResponse.json(
-      { projects: rows.map(rowToPayload) },
+      { projects: rows.map(rowToPayload), revisions: Object.fromEntries(rows.map((row) => [row.id, revisionOf(row)])) },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
-    console.error("Failed to list projects.", error);
-    return NextResponse.json({ error: "Unable to load your projects." }, { status: 500 });
+    return serverError(request, "Failed to list projects.", error, "Unable to load your projects.");
   }
 }

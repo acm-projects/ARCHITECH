@@ -10,6 +10,8 @@ export function useWorkspaceInspector({ hasSelection, onClearSelection }: {
   const [state, dispatch] = useReducer(inspectorReducer, INITIAL_INSPECTOR_STATE);
   const askArchie = useCallback(() => dispatch({ type: "open-archie" }), []);
   const closeArchie = useCallback(() => dispatch({ type: "close-archie" }), []);
+  const openHistory = useCallback(() => dispatch({ type: "open-history" }), []);
+  const closeHistory = useCallback(() => dispatch({ type: "close-history" }), []);
   const reset = useCallback(() => dispatch({ type: "reset" }), []);
   const openSection = useCallback((section: InspectorSectionId | null) => {
     onClearSelection();
@@ -29,7 +31,7 @@ export function useWorkspaceInspector({ hasSelection, onClearSelection }: {
     askArchie,
   }), [state.archieOpen, closeArchie, askArchie]);
 
-  return { ...state, askArchie, closeArchie, reset, openSection, toggleSection, showResults, nodeActions };
+  return { ...state, askArchie, closeArchie, openHistory, closeHistory, reset, openSection, toggleSection, showResults, nodeActions };
 }
 
 export type WorkspaceInspectorController = ReturnType<typeof useWorkspaceInspector>;

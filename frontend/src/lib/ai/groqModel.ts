@@ -14,6 +14,18 @@ export function groqModelName(env: Record<string, string | undefined> = process.
   return env.GROQ_MODEL?.trim() || DEFAULT_GROQ_MODEL;
 }
 
+// Groq checks the model's tool call itself and, when the model wrote a malformed one, rejects
+// the whole response ("Failed to call a function", code tool_use_failed) instead of passing it on.
+export class ToolCallFailedError extends Error {
+  constructor(message = "The model wrote a malformed tool call.") {
+    super(message);
+    this.name = "ToolCallFailedError";
+  }
+}
+
+const isToolCallFailure = (error: { code?: string; message?: string } | undefined) =>
+  error?.code === "tool_use_failed" || /failed to call a function/i.test(error?.message ?? "");
+
 type Delta = {
   content?: string | null;
   tool_calls?: { index: number; id?: string; function?: { name?: string; arguments?: string } }[];
@@ -51,13 +63,16 @@ export async function* readCompletionStream(body: ReadableStream<Uint8Array>): A
         yield* finishCalls();
         return;
       }
-      let chunk: { choices?: { delta?: Delta }[]; error?: { message?: string } };
+      let chunk: { choices?: { delta?: Delta }[]; error?: { message?: string; code?: string } };
       try {
         chunk = JSON.parse(data);
       } catch {
         continue;
       }
-      if (chunk.error) throw new Error(chunk.error.message ?? "Groq returned an error.");
+      if (chunk.error) {
+        if (isToolCallFailure(chunk.error)) throw new ToolCallFailedError(chunk.error.message);
+        throw new Error(chunk.error.message ?? "Groq returned an error.");
+      }
       const delta = chunk.choices?.[0]?.delta;
       if (!delta) continue;
       if (delta.content) yield { type: "text", text: delta.content };
@@ -83,7 +98,10 @@ export function groqModelFromEnv(
   const model = groqModelName(env);
   const baseUrl = (env.GROQ_BASE_URL?.trim() || "https://api.groq.com/openai/v1").replace(/\/+$/, "");
 
-  return async function* ({ system, messages, tools, maxTokens, signal }) {
+  const request = async function* (
+    { system, messages, tools, maxTokens, signal }: Parameters<ChatModel>[0],
+    withTools: boolean,
+  ): AsyncIterable<ModelEvent> {
     const response = await fetchImpl(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -94,11 +112,21 @@ export function groqModelFromEnv(
         // gpt-oss reasons before answering, and that counts toward max_completion_tokens: keep it
         // short so the budget goes to the answer. (Its reasoning arrives separately and is not shown.)
         ...(model.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : {}),
-        messages: [{ role: "system", content: system }, ...messages],
-        tools: tools.map((tool) => ({
-          type: "function",
-          function: { name: tool.name, description: tool.description, parameters: tool.input_schema },
-        })),
+        messages: [
+          {
+            role: "system",
+            content: withTools ? system : `${system}\n\n(Tools are unavailable for this answer: describe any change you recommend in words.)`,
+          },
+          ...messages,
+        ],
+        ...(withTools && tools.length > 0
+          ? {
+              tools: tools.map((tool) => ({
+                type: "function",
+                function: { name: tool.name, description: tool.description, parameters: tool.input_schema },
+              })),
+            }
+          : {}),
       }),
       signal,
     });
@@ -106,14 +134,34 @@ export function groqModelFromEnv(
       throw new ModelBusyError(retryAfterSeconds(response.headers.get("retry-after")), "Groq's rate limit was reached.");
     }
     if (!response.ok || !response.body) {
-      let detail = "";
+      let error: { message?: string; code?: string } | undefined;
       try {
-        detail = ((await response.json()) as { error?: { message?: string } }).error?.message ?? "";
+        error = ((await response.json()) as { error?: { message?: string; code?: string } }).error;
       } catch {
-        detail = "";
+        error = undefined;
       }
-      throw new Error(`Groq request failed (${response.status})${detail ? `: ${detail}` : ""}`);
+      if (isToolCallFailure(error)) throw new ToolCallFailedError(error?.message);
+      throw new Error(`Groq request failed (${response.status})${error?.message ? `: ${error.message}` : ""}`);
     }
     yield* readCompletionStream(response.body);
+  };
+
+  // A malformed tool call should not cost the user their answer. Before anything has streamed:
+  // try again once, then ask without the tool (the answer describes the change in words).
+  // After text has streamed: keep the text and drop only the broken suggestion.
+  return async function* (input) {
+    let streamed = false;
+    for (const withTools of [true, true, false]) {
+      try {
+        for await (const event of request(input, withTools)) {
+          streamed = true;
+          yield event;
+        }
+        return;
+      } catch (error) {
+        if (!(error instanceof ToolCallFailedError)) throw error;
+        if (streamed) return;
+      }
+    }
   };
 }

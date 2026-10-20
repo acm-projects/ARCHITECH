@@ -3,8 +3,27 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { isValidAuthEmail, normalizeAuthEmail } from "@/lib/authEmail";
 import { prisma } from "@/lib/prisma";
+import { attemptLimitsFromEnv, checkSignup, clientIp, createAttemptPruner, hashKey } from "@/lib/auth/attemptLimits";
+import { attemptStore } from "@/lib/auth/attemptStore";
+import { serverError } from "@/lib/server/log";
 
+const prune = createAttemptPruner(attemptStore);
+
+// POST /api/auth/register: creates an email/password account.
+// 201 created · 400 invalid or email in use · 429 too many accounts from this network
+// (Retry-After header; 5 an hour per IP, see src/lib/auth/attemptLimits.ts).
 export async function POST(req: Request) {
+  const ip = clientIp(req.headers);
+  prune();
+  try {
+    const verdict = await checkSignup(attemptStore, ip, attemptLimitsFromEnv());
+    if (!verdict.ok) {
+      return NextResponse.json({ error: verdict.error }, { status: 429, headers: { "Retry-After": String(verdict.retryAfterSeconds) } });
+    }
+  } catch (error) {
+    return serverError(req, "Checking the sign-up limit failed.", error, "Server error");
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -47,6 +66,7 @@ export async function POST(req: Request) {
     await prisma.user.create({
       data: { name: normalizedName, email: normalizedEmail, passwordHash },
     });
+    await attemptStore.record("signup-ip", hashKey(ip), true);
 
     return NextResponse.json({ message: "User created." }, { status: 201 });
   } catch (error) {
@@ -56,7 +76,6 @@ export async function POST(req: Request) {
     ) {
       return NextResponse.json({ error: "Email already in use." }, { status: 400 });
     }
-    console.error("Account registration failed.", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return serverError(req, "Account registration failed.", error, "Server error");
   }
 }

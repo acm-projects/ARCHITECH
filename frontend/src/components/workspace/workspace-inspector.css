@@ -1,4 +1,7 @@
 /* One inspector for the current selection, system tests, and Archie. */
+.ax-workspace .ax-inspector-project-actions { display: flex; pointer-events: auto; }
+.ax-workspace .ax-inspector-project-actions > button { flex: 1; }
+.ax-workspace .ax-inspector .ax-inspector-project-actions > button { border-radius: 3px; }
 .ax-workspace .ax-inspector { --ax-inspector-radius: 16px; }
 .ax-workspace .ax-diagram-viewport { height: 100%; }
 .ax-workspace .ax-canvas-panel.ax-inspector[data-side="right"] {

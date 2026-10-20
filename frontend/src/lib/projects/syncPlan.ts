@@ -100,3 +100,32 @@ export function planPendingChanges(
     remove: Object.keys(synced).filter((id) => !localIds.has(id)),
   };
 }
+
+// ---- Conflicts (another device saved the same project first) ----
+
+export const CONFLICT_SUFFIX = " (from another device)";
+
+// Opening a tab changes timestamps; retrying a successful save can also return an old ETag.
+// Neither needs another project. Only preserve a copy for divergent project content.
+export function needsConflictCopy(server: ProjectPayload, pending: ProjectPayload, synced?: string): boolean {
+  const content = ({ updatedAt: _updated, lastOpenedAt: _opened, ...project }: ProjectPayload) => canonicalJson(project);
+  const serverContent = content(server);
+  if (serverContent === content(pending)) return false;
+  if (synced) {
+    try {
+      const previous = JSON.parse(synced) as ProjectPayload;
+      if (serverContent === content(previous)) return false;
+    } catch {
+      // An unreadable previous fingerprint cannot establish that the server is unchanged.
+    }
+  }
+  return true;
+}
+
+// The other device's version, kept as a separate project so nothing is lost; this browser's
+// version then replaces the original. The title stays within the length limit.
+export function conflictCopy(serverProject: ProjectPayload, newId: string, maxTitleLength: number): ProjectPayload {
+  const room = Math.max(1, maxTitleLength - CONFLICT_SUFFIX.length);
+  const base = serverProject.title.length > room ? `${serverProject.title.slice(0, room - 1).trimEnd()}…` : serverProject.title;
+  return { ...serverProject, id: newId, title: `${base}${CONFLICT_SUFFIX}` };
+}
