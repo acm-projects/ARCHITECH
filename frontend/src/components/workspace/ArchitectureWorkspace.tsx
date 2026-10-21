@@ -25,6 +25,7 @@ import {
 import { applyReset, planReset } from "../../lib/architecture/reset";
 import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
+import { ChallengeLeaderboard } from "../challenge/ChallengeLeaderboard";
 import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
 import LearnCard from "../learn/LearnCard";
 import { projectActions } from "../projects/projectActions";
@@ -40,12 +41,14 @@ import { InspectorContext } from "./InspectorContext";
 import { useWorkspaceInspector } from "./useWorkspaceInspector";
 import WorkspaceInspector from "./WorkspaceInspector";
 import { ArchitectToggle } from "./ai/ArchitectPanel";
+import { ExportButton } from "./ExportButton";
+import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
-import { ChallengeLeaderboard } from "../challenge/ChallengeLeaderboard";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
+import { LiveMetricsBar } from "./LiveMetricsBar";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
@@ -134,7 +137,7 @@ function Workspace({ project }: { project: Project }) {
   }, [nodes, edges, setNodes, setEdges]);
 
   const inspector = useWorkspaceInspector({
-    hasSelection: nodes.some((node) => node.selected),
+    selectedNodeIds: nodes.filter((node) => node.selected).map((node) => node.id),
     onClearSelection: clearCanvasSelection,
   });
   const { askArchie, reset: resetInspector } = inspector;
@@ -457,6 +460,12 @@ function Workspace({ project }: { project: Project }) {
             />
           ) : undefined}
           saveStatus={saveStatus}
+          projectActions={(menuId) => (
+            <div hidden={!showInspector}>
+              <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />
+              <ExportButton title={title} popoverTarget={menuId} />
+            </div>
+          )}
         />
 
         <div className="relative flex min-h-0 flex-1 flex-row bg-(--ax-canvas)">
@@ -499,68 +508,86 @@ function Workspace({ project }: { project: Project }) {
               </InspectorContext.Provider>
             </div>
 
-            {/* If saving the selected mode fails, show the error without breaking the editor. */}
-            {modeError && (
-              <p
-                role="alert"
-                className="ax-card-label absolute bottom-4 left-4 z-10"
-              >
-                {modeError}
-              </p>
-            )}
+            {/* Keep floating tools below the header while the graph extends behind it. */}
+            <div className="ax-canvas-overlays">
+              {/* Live estimates stay on the canvas; Metrics shows completed runs. */}
+              {canRunDesign && (
+                <LiveMetricsBar
+                  result={live.result}
+                  changes={live.changes}
+                  requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                  componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+                />
+              )}
 
-            {showInspector ? (
-              <WorkspaceInspector
-                nodes={nodes}
-                controller={inspector}
-                runSettingsHeight={runSettingsHeight}
-                onConfigureRun={openRunSettings}
-                onClearSelection={clearCanvasSelection}
-                onApply={replaceGraph}
-                customTechnologies={project.customTechnologies}
-                testingEnabled={canRunDesign}
-                runs={activeRuns}
-                live={live}
-                guidance={mode === "challenge" ? (
-                  <>
-                    <ChallengeCard
-                      challenge={challenge.challenge}
-                      result={challenge.cardResult}
-                      onRun={challenge.submit}
-                      onBack={challenge.backToBrief}
-                      stale={challenge.view?.isStale}
-                      running={challenge.view?.isRunning}
-                      error={challenge.view?.error}
+              {/* If saving the selected mode fails, show the error without breaking the editor. */}
+              {modeError && (
+                <p
+                  role="alert"
+                  className="ax-card-label absolute bottom-4 left-4 z-10"
+                >
+                  {modeError}
+                </p>
+              )}
+
+              {showInspector ? (
+                <WorkspaceInspector
+                  projectId={project.id}
+                  nodes={nodes}
+                  controller={inspector}
+                  runSettingsHeight={runSettingsHeight}
+                  onConfigureRun={openRunSettings}
+                  onClearSelection={clearCanvasSelection}
+                  onApply={replaceGraph}
+                  customTechnologies={project.customTechnologies}
+                  testingEnabled={canRunDesign}
+                  runs={activeRuns}
+                  guidance={mode === "challenge" ? (
+                    <>
+                      <ChallengeCard
+                        challenge={challenge.challenge}
+                        result={challenge.cardResult}
+                        onRun={challenge.submit}
+                        onBack={challenge.backToBrief}
+                        stale={challenge.view?.isStale}
+                        running={challenge.view?.isRunning}
+                        error={challenge.view?.error}
+                      />
+                      <ChallengeLeaderboard
+                        challengeId={challenge.challenge.id}
+                        official={challenge.official}
+                        version={challenge.leaderboardVersion}
+                      />
+                    </>
+                  ) : null}
+                />
+              ) : (
+                <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
+                  <div className="ax-panel-content" data-architect={inspector.historyOpen || undefined}>
+                    {inspector.historyOpen ? (
+                      <HistoryPanel projectId={project.id} onClose={inspector.closeHistory} onRestore={replaceGraph} />
+                    ) : (
+                    <LearnCard
+                      lesson={learn.lesson}
+                      stepIndex={learn.engine.stepIndex}
+                      status={learn.engine.status}
+                      freePlay={learn.freePlay}
+                      skipped={learn.skipped}
+                      onContinue={learn.freePlay ? learn.continueExploring : learn.engine.continueStep}
+                      error={learn.tutorialError}
+                      feedback={learn.engine.feedback}
+                      hint={learn.engine.hintVisible ? learn.engine.hint?.text : null}
+                      onDismissFeedback={learn.engine.dismissFeedback}
                     />
-                    <ChallengeLeaderboard
-                      challengeId={challenge.challenge.id}
-                      official={challenge.official}
-                      version={challenge.leaderboardVersion}
-                    />
-                  </>
-                ) : null}
-                projectId={project.id}
-                projectTitle={title}
-              />
-            ) : (
-              <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
-                <div className="ax-panel-content">
-                  <LearnCard
-                    lesson={learn.lesson}
-                    stepIndex={learn.engine.stepIndex}
-                    status={learn.engine.status}
-                    freePlay={learn.freePlay}
-                    skipped={learn.skipped}
-                    onContinue={learn.freePlay ? learn.continueExploring : learn.engine.continueStep}
-                    error={learn.tutorialError}
-                    feedback={learn.engine.feedback}
-                    hint={learn.engine.hintVisible ? learn.engine.hint?.text : null}
-                    onDismissFeedback={learn.engine.dismissFeedback}
-                  />
-                  <ArchitectToggle open={false} onToggle={askArchie} />
-                </div>
-              </aside>
-            )}
+                    )}
+                    {/* Keep Archie mounted, but out of the guided tutorial. */}
+                    <div hidden>
+                      <ArchitectToggle open={false} onToggle={askArchie} />
+                    </div>
+                  </div>
+                </aside>
+              )}
+            </div>
           </main>
         </div>
       </div>

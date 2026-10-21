@@ -26,10 +26,10 @@ import "./history-panel.css";
 // the score, cost and p95 it had (at the default traffic) and how that compares with now.
 // Restoring saves the current design as a version first, then loads the old one as one undo step.
 
-export function HistoryToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+export function HistoryToggle({ open, onToggle, popoverTarget }: { open: boolean; onToggle: () => void; popoverTarget?: string }) {
   if (open) return null;
   return (
-    <button type="button" className="ax-ai-toggle" onClick={onToggle} aria-label="Open the version history">
+    <button type="button" className="ax-ai-toggle" onClick={onToggle} popoverTarget={popoverTarget} popoverTargetAction="hide" aria-label="Open the version history">
       <History size={15} aria-hidden="true" />
       History
     </button>

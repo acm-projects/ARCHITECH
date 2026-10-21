@@ -1,16 +1,13 @@
 import { useId, useLayoutEffect, useRef, useState, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import { ChevronDown, X } from "lucide-react";
 
-import type { LiveChanges, LiveResult } from "../../lib/architecture/evaluation/liveMetrics";
 import type { CustomTechnology } from "../../lib/projects/customTechnologies";
 import ArchitectPanel, { ArchitectToggle } from "./ai/ArchitectPanel";
-import { ExportButton } from "./ExportButton";
-import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import ComponentGlyph from "./ComponentGlyph";
 import ComponentInspector from "./ComponentInspector";
 import { COMPONENT_CATALOG, FAMILY_LABELS } from "./componentCatalog";
-import { LiveMetricsBar } from "./LiveMetricsBar";
 import MetricsPanel from "./MetricsPanel";
+import HistoryPanel from "./history/HistoryPanel";
 import type { InspectorSectionId } from "./inspectorState";
 import type { WorkspaceInspectorController } from "./useWorkspaceInspector";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
@@ -18,7 +15,7 @@ import type { useRunSession } from "./useRunSession";
 import "./workspace-inspector.css";
 
 const REVIEW_STATUS_LABELS = {
-  idle: "Live",
+  idle: "Not run",
   analyzing: "Running…",
   ready: "Ready",
   stale: "Out of date",
@@ -26,6 +23,7 @@ const REVIEW_STATUS_LABELS = {
 };
 
 type WorkspaceInspectorProps = {
+  projectId: string;
   nodes: ArchitectureFlowNode[];
   controller: WorkspaceInspectorController;
   runSettingsHeight: number;
@@ -36,10 +34,6 @@ type WorkspaceInspectorProps = {
   guidance: ReactNode;
   testingEnabled: boolean;
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state">;
-  live: { result: LiveResult | null; changes: LiveChanges | null };
-  // For Archie's saved conversation, the version history and the docker-compose export.
-  projectId: string;
-  projectTitle: string;
 };
 
 function InspectorSection({ title, meta, expanded, onToggle, children }: {
@@ -72,7 +66,7 @@ function useInspectorLayout(runSettingsHeight: number) {
 
   useLayoutEffect(() => {
     const frame = frameRef.current;
-    const canvas = frame?.closest<HTMLElement>(".ax-workspace-canvas");
+    const canvas = frame?.closest<HTMLElement>(".ax-canvas-overlays");
     if (!frame || !canvas) return;
     const measure = () => setBounds((current) => {
       const canvasHeight = canvas.clientHeight;
@@ -94,20 +88,11 @@ function useInspectorLayout(runSettingsHeight: number) {
 }
 
 export default function WorkspaceInspector({
+  projectId,
   nodes, controller, runSettingsHeight, onConfigureRun, onClearSelection, onApply, customTechnologies,
-  guidance, testingEnabled, runs, live, projectId, projectTitle,
+  guidance, testingEnabled, runs,
 }: WorkspaceInspectorProps) {
-  const { archieOpen, section: activeSection, askArchie: openArchie, closeArchie, toggleSection, showResults } = controller;
-  // Version history opens in place of the inspector body, like Archie (one at a time).
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const askArchie = () => {
-    setHistoryOpen(false);
-    openArchie();
-  };
-  const openHistory = () => {
-    closeArchie();
-    setHistoryOpen(true);
-  };
+  const { archieOpen, historyOpen, configuring, section: activeSection, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory, toggleSection, showResults } = controller;
   const { frameRef, compact } = useInspectorLayout(runSettingsHeight);
   const selected = nodes.filter((node) => node.selected);
   const component = selected.length === 1 ? selected[0] : null;
@@ -115,19 +100,15 @@ export default function WorkspaceInspector({
   const title = component?.data.label ?? (selected.length ? `${selected.length} components` : "System");
   const componentName = (id: string) => nodes.find((node) => node.id === id)?.data.label ?? id;
 
-  const expanded = (section: InspectorSectionId) => !compact && !archieOpen && selected.length === 0 && activeSection === section;
+  const expanded = (section: InspectorSectionId) => !compact && !archieOpen && !historyOpen && selected.length === 0 && activeSection === section;
   const reviewStatus = REVIEW_STATUS_LABELS[runs.view.runButtonState];
-  const liveMetrics = (
-    <LiveMetricsBar
-      result={live.result}
-      changes={live.changes}
-      requestsPerSecond={runs.traffic.requestsPerSecond}
-      componentName={componentName}
-    />
-  );
   const selectionHeader = (
     <summary className="ax-inspector-header" onClick={(event) => {
-      if (archieOpen) {
+      if (component) {
+        event.preventDefault();
+        if (configuring) closeConfiguration();
+        else inspectComponent();
+      } else if (archieOpen) {
         event.preventDefault();
         closeArchie();
       }
@@ -141,7 +122,11 @@ export default function WorkspaceInspector({
           </p>
         </div>
       </div>
-      <button type="button" className="ax-icon-btn" aria-label="Clear component selection" onClick={onClearSelection}>
+      {/* Clearing selection must not also toggle the section summary. */}
+      <button type="button" className="ax-icon-btn" aria-label="Clear component selection" onClick={(event) => {
+        event.stopPropagation();
+        onClearSelection();
+      }}>
         <X size={14} aria-hidden="true" />
       </button>
       <ChevronDown size={13} aria-hidden="true" />
@@ -157,11 +142,11 @@ export default function WorkspaceInspector({
       aria-label="Architecture inspector"
     >
       <div className="ax-panel-content ax-inspector-frame" ref={frameRef}>
-        <div className="ax-inspector-body" hidden={historyOpen}>
+        <div className="ax-inspector-body">
           {component ? (
-            <details key={selectionKey} className="ax-inspector-section ax-inspector-component" aria-label="Component" data-archie-open={archieOpen} open>
+            <details key={selectionKey} className="ax-inspector-section ax-inspector-component" aria-label="Component" data-archie-open={archieOpen} open={configuring && !compact}>
               {selectionHeader}
-              <ComponentInspector key={component.id} node={component} onAskArchie={askArchie} hidden={archieOpen || compact} />
+              <ComponentInspector key={component.id} node={component} onAskArchie={askArchie} hidden={!configuring || archieOpen || historyOpen || compact} />
             </details>
           ) : selected.length > 1 && (
             <details key={selectionKey} className="ax-inspector-section" aria-label="Selected components" open>
@@ -192,7 +177,6 @@ export default function WorkspaceInspector({
                   onConfigureRun={onConfigureRun}
                   liveTraffic={runs.traffic}
                   componentName={componentName}
-                  liveEstimates={liveMetrics}
                 />
               </InspectorSection>
             </>
@@ -200,16 +184,15 @@ export default function WorkspaceInspector({
         </div>
 
         <ArchitectToggle open={archieOpen && !compact} onToggle={askArchie} />
-        {!archieOpen && <HistoryToggle open={historyOpen} onToggle={openHistory} />}
-        {!archieOpen && !historyOpen && <ExportButton title={projectTitle} />}
         {historyOpen && (
-          <div className="ax-panel-content ax-inspector-archie" data-architect>
-            <HistoryPanel projectId={projectId} onClose={() => setHistoryOpen(false)} onRestore={onApply} />
+          <div className="ax-panel-content ax-inspector-archie" hidden={compact}>
+            <HistoryPanel projectId={projectId} onClose={closeHistory} onRestore={onApply} />
           </div>
         )}
         {archieOpen && (
           <div className="ax-panel-content ax-inspector-archie" data-architect hidden={compact}>
             <ArchitectPanel
+              key={projectId}
               projectId={projectId}
               onClose={closeArchie}
               backLabel="Back to inspector"

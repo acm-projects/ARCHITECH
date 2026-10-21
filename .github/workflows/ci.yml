@@ -29,6 +29,8 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/architech_test
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -42,6 +44,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate the Prisma client
+        run: npx prisma generate
 
       - name: Validate
         run: npm run check

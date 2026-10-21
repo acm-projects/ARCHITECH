@@ -11,7 +11,7 @@ import { SCORE_WEIGHTS } from "../src/lib/architecture/evaluation/scoring.ts";
 
 test("docs/metrics-model.md is up to date with the engine (run npm run docs:metrics)", () => {
   const onDisk = readFileSync(new URL("../../docs/metrics-model.md", import.meta.url), "utf8");
-  assert.equal(onDisk, renderMetricsDoc());
+  assert.equal(onDisk.replace(/\r\n/g, "\n"), renderMetricsDoc());
 });
 
 test("the document covers every technology, the weights and the assumptions", () => {

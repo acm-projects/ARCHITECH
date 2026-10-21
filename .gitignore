@@ -2,6 +2,8 @@ node_modules/
 dist/
 build/
 .cache/
+.next/
+.next-integration/
 .env*
 .vite/
 vite.config.*.timestamp-*
