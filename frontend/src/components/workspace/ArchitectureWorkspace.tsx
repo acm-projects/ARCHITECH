@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type DragEvent } from "react";
+import { useCallback, useState, type DragEvent } from "react";
 import {
   Controls,
   MarkerType,
@@ -116,9 +116,6 @@ function Workspace({ project }: { project: Project }) {
   );
 
   const [title, setTitle] = useState(project.title);
-  const runSettings = useRef<HTMLDivElement>(null);
-  const [runSettingsHeight, setRunSettingsHeight] = useState(0);
-  const openRunSettings = () => runSettings.current?.showPopover();
   // Clear node/edge selection without changing the architecture itself.
   const clearCanvasSelection = useCallback(() => {
     const next = clearSelection({
@@ -450,13 +447,9 @@ function Workspace({ project }: { project: Project }) {
           }
           runControl={canRunDesign ? (
             <RunControl
-              popoverRef={runSettings}
-              onHeightChange={setRunSettingsHeight}
-              traffic={activeRuns.traffic}
+              open={inspector.section === "run" && !inspector.archieOpen && !inspector.historyOpen && !nodes.some((node) => node.selected)}
               running={activeRuns.view.isRunning}
-              onRateChange={activeRuns.setRequestRate}
-              onRun={() => inspector.showResults(activeRuns.run)}
-              onRunAtRate={(rate) => inspector.showResults(() => activeRuns.runAtRate(rate))}
+              onToggle={() => inspector.toggleSection("run")}
             />
           ) : undefined}
           saveStatus={saveStatus}
@@ -510,7 +503,7 @@ function Workspace({ project }: { project: Project }) {
 
             {/* Keep floating tools below the header while the graph extends behind it. */}
             <div className="ax-canvas-overlays">
-              {/* Live estimates stay on the canvas; Metrics shows completed runs. */}
+              {/* Live estimates stay on the canvas; test results stay in the inspector. */}
               {canRunDesign && (
                 <LiveMetricsBar
                   result={live.result}
@@ -535,8 +528,6 @@ function Workspace({ project }: { project: Project }) {
                   projectId={project.id}
                   nodes={nodes}
                   controller={inspector}
-                  runSettingsHeight={runSettingsHeight}
-                  onConfigureRun={openRunSettings}
                   onClearSelection={clearCanvasSelection}
                   onApply={replaceGraph}
                   customTechnologies={project.customTechnologies}

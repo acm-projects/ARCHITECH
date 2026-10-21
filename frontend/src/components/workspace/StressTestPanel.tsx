@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState, type RefObject } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 import {
@@ -126,63 +126,23 @@ export default function StressTestPanel({
   );
 }
 
-// Keep the existing rate validation and presets mounted while the native popover is closed.
-// Only the explicit Run action or a preset calls the shared evaluation session.
-export function RunControl({ popoverRef, onHeightChange, onRun, onRunAtRate, ...props }: Omit<StressTestPanelProps, "embedded" | "runLabel"> & {
-  popoverRef: RefObject<HTMLDivElement | null>;
-  onHeightChange: (height: number) => void;
+// The header opens the Run inspector; testing stays in the existing run session.
+export function RunControl({ open, running, onToggle }: {
+  open: boolean;
+  running: boolean;
+  onToggle: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  // Validation messages and wrapping can change the popup's height while it is open.
-  useLayoutEffect(() => {
-    const element = popoverRef.current;
-    if (!open || !element) return;
-    const measure = () => onHeightChange(element.getBoundingClientRect().height);
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    measure();
-    return () => {
-      observer.disconnect();
-      onHeightChange(0);
-    };
-  }, [open, popoverRef, onHeightChange]);
-  const run = (action: () => void) => {
-    if (props.running) return;
-    popoverRef.current?.hidePopover();
-    action();
-  };
-
   return (
-    <>
-      <button
-        type="button"
-        popoverTarget="ax-run-settings"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-busy={props.running}
-        disabled={props.running}
-        className="ax-action ax-action-primary ax-run-trigger"
-      >
-        Run <ChevronDown size={12} aria-hidden="true" />
-      </button>
-      <div
-        id="ax-run-settings"
-        popover="auto"
-        role="dialog"
-        aria-label="Run settings"
-        ref={popoverRef}
-        onToggle={(event) => setOpen(event.currentTarget.matches(":popover-open"))}
-        className="ax-run-popover"
-      >
-        <h2>Stress test</h2>
-        <StressTestPanel
-          {...props}
-          embedded
-          runLabel="Run"
-          onRun={() => run(onRun)}
-          onRunAtRate={(rate) => run(() => onRunAtRate(rate))}
-        />
-      </div>
-    </>
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-controls="ax-run-panel"
+      aria-expanded={open}
+      aria-busy={running}
+      disabled={running}
+      className="ax-action ax-action-primary ax-run-trigger"
+    >
+      Run <ChevronDown size={12} aria-hidden="true" />
+    </button>
   );
 }

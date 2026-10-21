@@ -1,4 +1,4 @@
-/* One inspector for the current selection, system tests, and Archie. */
+/* Independent pills share the available height; their headers never collapse. */
 .ax-workspace .ax-inspector { --ax-inspector-radius: 16px; }
 .ax-workspace .ax-diagram-viewport { height: 100%; }
 .ax-workspace .ax-canvas-panel.ax-inspector[data-side="right"] {
@@ -10,29 +10,36 @@
   transform: translateY(-50%);
   align-items: center;
 }
-.ax-workspace .ax-canvas-panel.ax-inspector[data-side="right"] .ax-panel-content {
-  width: 340px;
-  height: auto;
-  max-height: 100%;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  overflow: visible;
-  pointer-events: none;
-}
-.ax-workspace .ax-inspector-frame:not([hidden]) {
+.ax-workspace .ax-inspector-frame {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 180px;
+  max-width: min(340px, calc(100vw - 24px));
+  max-height: 100%;
+  min-height: 0;
+  pointer-events: none;
+  transition: width 160ms var(--ax-ease);
+}
+/* Hover previews the full width; opening a tool keeps it wide after the pointer leaves. */
+.ax-workspace .ax-inspector[data-expanded="true"] .ax-inspector-frame,
+.ax-workspace .ax-inspector-frame:has(.ax-inspector-section-toggle:focus-visible) { width: 340px; }
+.ax-workspace .ax-inspector-section-toggle small { display: none; }
+.ax-workspace .ax-inspector[data-expanded="true"] .ax-inspector-section-toggle small,
+.ax-workspace .ax-inspector-frame:has(.ax-inspector-section-toggle:focus-visible) .ax-inspector-section-toggle small { display: inline; }
+@media (hover: hover) and (pointer: fine) {
+  .ax-workspace .ax-inspector-frame:hover { width: 340px; }
+  .ax-workspace .ax-inspector-frame:hover .ax-inspector-section-toggle small { display: inline; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ax-workspace .ax-inspector-frame { transition: none; }
 }
 .ax-workspace .ax-inspector [hidden] { display: none !important; }
-.ax-workspace .ax-canvas-panel.ax-inspector[data-side="right"] .ax-inspector-archie {
-  height: min(440px, calc(100dvh - 320px));
-  border: 1px solid var(--ax-line-strong);
-  border-radius: var(--ax-inspector-radius);
-  background: var(--ax-surface);
-  overflow: hidden;
-  pointer-events: auto;
+.ax-workspace .ax-inspector-archie {
+  display: flex;
+  flex-direction: column;
+  height: 440px;
+  min-height: 0;
 }
 .ax-workspace .ax-inspector-header {
   display: flex;
@@ -40,9 +47,12 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px;
-  border-bottom: 1px solid var(--ax-line);
   cursor: pointer;
   list-style: none;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ax-surface);
 }
 .ax-workspace .ax-inspector-header::-webkit-details-marker { display: none; }
 .ax-workspace .ax-inspector-header > .ax-icon-btn { margin-left: auto; }
@@ -72,17 +82,7 @@
   font-size: 11px;
   color: var(--ax-subtle);
 }
-.ax-workspace .ax-inspector-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 0 1 auto;
-  min-height: 0;
-  overflow: visible;
-  border-radius: var(--ax-inspector-radius);
-  pointer-events: auto;
-}
-.ax-workspace .ax-inspector-body .ax-card {
+.ax-workspace .ax-inspector .ax-card {
   width: 100%;
   max-height: none;
   padding: 14px 12px;
@@ -90,7 +90,7 @@
   border-radius: 0;
   box-shadow: none;
 }
-.ax-workspace .ax-inspector-body .ax-card + .ax-card {
+.ax-workspace .ax-inspector .ax-card + .ax-card {
   border-top: 1px solid var(--ax-line);
 }
 .ax-workspace .ax-inspector .ax-card.ax-configure {
@@ -111,25 +111,25 @@
 .ax-workspace .ax-explain-compact .ax-card-body { font-size: 12px; line-height: 1.5; }
 .ax-workspace .ax-explain-compact .ax-card-section { margin-top: 10px; padding-top: 10px; }
 .ax-workspace .ax-explain-compact select { margin-bottom: 10px; }
-.ax-workspace .ax-inspector-body .ax-whatif {
+.ax-workspace .ax-inspector .ax-whatif {
   overflow-x: auto;
 }
-.ax-workspace .ax-inspector-section,
-.ax-workspace .ax-inspector .ax-ai-toggle {
-  flex-shrink: 0;
+.ax-workspace .ax-inspector-section {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 44px;
   border: 1px solid var(--ax-line-strong);
   border-radius: var(--ax-inspector-radius);
   background: var(--ax-surface);
   overflow: hidden;
   pointer-events: auto;
 }
-.ax-workspace .ax-inspector .ax-ai-toggle {
-  margin: 0;
-  padding: 12px;
-  color: var(--ax-ink);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 20px;
+.ax-workspace .ax-inspector-frame > details,
+.ax-workspace .ax-inspector-guidance { overflow-y: auto; }
+.ax-workspace .ax-inspector-section[open] > .ax-inspector-header,
+.ax-workspace .ax-inspector-section[data-expanded="true"] > .ax-inspector-section-header {
+  border-bottom: 1px solid var(--ax-line);
 }
 .ax-workspace .ax-inspector-section-header {
   display: flex;
@@ -157,15 +157,18 @@
   text-align: left;
 }
 .ax-workspace .ax-inspector-section-toggle small {
-  margin-left: auto;
   color: var(--ax-muted);
   font-size: 10px;
   font-weight: 400;
 }
-.ax-workspace .ax-inspector-section-toggle > svg { margin-left: auto; flex-shrink: 0; }
-.ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] > svg { transform: rotate(180deg); }
+.ax-workspace .ax-inspector-status { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+.ax-workspace .ax-inspector-section-toggle > svg:first-child { flex-shrink: 0; }
+.ax-workspace .ax-inspector-section-toggle .ax-ai-portrait { width: 20px; height: 20px; flex-shrink: 0; }
+.ax-workspace .ax-inspector-section-toggle:disabled { opacity: .5; cursor: default; }
+.ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] .ax-inspector-status > svg { transform: rotate(180deg); }
 .ax-workspace .ax-inspector-section-toggle:hover { background: var(--ax-canvas); }
 .ax-workspace .ax-inspector-section-toggle:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: -3px; }
+.ax-workspace .ax-inspector .ax-ai-focus-bar .ax-ai-header-actions { margin-left: auto; }
 .ax-workspace .ax-inspector-details {
   border-top: 1px solid var(--ax-line);
 }
@@ -179,8 +182,30 @@
   padding-top: 0;
 }
 .ax-workspace .ax-review {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
+/* Long results scroll within the surface; headings, view controls and actions stay visible. */
+.ax-workspace .ax-inspector-section-content:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.ax-workspace .ax-inspector-section-header,
+.ax-workspace .ax-review-view,
+.ax-workspace .ax-review-footer { flex-shrink: 0; }
+.ax-workspace .ax-review-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ax-line-strong) transparent;
+}
+.ax-workspace .ax-review-scroll:focus-visible { outline: 1px solid var(--ax-accent); outline-offset: -1px; }
 .ax-workspace .ax-review-view,
 .ax-workspace .ax-review-context,
 .ax-workspace .ax-review-findings-heading,
@@ -204,6 +229,7 @@
 .ax-workspace .ax-review-footer {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   padding: 10px 12px;
   border-top: 1px solid var(--ax-line);
 }
@@ -358,9 +384,6 @@
   color: var(--ax-muted);
   font-size: 11px;
 }
-.ax-workspace .ax-inspector .ax-ai-toggle:hover {
-  background: var(--ax-canvas);
-}
 @media (max-width: 767px) {
   .ax-workspace .ax-workspace-canvas[data-inspector="true"] .ax-diagram-viewport {
     height: 100%;
@@ -374,19 +397,10 @@
     transform: none;
     align-items: flex-end;
   }
-  .ax-workspace .ax-canvas-panel.ax-inspector[data-side="right"] .ax-panel-content {
-    width: 100%;
+  .ax-workspace .ax-inspector-frame {
+    max-width: 100%;
   }
   .ax-workspace .ax-inspector-header {
     padding-block: 10px;
   }
-}
-
-/* Reserve the measured Run popup plus an 8px gap; closing it restores the centered dock. */
-.ax-workspace .ax-canvas-panel.ax-inspector[data-side="right"][data-run-settings-open="true"] {
-  top: calc(12px + var(--ax-run-settings-height) + 8px);
-  bottom: auto;
-  height: calc(100% - var(--ax-run-settings-height) - 32px);
-  transform: none;
-  align-items: flex-start;
 }

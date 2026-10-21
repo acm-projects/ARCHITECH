@@ -18,6 +18,7 @@ export default function ArchiePanel({
   className = "",
   empty,
   headerAction,
+  embedded = false,
   focus,
   children,
   footer,
@@ -28,6 +29,7 @@ export default function ArchiePanel({
   className?: string;
   empty?: boolean;
   headerAction?: ReactNode;
+  embedded?: boolean;
   focus: ReactNode;
   children: ReactNode;
   footer: ReactNode;
@@ -36,11 +38,14 @@ export default function ArchiePanel({
 }) {
   return (
     <aside className={`ax-ai-panel ${className}`.trim()} aria-label={label} data-empty={empty}>
-      <div className="ax-ai-header">
-        <p className="ax-ai-title"><ArchiePortrait />Archie</p>
-        {headerAction}
-      </div>
-      <div className="ax-ai-focus-bar">{focus}</div>
+      {/* An inspector pill supplies the title; conversation actions stay beside focus. */}
+      {!embedded && (
+        <div className="ax-ai-header">
+          <p className="ax-ai-title"><ArchiePortrait />Archie</p>
+          {headerAction}
+        </div>
+      )}
+      <div className="ax-ai-focus-bar">{focus}{embedded && headerAction}</div>
       <div className="ax-ai-messages" ref={messageRef} key={messageKey} aria-live="polite">
         {children}
       </div>
