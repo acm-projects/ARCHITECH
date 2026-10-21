@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 
 import type { Direction, EvaluationComparison, MetricDelta } from "../../lib/architecture/evaluation/comparison";
 import { demandVsCapacity, type ResultsSummary, type ResultsView } from "../../lib/architecture/evaluation/resultsView";
@@ -15,7 +15,6 @@ type MetricsPanelProps = {
   onConfigureRun: () => void;
   liveTraffic?: TrafficProfile;
   componentName?: (id: string) => string;
-  liveEstimates: ReactNode;
 };
 
 const rps = (value: number) => `${Math.round(value).toLocaleString("en-US")} req/s`;
@@ -198,7 +197,7 @@ export default function MetricsPanel({ componentName = (id) => id, ...props }: M
   const { view, completedRun } = props;
   const { result, comparison } = view;
   const [selection, setSelection] = useState<ReviewSelection>(
-    () => ({ run: completedRun, view: completedRun ? "overview" : "live" }),
+    () => ({ run: completedRun, view: "overview" }),
   );
   // New runs show their summary; edits retain the chosen view of the last completed run.
   const activeView = reviewViewForRun(selection, completedRun);
@@ -206,21 +205,24 @@ export default function MetricsPanel({ componentName = (id) => id, ...props }: M
   return (
     <div className="ax-review" aria-live="polite" data-run-state={view.runButtonState}>
       <RunNotices view={view} onRun={props.onRun} liveTraffic={props.liveTraffic} />
-      <label className="ax-review-view">
-        <span>View</span>
-        <select
-          className="ax-field"
-          aria-label="Metrics view"
-          value={activeView}
-          onChange={(event) => setSelection({ run: completedRun, view: event.target.value as ReviewView })}
-        >
-          <option value="live">Live estimates</option>
-          <option value="overview" disabled={!result}>Last run</option>
-          <option value="metrics" disabled={!result}>Full metrics</option>
-          <option value="comparison" disabled={!result}>Compare runs</option>
-        </select>
-      </label>
-      <div hidden={activeView !== "live"}>{props.liveEstimates}</div>
+      {result && (
+        <label className="ax-review-view">
+          <span>View</span>
+          <select
+            className="ax-field"
+            aria-label="Metrics view"
+            value={activeView}
+            onChange={(event) => setSelection({ run: completedRun, view: event.target.value as ReviewView })}
+          >
+            <option value="overview">Last run</option>
+            <option value="metrics">Full metrics</option>
+            <option value="comparison">Compare runs</option>
+          </select>
+        </label>
+      )}
+      {!result && !view.isRunning && !view.error && (
+        <p className="ax-review-content ax-card-label">Run the design to see test results.</p>
+      )}
       {result && (
         <>
           <div hidden={activeView !== "overview"}>

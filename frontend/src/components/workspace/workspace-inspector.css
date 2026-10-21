@@ -181,33 +181,6 @@
 .ax-workspace .ax-inspector-details > .ax-card {
   padding-top: 0;
 }
-.ax-workspace .ax-inspector .ax-live {
-  position: static;
-  max-width: none;
-  padding: 14px 12px;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-.ax-workspace .ax-inspector .ax-live-head {
-  font-size: 12px;
-}
-.ax-workspace .ax-inspector .ax-live-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 14px;
-}
-.ax-workspace .ax-inspector .ax-live-value {
-  font-size: 15px;
-}
-.ax-workspace .ax-inspector .ax-live-note {
-  margin-top: 14px;
-  padding-top: 10px;
-  border-top: 1px solid var(--ax-line);
-  font-size: 12px;
-  line-height: 1.55;
-}
 .ax-workspace .ax-review {
   min-width: 0;
 }

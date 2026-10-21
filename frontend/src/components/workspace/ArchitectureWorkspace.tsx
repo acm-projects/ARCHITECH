@@ -48,6 +48,7 @@ import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
+import { LiveMetricsBar } from "./LiveMetricsBar";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
@@ -501,6 +502,16 @@ function Workspace({ project }: { project: Project }) {
               </InspectorContext.Provider>
             </div>
 
+            {/* Live estimates stay on the canvas; Metrics shows completed runs. */}
+            {canRunDesign && (
+              <LiveMetricsBar
+                result={live.result}
+                changes={live.changes}
+                requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+              />
+            )}
+
             {/* If saving the selected mode fails, show the error without breaking the editor. */}
             {modeError && (
               <p
@@ -524,7 +535,6 @@ function Workspace({ project }: { project: Project }) {
                 customTechnologies={project.customTechnologies}
                 testingEnabled={canRunDesign}
                 runs={activeRuns}
-                live={live}
                 guidance={mode === "challenge" ? (
                   <>
                     <ChallengeCard
