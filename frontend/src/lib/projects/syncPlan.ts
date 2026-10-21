@@ -69,6 +69,9 @@ export function planInitialMerge(
       // Edited here since the last sync, and at least as recently as the server's copy.
       result.projects.push(localProject);
       result.upload.push(localProject);
+      // Keep the last agreed content as the comparison baseline until the upload succeeds.
+      // Without it, another tab merely opening the project can look like a new edit.
+      result.synced[id] = synced[id] ?? serverPrint;
     } else {
       result.projects.push(serverProject);
       result.synced[id] = serverPrint;
@@ -105,18 +108,19 @@ export function planPendingChanges(
 
 export const CONFLICT_SUFFIX = " (from another device)";
 
-// Opening a tab changes timestamps; retrying a successful save can also return an old ETag.
-// Neither needs another project. Only preserve a copy for divergent project content.
-export function needsConflictCopy(server: ProjectPayload, pending: ProjectPayload, synced?: string): boolean {
-  const content = ({ updatedAt: _updated, lastOpenedAt: _opened, ...project }: ProjectPayload) => canonicalJson(project);
-  const serverContent = content(server);
-  if (serverContent === content(pending)) return false;
-  if (synced) {
+const contentFingerprint = ({ updatedAt: _updated, lastOpenedAt: _opened, ...project }: ProjectPayload) => canonicalJson(project);
+
+// A different revision alone is not a different design. Compare content with the current
+// edit, the last known server copy, and any save whose response may have been lost.
+export function needsConflictCopy(server: ProjectPayload, pending: ProjectPayload, ...known: (string | undefined)[]): boolean {
+  const content = contentFingerprint(server);
+  if (content === contentFingerprint(pending)) return false;
+  for (const snapshot of known) {
+    if (!snapshot) continue;
     try {
-      const previous = JSON.parse(synced) as ProjectPayload;
-      if (serverContent === content(previous)) return false;
+      if (content === contentFingerprint(JSON.parse(snapshot) as ProjectPayload)) return false;
     } catch {
-      // An unreadable previous fingerprint cannot establish that the server is unchanged.
+      // An unreadable snapshot cannot establish that this content is already known.
     }
   }
   return true;
