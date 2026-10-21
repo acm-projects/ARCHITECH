@@ -11,6 +11,7 @@ import { encode } from "next-auth/jwt";
 import pg from "pg";
 
 import { STACK_FILES, candidateFolders, folderPaths } from "../../src/lib/github/repoFiles.ts";
+import { applyChanges } from "../../src/lib/ai/changes.ts";
 
 // Integration tests: the real API routes, running in a real Next.js server, against a real
 // PostgreSQL test database and a fake GitHub. See tests/integration/README.md.
@@ -185,8 +186,8 @@ function defineTests(dbUrl: string) {
     graph: {
       schemaVersion: 1,
       nodes: [
-        { id: "client-1", type: "architecture", position: { x: 0, y: 0 }, data: { type: "client", label: "Users" } },
-        { id: "server-1", type: "architecture", position: { x: 240, y: 0 }, data: { type: "server", label: "API", properties: { replicas: 2 } } },
+        { id: "client-1", type: "architecture", position: { x: 0, y: 0 }, data: { type: "client" as const, label: "Users" } },
+        { id: "server-1", type: "architecture", position: { x: 240, y: 0 }, data: { type: "server" as const, label: "API", properties: { replicas: 2 } } },
       ],
       edges: [{ id: "client-1->server-1", source: "client-1", target: "server-1" }],
       ...extra,
@@ -734,6 +735,36 @@ function defineTests(dbUrl: string) {
     assert.equal(modelCalls, callsBefore, "the model was not called again");
     const { rows } = await db.query("select cached from ai_requests where user_id = $1 order by created_at", [user.id]);
     assert.deepEqual(rows.map((row) => row.cached), [false, true]);
+  });
+
+  test("asking Archie and applying a suggestion keeps the same project across reopen", T, async () => {
+    const user = await register("Same project");
+    const id = randomUUID();
+    const original = projectBody("Existing design");
+    assert.equal((await call("PUT", `/api/projects/${id}`, { cookie: user.cookie, body: original })).status, 201);
+    const before = (await call("GET", "/api/projects", { cookie: user.cookie })).json as { revisions: Record<string, string> };
+    const answer = await chat(user.cookie, "Should I add a cache?");
+    assert.equal(answer.status, 200, answer.text);
+    assert.equal((await chat(user.cookie, "What breaks first?")).status, 200);
+    const turns = [
+      { role: "user", text: "Should I add a cache?", focusCount: 0 },
+      { role: "assistant", text: "Your server is the bottleneck.", suggestions: answer.events.filter((event) => event.type === "suggestion"), notes: [], applied: {} },
+    ];
+    assert.equal((await call("PUT", `/api/projects/${id}/conversation`, { cookie: user.cookie, body: { turns } })).status, 200);
+    const after = (await call("GET", "/api/projects", { cookie: user.cookie })).json as { projects: { id: string }[]; revisions: Record<string, string> };
+    assert.deepEqual(after.projects.map((project) => project.id), [id]);
+    assert.equal(after.revisions[id], before.revisions[id], "chat saving does not invalidate project sync revisions");
+    const suggestion = answer.events.find((event) => event.type === "suggestion");
+    assert.ok(suggestion);
+    const applied = applyChanges(original.graph, suggestion.changes);
+    assert.ok(applied.ok);
+    const updated = { ...original, graph: { schemaVersion: 1, nodes: applied.nodes, edges: applied.edges } };
+    assert.equal((await call("PUT", `/api/projects/${id}`, { cookie: user.cookie, body: updated })).status, 200);
+    const reopened = (await call("GET", `/api/projects/${id}`, { cookie: user.cookie })).json as { graph: unknown };
+    assert.deepEqual(reopened.graph, updated.graph);
+    assert.deepEqual(((await call("GET", `/api/projects/${id}/conversation`, { cookie: user.cookie })).json as { turns: unknown[] }).turns, turns);
+    const listed = (await call("GET", "/api/projects", { cookie: user.cookie })).json as { projects: { id: string }[] };
+    assert.deepEqual(listed.projects.map((project) => project.id), [id]);
   });
 
   test("each user is rate limited, and cached answers do not use up the limit", T, async () => {

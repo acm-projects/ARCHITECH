@@ -69,6 +69,9 @@ export function planInitialMerge(
       // Edited here since the last sync, and at least as recently as the server's copy.
       result.projects.push(localProject);
       result.upload.push(localProject);
+      // Keep the last agreed content as the comparison baseline until the upload succeeds.
+      // Without it, another tab merely opening the project can look like a new edit.
+      result.synced[id] = synced[id] ?? serverPrint;
     } else {
       result.projects.push(serverProject);
       result.synced[id] = serverPrint;
@@ -101,11 +104,32 @@ export function planPendingChanges(
   };
 }
 
-// ---- Conflicts (another tab or device saved the same project first) ----
+// ---- Conflicts (another device saved the same project first) ----
 
-// Whether two copies have the same title and diagram (timestamps and order of keys aside).
-// Usually true: two tabs of the same browser share one project store, so a "conflict" between
-// them is only an outdated revision, not different work.
-export function sameDesign(a: ProjectPayload, b: ProjectPayload): boolean {
-  return canonicalJson({ title: a.title, graph: a.graph }) === canonicalJson({ title: b.title, graph: b.graph });
+export const CONFLICT_SUFFIX = " (from another device)";
+
+const contentFingerprint = ({ updatedAt: _updated, lastOpenedAt: _opened, ...project }: ProjectPayload) => canonicalJson(project);
+
+// A different revision alone is not a different design. Compare content with the current
+// edit, the last known server copy, and any save whose response may have been lost.
+export function needsConflictCopy(server: ProjectPayload, pending: ProjectPayload, ...known: (string | undefined)[]): boolean {
+  const content = contentFingerprint(server);
+  if (content === contentFingerprint(pending)) return false;
+  for (const snapshot of known) {
+    if (!snapshot) continue;
+    try {
+      if (content === contentFingerprint(JSON.parse(snapshot) as ProjectPayload)) return false;
+    } catch {
+      // An unreadable snapshot cannot establish that this content is already known.
+    }
+  }
+  return true;
+}
+
+// The other device's version, kept as a separate project so nothing is lost; this browser's
+// version then replaces the original. The title stays within the length limit.
+export function conflictCopy(serverProject: ProjectPayload, newId: string, maxTitleLength: number): ProjectPayload {
+  const room = Math.max(1, maxTitleLength - CONFLICT_SUFFIX.length);
+  const base = serverProject.title.length > room ? `${serverProject.title.slice(0, room - 1).trimEnd()}…` : serverProject.title;
+  return { ...serverProject, id: newId, title: `${base}${CONFLICT_SUFFIX}` };
 }

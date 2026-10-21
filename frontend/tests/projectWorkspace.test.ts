@@ -606,6 +606,35 @@ test("both Archie entry points use the explicit tutorial availability rule", () 
   assert.doesNotMatch(workspace, /<ArchitectPanel/);
 });
 
+test("selecting a component never opens Configure; switching or clearing selection closes it", () => {
+  const selected = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "selection-changed", selectionKey: "api" });
+  assert.equal(selected.configuring, false);
+  const configured = inspectorReducer(selected, { type: "open-configure" });
+  assert.equal(configured.configuring, true);
+  assert.equal(inspectorReducer(configured, { type: "selection-changed", selectionKey: "api" }), configured, "editing the same selection keeps Configure open");
+
+  for (const selectionKey of ["cache", "api\0cache", ""]) {
+    const changed = inspectorReducer(configured, { type: "selection-changed", selectionKey });
+    assert.equal(changed.configuring, false);
+    assert.equal(inspectorReducer(changed, { type: "selection-changed", selectionKey: "api" }).configuring, false, "reselecting a previously configured node does not reopen it");
+  }
+  assert.equal(inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-configure" }).configuring, false);
+});
+
+test("Configure opens explicitly and closes when another inspector tool is opened", () => {
+  const selected = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "selection-changed", selectionKey: "api" });
+  const configured = inspectorReducer(selected, { type: "open-configure" });
+  assert.equal(inspectorReducer(configured, { type: "close-configure" }).configuring, false);
+  for (const type of ["open-archie", "open-history"] as const) {
+    const other = inspectorReducer(configured, { type });
+    assert.equal(other.configuring, false);
+    const reopened = inspectorReducer(other, { type: "open-configure" });
+    assert.equal(reopened.configuring, true);
+    assert.equal(reopened.archieOpen, false);
+    assert.equal(reopened.historyOpen, false);
+  }
+});
+
 test("opening Metrics from selection or Archie expands it and running returns to Metrics", () => {
   const collapsed = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "toggle-section", section: "metrics", hasSelection: false });
   assert.equal(collapsed.section, null);
@@ -617,6 +646,18 @@ test("opening Metrics from selection or Archie expands it and running returns to
   assert.deepEqual(review, INITIAL_INSPECTOR_STATE);
   assert.equal(inspectorReducer(archie, { type: "close-archie" }).archieOpen, false);
   assert.deepEqual(inspectorReducer(archie, { type: "reset" }), INITIAL_INSPECTOR_STATE);
+});
+
+test("history, Archie and Metrics share the inspector and retain the current project", () => {
+  const history = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-history" });
+  assert.equal(history.historyOpen, true);
+  const archie = inspectorReducer(history, { type: "open-archie" });
+  assert.equal(archie.historyOpen, false);
+  assert.equal(archie.archieOpen, true);
+  assert.deepEqual(inspectorReducer(history, { type: "toggle-section", section: "metrics", hasSelection: false }), INITIAL_INSPECTOR_STATE);
+  const inspector = read("src/components/workspace/WorkspaceInspector.tsx");
+  assert.match(inspector, /<ArchitectPanel\s+key=\{projectId\}\s+projectId=\{projectId\}/);
+  assert.match(inspector, /<HistoryPanel projectId=\{projectId\}/);
 });
 
 test("review selection survives stale traffic and resets only for a new completed run", async () => {
@@ -655,7 +696,7 @@ test("a failed retry preserves the previous result and its selected review view"
   assert.equal(view.hasResult, true);
   assert.equal(reviewViewForRun(selection, session.getState().current), "comparison");
   session.reset();
-  assert.equal(reviewViewForRun(selection, session.getState().current), "live");
+  assert.equal(reviewViewForRun(selection, session.getState().current), "overview");
 });
 
 // ---- 11. Cycle finding ----

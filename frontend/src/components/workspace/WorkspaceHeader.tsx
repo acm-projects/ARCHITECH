@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
+import { BookOpen, Check, ChevronDown, Pencil, RotateCcw, Trophy } from "lucide-react";
 import { Logo } from "../ui";
 
 import { HOME_ROUTE } from "../../lib/routes";
@@ -19,6 +20,7 @@ type WorkspaceHeaderProps = {
   modeStatus?: string;
   // The caller supplies Run only where testing is available.
   runControl?: ReactNode;
+  projectActions?: (menuId: string) => ReactNode;
 };
 
 const MODES: { mode: ProjectMode; label: string }[] = [
@@ -37,11 +39,16 @@ export default function WorkspaceHeader({
   onModeChange,
   modeStatus,
   runControl,
+  projectActions,
 }: WorkspaceHeaderProps) {
+  const menuId = useId();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(title);
   // Enter, Escape and blur can all end an edit; this makes only the first one count.
   const editInProgress = useRef(false);
+  const closeMenu = () => menuRef.current?.hidePopover();
 
   const startEditing = () => {
     editInProgress.current = true;
@@ -60,8 +67,8 @@ export default function WorkspaceHeader({
   };
 
   return (
-    <header className="page-header ax-header flex shrink-0 items-center justify-between">
-      <div className="flex min-w-0 items-center gap-10">
+    <header className="page-header ax-header">
+      <div className="ax-header-project">
         <Link href={HOME_ROUTE} className="ax-brand focus-visible:outline-2 focus-visible:outline-offset-4" aria-label="ARCHITECH dashboard">
           <Logo variant="by-level" />
         </Link>
@@ -78,37 +85,19 @@ export default function WorkspaceHeader({
               if (event.key === "Enter") finishEditing(true);
               if (event.key === "Escape") finishEditing(false);
             }}
-            className="ax-field w-64 py-0.5"
+            className="ax-field ax-header-title-input"
           />
         ) : (
           <button
             type="button"
             onClick={startEditing}
             title="Rename architecture"
-            className="ax-title truncate"
+            className="ax-title"
           >
-            {title}
+            <span>{title}</span>
+            <Pencil size={12} aria-hidden="true" />
           </button>
         )}
-      </div>
-
-      <div className="flex items-center gap-5">
-        <div role="group" aria-label="Project mode" className="ax-modes">
-          {MODES.map((option) => (
-            <button
-              key={option.mode}
-              type="button"
-              aria-pressed={mode === option.mode}
-              onClick={() => {
-                if (mode !== option.mode) onModeChange(option.mode);
-              }}
-              className="ax-action"
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-        {modeStatus && <span className="text-[10px] text-(--ax-muted)">{modeStatus}</span>}
         {saveStatus && (
           <span role="status" data-state={saveStatus} className="ax-save">
             {saveStatus === "saving"
@@ -118,9 +107,66 @@ export default function WorkspaceHeader({
                 : "Saved"}
           </span>
         )}
-        <button type="button" onClick={onReset} className="ax-action">
-          Reset
+      </div>
+
+      <div className="ax-header-actions">
+        <button
+          type="button"
+          popoverTarget={menuId}
+          aria-haspopup="dialog"
+          aria-expanded={menuOpen}
+          className="ax-header-menu-trigger"
+        >
+          Menu
+          <ChevronDown size={12} aria-hidden="true" />
         </button>
+        {/* Native popover keeps Escape, outside-click dismissal and focus return together. */}
+        <div
+          id={menuId}
+          ref={menuRef}
+          popover="auto"
+          role="dialog"
+          aria-label="Project menu"
+          className="ax-project-menu"
+          onToggle={(event) => setMenuOpen(event.currentTarget.matches(":popover-open"))}
+        >
+          <div role="group" aria-label="Project mode" className="ax-project-menu-group">
+            <p className="ax-project-menu-label">Mode</p>
+            {MODES.map((option) => {
+              const ModeIcon = option.mode === "learn" ? BookOpen : Trophy;
+              const selected = mode === option.mode;
+              return (
+                <button
+                  key={option.mode}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    closeMenu();
+                    if (!selected) onModeChange(option.mode);
+                  }}
+                  className="ax-project-menu-item"
+                >
+                  <ModeIcon size={15} aria-hidden="true" />
+                  <span>{option.label}{selected && modeStatus && <small>{modeStatus}</small>}</span>
+                  {selected && <Check size={14} aria-hidden="true" />}
+                </button>
+              );
+            })}
+          </div>
+          {/* Actions target this popover directly, without depending on click bubbling. */}
+          <div className="ax-project-menu-actions">
+            {projectActions?.(menuId)}
+          </div>
+          <div className="ax-project-menu-group">
+            <button type="button" className="ax-project-menu-item" onClick={() => {
+              closeMenu();
+              onReset();
+            }}>
+              <RotateCcw size={15} aria-hidden="true" />
+              <span>Reset design</span>
+            </button>
+          </div>
+        </div>
         {runControl}
       </div>
     </header>
