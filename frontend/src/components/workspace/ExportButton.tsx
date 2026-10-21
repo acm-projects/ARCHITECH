@@ -9,7 +9,7 @@ import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 
 // Downloads the design on the canvas as a starter docker-compose.yml (generated in the browser,
 // so it works offline and includes unsaved changes).
-export function ExportButton({ title }: { title: string }) {
+export function ExportButton({ title, popoverTarget }: { title: string; popoverTarget?: string }) {
   const { getNodes, getEdges } = useReactFlow<ArchitectureFlowNode, Edge>();
   const download = () => {
     const { yaml } = toDockerCompose({ title, nodes: getNodes(), edges: getEdges() });
@@ -21,7 +21,7 @@ export function ExportButton({ title }: { title: string }) {
     setTimeout(() => URL.revokeObjectURL(url), 1_000);
   };
   return (
-    <button type="button" className="ax-ai-toggle" onClick={download} title="Download a starter docker-compose.yml for this design">
+    <button type="button" className="ax-ai-toggle" onClick={download} popoverTarget={popoverTarget} popoverTargetAction="hide" title="Download a starter docker-compose.yml for this design">
       <Download size={15} aria-hidden="true" />
       Export
     </button>

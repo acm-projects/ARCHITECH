@@ -13,6 +13,8 @@
  */
 
 .ax-workspace {
+  position: relative;
+  --ax-header-clearance: 72px;
   /* Color */
   --ax-canvas: #f5f5f2;
   --ax-surface: #fdfdfc;
@@ -93,7 +95,52 @@
   outline: none;
 }
 
-/* ---- Header: top chrome, no container ---- */
+/* The header floats above the graph; only tool surfaces intercept canvas input. */
+.ax-workspace .ax-header {
+  --ax-header-control-height: 34px;
+  position: absolute;
+  z-index: 30;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  height: 52px;
+  min-height: 52px;
+  gap: 16px;
+  padding: 7px 8px 7px 18px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 999px;
+  background: var(--ax-surface);
+}
+.ax-workspace .ax-header-project {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+.ax-workspace .ax-header .brand-wordmark-header {
+  width: 136px;
+  height: 32px;
+}
+.ax-workspace .ax-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ax-workspace .ax-header .ax-action-primary {
+  height: var(--ax-header-control-height);
+  padding: 7px 15px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+.ax-workspace .ax-header .ax-action-primary:hover { background: var(--ax-ink-soft); }
+.ax-workspace .ax-canvas-overlays {
+  position: absolute;
+  inset: var(--ax-header-clearance) 0 0;
+  pointer-events: none;
+  anchor-name: --ax-run-canvas;
+}
+.ax-workspace .ax-canvas-overlays > .ax-live { pointer-events: auto; }
 
 .ax-workspace .ax-brand {
   display: inline-flex;
@@ -101,20 +148,110 @@
 }
 
 .ax-workspace .ax-title {
-  padding: 2px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 0 6px 18px;
   border: 0;
-  border-bottom: 1px solid transparent;
+  border-left: 1px solid var(--ax-line);
   border-radius: 0;
   background: transparent;
-  font-size: var(--ax-t-md);
-  color: var(--ax-ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ax-ink);
   transition:
     border-color var(--ax-fast) var(--ax-ease),
     color var(--ax-fast) var(--ax-ease);
 }
 .ax-workspace .ax-title:hover {
-  border-bottom-color: var(--ax-line-strong);
+  color: var(--ax-ink-soft);
+}
+.ax-workspace .ax-title > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ax-workspace .ax-title > svg { flex-shrink: 0; color: var(--ax-muted); }
+.ax-workspace .ax-header-title-input { width: min(280px, 100%); min-width: 0; font-size: 13px; }
+.ax-workspace .ax-header .ax-save { flex-shrink: 0; font-size: 11px; }
+.ax-workspace .ax-header .ax-save[data-state="saved"] { color: var(--ax-muted); }
+
+.ax-workspace .ax-header-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--ax-header-control-height);
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ax-ink-soft);
+  font-size: 12px;
+  anchor-name: --ax-project-menu-trigger;
+}
+.ax-workspace .ax-header-menu-trigger:is(:hover, [aria-expanded="true"]) { background: var(--ax-canvas); color: var(--ax-ink); }
+.ax-workspace .ax-project-menu {
+  --ax-menu-width: 248px;
+  --ax-menu-inset: 12px;
+  /* Limit the right offset so the menu's left edge stays inside narrow viewports. */
+  --ax-menu-max-right: max(var(--ax-menu-inset), calc(100vw - var(--ax-menu-width) - var(--ax-menu-inset)));
+  position: fixed;
+  top: var(--ax-header-clearance);
+  right: clamp(var(--ax-menu-inset), 84px, var(--ax-menu-max-right));
+  left: auto;
+  bottom: auto;
+  width: min(var(--ax-menu-width), calc(100vw - 2 * var(--ax-menu-inset)));
+  max-height: calc(100dvh - var(--ax-header-clearance) - var(--ax-menu-inset));
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 8px;
+  background: var(--ax-surface);
   color: var(--ax-ink);
+}
+.ax-workspace .ax-project-menu::backdrop { background: transparent; }
+.ax-workspace .ax-project-menu [hidden] { display: none !important; }
+.ax-workspace .ax-project-menu-group { padding: 4px; }
+.ax-workspace .ax-project-menu-label { margin: 0; padding: 5px 8px; font-size: 11px; color: var(--ax-muted); }
+.ax-workspace .ax-project-menu-item,
+.ax-workspace .ax-project-menu .ax-ai-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ax-ink-soft);
+  text-align: left;
+  font-size: 12px;
+  font-weight: 400;
+}
+.ax-workspace .ax-project-menu-item > span { flex: 1; }
+.ax-workspace .ax-project-menu-item small { display: block; margin-top: 2px; color: var(--ax-muted); font-size: 11px; }
+.ax-workspace .ax-project-menu-item[aria-pressed="true"] { color: var(--ax-ink); font-weight: 500; }
+.ax-workspace .ax-project-menu-item:hover,
+.ax-workspace .ax-project-menu .ax-ai-toggle:hover { background: var(--ax-canvas); color: var(--ax-ink); }
+.ax-workspace .ax-project-menu-actions > div:not([hidden]) { padding: 4px; border-block: 1px solid var(--ax-line); }
+@supports (position-anchor: --ax-project-menu-trigger) {
+  .ax-workspace .ax-project-menu {
+    position-anchor: --ax-project-menu-trigger;
+    top: calc(anchor(bottom) + var(--ax-menu-inset));
+    right: clamp(var(--ax-menu-inset), anchor(right), var(--ax-menu-max-right));
+  }
+}
+@media (max-width: 600px) {
+  .ax-workspace .ax-header { gap: 8px; padding-left: 12px; }
+  .ax-workspace .ax-header-project { gap: 10px; flex: 1; }
+  .ax-workspace .ax-header .brand-wordmark-header { width: 100px; height: 28px; }
+  .ax-workspace .ax-title { padding-left: 10px; font-size: 12px; }
+  .ax-workspace .ax-title > svg { display: none; }
+  .ax-workspace .ax-header .ax-save[data-state="saved"] { display: none; }
+  .ax-workspace .ax-header-menu-trigger { gap: 4px; padding-inline: 8px; }
+  .ax-workspace .ax-header .ax-action-primary { padding-inline: 10px; }
+}
+@media (max-width: 380px) {
+  .ax-workspace .ax-header .brand-wordmark-header { width: 80px; }
 }
 
 /* Actions read as type until hovered. */
@@ -1098,11 +1235,6 @@
   color: var(--ax-ink);
   box-shadow: inset 0 -1px 0 var(--ax-ink);
 }
-.ax-workspace .ax-modes {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
 
 /* ---- Technology picker (TechnologyPicker.tsx): toolbox list and Configure card ---- */
 
@@ -1182,12 +1314,11 @@
 }
 
 /* Traffic settings belong to Run; native popovers provide Escape and outside-click dismissal. */
-.ax-workspace .ax-workspace-canvas { anchor-name: --ax-run-canvas; }
 .ax-workspace .ax-run-trigger { display: inline-flex; align-items: center; gap: 8px; }
 .ax-workspace .ax-run-trigger:disabled { opacity: .5; cursor: default; }
 .ax-workspace .ax-run-popover {
   position: fixed;
-  top: 60px;
+  top: calc(var(--ax-header-clearance) + 12px);
   right: 12px;
   left: auto;
   bottom: auto;

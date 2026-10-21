@@ -6325,11 +6325,6 @@ body,
 .page-header .logo { max-width: none; flex-shrink: 0; }
 @media (max-width: 767px) {
   :root { --page-header-inset: 16px; --page-logo-width: 140px; }
-  /* Canvas actions reflow below the brand instead of squeezing its position on phones. */
-  .page-header.ax-header { height: auto; flex-wrap: wrap; }
-  .ax-header > div:first-child { min-height: var(--page-header-height); gap: 16px; width: 100%; }
-  .ax-header .ax-title { max-width: calc(100vw - 188px); }
-  .ax-header > div:last-child { flex-wrap: wrap; gap: 12px; padding-bottom: 10px; }
 }
 
 /* Shared Archie message bar for Learn and the dashboard. */
