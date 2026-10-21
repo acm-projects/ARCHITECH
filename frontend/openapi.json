@@ -760,7 +760,7 @@
         ],
         "operationId": "saveProject",
         "summary": "Create or replace a project",
-        "description": "Creates the project with this id, or replaces it if the user already has it. The browser generates the id, so creating offline and retrying a failed save are both safe: sending the same project twice stores it once.\n\nThe diagram is validated against docs/graph-spec.md (section 5): known component types, labels of 1-60 characters, unique node and edge ids, edges between existing nodes, no self-connections or repeated connections, settings within each component's range, and `data.implementation` must exist and belong to the node's type. At most 500 nodes and 2,000 edges.\n\nThe canvas calls this automatically: every change is synced in the background.\n\nOverwrite protection: send If-Match with the revision you loaded. A save based on an older revision gets 409 with the server's copy; without If-Match the project is replaced as before. Saves with a design change also record an automatic version (see Version history).",
+        "description": "Creates the project with this id, or replaces it if the user already has it. The browser generates the id, so creating offline and retrying a failed save are both safe: sending the same project twice stores it once.\n\nThe diagram is validated against docs/graph-spec.md (section 5): known component types, labels of 1-60 characters, unique node and edge ids, edges between existing nodes, no self-connections or repeated connections, settings within each component's range, and `data.implementation` must exist and belong to the node's type. At most 500 nodes and 2,000 edges.\n\nThe canvas calls this automatically: every change is synced in the background.\n\nOverwrite protection: send If-Match with the revision you loaded. A save based on an older revision gets 409 with the server's copy (the app then keeps that copy in the version history if it differs, and saves again); without If-Match the project is replaced as before. Saves with a design change also record an automatic version (see Version history).",
         "security": [
           {
             "sessionCookie": []
@@ -1750,9 +1750,11 @@
                     "type": "string",
                     "enum": [
                       "manual",
-                      "before-restore"
+                      "before-restore",
+                      "other-device"
                     ],
-                    "default": "manual"
+                    "default": "manual",
+                    "description": "\"other-device\": the app keeps a version saved in another tab or device before overwriting it."
                   }
                 }
               }
@@ -3485,7 +3487,8 @@
             "enum": [
               "auto",
               "manual",
-              "before-restore"
+              "before-restore",
+              "other-device"
             ]
           },
           "label": {

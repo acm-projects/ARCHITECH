@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { conflictCopy, CONFLICT_SUFFIX } from "../src/lib/projects/syncPlan.ts";
+import { sameDesign } from "../src/lib/projects/syncPlan.ts";
 import { etag, ifMatchRevision, revisionOf } from "../src/lib/projects/revisions.ts";
 import type { ProjectPayload } from "../src/lib/projects/projectPayload.ts";
 
@@ -16,15 +16,13 @@ const project = (title: string): ProjectPayload => ({
   lastOpenedAt: "2026-10-19T12:05:00.000Z",
 });
 
-test("the other device's version is kept as a copy with a new id and a marked title", () => {
-  const copy = conflictCopy(project("Shop"), "22222222-2222-4222-8222-222222222222", 80);
-  assert.equal(copy.id, "22222222-2222-4222-8222-222222222222");
-  assert.equal(copy.title, `Shop${CONFLICT_SUFFIX}`);
-  assert.deepEqual({ ...copy, id: "", title: "" }, { ...project("Shop"), id: "", title: "" }, "everything else is the server's copy");
-
-  const long = conflictCopy(project("x".repeat(80)), "id", 80);
-  assert.ok(long.title.length <= 80, "stays within the title limit");
-  assert.ok(long.title.endsWith(CONFLICT_SUFFIX));
+test("a conflict between identical copies is not a real conflict", () => {
+  const a = project("Shop");
+  const reopened = { ...project("Shop"), lastOpenedAt: "2026-10-20T09:00:00.000Z", updatedAt: "2026-10-20T09:00:00.000Z" };
+  assert.equal(sameDesign(a, reopened), true, "timestamps do not matter");
+  assert.equal(sameDesign(a, project("Shop v2")), false, "the title does");
+  const changed = { ...project("Shop"), graph: { ...a.graph, nodes: [{ id: "server-1" }] } } as ProjectPayload;
+  assert.equal(sameDesign(a, changed), false, "the diagram does");
 });
 
 test("revisions travel as ETags and come back in If-Match", () => {
