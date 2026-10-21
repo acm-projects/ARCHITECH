@@ -14,7 +14,8 @@
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:integration": "node --experimental-strip-types --test --test-concurrency=1 tests/integration/*.test.ts",
     "docs:metrics": "node --experimental-strip-types scripts/write-metrics-doc.ts",
-    "eval:ai": "node --env-file=.env --experimental-strip-types scripts/eval-ai.ts"
+    "eval:ai": "node --env-file=.env --experimental-strip-types scripts/eval-ai.ts",
+    "cleanup:conflict-copies": "node --env-file=.env --experimental-strip-types scripts/cleanup-conflict-copies.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
