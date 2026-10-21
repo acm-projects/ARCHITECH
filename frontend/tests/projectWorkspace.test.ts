@@ -606,6 +606,35 @@ test("both Archie entry points use the explicit tutorial availability rule", () 
   assert.doesNotMatch(workspace, /<ArchitectPanel/);
 });
 
+test("selecting a component never opens Configure; switching or clearing selection closes it", () => {
+  const selected = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "selection-changed", selectionKey: "api" });
+  assert.equal(selected.configuring, false);
+  const configured = inspectorReducer(selected, { type: "open-configure" });
+  assert.equal(configured.configuring, true);
+  assert.equal(inspectorReducer(configured, { type: "selection-changed", selectionKey: "api" }), configured, "editing the same selection keeps Configure open");
+
+  for (const selectionKey of ["cache", "api\0cache", ""]) {
+    const changed = inspectorReducer(configured, { type: "selection-changed", selectionKey });
+    assert.equal(changed.configuring, false);
+    assert.equal(inspectorReducer(changed, { type: "selection-changed", selectionKey: "api" }).configuring, false, "reselecting a previously configured node does not reopen it");
+  }
+  assert.equal(inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-configure" }).configuring, false);
+});
+
+test("Configure opens explicitly and closes when another inspector tool is opened", () => {
+  const selected = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "selection-changed", selectionKey: "api" });
+  const configured = inspectorReducer(selected, { type: "open-configure" });
+  assert.equal(inspectorReducer(configured, { type: "close-configure" }).configuring, false);
+  for (const type of ["open-archie", "open-history"] as const) {
+    const other = inspectorReducer(configured, { type });
+    assert.equal(other.configuring, false);
+    const reopened = inspectorReducer(other, { type: "open-configure" });
+    assert.equal(reopened.configuring, true);
+    assert.equal(reopened.archieOpen, false);
+    assert.equal(reopened.historyOpen, false);
+  }
+});
+
 test("opening Metrics from selection or Archie expands it and running returns to Metrics", () => {
   const collapsed = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "toggle-section", section: "metrics", hasSelection: false });
   assert.equal(collapsed.section, null);
