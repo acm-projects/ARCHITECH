@@ -7,8 +7,7 @@ import ComponentGlyph from "./ComponentGlyph";
 import ComponentInspector from "./ComponentInspector";
 import { COMPONENT_CATALOG, FAMILY_LABELS } from "./componentCatalog";
 import MetricsPanel from "./MetricsPanel";
-import { ExportButton } from "./ExportButton";
-import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
+import HistoryPanel from "./history/HistoryPanel";
 import type { InspectorSectionId } from "./inspectorState";
 import type { WorkspaceInspectorController } from "./useWorkspaceInspector";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
@@ -25,7 +24,6 @@ const REVIEW_STATUS_LABELS = {
 
 type WorkspaceInspectorProps = {
   projectId: string;
-  projectTitle: string;
   nodes: ArchitectureFlowNode[];
   controller: WorkspaceInspectorController;
   runSettingsHeight: number;
@@ -68,7 +66,7 @@ function useInspectorLayout(runSettingsHeight: number) {
 
   useLayoutEffect(() => {
     const frame = frameRef.current;
-    const canvas = frame?.closest<HTMLElement>(".ax-workspace-canvas");
+    const canvas = frame?.closest<HTMLElement>(".ax-canvas-overlays");
     if (!frame || !canvas) return;
     const measure = () => setBounds((current) => {
       const canvasHeight = canvas.clientHeight;
@@ -90,11 +88,11 @@ function useInspectorLayout(runSettingsHeight: number) {
 }
 
 export default function WorkspaceInspector({
-  projectId, projectTitle,
+  projectId,
   nodes, controller, runSettingsHeight, onConfigureRun, onClearSelection, onApply, customTechnologies,
   guidance, testingEnabled, runs,
 }: WorkspaceInspectorProps) {
-  const { archieOpen, historyOpen, configuring, section: activeSection, inspectComponent, closeConfiguration, askArchie, closeArchie, openHistory, closeHistory, toggleSection, showResults } = controller;
+  const { archieOpen, historyOpen, configuring, section: activeSection, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory, toggleSection, showResults } = controller;
   const { frameRef, compact } = useInspectorLayout(runSettingsHeight);
   const selected = nodes.filter((node) => node.selected);
   const component = selected.length === 1 ? selected[0] : null;
@@ -186,10 +184,6 @@ export default function WorkspaceInspector({
         </div>
 
         <ArchitectToggle open={archieOpen && !compact} onToggle={askArchie} />
-        <div className="ax-inspector-project-actions">
-          <HistoryToggle open={historyOpen} onToggle={openHistory} />
-          <ExportButton title={projectTitle} />
-        </div>
         {historyOpen && (
           <div className="ax-panel-content ax-inspector-archie" hidden={compact}>
             <HistoryPanel projectId={projectId} onClose={closeHistory} onRestore={onApply} />

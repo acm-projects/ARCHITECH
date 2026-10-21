@@ -688,8 +688,10 @@ test("every button in the new app does something, or is disabled and says why", 
       const source = readFileSync(file, "utf8");
       for (const tag of buttonTags(source)) {
         checked += 1;
-        const popoverTarget = tag.match(/\bpopoverTarget="([^"]+)"/)?.[1];
-        const opensPopover = Boolean(popoverTarget && source.includes(`id="${popoverTarget}"`) && /\bpopover=/.test(source));
+        // React useId targets are paired with the same identifier on the popover.
+        const target = tag.match(/\bpopoverTarget=(?:"([^"]+)"|\{(\w+)\})/);
+        const popoverId = target?.[1] ? `id="${target[1]}"` : target?.[2] ? `id={${target[2]}}` : null;
+        const opensPopover = Boolean(popoverId && source.includes(popoverId) && /\bpopover=/.test(source));
         const acts = /\bonClick=|type="submit"|\{\.\.\./.test(tag) || opensPopover;
         const explainedDisabled = /(?<![-\w])disabled\b/.test(tag) && /\btitle=/.test(tag);
         if (!acts && !explainedDisabled) offenders.push(`${file}: ${tag.replace(/\s+/g, " ").slice(0, 90)}`);
