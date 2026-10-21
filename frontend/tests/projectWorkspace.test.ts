@@ -696,7 +696,7 @@ test("a failed retry preserves the previous result and its selected review view"
   assert.equal(view.hasResult, true);
   assert.equal(reviewViewForRun(selection, session.getState().current), "comparison");
   session.reset();
-  assert.equal(reviewViewForRun(selection, session.getState().current), "live");
+  assert.equal(reviewViewForRun(selection, session.getState().current), "overview");
 });
 
 // ---- 11. Cycle finding ----

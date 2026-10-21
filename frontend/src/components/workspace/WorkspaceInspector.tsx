@@ -1,13 +1,11 @@
 import { useId, useLayoutEffect, useRef, useState, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import { ChevronDown, X } from "lucide-react";
 
-import type { LiveChanges, LiveResult } from "../../lib/architecture/evaluation/liveMetrics";
 import type { CustomTechnology } from "../../lib/projects/customTechnologies";
 import ArchitectPanel, { ArchitectToggle } from "./ai/ArchitectPanel";
 import ComponentGlyph from "./ComponentGlyph";
 import ComponentInspector from "./ComponentInspector";
 import { COMPONENT_CATALOG, FAMILY_LABELS } from "./componentCatalog";
-import { LiveMetricsBar } from "./LiveMetricsBar";
 import MetricsPanel from "./MetricsPanel";
 import { ExportButton } from "./ExportButton";
 import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
@@ -18,7 +16,7 @@ import type { useRunSession } from "./useRunSession";
 import "./workspace-inspector.css";
 
 const REVIEW_STATUS_LABELS = {
-  idle: "Live",
+  idle: "Not run",
   analyzing: "Running…",
   ready: "Ready",
   stale: "Out of date",
@@ -38,7 +36,6 @@ type WorkspaceInspectorProps = {
   guidance: ReactNode;
   testingEnabled: boolean;
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state">;
-  live: { result: LiveResult | null; changes: LiveChanges | null };
 };
 
 function InspectorSection({ title, meta, expanded, onToggle, children }: {
@@ -95,7 +92,7 @@ function useInspectorLayout(runSettingsHeight: number) {
 export default function WorkspaceInspector({
   projectId, projectTitle,
   nodes, controller, runSettingsHeight, onConfigureRun, onClearSelection, onApply, customTechnologies,
-  guidance, testingEnabled, runs, live,
+  guidance, testingEnabled, runs,
 }: WorkspaceInspectorProps) {
   const { archieOpen, historyOpen, configuring, section: activeSection, inspectComponent, closeConfiguration, askArchie, closeArchie, openHistory, closeHistory, toggleSection, showResults } = controller;
   const { frameRef, compact } = useInspectorLayout(runSettingsHeight);
@@ -107,14 +104,6 @@ export default function WorkspaceInspector({
 
   const expanded = (section: InspectorSectionId) => !compact && !archieOpen && !historyOpen && selected.length === 0 && activeSection === section;
   const reviewStatus = REVIEW_STATUS_LABELS[runs.view.runButtonState];
-  const liveMetrics = (
-    <LiveMetricsBar
-      result={live.result}
-      changes={live.changes}
-      requestsPerSecond={runs.traffic.requestsPerSecond}
-      componentName={componentName}
-    />
-  );
   const selectionHeader = (
     <summary className="ax-inspector-header" onClick={(event) => {
       if (component) {
@@ -190,7 +179,6 @@ export default function WorkspaceInspector({
                   onConfigureRun={onConfigureRun}
                   liveTraffic={runs.traffic}
                   componentName={componentName}
-                  liveEstimates={liveMetrics}
                 />
               </InspectorSection>
             </>
