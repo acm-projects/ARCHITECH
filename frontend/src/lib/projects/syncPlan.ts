@@ -101,14 +101,11 @@ export function planPendingChanges(
   };
 }
 
-// ---- Conflicts (another device saved the same project first) ----
+// ---- Conflicts (another tab or device saved the same project first) ----
 
-export const CONFLICT_SUFFIX = " (from another device)";
-
-// The other device's version, kept as a separate project so nothing is lost; this browser's
-// version then replaces the original. The title stays within the length limit.
-export function conflictCopy(serverProject: ProjectPayload, newId: string, maxTitleLength: number): ProjectPayload {
-  const room = Math.max(1, maxTitleLength - CONFLICT_SUFFIX.length);
-  const base = serverProject.title.length > room ? `${serverProject.title.slice(0, room - 1).trimEnd()}…` : serverProject.title;
-  return { ...serverProject, id: newId, title: `${base}${CONFLICT_SUFFIX}` };
+// Whether two copies have the same title and diagram (timestamps and order of keys aside).
+// Usually true: two tabs of the same browser share one project store, so a "conflict" between
+// them is only an outdated revision, not different work.
+export function sameDesign(a: ProjectPayload, b: ProjectPayload): boolean {
+  return canonicalJson({ title: a.title, graph: a.graph }) === canonicalJson({ title: b.title, graph: b.graph });
 }

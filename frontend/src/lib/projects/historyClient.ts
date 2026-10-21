@@ -52,6 +52,7 @@ export async function loadVersionGraph(projectId: string, versionId: string): Pr
 export function versionName(version: Pick<VersionItem, "kind" | "label">): string {
   if (version.label) return version.label;
   if (version.kind === "before-restore") return "Before restoring";
+  if (version.kind === "other-device") return "Saved on another device";
   if (version.kind === "manual") return "Saved version";
   return "Auto-saved";
 }

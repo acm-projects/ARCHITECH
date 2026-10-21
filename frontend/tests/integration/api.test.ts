@@ -523,6 +523,10 @@ function defineTests(dbUrl: string) {
     assert.equal(((one.json as { graph: { nodes: { data: { properties?: { replicas: number } } }[] } }).graph.nodes[1].data.properties?.replicas), 2, "the old design is kept");
 
     assert.equal((await call("POST", `/api/projects/${id}/versions`, { cookie: user.cookie, body: { kind: "auto" } })).status, 400);
+    // The sync engine keeps a version saved in another tab or device before overwriting it.
+    const kept = await call("POST", `/api/projects/${id}/versions`, { cookie: user.cookie, body: { kind: "other-device" } });
+    assert.equal(kept.status, 201);
+    assert.equal((kept.json as { version: { kind: string } }).version.kind, "other-device");
     assert.equal((await call("GET", `/api/projects/${id}/versions`, { cookie: other.cookie })).status, 404);
     assert.equal((await call("GET", `/api/projects/${id}/versions/${list[0].id}`, { cookie: other.cookie })).status, 404);
     assert.equal((await call("GET", `/api/projects/${id}/versions/nope`, { cookie: user.cookie })).status, 404);

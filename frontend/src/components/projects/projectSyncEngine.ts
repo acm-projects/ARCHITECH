@@ -6,13 +6,14 @@
 //      (src/lib/projects/syncPlan.ts decides what wins), then upload anything only here.
 //   2. After that: every change the store makes is uploaded (or deleted) in the background.
 //      Failed requests are retried, so a dropped connection only delays saving.
-//   3. Each save says which server revision it was based on (If-Match). If another device
-//      saved the project since, the server refuses (409) and sends its copy: that copy is kept
-//      as a new project "… (from another device)", and this browser's version is saved over
-//      the original. Nothing is lost, and the open canvas is not touched.
+//   3. Each save says which server revision it was based on (If-Match). If another tab or
+//      device saved the project since, the server refuses (409) and sends its copy. If that
+//      copy has the same design, only the revision is updated. If it differs, it is first
+//      kept in the project's version history ("Saved on another device"), then this browser's
+//      version is saved over it. Nothing is lost, no projects are created, and the open
+//      canvas is not touched.
 
 import {
-  MAX_TITLE_LENGTH,
   PROJECTS_CHANGED_EVENT,
   STORAGE_KEY,
   parseProject,
@@ -25,10 +26,10 @@ import {
   type ProjectPayload,
 } from "../../lib/projects/projectPayload.ts";
 import {
-  conflictCopy,
   fingerprint,
   planInitialMerge,
   planPendingChanges,
+  sameDesign,
   type SyncedFingerprints,
 } from "../../lib/projects/syncPlan.ts";
 
@@ -165,12 +166,18 @@ export function startProjectSync(userId: string): () => void {
   };
   const revisions = () => (state.revisions ??= {});
 
-  // Keep the other device's version as its own project, then save ours over the original.
-  function resolveConflict(conflict: ConflictError) {
-    const copy = conflictCopy(conflict.server, crypto.randomUUID(), MAX_TITLE_LENGTH);
-    revisions()[conflict.server.id] = conflict.revision;
-    replaceLocalProjects(storage, [...localPayloads(), copy]);
-    again = true;
+  // Returns whether the upload can be retried at the server's revision now.
+  async function resolveConflict(conflict: ConflictError, local: ProjectPayload): Promise<boolean> {
+    if (!sameDesign(conflict.server, local)) {
+      // Keep the other version in the project's history before overwriting it.
+      const kept = await request(`/api/projects/${encodeURIComponent(local.id)}/versions`, {
+        method: "POST",
+        body: JSON.stringify({ kind: "other-device" }),
+      }).then((response) => response.ok, () => false);
+      if (!kept) return false;
+    }
+    revisions()[local.id] = conflict.revision;
+    return true;
   }
 
   function scheduleRetry() {
@@ -201,8 +208,8 @@ export function startProjectSync(userId: string): () => void {
           refused.delete(project.id);
         } catch (error) {
           if (error instanceof ConflictError) {
-            console.warn(error.message, "Keeping both versions.");
-            resolveConflict(error);
+            if (await resolveConflict(error, project)) again = true;
+            else failed = true;
             continue;
           }
           console.error(error);
