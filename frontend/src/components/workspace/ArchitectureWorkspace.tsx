@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type DragEvent } from "react";
+import { useCallback, useRef, useState, type DragEvent } from "react";
 import {
   Controls,
   MarkerType,
@@ -25,6 +25,7 @@ import {
 import { applyReset, planReset } from "../../lib/architecture/reset";
 import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
+import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
 import LearnCard from "../learn/LearnCard";
 import { projectActions } from "../projects/projectActions";
 import type { Project, ProjectMode } from "../projects/projectStore";
@@ -33,23 +34,22 @@ import {
   hasComponentDragData,
   readComponentDragData,
 } from "./componentCatalog";
-import { ArchieContext } from "./ArchieContext";
+import { ArchieContext, ArchieEnabledContext } from "./ArchieContext";
 import { DesignTrafficContext } from "./DesignTrafficContext";
-import ArchitectPanel, { ArchitectToggle } from "./ai/ArchitectPanel";
-import RunResultsPanel from "./RunResultsPanel";
-import StressTestPanel from "./StressTestPanel";
+import { InspectorContext } from "./InspectorContext";
+import { useWorkspaceInspector } from "./useWorkspaceInspector";
+import WorkspaceInspector from "./WorkspaceInspector";
+import { ArchitectToggle } from "./ai/ArchitectPanel";
 import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
-import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import { ChallengeLeaderboard } from "../challenge/ChallengeLeaderboard";
-import { ExportButton } from "./ExportButton";
-import { LiveMetricsBar } from "./LiveMetricsBar";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
+import { RunControl } from "./StressTestPanel";
 import ArchitectureNode, {
   type ArchitectureFlowNode,
   type ArchitectureNodeData,
@@ -113,10 +113,31 @@ function Workspace({ project }: { project: Project }) {
   );
 
   const [title, setTitle] = useState(project.title);
-  // The AI Architect panel, docked to the right of the canvas when open.
-  const [aiOpen, setAiOpen] = useState(false);
-  // Version history, docked in the same place (one side panel at a time).
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const runSettings = useRef<HTMLDivElement>(null);
+  const [runSettingsHeight, setRunSettingsHeight] = useState(0);
+  const openRunSettings = () => runSettings.current?.showPopover();
+  // Clear node/edge selection without changing the architecture itself.
+  const clearCanvasSelection = useCallback(() => {
+    const next = clearSelection({
+      nodes,
+      edges,
+    });
+
+    if (next.nodes === nodes && next.edges === edges) {
+      return false;
+    }
+
+    setNodes(next.nodes);
+    setEdges(next.edges);
+
+    return true;
+  }, [nodes, edges, setNodes, setEdges]);
+
+  const inspector = useWorkspaceInspector({
+    hasSelection: nodes.some((node) => node.selected),
+    onClearSelection: clearCanvasSelection,
+  });
+  const { askArchie, reset: resetInspector } = inspector;
 
   // Autosave watches the real project content and saves changes in the background.
   // Ctrl+S uses saveNow to force any pending save immediately.
@@ -139,11 +160,12 @@ function Workspace({ project }: { project: Project }) {
     (next: ProjectMode) => {
       // Switch the UI right away, then persist that choice on the project.
       setMode(next);
+      resetInspector();
 
       const result = projectActions.setMode(project.id, next);
       setModeError(result.ok ? null : result.message);
     },
-    [project.id],
+    [project.id, resetInspector],
   );
 
   // Learn and Challenge each manage their own mode-specific state,
@@ -169,6 +191,8 @@ function Workspace({ project }: { project: Project }) {
   // Challenge has its own Submit flow instead.
   const activeRuns = mode === "learn" ? learn.runs : challenge.runs;
   const canRunDesign = mode === "learn" && learn.exploring;
+  const archieEnabled = mode !== "learn" || learn.exploring;
+  const showInspector = mode === "challenge" || learn.exploring;
   // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
   const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
 
@@ -256,23 +280,6 @@ function Workspace({ project }: { project: Project }) {
     return true;
   }, [nodes, edges, setNodes, setEdges]);
 
-  // Clear node/edge selection without changing the architecture itself.
-  const clearCanvasSelection = useCallback(() => {
-    const next = clearSelection({
-      nodes,
-      edges,
-    });
-
-    if (next.nodes === nodes && next.edges === edges) {
-      return false;
-    }
-
-    setNodes(next.nodes);
-    setEdges(next.edges);
-
-    return true;
-  }, [nodes, edges, setNodes, setEdges]);
-
   // Keep undo/redo history for the project's architecture.
   // The scope key makes sure history from one project can never leak into another.
   const { undo, redo, replaceGraph } = useGraphHistory({
@@ -303,6 +310,7 @@ function Workspace({ project }: { project: Project }) {
 
     // Save the return to guidance before resetting the canvas; failed storage leaves it intact.
     if (mode === "learn" && !learn.prepareReset()) return;
+    resetInspector();
 
     applyReset(mode, plan, {
       replaceGraph: () => {
@@ -339,6 +347,7 @@ function Workspace({ project }: { project: Project }) {
     clearCanvasSelection,
     learn,
     challenge,
+    resetInspector,
   ]);
 
   // Copy/paste/duplicate work on the graph itself and use the same ID allocator
@@ -410,9 +419,17 @@ function Workspace({ project }: { project: Project }) {
         : null;
 
   return (
+    <ArchieEnabledContext.Provider value={archieEnabled}>
     <ArchieContext.Provider value={archie}>
       <DesignTrafficContext.Provider value={activeRuns.traffic}>
       <div className="ax-workspace flex h-screen flex-col overflow-hidden">
+        <ChallengeIntroduction
+          key={`${project.id}:${challenge.challenge.id}`}
+          enabled={mode === "challenge"}
+          projectId={project.id}
+          challengeId={challenge.challenge.id}
+          title={challenge.challenge.title}
+        />
         {/* The header owns project-level controls like title, mode, reset, Run Design,
             and save status. It does not own the graph itself. */}
         <WorkspaceHeader
@@ -428,8 +445,17 @@ function Workspace({ project }: { project: Project }) {
                 : undefined
               : challenge.challenge.title
           }
-          onRun={canRunDesign ? learn.runs.run : undefined}
-          runState={activeRuns.view.runButtonState}
+          runControl={canRunDesign ? (
+            <RunControl
+              popoverRef={runSettings}
+              onHeightChange={setRunSettingsHeight}
+              traffic={activeRuns.traffic}
+              running={activeRuns.view.isRunning}
+              onRateChange={activeRuns.setRequestRate}
+              onRun={() => inspector.showResults(activeRuns.run)}
+              onRunAtRate={(rate) => inspector.showResults(() => activeRuns.runAtRate(rate))}
+            />
+          ) : undefined}
           saveStatus={saveStatus}
         />
 
@@ -437,48 +463,43 @@ function Workspace({ project }: { project: Project }) {
           {/* Components are dragged from here onto the shared project canvas. */}
           <ComponentToolbox customTechnologies={project.customTechnologies} />
 
-          <main className="relative min-h-0 min-w-0 flex-1 bg-(--ax-canvas)">
+          <main className="ax-workspace-canvas relative min-h-0 min-w-0 flex-1 bg-(--ax-canvas)" data-inspector={showInspector}>
             {/* React Flow is only responsible for displaying/interacting with the graph.
                 The actual project rules live in the helpers/hooks above. */}
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={nodeTypes}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={handleConnect}
-              isValidConnection={isValidConnection}
-              // Delete and Backspace are handled by useWorkspaceKeyboard so all
-              // keyboard behavior goes through the same history-aware path.
-              deleteKeyCode={null}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              defaultEdgeOptions={defaultEdgeOptions}
-              fitView
-              fitViewOptions={FIT_VIEW_OPTIONS}
-              // Figma-style navigation. Click-dragging empty canvas (on a touchpad: hold with one
-              // finger, drag with another) draws a selection box that picks every component it
-              // touches; the AI Architect then explains that part. Pan with a two-finger swipe,
-              // the mouse wheel, Space+drag, or a middle/right-button drag. Zoom with a pinch or
-              // Ctrl/Cmd+scroll. Dragging a component still moves it.
-              selectionOnDrag
-              selectionMode={SelectionMode.Partial}
-              panOnDrag={[1, 2]}
-              panOnScroll
-            >
-              <Controls showInteractive={false} />
-            </ReactFlow>
+            <div className="ax-diagram-viewport">
+              <InspectorContext.Provider value={showInspector ? inspector.nodeActions : null}>
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  nodeTypes={nodeTypes}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={handleConnect}
+                  isValidConnection={isValidConnection}
+                  // Delete and Backspace are handled by useWorkspaceKeyboard so all
+                  // keyboard behavior goes through the same history-aware path.
+                  deleteKeyCode={null}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  defaultEdgeOptions={defaultEdgeOptions}
+                  fitView
+                  fitViewOptions={FIT_VIEW_OPTIONS}
+                  // Figma-style navigation. Click-dragging empty canvas (on a touchpad: hold with one
+                  // finger, drag with another) draws a selection box that picks every component it
+                  // touches; the AI Architect then explains that part. Pan with a two-finger swipe,
+                  // the mouse wheel, Space+drag, or a middle/right-button drag. Zoom with a pinch or
+                  // Ctrl/Cmd+scroll. Dragging a component still moves it.
+                  selectionOnDrag
+                  selectionMode={SelectionMode.Partial}
+                  panOnDrag={[1, 2]}
+                  panOnScroll
+                >
+                  <Controls showInteractive={false} />
+                </ReactFlow>
+              </InspectorContext.Provider>
+            </div>
 
             {/* If saving the selected mode fails, show the error without breaking the editor. */}
-            {canRunDesign && (
-              <LiveMetricsBar
-                result={live.result}
-                changes={live.changes}
-                requestsPerSecond={activeRuns.traffic.requestsPerSecond}
-                componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
-              />
-            )}
-
             {modeError && (
               <p
                 role="alert"
@@ -488,16 +509,23 @@ function Workspace({ project }: { project: Project }) {
               </p>
             )}
 
-            {/* Guidance, Archie (the AI Architect) and History share the same floating panel. */}
-            <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
-              <div className="ax-panel-content" hidden={aiOpen || historyOpen}>
-                {/* Challenge keeps its own brief/submission flow around the same project canvas. */}
-                {mode === "challenge" && (
+            {showInspector ? (
+              <WorkspaceInspector
+                nodes={nodes}
+                controller={inspector}
+                runSettingsHeight={runSettingsHeight}
+                onConfigureRun={openRunSettings}
+                onClearSelection={clearCanvasSelection}
+                onApply={replaceGraph}
+                customTechnologies={project.customTechnologies}
+                testingEnabled={canRunDesign}
+                runs={activeRuns}
+                live={live}
+                guidance={mode === "challenge" ? (
                   <>
                     <ChallengeCard
                       challenge={challenge.challenge}
                       result={challenge.cardResult}
-                      // Submit evaluates a snapshot of the architecture as it looks right now.
                       onRun={challenge.submit}
                       onBack={challenge.backToBrief}
                       stale={challenge.view?.isStale}
@@ -510,75 +538,35 @@ function Workspace({ project }: { project: Project }) {
                       version={challenge.leaderboardVersion}
                     />
                   </>
-                )}
-
-                {/* Learn starts as a guided lesson, then unlocks the normal project tools
-                    once the learner finishes the tutorial. */}
-                {mode === "learn" && (
-                  <>
-                    {!learn.exploring && <LearnCard
-                      lesson={learn.lesson}
-                      stepIndex={learn.engine.stepIndex}
-                      status={learn.engine.status}
-                      freePlay={learn.freePlay}
-                      skipped={learn.skipped}
-                      onContinue={learn.freePlay ? learn.continueExploring : learn.engine.continueStep}
-                      error={learn.tutorialError}
-                      feedback={learn.engine.feedback}
-                      hint={
-                        learn.engine.hintVisible
-                          ? learn.engine.hint?.text
-                          : null
-                      }
-                      onDismissFeedback={learn.engine.dismissFeedback}
-                    />}
-
-                    {/* After the tutorial, Learn becomes free-play and exposes the
-                        same Run Design / Stress Test analysis tools used for experimenting. */}
-                    {learn.exploring && (
-                      <>
-                        <StressTestPanel
-                          traffic={learn.runs.traffic}
-                          running={learn.runs.view.isRunning}
-                          onRateChange={learn.runs.setRequestRate}
-                          onRun={learn.runs.run}
-                          onRunAtRate={learn.runs.runAtRate}
-                        />
-
-                        <RunResultsPanel
-                          view={learn.runs.view}
-                          onRun={learn.runs.run}
-                          liveTraffic={learn.runs.traffic}
-                        />
-                      </>
-                    )}
-                  </>
-                )}
-                <ArchitectToggle open={aiOpen} onToggle={() => setAiOpen(true)} />
-                <HistoryToggle open={historyOpen} onToggle={() => setHistoryOpen(true)} />
-                <ExportButton title={title} />
-              </div>
-              {aiOpen && (
-                <div className="ax-panel-content" data-architect>
-                  <ArchitectPanel
-                    projectId={project.id}
-                    onClose={() => setAiOpen(false)}
-                    onApply={replaceGraph}
-                    customTechnologies={project.customTechnologies}
+                ) : null}
+                projectId={project.id}
+                projectTitle={title}
+              />
+            ) : (
+              <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
+                <div className="ax-panel-content">
+                  <LearnCard
+                    lesson={learn.lesson}
+                    stepIndex={learn.engine.stepIndex}
+                    status={learn.engine.status}
+                    freePlay={learn.freePlay}
+                    skipped={learn.skipped}
+                    onContinue={learn.freePlay ? learn.continueExploring : learn.engine.continueStep}
+                    error={learn.tutorialError}
+                    feedback={learn.engine.feedback}
+                    hint={learn.engine.hintVisible ? learn.engine.hint?.text : null}
+                    onDismissFeedback={learn.engine.dismissFeedback}
                   />
+                  <ArchitectToggle open={false} onToggle={askArchie} />
                 </div>
-              )}
-              {historyOpen && (
-                <div className="ax-panel-content" data-architect>
-                  <HistoryPanel projectId={project.id} onClose={() => setHistoryOpen(false)} onRestore={replaceGraph} />
-                </div>
-              )}
-            </aside>
+              </aside>
+            )}
           </main>
         </div>
       </div>
       </DesignTrafficContext.Provider>
     </ArchieContext.Provider>
+    </ArchieEnabledContext.Provider>
   );
 }
 

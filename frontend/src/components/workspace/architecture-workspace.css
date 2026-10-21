@@ -477,7 +477,8 @@
 
 /* ---- React Flow: canvas, controls, attribution ---- */
 
-.ax-workspace .react-flow {
+.ax-workspace .react-flow,
+.ax-workspace .ax-workspace-canvas {
   /* Uniform graph-paper squares. */
   background-image:
     linear-gradient(to right, rgba(17, 17, 17, 0.07) 1px, transparent 1px),
@@ -739,7 +740,7 @@
     background-color var(--ax-fast) var(--ax-ease),
     color var(--ax-fast) var(--ax-ease);
 }
-.ax-workspace .ax-nodebar button:hover,
+.ax-workspace .ax-nodebar button:hover:not(:disabled),
 .ax-workspace .ax-nodebar button[aria-pressed="true"] {
   background: rgba(17, 17, 17, 0.05);
   color: var(--ax-ink);
@@ -747,7 +748,7 @@
 .ax-workspace .ax-nodebar .ax-nodebar-ai {
   color: var(--ax-accent);
 }
-.ax-workspace .ax-nodebar .ax-nodebar-ai:hover,
+.ax-workspace .ax-nodebar .ax-nodebar-ai:hover:not(:disabled),
 .ax-workspace .ax-nodebar .ax-nodebar-ai[aria-pressed="true"] {
   background: rgba(29, 78, 216, 0.07);
   color: var(--ax-accent);
@@ -756,6 +757,7 @@
   background: rgba(180, 52, 63, 0.07);
   color: var(--ax-danger);
 }
+.ax-workspace .ax-nodebar .ax-nodebar-ai:disabled { color: var(--ax-subtle); cursor: default; }
 .ax-workspace .ax-nodebar .ax-nodebar-sep {
   width: 1px;
   height: 7px;
@@ -1177,4 +1179,84 @@
   font-size: var(--ax-t-micro);
   line-height: 1.45;
   color: var(--ax-muted);
+}
+
+/* Traffic settings belong to Run; native popovers provide Escape and outside-click dismissal. */
+.ax-workspace .ax-workspace-canvas { anchor-name: --ax-run-canvas; }
+.ax-workspace .ax-run-trigger { display: inline-flex; align-items: center; gap: 8px; }
+.ax-workspace .ax-run-trigger:disabled { opacity: .5; cursor: default; }
+.ax-workspace .ax-run-popover {
+  position: fixed;
+  top: 60px;
+  right: 12px;
+  left: auto;
+  bottom: auto;
+  width: min(340px, calc(100vw - 24px));
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 16px;
+  background: var(--ax-surface);
+  color: var(--ax-ink);
+}
+.ax-workspace .ax-run-popover::backdrop { background: transparent; }
+.ax-workspace .ax-run-popover h2 { margin: 0; padding: 12px 12px 0; font-size: 12px; font-weight: 500; }
+.ax-workspace .ax-run-popover [hidden] { display: none !important; }
+@supports (position-anchor: --ax-run-canvas) {
+  /* Match the inspector's right inset and width while keeping settings inside the canvas. */
+  .ax-workspace .ax-run-popover {
+    position-anchor: --ax-run-canvas;
+    top: calc(anchor(top) + 12px);
+    right: calc(anchor(right) + 12px);
+    width: min(340px, calc(anchor-size(width) - 24px));
+    max-height: calc(anchor-size(height) - 24px);
+    overflow-y: auto;
+  }
+}
+.ax-workspace .ax-stress[data-embedded="true"] {
+  width: 100%;
+  padding: 0 12px 12px;
+  border: 0;
+  border-radius: 0;
+}
+.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-rate {
+  gap: 12px;
+  font-size: 12px;
+}
+.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-rate > span:first-child {
+  white-space: nowrap;
+}
+.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-input {
+  width: 86px;
+  font-size: 13px;
+}
+.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-preset {
+  width: 100%;
+  min-height: 30px;
+  padding: 4px;
+  border: 1px solid var(--ax-line);
+  border-radius: 3px;
+}
+.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-preset[aria-pressed="true"] {
+  border-color: var(--ax-ink);
+  box-shadow: inset 0 -1px var(--ax-ink);
+  color: var(--ax-ink);
+}
+.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-run {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--ax-ink);
+  border-radius: 3px;
+  background: var(--ax-ink);
+  color: var(--ax-surface);
+  text-align: center;
+  font-size: 12px;
+}
+.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-run[aria-disabled="true"] {
+  opacity: .5;
 }

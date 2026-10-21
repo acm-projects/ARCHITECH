@@ -56,6 +56,7 @@ export function LiveMetricsBar({
       <div className="ax-live-head">
         <span className="ax-live-dot" aria-hidden="true" />
         <span>Live · {formatRate(requestsPerSecond)} req/s</span>
+        <span>{summary.health}</span>
         <span className="ax-live-info" title={EXPLANATION} aria-label={EXPLANATION} role="img">
           <Info size={12} aria-hidden="true" />
         </span>
