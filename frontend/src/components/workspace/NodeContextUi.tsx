@@ -43,13 +43,14 @@ export function NodeActionBar({
         type="button"
         onClick={onAskAi}
         disabled={!archieEnabled}
+        hidden={!archieEnabled}
         title={!archieEnabled ? "Available after Continue exploring." : undefined}
         aria-pressed={panel === "ai"}
         className="ax-nodebar-ai"
       >
         Ask Archie
       </button>
-      <span className="ax-nodebar-sep" aria-hidden="true" />
+      <span className="ax-nodebar-sep" aria-hidden="true" hidden={!archieEnabled} />
       <button
         type="button"
         onClick={onConfigure}

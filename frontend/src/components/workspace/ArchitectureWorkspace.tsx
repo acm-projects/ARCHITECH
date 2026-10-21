@@ -563,9 +563,12 @@ function Workspace({ project }: { project: Project }) {
                     onDismissFeedback={learn.engine.dismissFeedback}
                   />
                   )}
-                  <ArchitectToggle open={false} onToggle={askArchie} />
-                  <HistoryToggle open={inspector.historyOpen} onToggle={inspector.openHistory} />
-                  <ExportButton title={title} />
+                  {/* Keep project actions mounted, but out of the guided tutorial. */}
+                  <div hidden>
+                    <ArchitectToggle open={false} onToggle={askArchie} />
+                    <HistoryToggle open={inspector.historyOpen} onToggle={inspector.openHistory} />
+                    <ExportButton title={title} />
+                  </div>
                 </div>
               </aside>
             )}
