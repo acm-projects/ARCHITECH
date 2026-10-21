@@ -7,6 +7,10 @@ import { githubAccessTokenFor } from "@/lib/github/githubTokenServer";
 import { log, requestIdOf } from "@/lib/server/log";
 
 export async function GET(request: Request) {
+  const page = new URL(request.url).searchParams.get("page") ?? "1";
+  if (!/^[1-9]\d{0,3}$/.test(page)) {
+    return NextResponse.json({ error: "Invalid repository page." }, { status: 400 });
+  }
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
@@ -21,7 +25,7 @@ export async function GET(request: Request) {
     }
 
     const githubResponse = await fetch(
-      `${githubApiUrl()}/user/repos?sort=updated&per_page=3`,
+      `${githubApiUrl()}/user/repos?sort=updated&per_page=100&page=${page}`,
       {
         headers: {
           Accept: "application/vnd.github+json",

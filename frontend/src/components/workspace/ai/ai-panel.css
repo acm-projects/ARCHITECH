@@ -1,4 +1,4 @@
-/* Archie panel (ArchitectPanel.tsx). Uses the workspace's tokens (--ax-*). */
+/* Shared Archie panel. Uses the workspace's tokens (--ax-*). */
 
 .ax-workspace .ax-ai-toggle {
   display: flex;
@@ -12,17 +12,19 @@
   color: var(--ax-ink);
   font-size: 13px;
 }
-.ax-workspace .ax-ai-toggle:hover { background: #fff; }
+.ax-workspace .ax-ai-toggle:hover:not(:disabled) { background: #fff; }
+.ax-workspace .ax-ai-toggle:disabled { opacity: .5; cursor: default; }
 .ax-workspace .ax-ai-toggle:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: -3px; }
 .ax-workspace .ax-ai-portrait { flex-shrink: 0; }
 .ax-workspace .ax-ai-toggle .ax-ai-portrait { width: 26px; height: 26px; border-width: 1px; }
 
-.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content[data-architect] {
+/* Keep the original guidance dock's sizing; the inspector owns its own frame. */
+.ax-workspace .ax-canvas-panel:not(.ax-inspector)[data-side="right"] .ax-panel-content[data-architect] {
   height: min(560px, calc(100dvh - 120px));
   max-height: calc(100dvh - 120px);
   overflow: hidden;
 }
-.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content[data-architect]:has(.ax-ai-panel[data-empty="true"]) {
+.ax-workspace .ax-canvas-panel:not(.ax-inspector)[data-side="right"] .ax-panel-content[data-architect]:has(.ax-ai-panel[data-empty="true"]) {
   height: min(450px, calc(100dvh - 120px));
 }
 
@@ -46,7 +48,7 @@
   padding: 10px 12px;
   border-bottom: 1px solid var(--ax-line);
 }
-.ax-workspace .ax-ai-title { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; }
+.ax-workspace .ax-ai-title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 15px; font-weight: 500; }
 .ax-workspace .ax-ai-messages {
   flex: 1;
   min-height: 0;
@@ -83,6 +85,11 @@
 .ax-workspace .ax-ai-starter svg { color: var(--ax-subtle); }
 .ax-workspace .ax-ai-starter:focus-visible { outline-offset: -1px; }
 .ax-workspace .ax-ai-starter:hover { background: rgba(17, 17, 17, 0.035); color: var(--ax-ink); }
+.ax-workspace .ax-ai-starter[data-dismissed] { pointer-events: none; animation: ax-ai-prompt-dismiss 160ms ease-out forwards; }
+@keyframes ax-ai-prompt-dismiss { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ax-workspace .ax-ai-starter[data-dismissed] { animation-duration: 1ms; }
+}
 .ax-workspace .ax-ai-user {
   justify-self: end;
   max-width: 85%;

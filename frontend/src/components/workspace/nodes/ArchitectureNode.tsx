@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useContext, useEffect, useState, type CSSProperties } from "react";
 import {
   Handle,
   Position,
@@ -15,25 +15,16 @@ import type {
   ArchitectureNodeType,
   NodeProperties,
 } from "../../../lib/architecture/types";
-import { buildPropertyViews } from "../../../lib/architecture/componentConfigView";
 import { removeFromGraph } from "../../../lib/architecture/nodeOperations";
-import {
-  commitPropertyDraft,
-  resetComponentProperty,
-} from "../../../lib/architecture/propertyEditing";
 import ComponentGlyph from "../ComponentGlyph";
-import { TechnologyChooser } from "../TechnologyPicker";
+import { InspectorContext } from "../InspectorContext";
+import ComponentInspector from "../ComponentInspector";
 import { resolveImplementation } from "../../../lib/architecture/componentLibrary";
 import {
   COMPONENT_CATALOG,
   FAMILY_COLORS,
 } from "../componentCatalog";
-import {
-  ConfigureCard,
-  ExplainCard,
-  NodeActionBar,
-  type NodePanel,
-} from "../NodeContextUi";
+import { ExplainCard, NodeActionBar, type NodePanel } from "../NodeContextUi";
 
 // Defined in lib/architecture so the analysis and the saved-project validator share it.
 export type { ArchitectureNodeType };
@@ -74,29 +65,35 @@ export default function ArchitectureNode({
   id,
   data,
   selected,
-}: NodeProps<ArchitectureFlowNode>) {
-  const { updateNodeData, getNodes, setNodes, getEdges, setEdges } = useReactFlow<
+  readOnly = false,
+  subtitle,
+}: NodeProps<ArchitectureFlowNode> & { readOnly?: boolean; subtitle?: string }) {
+  const { getNodes, setNodes, getEdges, setEdges } = useReactFlow<
     ArchitectureFlowNode,
     Edge
   >();
+  const inspector = useContext(InspectorContext);
   const [panel, setPanel] = useState<NodePanel>("none");
+  if ((!selected || inspector) && panel !== "none") setPanel("none");
 
-  // Contextual cards belong to the selected node: deselecting closes them.
-  if (!selected && panel !== "none") setPanel("none");
-
-  // Escape closes an open card first; it never deletes anything.
+  // Guided lessons keep their original node popovers instead of the inspector.
   useEffect(() => {
     if (panel === "none") return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setPanel("none");
-        // Handled here, so the same key press does not also clear the selection.
         event.preventDefault();
       }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [panel]);
+  const togglePanel = (next: Exclude<NodePanel, "none">) =>
+    setPanel((current) => current === next ? "none" : next);
+  const configuredNode = selected && panel === "configure"
+    ? getNodes().find((node) => node.id === id)
+    : undefined;
+  const activePanel = inspector ? (inspector.archieOpen ? "ai" : "configure") : panel;
 
   // Read-only view of React Flow's connection state, used only for styling: the id of
   // the node a connection is being dragged from, or null when none is in progress.
@@ -121,26 +118,12 @@ export default function ArchitectureNode({
   const customTechnology =
     data.type === "custom" && typeof data.properties?.technology === "string" ? data.properties.technology : null;
   const technology = customTechnology ?? resolveImplementation(data.type, data.implementation).name;
-  const meta =
+  const meta = subtitle ?? (
     data.type === "custom"
       ? `${data.label === customTechnology ? "Custom" : (customTechnology ?? "Custom")} · not measured`
       : data.label === typeLabel
         ? technology
-        : `${typeLabel} · ${technology}`;
-  // Settings are edited through the same pure operations as everything else, on the current
-  // nodes, so one finished edit is one change to the graph (one undo step, one autosave).
-  // A refused or unchanged edit changes nothing.
-  const setProperty = (key: string, text: string) => {
-    const result = commitPropertyDraft(getNodes(), id, key, text);
-    if (!result.ok) return { message: result.message };
-    if (result.changed) setNodes(result.nodes);
-    return null;
-  };
-  const resetProperty = (key: string) => {
-    const result = resetComponentProperty(getNodes(), id, key);
-    if (result.ok && result.changed) setNodes(result.nodes);
-  };
-
+        : `${typeLabel} · ${technology}`);
   // The same operation as deleting with the keyboard, so both always give the same result:
   // the node and every edge attached to it go, in one change (one undo step, one autosave).
   const deleteThisNode = () => {
@@ -148,9 +131,6 @@ export default function ArchitectureNode({
     setNodes(next.nodes);
     setEdges(next.edges);
   };
-
-  const togglePanel = (next: Exclude<NodePanel, "none">) =>
-    setPanel((current) => (current === next ? "none" : next));
 
   return (
     <div
@@ -178,35 +158,18 @@ export default function ArchitectureNode({
       />
 
       {/* NodeToolbar keeps these attached to the node as it moves or the view changes. */}
-      <NodeToolbar position={Position.Top} offset={6}>
+      {!readOnly && <NodeToolbar position={Position.Top} offset={6}>
         <NodeActionBar
-          panel={panel}
-          onAskAi={() => togglePanel("ai")}
-          onConfigure={() => togglePanel("configure")}
+          panel={activePanel}
+          onAskAi={inspector ? inspector.askArchie : () => togglePanel("ai")}
+          onConfigure={inspector ? inspector.inspectComponent : () => togglePanel("configure")}
           onDelete={deleteThisNode}
         />
-      </NodeToolbar>
-
-      <NodeToolbar
-        isVisible={selected && panel !== "none"}
-        position={Position.Bottom}
-        offset={10}
-      >
+      </NodeToolbar>}
+      {!readOnly && <NodeToolbar isVisible={selected && !inspector && panel !== "none"} position={Position.Bottom} offset={10}>
         {panel === "ai" && <ExplainCard type={data.type} nodeId={id} />}
-        {panel === "configure" && (
-          <ConfigureCard
-            type={data.type}
-            name={data.label}
-            onRename={(label) => updateNodeData(id, { label })}
-            properties={buildPropertyViews(data.type, data.properties, {}, data.implementation)}
-            onSetProperty={setProperty}
-            onResetProperty={resetProperty}
-            technology={
-              <TechnologyChooser nodeId={id} type={data.type} implementation={data.implementation} />
-            }
-          />
-        )}
-      </NodeToolbar>
+        {configuredNode && <ComponentInspector node={configuredNode} showReview={false} />}
+      </NodeToolbar>}
     </div>
   );
 }

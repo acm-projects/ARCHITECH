@@ -1,11 +1,10 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import Image from "next/image";
 
 import type { Edge } from "@xyflow/react";
 import { useOnSelectionChange, useReactFlow, useStore } from "@xyflow/react";
-import { ArrowUpRight, BoxSelect, MessageSquarePlus, Send, Square, X } from "lucide-react";
+import { ArrowLeft, BoxSelect, MessageSquarePlus, Send, Square, X } from "lucide-react";
 
 import type { ChatMessage, MetricsSnapshot, SuggestionEvent } from "../../../lib/ai/architectChat";
 import { applyChanges } from "../../../lib/ai/changes";
@@ -22,8 +21,10 @@ import { MAX_MESSAGES } from "../../../lib/ai/architectChat";
 import type { CustomTechnology } from "../../../lib/projects/customTechnologies";
 import { graphFromCanvas } from "../../../lib/projects/projectPayload";
 import { DesignTrafficContext } from "../DesignTrafficContext";
+import { ArchieEnabledContext } from "../ArchieContext";
 import type { ArchitectureFlowNode } from "../nodes/ArchitectureNode";
-import "./ai-panel.css";
+import ArchiePanel, { ArchiePortrait } from "./ArchiePanel";
+import { ArchieMessage, ArchieStarters } from "./ArchieConversation";
 
 // The AI Architect: a chat docked to the right of the canvas. It sends the current design,
 // traffic and conversation to POST /api/ai/chat, shows the answer as it streams in, and shows
@@ -72,18 +73,18 @@ function fromSaved(saved: readonly SavedTurn[], nextId: () => number): Turn[] {
 
 const SAVE_DELAY_MS = 600;
 
-function ArchiePortrait() {
-  return (
-    <span className="ax-learn-portrait ax-ai-portrait" aria-hidden="true">
-      <Image src="/archie.svg" alt="" width={518} height={400} />
-    </span>
-  );
-}
-
 export function ArchitectToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const archieEnabled = useContext(ArchieEnabledContext);
   if (open) return null;
   return (
-    <button type="button" className="ax-ai-toggle" onClick={onToggle} aria-label="Open Archie">
+    <button
+      type="button"
+      className="ax-ai-toggle"
+      onClick={onToggle}
+      aria-label="Open Archie"
+      disabled={!archieEnabled}
+      title={!archieEnabled ? "Available after Continue exploring." : undefined}
+    >
       <ArchiePortrait />
       Ask Archie
     </button>
@@ -174,12 +175,14 @@ function history(turns: readonly Turn[], question: string): ChatMessage[] {
 export default function ArchitectPanel({
   projectId,
   onClose,
+  backLabel,
   onApply,
   customTechnologies,
 }: {
   // The conversation is saved with this project and restored when the panel opens.
   projectId: string;
   onClose: () => void;
+  backLabel?: string;
   // Replaces the design in one undo step.
   onApply: (next: { nodes: ArchitectureFlowNode[]; edges: Edge[] }) => void;
   customTechnologies?: readonly CustomTechnology[];
@@ -204,7 +207,7 @@ export default function ArchitectPanel({
   const list = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    list.current?.scrollTo({ top: list.current.scrollHeight });
+    if (turns.length > 0) list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [turns]);
   useEffect(() => () => abort.current?.abort(), []);
 
@@ -313,25 +316,22 @@ export default function ArchitectPanel({
   };
 
   return (
-    <aside className="ax-ai-panel" aria-label="Archie" data-empty={turns.length === 0}>
-      <div className="ax-ai-header">
-        <p className="ax-ai-title">
-          <ArchiePortrait />
-          Archie
-        </p>
+    <ArchiePanel
+      empty={turns.length === 0}
+      messageRef={list}
+      headerAction={
         <span className="ax-ai-header-actions">
           {turns.length > 0 && (
             <button type="button" className="ax-icon-btn" aria-label="Start a new conversation" title="New chat" onClick={newChat} disabled={busy}>
               <MessageSquarePlus size={14} aria-hidden="true" />
             </button>
           )}
-          <button type="button" className="ax-icon-btn" aria-label="Close Archie" onClick={onClose}>
-            <X size={14} aria-hidden="true" />
+          <button type="button" className="ax-icon-btn" aria-label={backLabel ?? "Close Archie"} title={backLabel} onClick={onClose}>
+            {backLabel ? <ArrowLeft size={14} aria-hidden="true" /> : <X size={14} aria-hidden="true" />}
           </button>
         </span>
-      </div>
-
-      <div className="ax-ai-focus-bar">
+      }
+      focus={<>
         {focus.length === 0 && (
           <span className="ax-ai-focus-hint">
             <BoxSelect size={13} aria-hidden="true" />
@@ -346,99 +346,89 @@ export default function ArchitectPanel({
             </button>
           </span>
         )}
-      </div>
-
-      <div className="ax-ai-messages" ref={list} aria-live="polite">
-        {turns.length === 0 && (
-          <div className="ax-ai-empty">
-            <p className="ax-learn-speech ax-ai-intro">
-              {focus.length > 0
-                ? focus.length === 1
-                  ? "Ask how this component works, connects, or affects your system."
-                  : "Ask how these components work, connect, or affect your system."
-                : "Ask about traffic, reliability, or cost. Preview changes before applying them."}
-            </p>
-            <div className="ax-ai-starters">
-              {(focus.length > 0 ? FOCUS_STARTERS : STARTERS).map((starter) => (
-                <button key={starter} type="button" className="ax-ai-starter" onClick={() => void ask(starter)}>
-                  <span>{starter}</span>
-                  <ArrowUpRight size={12} aria-hidden="true" />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {turns.map((turn) =>
-          turn.role === "user" ? (
-            <div key={turn.id} className="ax-ai-user">
-              {turn.focusCount > 0 && <span className="ax-ai-user-focus">About {components(turn.focusCount)}</span>}
-              {turn.text}
-            </div>
-          ) : (
-            <div key={turn.id} className="ax-ai-assistant">
-              <span className="ax-ai-speaker">Archie</span>
-              {turn.text && <p className="ax-ai-answer">{turn.text}</p>}
-              {!turn.text && !turn.done && !turn.error && <p className="ax-ai-thinking">Looking at your design…</p>}
-              {turn.suggestions.map((suggestion) => (
-                <SuggestionCard
-                  key={suggestion.id}
-                  suggestion={suggestion}
-                  status={turn.applied[suggestion.id]}
-                  streaming={!turn.done}
-                  onApply={() => apply(turn.id, suggestion)}
-                />
-              ))}
-              {turn.notes.map((note, index) => (
-                <p key={index} className="ax-ai-note">{note}</p>
-              ))}
-              {turn.error && <p role="alert" className="ax-ai-error">{turn.error}</p>}
-            </div>
-          ),
-        )}
-      </div>
-
-      <form
-        className="ax-ai-composer"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void ask(draft);
-        }}
-      >
-        <textarea
-          className="ax-ai-input"
-          value={draft}
-          maxLength={4_000}
-          placeholder={focus.length > 0 ? "Ask Archie about the selected part…" : "Ask Archie about your architecture…"}
-          aria-label="Ask Archie"
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              void ask(draft);
-            }
+      </>}
+      footer={
+        <form
+          className="ax-ai-composer"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void ask(draft);
           }}
-        />
-        <div className="ax-ai-composer-row">
-          <span className="ax-ai-hint">
-            {usage ? (
-              <span className={usage.remainingToday <= 5 ? "ax-ai-usage-low" : undefined} title={usageLabel(usage)}>
-                {usage.remainingToday} question{usage.remainingToday === 1 ? "" : "s"} left today
-              </span>
+        >
+          <textarea
+            className="ax-ai-input"
+            value={draft}
+            maxLength={4_000}
+            placeholder={focus.length > 0 ? "Ask Archie about the selected part…" : "Ask Archie about your architecture…"}
+            aria-label="Ask Archie"
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                void ask(draft);
+              }
+            }}
+          />
+          <div className="ax-ai-composer-row">
+            <span className="ax-ai-hint">
+              {usage ? (
+                <span className={usage.remainingToday <= 5 ? "ax-ai-usage-low" : undefined} title={usageLabel(usage)}>
+                  {usage.remainingToday} question{usage.remainingToday === 1 ? "" : "s"} left today
+                </span>
+              ) : (
+                "Enter to send · Shift+Enter for a new line"
+              )}
+            </span>
+            {busy ? (
+              <button type="button" className="ax-ai-send" onClick={() => abort.current?.abort()}>
+                <Square size={11} aria-hidden="true" /> Stop
+              </button>
             ) : (
-              "Enter to send · Shift+Enter for a new line"
+              <button type="submit" className="ax-ai-send" disabled={!draft.trim()}>
+                <Send size={12} aria-hidden="true" /> Send
+              </button>
             )}
-          </span>
-          {busy ? (
-            <button type="button" className="ax-ai-send" onClick={() => abort.current?.abort()}>
-              <Square size={11} aria-hidden="true" /> Stop
-            </button>
-          ) : (
-            <button type="submit" className="ax-ai-send" disabled={!draft.trim()}>
-              <Send size={12} aria-hidden="true" /> Send
-            </button>
-          )}
+          </div>
+        </form>
+      }
+    >
+      {turns.length === 0 && (
+        <div className="ax-ai-empty">
+          <p className="ax-learn-speech ax-ai-intro">
+            {focus.length > 0
+              ? focus.length === 1
+                ? "Ask how this component works, connects, or affects your system."
+                : "Ask how these components work, connect, or affect your system."
+              : "Ask about traffic, reliability, or cost. Preview changes before applying them."}
+          </p>
+          <ArchieStarters questions={focus.length > 0 ? FOCUS_STARTERS : STARTERS} onAsk={question => void ask(question)} />
         </div>
-      </form>
-    </aside>
+      )}
+      {turns.map((turn) =>
+        turn.role === "user" ? (
+          <ArchieMessage key={turn.id} role="user" focusLabel={turn.focusCount > 0 ? `About ${components(turn.focusCount)}` : undefined}>
+            {turn.text}
+          </ArchieMessage>
+        ) : (
+          <ArchieMessage key={turn.id} role="assistant">
+            {turn.text && <p className="ax-ai-answer">{turn.text}</p>}
+            {!turn.text && !turn.done && !turn.error && <p className="ax-ai-thinking">Looking at your design…</p>}
+            {turn.suggestions.map((suggestion) => (
+              <SuggestionCard
+                key={suggestion.id}
+                suggestion={suggestion}
+                status={turn.applied[suggestion.id]}
+                streaming={!turn.done}
+                onApply={() => apply(turn.id, suggestion)}
+              />
+            ))}
+            {turn.notes.map((note, index) => (
+              <p key={index} className="ax-ai-note">{note}</p>
+            ))}
+            {turn.error && <p role="alert" className="ax-ai-error">{turn.error}</p>}
+          </ArchieMessage>
+        ),
+      )}
+    </ArchiePanel>
   );
 }
