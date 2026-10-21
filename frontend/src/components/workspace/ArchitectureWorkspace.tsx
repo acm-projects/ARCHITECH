@@ -136,7 +136,7 @@ function Workspace({ project }: { project: Project }) {
   }, [nodes, edges, setNodes, setEdges]);
 
   const inspector = useWorkspaceInspector({
-    hasSelection: nodes.some((node) => node.selected),
+    selectedNodeIds: nodes.filter((node) => node.selected).map((node) => node.id),
     onClearSelection: clearCanvasSelection,
   });
   const { askArchie, reset: resetInspector } = inspector;

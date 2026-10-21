@@ -97,7 +97,7 @@ export default function WorkspaceInspector({
   nodes, controller, runSettingsHeight, onConfigureRun, onClearSelection, onApply, customTechnologies,
   guidance, testingEnabled, runs, live,
 }: WorkspaceInspectorProps) {
-  const { archieOpen, historyOpen, section: activeSection, askArchie, closeArchie, openHistory, closeHistory, toggleSection, showResults } = controller;
+  const { archieOpen, historyOpen, configuring, section: activeSection, inspectComponent, closeConfiguration, askArchie, closeArchie, openHistory, closeHistory, toggleSection, showResults } = controller;
   const { frameRef, compact } = useInspectorLayout(runSettingsHeight);
   const selected = nodes.filter((node) => node.selected);
   const component = selected.length === 1 ? selected[0] : null;
@@ -117,7 +117,11 @@ export default function WorkspaceInspector({
   );
   const selectionHeader = (
     <summary className="ax-inspector-header" onClick={(event) => {
-      if (archieOpen) {
+      if (component) {
+        event.preventDefault();
+        if (configuring) closeConfiguration();
+        else inspectComponent();
+      } else if (archieOpen) {
         event.preventDefault();
         closeArchie();
       }
@@ -131,7 +135,11 @@ export default function WorkspaceInspector({
           </p>
         </div>
       </div>
-      <button type="button" className="ax-icon-btn" aria-label="Clear component selection" onClick={onClearSelection}>
+      {/* Clearing selection must not also toggle the section summary. */}
+      <button type="button" className="ax-icon-btn" aria-label="Clear component selection" onClick={(event) => {
+        event.stopPropagation();
+        onClearSelection();
+      }}>
         <X size={14} aria-hidden="true" />
       </button>
       <ChevronDown size={13} aria-hidden="true" />
@@ -149,9 +157,9 @@ export default function WorkspaceInspector({
       <div className="ax-panel-content ax-inspector-frame" ref={frameRef}>
         <div className="ax-inspector-body">
           {component ? (
-            <details key={selectionKey} className="ax-inspector-section ax-inspector-component" aria-label="Component" data-archie-open={archieOpen} open>
+            <details key={selectionKey} className="ax-inspector-section ax-inspector-component" aria-label="Component" data-archie-open={archieOpen} open={configuring && !compact}>
               {selectionHeader}
-              <ComponentInspector key={component.id} node={component} onAskArchie={askArchie} hidden={archieOpen || compact} />
+              <ComponentInspector key={component.id} node={component} onAskArchie={askArchie} hidden={!configuring || archieOpen || historyOpen || compact} />
             </details>
           ) : selected.length > 1 && (
             <details key={selectionKey} className="ax-inspector-section" aria-label="Selected components" open>

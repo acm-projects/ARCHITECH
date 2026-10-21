@@ -93,7 +93,9 @@ export default function ArchitectureNode({
   const configuredNode = selected && panel === "configure"
     ? getNodes().find((node) => node.id === id)
     : undefined;
-  const activePanel = inspector ? (inspector.archieOpen ? "ai" : "configure") : panel;
+  const activePanel = inspector
+    ? (inspector.archieOpen ? "ai" : inspector.configuring ? "configure" : "none")
+    : panel;
 
   // Read-only view of React Flow's connection state, used only for styling: the id of
   // the node a connection is being dragged from, or null when none is in progress.
