@@ -13,6 +13,7 @@
 // for technology swapping. All numbers are educational estimates chosen to make designs
 // compare sensibly, not benchmarks.
 
+import { TECHNOLOGY_CATALOG } from "./technologyCatalog.ts";
 import type { ArchitectureNodeType } from "./types.ts";
 
 export type ComponentFamily = "general" | "frontend" | "backend" | "data" | "infrastructure";
@@ -64,8 +65,9 @@ export const COMPONENT_TYPES: readonly ComponentTypeSeed[] = [
   { name: "auth", label: "Authentication", family: "backend", description: "Verifies who a user is and issues credentials for later requests." },
 ];
 
-// Within a type, the default comes first and sortOrder follows array order.
-export const COMPONENT_IMPLEMENTATIONS: readonly ComponentImplementationSeed[] = [
+// Within a type, the default comes first and sortOrder follows array order. The core
+// technologies below come first; the wider catalog (technologyCatalog.ts) follows.
+const CORE_IMPLEMENTATIONS: readonly ComponentImplementationSeed[] = [
   // ---- Client ----
   {
     id: "web-browser", componentType: "client", name: "Web Browser", vendor: null,
@@ -337,6 +339,15 @@ export const COMPONENT_IMPLEMENTATIONS: readonly ComponentImplementationSeed[] =
     strengths: ["Integrates with other AWS services", "Generous free tier"],
     tradeoffs: ["Harder to customize than Auth0", "Ties user accounts to AWS"],
   },
+];
+
+// The core technologies' ids: the short list shown first (for example in the AI Architect's prompt).
+export const CORE_IMPLEMENTATION_IDS: ReadonlySet<string> = new Set(CORE_IMPLEMENTATIONS.map((implementation) => implementation.id));
+
+export const COMPONENT_IMPLEMENTATIONS: readonly ComponentImplementationSeed[] = [
+  ...CORE_IMPLEMENTATIONS,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ...TECHNOLOGY_CATALOG.map(({ detect, ...implementation }) => implementation),
 ];
 
 // ---- Lookups ----

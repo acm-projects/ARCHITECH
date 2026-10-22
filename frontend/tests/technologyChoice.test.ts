@@ -114,8 +114,10 @@ test("the instances needed are the fewest that keep the component under the head
   const graph = design();
   const comparison = compareTechnologiesForNode(graph, traffic(5_000), "d");
   assert.ok(comparison && comparison.basis === "design");
+  // The core databases all keep up; warehouses (Snowflake, BigQuery...) are reported as not enough.
+  for (const id of ["postgresql", "mysql", "mongodb"]) assert.ok(comparison.options.find((option) => option.implementation.id === id)?.enough, id);
   for (const option of comparison.options) {
-    assert.ok(option.enough);
+    if (!option.enough) continue;
     const at = (replicas: number) => {
       const swapped = {
         ...graph,
@@ -158,7 +160,9 @@ test("technologies compare on their own numbers, and the node's settings are ign
 
 test("too many writes for one primary is reported, not hidden", () => {
   const comparison = compareTechnologiesForNode(design(), traffic(20_000, 500), "d")!;
-  for (const option of comparison.options) assert.equal(option.enough, false);
+  // The core relational and document databases write through one primary; wide-column stores
+  // such as ScyllaDB or Aerospike can take it.
+  for (const id of ["postgresql", "mysql", "mongodb"]) assert.equal(comparison.options.find((option) => option.implementation.id === id)?.enough, false, id);
   assert.match(formatInstances(comparison.options[0])!, /^over /);
 });
 
