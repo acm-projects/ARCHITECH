@@ -51,7 +51,7 @@ export type ChatEvent =
   | { type: "note"; text: string }
   | { type: "done" };
 
-export const MAX_MESSAGES = 20;
+export const MAX_MESSAGES = 4;
 export const MAX_MESSAGE_LENGTH = 4_000;
 export const MAX_REPLY_TOKENS = 1_500;
 export const MAX_SUGGESTIONS = 2;

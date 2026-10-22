@@ -11,7 +11,7 @@ export type HealthReport = {
   checks: {
     database: CheckResult;
     migrations: CheckResult;
-    ai: { configured: boolean; provider: "anthropic" | "groq" | null };
+    ai: { configured: boolean; provider: "anthropic" | "groq" | "gemini" | null };
   };
 };
 

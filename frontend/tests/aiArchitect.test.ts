@@ -81,6 +81,12 @@ test("the prompt carries the design with ids, the engine's numbers, the library 
   assert.ok(!/Custom \[custom\]/.test(prompt), "the AI never adds custom components");
   assert.match(prompt, /beginner/i);
   assert.match(prompt, /Never invent metrics/);
+  assert.match(prompt, /You are Archie, the official AI system design coach/);
+  assert.match(prompt, /Read the conversation history before answering/);
+  assert.match(prompt, /Answer the latest user message directly/);
+  assert.match(prompt, /do not add unrelated advice or code suggestions/);
+  assert.match(prompt, /illustrative rather than part of the user's actual design/);
+  assert.match(prompt, /friendly, encouraging, and analytical/i);
 });
 
 test("component names stay data inside the design block", () => {
@@ -198,7 +204,7 @@ test("a turn streams the answer, then checked suggestions with a before/after pr
 
   assert.equal(calls.length, 1);
   assert.deepEqual(calls[0].tools, [PROPOSE_CHANGES_TOOL]);
-  assert.match(calls[0].system, /user is advanced/i);
+  assert.match(calls[0].system, /deeper trade-offs only when the user asks/i);
   assert.deepEqual(calls[0].messages, ask());
 });
 

@@ -146,6 +146,7 @@
   line-height: 1.45;
 }
 .ax-workspace .ax-ai-input:focus { outline: 1px solid var(--ax-accent); border-color: var(--ax-accent); }
+.ax-workspace .ax-ai-input:disabled { background: var(--ax-canvas); color: var(--ax-subtle); cursor: wait; }
 .ax-workspace .ax-ai-composer-row { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ax-workspace .ax-ai-hint { font-size: 11px; color: var(--ax-subtle); }
 .ax-workspace .ax-ai-send {
