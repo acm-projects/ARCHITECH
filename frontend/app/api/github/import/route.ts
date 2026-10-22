@@ -11,12 +11,15 @@ import { prisma } from "@/lib/prisma";
 import { PROJECT_SELECT, inputToData, rowToPayload } from "@/lib/projects/projectRecords";
 import { serverError } from "@/lib/server/log";
 
-// POST /api/github/import  { owner, repo }
+// POST /api/github/import  { owner, repo, preview? }
 // Reads the repository's stack files with GitHub's GraphQL API (using the GitHub account the
 // user connected at sign-in), detects its components and technologies, builds a design and
 // saves it as a new project. Technologies it uses that the app does not model are saved with
 // the project for its sidebar. Returns 201 { project, detected, customTechnologies, scannedFiles }.
 // The project then reaches the browser through the normal project sync.
+// With preview: true nothing is saved: 200 { title, yaml, detected, customTechnologies,
+// scannedFiles }, where yaml is the design as ARCHITECH's docker-compose file for the user to
+// review and edit; POST /api/projects/from-compose then creates the project from it.
 const STATUS: Record<GitHubError["kind"], number> = {
   "not-found": 404,
   "nothing-detected": 422,
@@ -45,6 +48,15 @@ export async function POST(request: Request) {
     if (!githubToken.ok) return NextResponse.json({ error: githubToken.error }, { status: githubToken.status });
 
     const result = await importRepository(githubGraphql(githubToken.token), parsed.value);
+    if (parsed.value.preview) {
+      return NextResponse.json({
+        title: result.title,
+        yaml: result.yaml,
+        detected: result.detected,
+        customTechnologies: result.customTechnologies,
+        scannedFiles: result.scannedFiles,
+      });
+    }
     const now = new Date().toISOString();
     const row = await prisma.project.create({
       data: {
