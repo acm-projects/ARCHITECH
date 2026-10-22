@@ -103,13 +103,17 @@ test("Groq config: an HTTP error surfaces status and message", async () => {
   );
 });
 
-test("provider choice: explicit AI_PROVIDER, otherwise Anthropic then Groq, otherwise off", () => {
+test("provider choice: explicit AI_PROVIDER, otherwise Anthropic, Groq, then Gemini", () => {
   assert.equal(chatModelFromEnv({}), null);
   assert.equal(chatModelFromEnv({ GROQ_API_KEY: "g" })?.name, `groq:${DEFAULT_GROQ_MODEL}`);
   assert.equal(chatModelFromEnv({ GROQ_API_KEY: "g", ANTHROPIC_API_KEY: "a" })?.provider, "anthropic");
   assert.equal(chatModelFromEnv({ GROQ_API_KEY: "g", ANTHROPIC_API_KEY: "a", AI_PROVIDER: "groq" })?.provider, "groq");
   assert.equal(chatModelFromEnv({ ANTHROPIC_API_KEY: "a", AI_PROVIDER: "groq" }), null);
   assert.equal(chatModelFromEnv({ GROQ_API_KEY: "g", GROQ_MODEL: "qwen/qwen3.8-27b" })?.name, "groq:qwen/qwen3.8-27b");
+  assert.equal(chatModelFromEnv({ GEMINI_API_KEY: "g" })?.name, "gemini:gemini-3.8-flash");
+  assert.equal(chatModelFromEnv({ GEMINI_API_KEY: "g", AI_PROVIDER: "gemini" })?.provider, "gemini");
+  assert.equal(chatModelFromEnv({ GEMINI_API_KEY: "g", AI_PROVIDER: "anthropic" }), null);
+  assert.equal(chatModelFromEnv({ GEMINI_API_KEY: "g", GROQ_API_KEY: "g" })?.provider, "groq");
 });
 
 test("the provider's own rate limit is 'busy' with its wait, not a failure", async () => {
