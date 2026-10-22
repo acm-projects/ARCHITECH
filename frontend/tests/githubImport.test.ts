@@ -96,12 +96,12 @@ test("Python, Go and Java projects are recognized", () => {
   const detect = (files: Record<string, string>) =>
     detectStack(new Map(Object.entries(files))).map((c) => `${c.type}${c.implementation ? `:${c.implementation}` : ""}`).sort();
   assert.deepEqual(detect({ "requirements.txt": "fastapi==0.110\npsycopg2-binary>=2.9  # db\nredis\ncelery[redis]==5.3\n# flask\n" }), [
-    "cache:redis", "database:postgresql", "queue:rabbitmq", "server:python-fastapi", "worker",
+    "cache:redis", "database:postgresql", "queue:rabbitmq", "server:python-fastapi", "worker:python-celery",
   ]);
-  assert.deepEqual(detect({ "pyproject.toml": '[project]\ndependencies = ["django>=5", "pymongo"]\n' }), ["database:mongodb", "server:python-fastapi"]);
+  assert.deepEqual(detect({ "pyproject.toml": '[project]\ndependencies = ["django>=5", "pymongo"]\n' }), ["database:mongodb", "server:python-django"]);
   assert.deepEqual(
     detect({ "go.mod": "module example.com/svc\n\ngo 1.22\n\nrequire (\n\tgithub.com/gin-gonic/gin v1.9.1\n\tgithub.com/jackc/pgx/v5 v5.5.0\n\tgoogle.golang.org/grpc v1.62.0\n)\n" }),
-    ["api:grpc-api", "database:postgresql", "server:go-service"],
+    ["api:grpc-api", "database:postgresql", "server:go-gin"],
   );
   assert.deepEqual(detect({ "go.mod": "module example.com/tool\n\ngo 1.22\n" }), ["server:go-service"]);
   assert.deepEqual(
@@ -184,8 +184,9 @@ test("unknown services and unmodeled stacks are collected as custom technologies
     new Map(Object.entries({
       "docker-compose.yml": [
         "services:",
+        "  tracing:\n    image: openzipkin/zipkin:3",
+        "  mail:\n    image: mailhog/mailhog",
         "  proxy:\n    image: traefik:v3.0",
-        "  analytics:\n    image: clickhouse/clickhouse-server:24",
         "  db:\n    image: postgres:16",
         "  vote:\n    image: dockersamples/examplevotingapp_vote",
         "  tools:\n    image: node:20-alpine",
@@ -199,10 +200,11 @@ test("unknown services and unmodeled stacks are collected as custom technologies
   );
   assert.deepEqual(
     custom.map((technology) => technology.name).sort(),
-    [".NET service (worker)", "C++ service (engine)", "ClickHouse", "Ruby on Rails app (billing)", "Traefik"],
+    [".NET service (worker)", "C++ service (engine)", "MailHog", "Ruby on Rails app (billing)", "Zipkin"],
+    "Traefik is in the technology catalog, so it is not custom",
   );
-  const traefik = custom.find((technology) => technology.id === "traefik");
-  assert.deepEqual(traefik?.evidence, ['docker-compose.yml runs the "traefik" image']);
+  const zipkin = custom.find((technology) => technology.id === "zipkin");
+  assert.deepEqual(zipkin?.evidence, ['docker-compose.yml runs the "openzipkin/zipkin" image']);
   assert.ok(custom.every((technology) => /^[a-z0-9][a-z0-9-]*$/.test(technology.id)));
 });
 
@@ -210,12 +212,12 @@ test("an import keeps its custom technologies with the project, even when nothin
   const { graphql } = fakeGitHub({
     entries: [{ name: "worker", type: "tree" }],
     files: {
-      "docker-compose.yml": "services:\n  db:\n    image: postgres:16\n  proxy:\n    image: traefik:v3\n",
+      "docker-compose.yml": "services:\n  db:\n    image: postgres:16\n  tracing:\n    image: openzipkin/zipkin:3\n",
       "worker/Dockerfile": "FROM mcr.microsoft.com/dotnet/runtime:8.0\n",
     },
   });
   const result = await importRepository(graphql, { owner: "acme", repo: "orders" });
-  assert.deepEqual(result.customTechnologies.map((technology) => technology.name).sort(), [".NET service (worker)", "Traefik"]);
+  assert.deepEqual(result.customTechnologies.map((technology) => technology.name).sort(), [".NET service (worker)", "Zipkin"]);
   assert.deepEqual(result.graph.customTechnologies, result.customTechnologies);
   assert.ok(!result.graph.nodes.some((node) => node.data.type === "custom"), "custom technologies are offered, not placed");
 
@@ -223,4 +225,18 @@ test("an import keeps its custom technologies with the project, even when nothin
   const cpp = await importRepository(fakeGitHub({ entries: [], files: { "CMakeLists.txt": "project(engine)\n" } }).graphql, { owner: "me", repo: "risk-engine" });
   assert.deepEqual(cpp.customTechnologies.map((technology) => technology.name), ["C++ service"]);
   assert.deepEqual(cpp.graph.nodes.map((node) => node.data.type), ["client"]);
+});
+
+test("compose variants at the root are read too", async () => {
+  const { composeVariants, foldersQuery } = await import("../src/lib/github/repoFiles.ts");
+  const entries = [
+    { name: "docker-compose.yml", type: "blob" },
+    { name: "docker-compose.postgres.yml", type: "blob" },
+    { name: "compose-prod.yaml", type: "blob" },
+    { name: "docker-compose.override.yml", type: "blob" },
+    { name: "notes.yml", type: "blob" },
+    { name: "docker-compose.dir.yml", type: "tree" },
+  ];
+  assert.deepEqual(composeVariants(entries), ["compose-prod.yaml", "docker-compose.override.yml", "docker-compose.postgres.yml"]);
+  assert.match(foldersQuery([], ["docker-compose.postgres.yml"]), /f0: object\(expression: "HEAD:docker-compose\.postgres\.yml"\)/);
 });
