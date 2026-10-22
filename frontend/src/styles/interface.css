@@ -6730,6 +6730,12 @@ body,
 .ax-new-project-dialog .ax-repository-import:hover:not(:disabled) { background: var(--neutral-800); }
 .ax-repository-back { justify-self: start; padding: 4px 0; border: 1px solid transparent; background: transparent; color: var(--color-muted); }
 .ax-repository-picker .ax-repository-error { color: var(--color-danger); }
+.ax-import-yaml { width: 100%; min-height: 260px; max-height: 45dvh; padding: 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); background: var(--neutral-50); color: var(--color-ink); font: 11px/1.5 var(--font-mono); white-space: pre; overflow: auto; resize: vertical; tab-size: 2; }
+.ax-import-yaml:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.ax-import-review code { font: 11px var(--font-mono); }
+.ax-import-notes { display: grid; gap: 4px; margin: 0; padding-left: 16px; list-style: disc; color: var(--color-muted); line-height: 1.5; }
+.ax-import-research { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); }
+.ax-import-research > button { justify-self: start; padding: 6px 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); background: var(--neutral-0); }
 
 
 .ax-challenge-intro { width: min(420px, calc(100vw - 32px)); padding: 28px; }

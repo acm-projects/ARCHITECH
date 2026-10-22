@@ -7,6 +7,7 @@ import { parseRepositoryUrl, readRepositories, type Repository } from "../../lib
 import { HOME_ROUTE } from "../../lib/routes";
 import { isValidProjectId, payloadToStoredProject, validateProjectInput } from "../../lib/projects/projectPayload";
 import { projectStore, type Project } from "../projects/projectStore";
+import ImportReview from "./ImportReview";
 
 export default function GitRepositoryPicker({ onBack, onBusyChange, onImported }: {
   onBack: () => void;
@@ -25,6 +26,8 @@ export default function GitRepositoryPicker({ onBack, onBusyChange, onImported }
   const [importing, setImporting] = useState<string | null>(null);
   const busyRef = useRef(false);
   const [attempt, setAttempt] = useState(0);
+  // The repository as ARCHITECH's compose file, shown for review before the design is created.
+  const [review, setReview] = useState<{ title: string; yaml: string } | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -77,25 +80,17 @@ export default function GitRepositoryPicker({ onBack, onBusyChange, onImported }
     setImporting(`${repository.owner}/${repository.repo}`);
     setError(null);
     try {
+      // Read the repository and show the design for review; nothing is saved yet.
       const response = await fetch("/api/github/import", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ owner: repository.owner, repo: repository.repo }),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ owner: repository.owner, repo: repository.repo, preview: true }),
       });
       const body = await response.json();
       if (!response.ok) {
         if ([401, 409].includes(response.status)) setNeedsConnection(true);
         throw new Error(typeof body?.error === "string" ? body.error : "Unable to import repository.");
       }
-      const project = body?.project;
-      const checked = validateProjectInput(project);
-      if (!checked.ok || !isValidProjectId(project?.id)) throw new Error("The imported project response is invalid.");
-      const payload = { ...checked.value, id: project.id };
-      let imported: Project;
-      try {
-        imported = projectStore.receiveProject(payloadToStoredProject(payload));
-      } catch {
-        throw new Error("The project was saved to your account, but browser storage is unavailable. Reopen it from Projects after restoring storage.");
-      }
-      onImported(imported);
+      if (typeof body?.yaml !== "string" || typeof body?.title !== "string") throw new Error("The import preview response is invalid.");
+      setReview({ title: body.title, yaml: body.yaml });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to import repository.");
     } finally {
@@ -103,6 +98,43 @@ export default function GitRepositoryPicker({ onBack, onBusyChange, onImported }
       setImporting(null);
     }
   };
+
+  // Creates the project from the reviewed file. Returns an error message, or null.
+  const create = async ({ title, yaml }: { title: string; yaml: string }): Promise<string | null> => {
+    try {
+      const response = await fetch("/api/projects/from-compose", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, yaml, source: "github" }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) return typeof body?.error === "string" ? body.error : "Unable to create the design.";
+      const project = body?.project;
+      const checked = validateProjectInput(project);
+      if (!checked.ok || !isValidProjectId(project?.id)) return "The imported project response is invalid.";
+      let imported: Project;
+      try {
+        imported = projectStore.receiveProject(payloadToStoredProject({ ...checked.value, id: project.id }));
+      } catch {
+        return "The project was saved to your account, but browser storage is unavailable. Reopen it from Projects after restoring storage.";
+      }
+      onImported(imported);
+      return null;
+    } catch {
+      return "Unable to create the design. Check your connection and try again.";
+    }
+  };
+
+  if (review) {
+    return (
+      <ImportReview
+        initialTitle={review.title}
+        initialYaml={review.yaml}
+        busy={busy}
+        onBusyChange={setWorking}
+        onCreate={create}
+        onBack={() => setReview(null)}
+      />
+    );
+  }
 
   return (
     <div className="ax-repository-picker" aria-busy={busy}>

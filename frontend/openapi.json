@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ARCHITECH API",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "contact": {
       "name": "ARCHITECH team (ACM Projects, UT Dallas)",
       "url": "https://github.com/acm-projects/ARCHITECH"
@@ -1003,7 +1003,7 @@
         ],
         "operationId": "importGithubRepo",
         "summary": "Build a design from a GitHub repository",
-        "description": "Uses the GitHub account the user connected at sign-in (its token in the `accounts` table) to read the repository through GitHub's GraphQL API (`POST https://api.github.com/graphql`): one query for the top-level file list and stack files, and one for the same files in up to 8 top-level folders (monorepos).\n\nStack files read: package.json, docker-compose.yml / compose.yml, prisma/schema.prisma, requirements.txt, pyproject.toml, go.mod, pom.xml, build.gradle.\n\nDetection rules map what they use to components and technologies (for example `next` → Web App (Next.js), `ioredis` → Cache (Redis), `@apollo/server` → API (GraphQL), a `postgres` image → Database (PostgreSQL)), each with its evidence. The design is laid out left to right with typical connections, validated against docs/graph-spec.md and saved as a new project (`source: \"github\"`, opens in free play). Connections are a best guess to adjust on the canvas.\n\nTechnologies the repository uses that ARCHITECH does not model (for example a Traefik or ClickHouse service, or a .NET worker) are returned as `customTechnologies` and saved with the project, so they appear in its sidebar under \"From your repo\" and can be dragged onto the canvas as unmeasured custom components. A repository with only such technologies still imports.",
+        "description": "Uses the GitHub account the user connected at sign-in (its token in the `accounts` table) to read the repository through GitHub's GraphQL API (`POST https://api.github.com/graphql`): one query for the top-level file list and stack files, and one for the same files in up to 8 top-level folders (monorepos).\n\nStack files read: package.json, docker-compose.yml / compose.yml, prisma/schema.prisma, requirements.txt, pyproject.toml, go.mod, pom.xml, build.gradle.\n\nDetection rules map what they use to components and technologies (for example `next` → Web App (Next.js), `ioredis` → Cache (Redis), `@apollo/server` → API (GraphQL), a `postgres` image → Database (PostgreSQL)), each with its evidence. The design is laid out left to right with typical connections, validated against docs/graph-spec.md and saved as a new project (`source: \"github\"`, opens in free play). Connections are a best guess to adjust on the canvas.\n\nTechnologies the repository uses that ARCHITECH does not model (for example a Traefik or ClickHouse service, or a .NET worker) are returned as `customTechnologies` and saved with the project, so they appear in its sidebar under \"From your repo\" and can be dragged onto the canvas as unmeasured custom components. A repository with only such technologies still imports.\n\n**Compose-first and review.** When the repository has a docker-compose file that runs its own code, every service becomes a component (known images such as postgres or nginx as that component, the repository's own services as servers, workers or gateways with their language's technology, anything else as a custom component that acts like the closest kind so it is measured), connected by depends_on, links and environment URLs that name another service. Users reach the services that publish ports, through a gateway or proxy when there is one; monitoring, tracing, discovery and config services are placed and costed but not on the request path. Otherwise the libraries the code uses decide, as above.\n\nWith `preview: true` nothing is saved: the response is the design as ARCHITECH's compose file (`yaml`), shown to the user for review; `POST /api/projects/from-compose` then creates the project from the (possibly edited) file.",
         "security": [
           {
             "sessionCookie": []
@@ -1096,6 +1096,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "preview: true. The design as a compose file for review; nothing saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GithubImportPreview"
                 }
               }
             }
@@ -2404,6 +2414,233 @@
           }
         }
       }
+    },
+    "/api/projects/from-compose": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "createProjectFromCompose",
+        "summary": "Create a project from a docker-compose file",
+        "description": "A file ARCHITECH wrote (top-level `x-architech`, e.g. an import preview or an export) is rebuilt exactly: each component's id, type, label, technology, settings and position, and every connection; services added by hand without `x-architech` are recognized from their image and connected by depends_on (with a warning). Any other compose file is recognized like a repository import. The result is validated like any saved graph. At most 300 KB.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "yaml"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "yaml": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Defaults to the file's x-architech title."
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "github",
+                      "compose"
+                    ],
+                    "default": "compose"
+                  },
+                  "preview": {
+                    "type": "boolean",
+                    "description": "Only check the file: 200 with counts and warnings, nothing saved."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "project": {
+                      "$ref": "#/components/schemas/Project"
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "preview: true.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "nodes": {
+                      "type": "integer"
+                    },
+                    "edges": {
+                      "type": "integer"
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or the file is not valid YAML or not a valid design (the error says what).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/research": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "operationId": "researchTechnologies",
+        "summary": "Look up a compose file's custom technologies",
+        "description": "For each distinct custom technology in an ARCHITECH compose file (at most 12): one in ARCHITECH's technology catalog becomes that component (no AI call); the rest are read on Wikipedia (free) and classified together in ONE Groq call (`GROQ_RESEARCH_EXTRACT_MODEL`, default `GROQ_MODEL`), which picks each one's role and the most similar catalog technology, whose numbers it then uses as estimates. Roles must be measurable types and the similar technology must have that role (otherwise the role's standard technology is used). Groq's rate limit is waited out briefly (up to 20 s, twice); if it stays busy, the catalog matches are still applied and the others say so. `GROQ_RESEARCH_SEARCH=compound|browser` reads with Groq's web search instead of Wikipedia. The Groq call counts as one AI question; catalog matches and results cached in the last day cost nothing. Always 200 once the file is valid.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "yaml"
+                ],
+                "properties": {
+                  "yaml": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The file with what was found applied; each technology that could not be looked up says why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "yaml": {
+                      "type": "string"
+                    },
+                    "findings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "technology": {
+                            "type": "string"
+                          },
+                          "finding": {
+                            "type": [
+                              "object",
+                              "null"
+                            ]
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "stoppedEarly": {
+                      "type": "string",
+                      "description": "A limit was reached part-way; the technologies before it were looked up."
+                    },
+                    "remainingToday": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or file, or no custom technologies to look up.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "GROQ_API_KEY is not set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2982,6 +3219,10 @@
             "type": "string",
             "description": "Repository name.",
             "example": "shop"
+          },
+          "preview": {
+            "type": "boolean",
+            "description": "Return the design as ARCHITECH's compose file for review instead of saving it (200 GithubImportPreview)."
           }
         }
       },
@@ -3054,6 +3295,23 @@
             "example": [
               "docker-compose.yml runs the \"traefik\" image"
             ]
+          },
+          "actsAs": {
+            "type": "string",
+            "enum": [
+              "server",
+              "worker",
+              "api-gateway",
+              "load-balancer",
+              "database",
+              "cache",
+              "queue",
+              "object-storage",
+              "search",
+              "auth",
+              "cdn"
+            ],
+            "description": "The component type it behaves like; a component placed from it is measured as that type."
           }
         }
       },
@@ -3552,6 +3810,43 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "GithubImportPreview": {
+        "type": "object",
+        "required": [
+          "title",
+          "yaml",
+          "detected",
+          "customTechnologies",
+          "scannedFiles"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "yaml": {
+            "type": "string",
+            "description": "The design as ARCHITECH's docker-compose file: a runnable compose file whose x-architech fields hold every component (type, label, technology, settings, position), every connection and the custom technologies. Edit it, then POST it to /api/projects/from-compose."
+          },
+          "detected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DetectedComponent"
+            }
+          },
+          "customTechnologies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomTechnology"
+            }
+          },
+          "scannedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }

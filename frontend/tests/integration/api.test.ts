@@ -46,7 +46,7 @@ function defineTests(dbUrl: string) {
     "tester/shop": {
       entries: [{ name: "backend", type: "tree" }],
       files: {
-        "docker-compose.yml": "services:\n  db:\n    image: postgres:16\n  proxy:\n    image: traefik:v3\n",
+        "docker-compose.yml": "services:\n  db:\n    image: postgres:16\n  tracing:\n    image: openzipkin/zipkin:3\n",
         "backend/package.json": JSON.stringify({ dependencies: { express: "4", ioredis: "5" } }),
       },
     },
@@ -54,6 +54,27 @@ function defineTests(dbUrl: string) {
   };
   const VALID_TOKENS = new Set(["good-token", "fresh-token"]);
   let modelCalls = 0;
+  let groqCalls = 0;
+  // A fake Groq for technology lookups: one call classifies every technology it is given.
+  function fakeGroq(raw: string, response: http.ServerResponse) {
+    groqCalls += 1;
+    const body = JSON.parse(raw);
+    const prompt = String(body.messages?.at(-1)?.content ?? "");
+    const results = /\bSnuba\b/.test(prompt) ? [{ technology: "Snuba", actsAs: "server", similarTo: "python-django", summary: "Sentry's query service." }] : [];
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ choices: [{ message: { role: "assistant", content: JSON.stringify({ results }) } }] }));
+  }
+  // A fake Wikipedia.
+  function fakeWikipedia(url: string, response: http.ServerResponse) {
+    response.writeHead(200, { "Content-Type": "application/json" });
+    if (url.startsWith("/w/api.php")) {
+      const query = decodeURIComponent(/srsearch=([^&]+)/.exec(url)?.[1] ?? "").replace(" software", "");
+      response.end(JSON.stringify({ query: { search: [{ title: query }] } }));
+    } else {
+      const title = decodeURIComponent(url.split("/summary/")[1] ?? "");
+      response.end(JSON.stringify({ type: "standard", extract: `${title} is software.`, content_urls: { desktop: { page: `https://en.wikipedia.org/wiki/${title}` } } }));
+    }
+  }
   let lastSystemPrompt = "";
   let latestMigration = "";
   // A fake Claude: Anthropic's streaming Messages API (server-sent events). Asked about a
@@ -114,6 +135,8 @@ function defineTests(dbUrl: string) {
         response.end(JSON.stringify(body));
       };
       if (request.url === "/v1/messages") return fakeClaude(raw, response);
+      if (request.url === "/chat/completions") return fakeGroq(raw, response);
+      if (request.url?.startsWith("/w/api.php") || request.url?.startsWith("/api/rest_v1/page/summary/")) return fakeWikipedia(request.url, response);
       if (request.url === "/login/oauth/access_token") {
         const body = JSON.parse(raw);
         return body.refresh_token === "refresh-1"
@@ -248,7 +271,11 @@ function defineTests(dbUrl: string) {
         ANTHROPIC_MODEL: "claude-test",
         // Always the fake Claude, whatever provider the developer's .env picks.
         AI_PROVIDER: "anthropic",
-        GROQ_API_KEY: "",
+        // Groq is used only for web research here, and it is the fake.
+        GROQ_API_KEY: "test-groq",
+        GROQ_BASE_URL: githubUrl,
+        RESEARCH_WIKIPEDIA_URL: githubUrl,
+        GROQ_RESEARCH_SEARCH: "",
         AI_LIMIT_PER_MINUTE: "3",
         AI_LIMIT_PER_DAY: "50",
       },
@@ -801,7 +828,7 @@ function defineTests(dbUrl: string) {
     const busy = await chat(user.cookie, "provider busy?");
     assert.equal(busy.status, 429);
     assert.equal(busy.retryAfter, "7", "the provider's own wait");
-    assert.match(busy.text, /busy right now.*didn't count/);
+    assert.match(busy.text, /temporarily busy.*didn't count/);
     assert.equal(busy.remaining, "49");
     const down = await chat(user.cookie, "provider down?");
     assert.equal(down.status, 502);
@@ -888,13 +915,86 @@ function defineTests(dbUrl: string) {
       result.project.graph.nodes.map((node) => `${node.data.type}${node.data.implementation ? `:${node.data.implementation}` : ""}`).sort(),
       ["cache:redis", "client", "database:postgresql", "server:nodejs-express"],
     );
-    assert.deepEqual(result.customTechnologies.map((technology) => technology.name), ["Traefik"]);
+    assert.deepEqual(result.customTechnologies.map((technology) => technology.name), ["Zipkin"]);
 
     // It is a normal project of this user from now on.
     const listed = await call("GET", "/api/projects", { cookie: user.cookie });
     const project = (listed.json as { projects: typeof result.project[] }).projects.find((item) => item.id === result.project.id);
     assert.ok(project);
-    assert.deepEqual(project.graph.customTechnologies?.map((technology) => technology.name), ["Traefik"]);
+    assert.deepEqual(project.graph.customTechnologies?.map((technology) => technology.name), ["Zipkin"]);
+  });
+
+  test("import preview, review as compose, create from the edited file, and web research", T, async () => {
+    const user = await register("Rae");
+    await linkGitHub(user.id, { access: "good-token" });
+    const count = async () => (await db.query("select count(*)::int as n from projects where user_id = $1", [user.id])).rows[0].n;
+
+    // The preview reads the repository but saves nothing.
+    const preview = await call("POST", "/api/github/import", { cookie: user.cookie, body: { owner: "tester", repo: "shop", preview: true } });
+    assert.equal(preview.status, 200, JSON.stringify(preview.json));
+    const { yaml, title } = preview.json as { yaml: string; title: string };
+    assert.equal(title, "tester/shop");
+    assert.match(yaml, /^x-architech:\n  version: 1/m);
+    assert.equal(await count(), 0);
+
+    // Checking the edited file, then creating the design from it.
+    assert.equal((await call("POST", "/api/projects/from-compose", { body: { yaml } })).status, 401);
+    assert.equal((await call("POST", "/api/projects/from-compose", { cookie: user.cookie, body: { yaml: "services: [oops" } })).status, 400);
+    assert.equal((await call("POST", "/api/projects/from-compose", { cookie: user.cookie, body: { yaml, extra: 1 } })).status, 400);
+    const edited = yaml.replace(/label: Users/, "label: Shoppers");
+    const checked = await call("POST", "/api/projects/from-compose", { cookie: user.cookie, body: { yaml: edited, preview: true } });
+    assert.equal(checked.status, 200);
+    assert.equal(await count(), 0);
+    const created = await call("POST", "/api/projects/from-compose", { cookie: user.cookie, body: { yaml: edited, title: "My shop", source: "github" } });
+    assert.equal(created.status, 201, JSON.stringify(created.json));
+    const project = (created.json as { project: { title: string; source: string; graph: { nodes: { data: { label: string } }[] } } }).project;
+    assert.equal(project.title, "My shop");
+    assert.equal(project.source, "github");
+    assert.ok(project.graph.nodes.some((node) => node.data.label === "Shoppers"));
+    assert.equal(await count(), 1);
+
+    // Looking technologies up: ClickHouse is in the catalog (no AI call) and becomes a database;
+    // Snuba is read on Wikipedia and classified in one Groq call, with a similar technology's numbers.
+    const withUnknowns = yaml.replace(
+      "services:\n",
+      [
+        "services:",
+        "  analytics:",
+        "    image: clickhouse/clickhouse-server:24",
+        "    x-architech:",
+        "      type: custom",
+        "      label: Analytics",
+        "      settings:",
+        "        technology: ClickHouse",
+        "        actsAs: server",
+        "  snuba:",
+        "    image: $SNUBA_IMAGE",
+        "    x-architech:",
+        "      type: custom",
+        "      label: Snuba Api",
+        "      settings:",
+        "        technology: Snuba",
+        "        actsAs: worker",
+        "",
+      ].join("\n"),
+    );
+    assert.equal((await call("POST", "/api/ai/research", { body: { yaml: withUnknowns } })).status, 401);
+    const before = groqCalls;
+    const researched = await call("POST", "/api/ai/research", { cookie: user.cookie, body: { yaml: withUnknowns } });
+    assert.equal(researched.status, 200, JSON.stringify(researched.json));
+    const result = researched.json as { yaml: string; findings: { technology: string; finding: { implementation?: string; similarTo?: string } | null }[] };
+    assert.equal(groqCalls - before, 1, "one call for everything");
+    assert.deepEqual(result.findings.map((item) => [item.technology, item.finding?.implementation ?? item.finding?.similarTo]), [["ClickHouse", "clickhouse"], ["Snuba", "python-django"]]);
+    assert.match(result.yaml, /# Recognized: ClickHouse/);
+    assert.match(result.yaml, /# Source: https:\/\/en\.wikipedia\.org\/wiki\/Snuba/);
+    const created2 = await call("POST", "/api/projects/from-compose", { cookie: user.cookie, body: { yaml: result.yaml } });
+    assert.equal(created2.status, 201, JSON.stringify(created2.json));
+    const nodes = (created2.json as { project: { graph: { nodes: { id: string; data: { type: string; implementation?: string; properties?: Record<string, unknown> } }[] } } }).project.graph.nodes;
+    assert.equal(nodes.find((node) => node.id === "analytics")?.data.implementation, "clickhouse");
+    assert.equal(nodes.find((node) => node.id === "snuba")?.data.properties?.capacity, 900);
+    // Cached: the same lookup again does not call Groq.
+    await call("POST", "/api/ai/research", { cookie: user.cookie, body: { yaml: withUnknowns } });
+    assert.equal(groqCalls - before, 1);
   });
 
   test("import errors: unknown repository, nothing recognizable, rejected token", T, async () => {

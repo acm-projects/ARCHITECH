@@ -14,7 +14,12 @@ export async function GET(request: Request, { params }: Context) {
     const owner = await requireOwnedProject(id);
     if (!owner.ok) return owner.response;
     const graph = owner.project.graph as GraphDocument;
-    const { yaml } = toDockerCompose({ title: owner.project.title, nodes: graph.nodes ?? [], edges: graph.edges ?? [] });
+    const { yaml } = toDockerCompose({
+      title: owner.project.title,
+      nodes: graph.nodes ?? [],
+      edges: graph.edges ?? [],
+      ...(graph.customTechnologies ? { customTechnologies: graph.customTechnologies } : {}),
+    });
     return new Response(yaml, {
       headers: {
         "Content-Type": "text/yaml; charset=utf-8",
