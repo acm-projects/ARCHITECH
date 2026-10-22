@@ -1,0 +1,3557 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ARCHITECH API",
+    "version": "0.7.0",
+    "contact": {
+      "name": "ARCHITECH team (ACM Projects, UT Dallas)",
+      "url": "https://github.com/acm-projects/ARCHITECH"
+    },
+    "description": "API for the ARCHITECH Next.js app. All routes live under `frontend/app/api`.\n\n## Data storage: PostgreSQL\nAll user data is stored in **PostgreSQL** through Prisma (`@auth/prisma-adapter`, schema in `frontend/prisma/schema.prisma`):\n\n| Table | Written by | Holds |\n|---|---|---|\n| `users` | `POST /api/auth/register`, Google/GitHub first sign-in, `PATCH /api/users/me` | name, email, bcrypt password hash, experience level, avatar |\n| `accounts` | Google/GitHub sign-in (Prisma adapter) | linked provider id and OAuth access/refresh tokens |\n| `projects` | `PUT /api/projects/{id}` (the canvas syncs automatically) | saved diagrams: title, mode, and the graph as `jsonb` (docs/graph-spec.md) |\n| `component_types`, `component_implementations` | `npx prisma db seed` | the component library and the technologies behind each component |\n\nSign-in itself is stateless (`session.strategy: \"jwt\"`, required for email/password logins). After sign-in the\nbrowser holds only a signed login token (the `next-auth.session-token` cookie) containing the user's id and\nexperience level, never the user record itself. Every protected route takes the id from that token and reads or\nupdates the user in PostgreSQL. The experience level in the token is re-read from PostgreSQL at sign-in and\nwhenever the frontend calls `update()`. (Because of the JWT strategy, the `sessions` table exists but is not used.)\n\n## Routes\n- **Custom:** `POST /api/auth/register`, `PATCH /api/users/me`, `GET /api/github/repos`, `GET /api/projects`, `GET`/`PUT`/`DELETE /api/projects/{id}`\n- **NextAuth v4** (`app/api/auth/[...nextauth]/route.ts`): everything else under `/api/auth/*`, with\n  Credentials (email + password), Google and GitHub providers. The sign-in page is `/`.\n\n## Calling protected routes\nSign in at http://localhost:3000 in the same browser first. Pages under `/dashboard/*` and `/workspace/*`\nredirect to `/` without a valid login token (`proxy.ts`).\n"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local dev server (npm run dev)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Registration",
+      "description": "Email/password account creation"
+    },
+    {
+      "name": "Users",
+      "description": "The signed-in user's profile"
+    },
+    {
+      "name": "GitHub",
+      "description": "Data from the user's linked GitHub account"
+    },
+    {
+      "name": "Projects",
+      "description": "Saved architectures (diagrams) of the signed-in user"
+    },
+    {
+      "name": "NextAuth",
+      "description": "Built-in NextAuth endpoints (sign-in, sign-out, session)"
+    },
+    {
+      "name": "AI Architect",
+      "description": "Chat with an AI system-design mentor about the design on the canvas. Answers use the metrics engine's evaluation of that design; suggested changes are checked and previewed before they reach the user."
+    },
+    {
+      "name": "Operations",
+      "description": "Health checks for hosting and monitoring."
+    },
+    {
+      "name": "Version history",
+      "description": "Snapshots of a project with the engine's numbers at the time."
+    },
+    {
+      "name": "Challenges",
+      "description": "Server-graded challenge submissions and leaderboards."
+    },
+    {
+      "name": "Export",
+      "description": "A design as a starter docker-compose.yml."
+    }
+  ],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Registration"
+        ],
+        "operationId": "registerUser",
+        "summary": "Create an email/password account",
+        "description": "Validates the input, normalizes the email (trimmed and lowercased), checks for an existing\nuser case-insensitively, hashes the password with bcrypt and inserts a row into the PostgreSQL `users` table.\nDoes **not** sign the user in; the frontend then calls the credentials sign-in.\n\n\nThrottled: at most 5 accounts per IP address per hour (stored as hashes).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                },
+                "example": {
+                  "message": "User created."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or the email is already in use",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "invalidBody": {
+                    "value": {
+                      "error": "Invalid request body."
+                    }
+                  },
+                  "shortName": {
+                    "value": {
+                      "error": "Name must be at least 2 characters."
+                    }
+                  },
+                  "badEmail": {
+                    "value": {
+                      "error": "Enter a valid email address without spaces."
+                    }
+                  },
+                  "shortPassword": {
+                    "value": {
+                      "error": "Password must be at least 6 characters."
+                    }
+                  },
+                  "duplicate": {
+                    "value": {
+                      "error": "Email already in use."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many accounts created from this network (5 an hour per IP, AUTH_SIGNUPS_PER_IP_PER_HOUR).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until it is allowed again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/me": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "updateMyExperienceLevel",
+        "summary": "Save the signed-in user's experience level",
+        "description": "Called at the end of onboarding step 1. Updates `users.experienceLevel` in PostgreSQL.\nAfter this succeeds, the frontend calls NextAuth's\n`update()`, which re-reads the level into the session token.\n",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperienceLevelUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Level saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperienceLevelUpdate"
+                },
+                "example": {
+                  "experienceLevel": "Intermediate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body is not JSON or the level is not one of the allowed values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "invalidBody": {
+                    "value": {
+                      "error": "Invalid request body."
+                    }
+                  },
+                  "badLevel": {
+                    "value": {
+                      "error": "Select a valid experience level."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/github/repos": {
+      "get": {
+        "tags": [
+          "GitHub"
+        ],
+        "operationId": "listMyGithubRepos",
+        "summary": "List the signed-in user's 3 most recently updated GitHub repos",
+        "description": "Reads the GitHub OAuth access token from the user's `github` row in the PostgreSQL `accounts` table and calls\n`GET https://api.github.com/user/repos?sort=updated&per_page=3`. The GitHub response is passed\nthrough unchanged, so each item is a full GitHub repository object; only common fields are listed below.\n",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of GitHub repository objects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GithubRepo"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the GitHub token expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "notSignedIn": {
+                    "value": {
+                      "error": "Authentication required."
+                    }
+                  },
+                  "githubExpired": {
+                    "value": {
+                      "error": "GitHub authorization expired. Reconnect GitHub."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The user has not connected GitHub",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Connect your GitHub account to access repositories."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A GitHub account is linked but has no stored access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "The linked GitHub account has no access token. Reconnect GitHub."
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "GitHub failed or returned an invalid response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "GitHub could not retrieve repositories."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/csrf": {
+      "get": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "getCsrfToken",
+        "summary": "Get a CSRF token",
+        "description": "Required in the body of every NextAuth POST (sign-in, sign-out).",
+        "responses": {
+          "200": {
+            "description": "CSRF token (also sets the `next-auth.csrf-token` cookie)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "csrfToken": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/providers": {
+      "get": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "listProviders",
+        "summary": "List configured sign-in providers",
+        "responses": {
+          "200": {
+            "description": "Map of provider id to provider info. Keys are `google`, `github` and `credentials`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/Provider"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/session": {
+      "get": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "getSession",
+        "summary": "Get the current session",
+        "description": "Returns `{}` when signed out. `user.id` and `user.experienceLevel` are added by the `session` callback.",
+        "responses": {
+          "200": {
+            "description": "The session, or an empty object when signed out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/callback/credentials": {
+      "post": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "signInWithCredentials",
+        "summary": "Sign in with email and password",
+        "description": "This is what `signIn(\"credentials\", {...})` posts to. Get `csrfToken` from `/api/auth/csrf` first.\n\nServer steps (`authorize` in route.ts):\n1. Rejects a missing or malformed email or password.\n2. Normalizes the email (trimmed and lowercased) and looks up the user in PostgreSQL `users`, case-insensitively.\n3. Rejects users with no `passwordHash` (Google/GitHub-only accounts).\n4. Compares the password with the stored bcrypt hash.\n5. On success, issues the login token with the user's `id` and `experienceLevel` (read from PostgreSQL).\n\nEvery failure returns the same message, \"Invalid email or password\", so the response never reveals\nwhether an email is registered. With `json=true` the error comes back in `{ url }` as `?error=...`;\n`signIn(..., { redirect: false })` surfaces it as `result.error`.\n\n\nThrottled: 5 failed attempts for an email in 15 minutes lock that email, and 20 from one IP block that address, until the oldest failure is 15 minutes old (AUTH_LOGIN_FAILURES_PER_EMAIL, AUTH_LOGIN_FAILURES_PER_IP). The error is \"Too many failed sign-in attempts … Try again in N minutes.\" A successful sign-in clears the email's count; unknown emails count as failures too.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrfToken",
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "csrfToken": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password"
+                  },
+                  "callbackUrl": {
+                    "type": "string",
+                    "example": "/dashboard"
+                  },
+                  "json": {
+                    "type": "string",
+                    "example": "true",
+                    "description": "Return JSON `{ url }` instead of a redirect"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON `{ url }` when `json=true`"
+          },
+          "302": {
+            "description": "Redirect to callbackUrl (success) or the error page"
+          }
+        }
+      }
+    },
+    "/api/auth/signin/{provider}": {
+      "post": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "startOAuthSignIn",
+        "summary": "Start an OAuth sign-in (Google or GitHub)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OAuthProvider"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrfToken"
+                ],
+                "properties": {
+                  "csrfToken": {
+                    "type": "string"
+                  },
+                  "callbackUrl": {
+                    "type": "string",
+                    "example": "/dashboard"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "description": "Redirect to the provider's consent screen"
+          }
+        }
+      }
+    },
+    "/api/auth/callback/{provider}": {
+      "get": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "oauthCallback",
+        "summary": "OAuth callback (called by Google or GitHub, not by the app)",
+        "description": "Register these as the redirect URIs in the Google and GitHub OAuth app settings:\n`http://localhost:3000/api/auth/callback/google` and `http://localhost:3000/api/auth/callback/github`.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OAuthProvider"
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "On first sign-in the Prisma adapter inserts a row into PostgreSQL `users` (name, email, image)\nand one into `accounts` (provider id and OAuth tokens). Later sign-ins reuse them.\nSets the login token and redirects to callbackUrl.\n"
+          }
+        }
+      }
+    },
+    "/api/auth/signout": {
+      "post": {
+        "tags": [
+          "NextAuth"
+        ],
+        "operationId": "signOut",
+        "summary": "Sign out",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "csrfToken"
+                ],
+                "properties": {
+                  "csrfToken": {
+                    "type": "string"
+                  },
+                  "callbackUrl": {
+                    "type": "string",
+                    "example": "/"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "description": "Clears the session cookie and redirects"
+          }
+        }
+      }
+    },
+    "/api/projects": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "listProjects",
+        "summary": "List the signed-in user's projects",
+        "description": "Every project of the signed-in user, most recently changed first. Stored in the PostgreSQL `projects` table, one row per project with the diagram in a `jsonb` column.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The user's projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "projects": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Project"
+                      }
+                    },
+                    "revisions": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "Each project's revision by id, for If-Match."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Project id, generated by the browser (UUID). Letters, digits, '-' and '_', at most 100 characters.",
+          "schema": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,100}$"
+          },
+          "example": "ce8672d2-cc09-4e77-a3f3-767458b9c36a"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "getProject",
+        "summary": "Get one project",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "The project's revision, for If-Match.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "description": "No project with this id belongs to the user (another user's project is also reported as not found)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Project not found."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "saveProject",
+        "summary": "Create or replace a project",
+        "description": "Creates the project with this id, or replaces it if the user already has it. The browser generates the id, so creating offline and retrying a failed save are both safe: sending the same project twice stores it once.\n\nThe diagram is validated against docs/graph-spec.md (section 5): known component types, labels of 1-60 characters, unique node and edge ids, edges between existing nodes, no self-connections or repeated connections, settings within each component's range, and `data.implementation` must exist and belong to the node's type. At most 500 nodes and 2,000 edges.\n\nThe canvas calls this automatically: every change is synced in the background.\n\nOverwrite protection: send If-Match with the revision you loaded. A save based on an older revision gets 409 with the server's copy; without If-Match the project is replaced as before. Saves with a design change also record an automatic version (see Version history).",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Replaced an existing project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "The new revision.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created a new project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "The new revision.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id or body. The message names the first problem and where it is.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "badType": {
+                    "value": {
+                      "error": "graph.nodes[0].data.type \"firewall\" is not a known component type."
+                    }
+                  },
+                  "dangling": {
+                    "value": {
+                      "error": "graph.edges[0].target must be the id of a node in this graph."
+                    }
+                  },
+                  "selfLoop": {
+                    "value": {
+                      "error": "graph.edges[0] connects a node to itself."
+                    }
+                  },
+                  "range": {
+                    "value": {
+                      "error": "graph.nodes[1].data.properties.replicas: Replicas must be at most 1000."
+                    }
+                  },
+                  "implementation": {
+                    "value": {
+                      "error": "Implementation \"redis\" is a cache, not a database."
+                    }
+                  },
+                  "title": {
+                    "value": {
+                      "error": "title must be 1-80 characters."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "description": "The id belongs to another user's project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Project not found."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Changed on another device since your copy: the server's copy and revision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "project",
+                    "revision"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "project": {
+                      "$ref": "#/components/schemas/Project"
+                    },
+                    "revision": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ETag of the copy the edit started from. If the project changed on the server since, the save is refused with 409."
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "deleteProject",
+        "summary": "Delete a project",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "description": "No project with this id belongs to the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Project not found."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/github/import": {
+      "post": {
+        "tags": [
+          "GitHub"
+        ],
+        "operationId": "importGithubRepo",
+        "summary": "Build a design from a GitHub repository",
+        "description": "Uses the GitHub account the user connected at sign-in (its token in the `accounts` table) to read the repository through GitHub's GraphQL API (`POST https://api.github.com/graphql`): one query for the top-level file list and stack files, and one for the same files in up to 8 top-level folders (monorepos).\n\nStack files read: package.json, docker-compose.yml / compose.yml, prisma/schema.prisma, requirements.txt, pyproject.toml, go.mod, pom.xml, build.gradle.\n\nDetection rules map what they use to components and technologies (for example `next` → Web App (Next.js), `ioredis` → Cache (Redis), `@apollo/server` → API (GraphQL), a `postgres` image → Database (PostgreSQL)), each with its evidence. The design is laid out left to right with typical connections, validated against docs/graph-spec.md and saved as a new project (`source: \"github\"`, opens in free play). Connections are a best guess to adjust on the canvas.\n\nTechnologies the repository uses that ARCHITECH does not model (for example a Traefik or ClickHouse service, or a .NET worker) are returned as `customTechnologies` and saved with the project, so they appear in its sidebar under \"From your repo\" and can be dragged onto the canvas as unmeasured custom components. A repository with only such technologies still imports.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GithubImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new project and what was detected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GithubImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid owner or repo name.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in, or the GitHub authorization expired (reconnect GitHub).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No GitHub account connected, or the repository was not found / is not visible to the account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The linked GitHub account has no access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Neither recognizable components nor unmodeled stacks/services were found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "GitHub is rate-limiting requests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "GitHub returned an error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/chat": {
+      "post": {
+        "tags": [
+          "AI Architect"
+        ],
+        "operationId": "chatWithArchitect",
+        "summary": "Ask the AI Architect about a design (streamed)",
+        "description": "Validates the design like a saved project, evaluates it with the metrics engine at the given traffic (as Run Design does), and asks the configured model (Claude or Groq). The prompt contains the design (component ids, technologies, settings, connections), the evaluation (scores, metrics, per-component load, findings), the component library and the user's experience level.\n\nWith `focus`, the prompt also gets the selected part (its components with their load, the connections inside it, and every connection in from and out to the rest of the design) and the answer is about that part only.\n\nThe model can propose changes with a tool; each is checked against the design (graph spec rules) and previewed with the engine (score, capacity, p95, cost, uptime before and after) before it is sent. The canvas applies a suggestion with the same function (src/lib/ai/changes.ts) as one undo step.\n\nThe response is newline-delimited JSON (`application/x-ndjson`), one `ChatEvent` per line: `text` parts of the answer, `suggestion`s, `note`s for proposed changes that could not be used, and finally `done` (or `error` if the model stopped part-way).\n\nLimits (model calls; cached answers and failed calls do not count): 5 a minute and 50 a day per user (AI_LIMIT_PER_MINUTE, AI_LIMIT_PER_DAY), and 1000 a day for the whole app (AI_LIMIT_GLOBAL_PER_DAY). Windows slide (the last 60 seconds / 24 hours). Reserving a question is atomic, so simultaneous questions cannot slip past a limit. If the AI provider fails or is busy, the question is refunded. Every response carries `X-AI-Remaining-Today` and `X-AI-Limit-Per-Day`.\n\nThe same design + conversation (+ focus) within 24 hours is answered from a cache (header `X-AI-Cache: hit`) without calling the model or counting toward the limits. Layout (positions, edge ids) does not affect the cache. Old cache entries and usage rows are deleted about once an hour.\n\nServer configuration: AI_PROVIDER = anthropic | groq (if unset: Anthropic when ANTHROPIC_API_KEY is set, else Groq when GROQ_API_KEY is set). Anthropic: ANTHROPIC_API_KEY, ANTHROPIC_MODEL (default claude-sonnet-5-5). Groq (free plan): GROQ_API_KEY, GROQ_MODEL (default openai/gpt-oss-120b). Keys never reach the browser.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The answer, streamed as one JSON event per line.",
+            "headers": {
+              "X-AI-Cache": {
+                "description": "hit or miss",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "hit",
+                    "miss"
+                  ]
+                }
+              },
+              "X-AI-Remaining-Today": {
+                "description": "Questions left today for this user (after this one).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-AI-Limit-Per-Day": {
+                "description": "The user's daily limit.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatEvent"
+                },
+                "example": "{\"type\":\"text\",\"text\":\"Your database is the bottleneck.\"}\n{\"type\":\"done\"}\n"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or design. The message names the first problem.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "429": {
+            "description": "A limit was reached (per minute, per day, or the app's daily budget), or the AI provider is busy (its own rate limit; the question does not count). `Retry-After` is the exact wait in seconds.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a question is allowed again.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-AI-Remaining-Today": {
+                "description": "Questions left today for this user (after this one).",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-AI-Limit-Per-Day": {
+                "description": "The user's daily limit.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The model failed before replying (bad key, outage).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The AI Architect is not configured (no ANTHROPIC_API_KEY or GROQ_API_KEY for the chosen provider).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/usage": {
+      "get": {
+        "tags": [
+          "AI Architect"
+        ],
+        "summary": "Questions left today",
+        "description": "How many AI Architect questions the signed-in user has left today (the smaller of their own daily limit and the app's daily budget). The panel shows this as “42 of 50 questions left today”.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "configured",
+                    "remainingToday",
+                    "perDay",
+                    "perMinute"
+                  ],
+                  "properties": {
+                    "configured": {
+                      "type": "boolean",
+                      "description": "Whether an AI provider is configured on the server."
+                    },
+                    "remainingToday": {
+                      "type": "integer",
+                      "example": 42
+                    },
+                    "perDay": {
+                      "type": "integer",
+                      "example": 50
+                    },
+                    "perMinute": {
+                      "type": "integer",
+                      "example": 5
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in."
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "Operations"
+        ],
+        "operationId": "health",
+        "summary": "Health check",
+        "description": "For the hosting provider's health checks and uptime monitors; no sign-in. Checks the database (a trivial query), migrations (the latest applied) and whether an AI provider is configured. Contains no secrets.",
+        "responses": {
+          "200": {
+            "description": "ok, or degraded (migrations missing or AI not configured).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthReport"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "down: the database is unreachable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/conversation": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "AI Architect"
+        ],
+        "operationId": "getConversation",
+        "summary": "The project's saved AI conversation",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved turns ([] when none).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "turns": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SavedTurn"
+                      }
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your projects (or not found).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AI Architect"
+        ],
+        "operationId": "saveConversation",
+        "summary": "Save the project's AI conversation",
+        "description": "At most 200 turns and 256 KB. The panel saves after each finished answer.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "turns"
+                ],
+                "properties": {
+                  "turns": {
+                    "type": "array",
+                    "maxItems": 200,
+                    "items": {
+                      "$ref": "#/components/schemas/SavedTurn"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your projects (or not found).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AI Architect"
+        ],
+        "operationId": "clearConversation",
+        "summary": "Start a new conversation",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Cleared."
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your projects (or not found).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/versions": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Version history"
+        ],
+        "operationId": "listVersions",
+        "summary": "A project's versions, newest first",
+        "description": "Automatic versions are recorded when a save changes the design in a way that changes its evaluation (not renames or moves), at most every 10 minutes. At most 50 are kept; the oldest automatic ones go first.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProjectVersion"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your projects (or not found).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Version history"
+        ],
+        "operationId": "saveVersion",
+        "summary": "Save a version of the saved project now",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "manual",
+                      "before-restore"
+                    ],
+                    "default": "manual"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "$ref": "#/components/schemas/ProjectVersion"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your projects (or not found).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/versions/{versionId}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "versionId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Version history"
+        ],
+        "operationId": "getVersion",
+        "summary": "One version with its diagram",
+        "description": "Restoring happens in the app: it saves a before-restore version, then loads this graph onto the canvas as one undo step.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectVersion"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "graph": {
+                          "$ref": "#/components/schemas/GraphDocument"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your projects (or not found).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}/export/docker-compose": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Export"
+        ],
+        "operationId": "exportDockerCompose",
+        "summary": "Download the saved project as a starter docker-compose.yml",
+        "description": "Data stores, caches, queues, search and load balancers become images; API servers and workers become build services; managed cloud services get local stand-ins (NGINX, LocalStack, MinIO); clients, CDNs, DNS and API protocols are skipped and connections through them followed. Connections become depends_on and connection-string environment variables. The Export button in the app generates the same file from the canvas.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "docker-compose.yml (attachment).",
+            "content": {
+              "text/yaml": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your projects (or not found).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/challenges/{challengeId}/submissions": {
+      "parameters": [
+        {
+          "name": "challengeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "example": "url-shortener"
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Challenges"
+        ],
+        "operationId": "submitChallenge",
+        "summary": "Submit a design; graded on the server",
+        "description": "The server grades the design itself at the challenge's traffic with the app's evaluator; scores sent by the browser are refused. At most 30 submissions an hour.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "graph"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "graph": {
+                    "$ref": "#/components/schemas/GraphDocument"
+                  },
+                  "projectId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Graded and recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "submission": {
+                      "$ref": "#/components/schemas/ChallengeSubmission"
+                    },
+                    "best": {
+                      "type": "integer"
+                    },
+                    "rank": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "participants": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "More than 30 submissions in an hour.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until it is allowed again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Challenges"
+        ],
+        "operationId": "mySubmissions",
+        "summary": "Your last 20 submissions",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "submissions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ChallengeSubmission"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/challenges/{challengeId}/leaderboard": {
+      "parameters": [
+        {
+          "name": "challengeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "example": "url-shortener"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Challenges"
+        ],
+        "operationId": "leaderboard",
+        "summary": "Top 10 by best score, and your rank",
+        "description": "Each user's best server-graded submission; ties go to whoever reached it first.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leaderboard.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "challengeId": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "top": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rank": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "\"First L.\" only"
+                          },
+                          "score": {
+                            "type": "integer"
+                          },
+                          "passed": {
+                            "type": "boolean"
+                          },
+                          "p95LatencyMs": {
+                            "type": "number"
+                          },
+                          "monthlyCost": {
+                            "type": "integer"
+                          },
+                          "you": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "me": {
+                      "type": "object",
+                      "properties": {
+                        "rank": {
+                          "type": "integer"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "\"First L.\" only"
+                        },
+                        "score": {
+                          "type": "integer"
+                        },
+                        "passed": {
+                          "type": "boolean"
+                        },
+                        "p95LatencyMs": {
+                          "type": "number"
+                        },
+                        "monthlyCost": {
+                          "type": "integer"
+                        },
+                        "you": {
+                          "type": "boolean"
+                        }
+                      },
+                      "nullable": true
+                    },
+                    "participants": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. The X-Request-Id header and requestId match the server log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Matches the server log line."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "next-auth.session-token",
+        "description": "NextAuth login token (signed JWT with the user id), set when you sign in. It identifies the user; all user data is read from PostgreSQL."
+      }
+    },
+    "parameters": {
+      "OAuthProvider": {
+        "name": "provider",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "google",
+            "github"
+          ]
+        }
+      }
+    },
+    "responses": {
+      "Unauthenticated": {
+        "description": "Not signed in",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Authentication required."
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ExperienceLevel": {
+        "type": "string",
+        "enum": [
+          "Beginner",
+          "Intermediate",
+          "Advanced"
+        ]
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "description": "Trimmed before saving",
+            "example": "Shivam"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Trimmed and lowercased; no spaces",
+            "example": "shivam@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 6,
+            "example": "hunter22"
+          }
+        }
+      },
+      "ExperienceLevelUpdate": {
+        "type": "object",
+        "required": [
+          "experienceLevel"
+        ],
+        "properties": {
+          "experienceLevel": {
+            "$ref": "#/components/schemas/ExperienceLevel"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Provider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "google"
+          },
+          "name": {
+            "type": "string",
+            "example": "Google"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "oauth",
+              "credentials"
+            ]
+          },
+          "signinUrl": {
+            "type": "string"
+          },
+          "callbackUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "User id (cuid)"
+              },
+              "name": {
+                "type": "string",
+                "nullable": true
+              },
+              "email": {
+                "type": "string",
+                "nullable": true
+              },
+              "image": {
+                "type": "string",
+                "nullable": true
+              },
+              "experienceLevel": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ExperienceLevel"
+                  }
+                ],
+                "nullable": true,
+                "description": "null until onboarding step 1 is completed"
+              }
+            }
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "GithubRepo": {
+        "type": "object",
+        "description": "Subset of GitHub's repository object (the full object is returned)",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string",
+            "example": "ARCHITECH"
+          },
+          "full_name": {
+            "type": "string",
+            "example": "acm-projects/ARCHITECH"
+          },
+          "private": {
+            "type": "boolean"
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "default_branch": {
+            "type": "string",
+            "example": "main"
+          },
+          "stargazers_count": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "owner": {
+            "type": "object",
+            "properties": {
+              "login": {
+                "type": "string"
+              },
+              "avatar_url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      },
+      "GraphNode": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "position",
+          "data"
+        ],
+        "additionalProperties": false,
+        "description": "One component on the canvas (React Flow node). See docs/graph-spec.md section 2.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "example": "database-1"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "architecture"
+            ]
+          },
+          "position": {
+            "type": "object",
+            "required": [
+              "x",
+              "y"
+            ],
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            }
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "type",
+              "label"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Component type name (component_types.name)",
+                "enum": [
+                  "client",
+                  "web-app",
+                  "mobile-app",
+                  "cdn",
+                  "dns",
+                  "server",
+                  "api-gateway",
+                  "api",
+                  "load-balancer",
+                  "database",
+                  "cache",
+                  "queue",
+                  "worker",
+                  "object-storage",
+                  "search",
+                  "auth",
+                  "custom"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60,
+                "example": "Orders DB"
+              },
+              "implementation": {
+                "type": "string",
+                "description": "component_implementations.id of the chosen technology; omitted means the type's default",
+                "example": "postgresql"
+              },
+              "properties": {
+                "type": "object",
+                "description": "User overrides, e.g. replicas, capacity, cacheHitRate, authCheckRate, searchRate. Ranges per component type in docs/graph-spec.md section 4.",
+                "additionalProperties": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "example": {
+                  "replicas": 2
+                }
+              }
+            }
+          }
+        }
+      },
+      "GraphEdge": {
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "target"
+        ],
+        "additionalProperties": false,
+        "description": "A connection, pointing in the direction requests flow.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "server-1->database-1"
+          },
+          "source": {
+            "type": "string",
+            "example": "server-1"
+          },
+          "target": {
+            "type": "string",
+            "example": "database-1"
+          },
+          "sourceHandle": {
+            "type": "string"
+          },
+          "targetHandle": {
+            "type": "string"
+          }
+        }
+      },
+      "GraphDocument": {
+        "type": "object",
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "additionalProperties": false,
+        "description": "A saved diagram, as defined in docs/graph-spec.md.",
+        "properties": {
+          "schemaVersion": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "nodes": {
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            }
+          },
+          "edges": {
+            "type": "array",
+            "maxItems": 2000,
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            }
+          },
+          "customTechnologies": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {
+              "$ref": "#/components/schemas/CustomTechnology"
+            },
+            "description": "Optional. Technologies from an imported repository that the app does not model."
+          }
+        }
+      },
+      "ProjectInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "mode",
+          "graph",
+          "createdAt",
+          "updatedAt",
+          "lastOpenedAt"
+        ],
+        "additionalProperties": false,
+        "description": "Body of PUT /api/projects/{id}. An `id` field may be included but must match the URL.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "Shop"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "learn",
+              "challenge"
+            ]
+          },
+          "learnSkipped": {
+            "type": "boolean",
+            "default": false
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "blank",
+              "duplicate",
+              "template",
+              "shared",
+              "github"
+            ]
+          },
+          "graph": {
+            "$ref": "#/components/schemas/GraphDocument"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the title or diagram last changed"
+          },
+          "lastOpenedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "mode",
+          "learnSkipped",
+          "graph",
+          "createdAt",
+          "updatedAt",
+          "lastOpenedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ce8672d2-cc09-4e77-a3f3-767458b9c36a"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "Shop"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "learn",
+              "challenge"
+            ]
+          },
+          "learnSkipped": {
+            "type": "boolean",
+            "default": false
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "blank",
+              "duplicate",
+              "template",
+              "shared",
+              "github"
+            ]
+          },
+          "graph": {
+            "$ref": "#/components/schemas/GraphDocument"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the title or diagram last changed"
+          },
+          "lastOpenedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DetectedComponent": {
+        "type": "object",
+        "required": [
+          "nodeId",
+          "label",
+          "type",
+          "technology",
+          "evidence"
+        ],
+        "properties": {
+          "nodeId": {
+            "type": "string",
+            "description": "The node it became in the project's graph.",
+            "example": "database-1"
+          },
+          "label": {
+            "type": "string",
+            "example": "PostgreSQL"
+          },
+          "type": {
+            "type": "string",
+            "description": "Component type (component_types.name).",
+            "example": "database"
+          },
+          "technology": {
+            "type": "string",
+            "example": "PostgreSQL"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "backend/package.json uses \"pg\"",
+              "docker-compose.yml runs the \"postgres\" image"
+            ]
+          }
+        }
+      },
+      "GithubImportRequest": {
+        "type": "object",
+        "required": [
+          "owner",
+          "repo"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "owner": {
+            "type": "string",
+            "description": "GitHub user or organization.",
+            "example": "octocat"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository name.",
+            "example": "shop"
+          }
+        }
+      },
+      "GithubImportResult": {
+        "type": "object",
+        "required": [
+          "project",
+          "detected",
+          "scannedFiles",
+          "customTechnologies"
+        ],
+        "properties": {
+          "project": {
+            "$ref": "#/components/schemas/Project"
+          },
+          "detected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DetectedComponent"
+            }
+          },
+          "scannedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Stack files that were read.",
+            "example": [
+              "backend/package.json",
+              "docker-compose.yml"
+            ]
+          },
+          "customTechnologies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomTechnology"
+            },
+            "description": "Unknown docker-compose services and app folders in stacks the app does not model (.NET, Rust, Ruby, PHP, Elixir, C++). Also saved in project.graph.customTechnologies."
+          }
+        }
+      },
+      "CustomTechnology": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "evidence"
+        ],
+        "additionalProperties": false,
+        "description": "A technology from an imported repository that ARCHITECH does not model. Listed in the project's sidebar under \"From your repo\"; dragged onto the canvas it becomes a `custom` node (`data.properties.technology` = name) that Run Design passes traffic through without measuring.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,59}$",
+            "example": "traefik"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "example": "Traefik"
+          },
+          "evidence": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "example": [
+              "docker-compose.yml runs the \"traefik\" image"
+            ]
+          }
+        }
+      },
+      "ChatMessage": {
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        }
+      },
+      "TrafficProfile": {
+        "type": "object",
+        "description": "Load to evaluate the design at, as in Run Design. Every field is optional.",
+        "properties": {
+          "requestsPerSecond": {
+            "type": "number",
+            "minimum": 0,
+            "default": 1000
+          },
+          "concurrentUsers": {
+            "type": "number",
+            "minimum": 0,
+            "default": 5000
+          },
+          "datasetGb": {
+            "type": "number",
+            "minimum": 0,
+            "default": 100
+          },
+          "readRatio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 80
+          },
+          "staticShare": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 60
+          },
+          "networkLatencyMs": {
+            "type": "number",
+            "minimum": 0,
+            "default": 40
+          }
+        }
+      },
+      "ChatRequest": {
+        "type": "object",
+        "required": [
+          "graph",
+          "messages"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "graph": {
+            "$ref": "#/components/schemas/GraphDocument"
+          },
+          "traffic": {
+            "$ref": "#/components/schemas/TrafficProfile"
+          },
+          "messages": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "description": "The conversation so far, oldest first; starts and ends with a user message.",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            }
+          },
+          "focus": {
+            "type": "object",
+            "required": [
+              "nodeIds"
+            ],
+            "additionalProperties": false,
+            "description": "Optional. The part of the canvas the user boxed (selected). The answer explains only that part: its components, how they connect to each other, what comes in from and goes out to the rest of the design, and its role in the whole system. Suggestions may only change selected components, add components, or connect to the selection; others become notes.",
+            "properties": {
+              "nodeIds": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                },
+                "description": "Ids of components in graph.nodes.",
+                "example": [
+                  "server-1",
+                  "database-1"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "DesignChange": {
+        "type": "object",
+        "required": [
+          "op"
+        ],
+        "description": "One operation of a suggested change. Components added by the suggestion are named by refs like \"new-cache\".",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "add_component",
+              "remove_component",
+              "connect",
+              "disconnect",
+              "set_setting",
+              "set_technology"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "pattern": "^new-[a-z0-9-]{1,30}$"
+          },
+          "type": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "implementation": {
+            "type": "string"
+          },
+          "settings": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "node": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number",
+            "nullable": true
+          }
+        }
+      },
+      "MetricsSnapshot": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "integer"
+          },
+          "p95LatencyMs": {
+            "type": "number"
+          },
+          "monthlyCost": {
+            "type": "number"
+          },
+          "capacityRps": {
+            "type": "number",
+            "nullable": true
+          },
+          "uptimePercent": {
+            "type": "number"
+          }
+        }
+      },
+      "ChatEvent": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "description": "One line of the response stream.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "suggestion",
+              "note",
+              "error",
+              "done"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "text / note"
+          },
+          "error": {
+            "type": "string",
+            "description": "error: the model stopped part-way"
+          },
+          "id": {
+            "type": "string",
+            "description": "suggestion"
+          },
+          "title": {
+            "type": "string",
+            "description": "suggestion"
+          },
+          "reason": {
+            "type": "string",
+            "description": "suggestion"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DesignChange"
+            },
+            "description": "suggestion"
+          },
+          "preview": {
+            "type": "object",
+            "description": "suggestion: the engine's numbers before and after applying it",
+            "properties": {
+              "before": {
+                "$ref": "#/components/schemas/MetricsSnapshot"
+              },
+              "after": {
+                "$ref": "#/components/schemas/MetricsSnapshot"
+              }
+            }
+          }
+        }
+      },
+      "HealthReport": {
+        "type": "object",
+        "required": [
+          "status",
+          "time",
+          "uptimeSeconds",
+          "version",
+          "checks"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "down"
+            ]
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uptimeSeconds": {
+            "type": "integer"
+          },
+          "version": {
+            "type": "string"
+          },
+          "checks": {
+            "type": "object",
+            "properties": {
+              "database": {
+                "type": "object",
+                "required": [
+                  "ok",
+                  "latencyMs"
+                ],
+                "properties": {
+                  "ok": {
+                    "type": "boolean"
+                  },
+                  "latencyMs": {
+                    "type": "integer"
+                  },
+                  "detail": {
+                    "type": "string"
+                  },
+                  "error": {
+                    "type": "string"
+                  }
+                }
+              },
+              "migrations": {
+                "type": "object",
+                "required": [
+                  "ok",
+                  "latencyMs"
+                ],
+                "properties": {
+                  "ok": {
+                    "type": "boolean"
+                  },
+                  "latencyMs": {
+                    "type": "integer"
+                  },
+                  "detail": {
+                    "type": "string"
+                  },
+                  "error": {
+                    "type": "string"
+                  }
+                }
+              },
+              "ai": {
+                "type": "object",
+                "properties": {
+                  "configured": {
+                    "type": "boolean"
+                  },
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "anthropic",
+                      "groq"
+                    ],
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "SavedTurn": {
+        "type": "object",
+        "required": [
+          "role",
+          "text"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "focusCount": {
+            "type": "integer",
+            "description": "user turns: components boxed when asked"
+          },
+          "suggestions": {
+            "type": "array",
+            "maxItems": 2,
+            "items": {
+              "type": "object"
+            },
+            "description": "assistant turns: suggestion events as streamed"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "applied": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "VersionSummary": {
+        "type": "object",
+        "properties": {
+          "ready": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": "integer"
+          },
+          "p95LatencyMs": {
+            "type": "number"
+          },
+          "monthlyCost": {
+            "type": "integer"
+          },
+          "capacityRps": {
+            "type": "integer",
+            "nullable": true
+          },
+          "uptimePercent": {
+            "type": "number"
+          },
+          "components": {
+            "type": "integer"
+          }
+        },
+        "description": "The engine's numbers for the version, at the default traffic."
+      },
+      "ProjectVersion": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "summary",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "manual",
+              "before-restore"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "summary": {
+            "$ref": "#/components/schemas/VersionSummary"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ChallengeSubmission": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "requirementScore": {
+            "type": "integer"
+          },
+          "architectureScore": {
+            "type": "integer"
+          },
+          "metrics": {
+            "type": "object",
+            "properties": {
+              "p95LatencyMs": {
+                "type": "number"
+              },
+              "monthlyCost": {
+                "type": "integer"
+              },
+              "capacityRps": {
+                "type": "integer",
+                "nullable": true
+              },
+              "uptimePercent": {
+                "type": "number"
+              },
+              "components": {
+                "type": "integer"
+              }
+            }
+          },
+          "failedRequirements": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+/* Challenge leaderboard card (ChallengeLeaderboard.tsx). Uses the workspace's tokens (--ax-*). */
+.ax-workspace .ax-leaderboard { margin-top: 10px; padding: 12px 14px; pointer-events: auto; font-size: 13px; }
+.ax-workspace .ax-leaderboard-title { display: flex; align-items: center; gap: 6px; }
+.ax-workspace .ax-leaderboard-official { margin-top: 6px; color: var(--ax-ink-soft); font-size: 12px; }
+.ax-workspace .ax-leaderboard-list { display: grid; gap: 2px; margin: 8px 0 0; padding: 0; list-style: none; }
+.ax-workspace .ax-leaderboard-list li {
+  display: grid; grid-template-columns: 22px 1fr auto 30px; align-items: baseline; gap: 6px;
+  padding: 4px 6px; border-radius: 6px; font-variant-numeric: tabular-nums;
+}
+.ax-workspace .ax-leaderboard-list li[data-you] { background: #eef1f8; font-weight: 500; }
+.ax-workspace .ax-leaderboard-rank { color: var(--ax-muted); }
+.ax-workspace .ax-leaderboard-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ax-workspace .ax-leaderboard-meta { color: var(--ax-muted); font-size: 11px; white-space: nowrap; }
+.ax-workspace .ax-leaderboard-score { text-align: right; font-weight: 600; }
+.ax-workspace .ax-leaderboard-score[data-passed] { color: #16a34a; }

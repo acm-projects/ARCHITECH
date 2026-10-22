@@ -1,0 +1,27 @@
+import type { Metadata, Viewport } from "next";
+
+import AuthSessionProvider from "@/components/auth/AuthSessionProvider";
+import ProjectSync from "@/components/projects/ProjectSync";
+import "../src/index.css";
+
+export const metadata: Metadata = {
+  title: "ARCHITECH · Build systems. Break systems.",
+  icons: { icon: { url: "/archie.svg", type: "image/svg+xml" } },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html lang="en">
+      <body>
+        <AuthSessionProvider>
+          <ProjectSync />
+          <div id="root">{children}</div>
+        </AuthSessionProvider>
+      </body>
+    </html>
+  );
+}
