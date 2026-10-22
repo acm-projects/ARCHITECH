@@ -41,7 +41,7 @@ export function buildPropertyViews(
   implementation?: string,
 ): PropertyView[] {
   const effective = getEffectiveProperties(type, properties, implementation);
-  return getPropertyDefinitions(type, implementation).map((definition) => {
+  return getPropertyDefinitions(type, implementation, properties ?? {}).map((definition) => {
     const overridden = isOverridden(type, properties, definition.key);
     const draft = drafts[definition.key];
     const parsed = draft === undefined ? null : parsePropertyInput(type, definition.key, draft);
