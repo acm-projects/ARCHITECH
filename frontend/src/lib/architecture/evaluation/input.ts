@@ -1,9 +1,11 @@
 import type { GraphInput, GraphNode } from "../graph.ts";
 import type { NodeProperties } from "../types.ts";
+import { measuredNode } from "../customComponents.ts";
 import { SIMULATION_PROFILES } from "./capabilities.ts";
 
 // Keeps what can be evaluated and ignores the rest, without touching the input: nodes
-// with an id and a known component type, and edges with a source and a target.
+// with an id and a known component type, and edges with a source and a target. A custom
+// component that says what it acts like is measured as that type, with its own numbers.
 export function usableGraph(graph: unknown): GraphInput {
   const source = (typeof graph === "object" && graph !== null ? graph : {}) as {
     nodes?: unknown;
@@ -18,7 +20,7 @@ export function usableGraph(graph: unknown): GraphInput {
       (node as GraphNode).data !== null &&
       typeof (node as GraphNode).data.type === "string" &&
       Object.hasOwn(SIMULATION_PROFILES, (node as GraphNode).data.type),
-  );
+  ).map(measuredNode);
   const edges = (Array.isArray(source.edges) ? source.edges : []).filter(
     (edge): edge is { source: string; target: string } =>
       typeof edge === "object" &&

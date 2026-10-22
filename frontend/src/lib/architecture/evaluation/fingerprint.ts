@@ -39,6 +39,8 @@ export function canonicalEvaluationInput(input: { graph: unknown; traffic?: unkn
         ...chosen,
         // Only authentication and search have a check rate other than 1, so other nodes are unchanged.
         ...(config.type === "auth" || config.type === "search" ? [config.checkRate] : []),
+        // A measured custom component's own latency, cost and availability.
+        ...(node.data.profile ? [config.latencyMs, config.monthlyCost, config.availability] : []),
       ];
     })
     .sort((a, b) => compare(String(a[0]), String(b[0])));

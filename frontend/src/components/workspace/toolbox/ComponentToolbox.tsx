@@ -69,7 +69,7 @@ function ComponentRow({
 }
 
 // One technology from the project's imported repository that the app does not model. Dragging
-// it places a Custom component named after it (drawn and connected, not measured).
+// it places a Custom component named after it, measured as what it acts like (if known).
 function CustomTechnologyRow({ technology }: { technology: CustomTechnology }) {
   return (
     <div
@@ -80,7 +80,7 @@ function CustomTechnologyRow({ technology }: { technology: CustomTechnology }) {
         writeComponentDragData(event.dataTransfer, {
           type: "custom",
           label: technology.name,
-          properties: { technology: technology.name },
+          properties: { technology: technology.name, ...(technology.actsAs ? { actsAs: technology.actsAs } : {}) },
         });
         setComponentDragImage(
           event.dataTransfer,
