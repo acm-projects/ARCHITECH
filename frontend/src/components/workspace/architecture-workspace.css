@@ -1018,6 +1018,10 @@
 .ax-workspace .ax-configure .ax-tech-basis { color: var(--ax-muted); padding-bottom: 4px; }
 .ax-workspace .ax-configure-technology > .ax-field { margin-top: 4px; }
 .ax-workspace .ax-configure-technology > .ax-tech-meta { margin-top: 4px; }
+.ax-workspace .ax-tech-search { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ax-workspace .ax-tech-search > input { flex: 1; min-width: 0; }
+.ax-workspace .ax-tech-more { flex-shrink: 0; padding: 2px 0; border: 0; background: transparent; color: var(--ax-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.ax-workspace .ax-tech-more:hover { color: inherit; }
 .ax-workspace .ax-configure-properties {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

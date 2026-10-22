@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 
 import type { ExperienceLevel } from "../../types";
 import { roleOf } from "../../lib/architecture/analysis";
+import { CORE_IMPLEMENTATION_IDS } from "../../lib/architecture/componentLibrary";
 import { setNodeImplementation } from "../../lib/architecture/implementationEditing";
 import {
   compareTechnologiesForNode,
@@ -146,6 +147,9 @@ export function TechnologyDragList({ component, id }: { component: ComponentDefi
 
 // ---- Configure card ----
 
+// More technologies than this for a type: show a search and a short list.
+const SHORT_LIST = 8;
+
 export function TechnologyChooser({
   nodeId,
   type,
@@ -161,6 +165,9 @@ export function TechnologyChooser({
   const level: ExperienceLevel = session?.user?.experienceLevel ?? "Intermediate";
   const { getNodes, getEdges, setNodes } = useReactFlow<ArchitectureFlowNode, Edge>();
   const [error, setError] = useState<string | null>(null);
+  // With dozens of technologies for a type: a search, and a short list until "Show all".
+  const [query, setQuery] = useState("");
+  const [showAll, setShowAll] = useState(false);
 
   // Measured in the design as it is now. The card is open only while this component is
   // selected and re-renders when its data changes, so this is the graph on screen. A few
@@ -182,14 +189,56 @@ export function TechnologyChooser({
   };
   const basis = basisLine(comparison, traffic.datasetGb, usesStorage(type));
 
+  // Which technologies to list. Few: all. Many: the common ones, the current one and the three
+  // that do best in this design, unless the user searches or asks for all.
+  const many = comparison.options.length > SHORT_LIST;
+  const needle = query.trim().toLowerCase();
+  const matches = (option: TechnologyEstimate) =>
+    `${option.implementation.name} ${option.implementation.vendor ?? ""} ${option.implementation.description}`.toLowerCase().includes(needle);
+  const bestHere = new Set(
+    (whatIf?.ready ? whatIf.options : [])
+      .filter((option) => !option.current && !CORE_IMPLEMENTATION_IDS.has(option.implementation.id))
+      .sort((a, b) => b.summary.score - a.summary.score || a.summary.monthlyCost - b.summary.monthlyCost)
+      .slice(0, 3)
+      .map((option) => option.implementation.id),
+  );
+  const visible = new Set(
+    comparison.options
+      .filter((option) =>
+        option.implementation.id === current ||
+        !many ||
+        (needle ? matches(option) : showAll || CORE_IMPLEMENTATION_IDS.has(option.implementation.id) || bestHere.has(option.implementation.id)),
+      )
+      .map((option) => option.implementation.id),
+  );
+  const listed = comparison.options.filter((option) => visible.has(option.implementation.id));
+  const shownWhatIf = whatIf ? { ...whatIf, options: whatIf.options.filter((option) => visible.has(option.implementation.id)) } : whatIf;
+
   return (
     <div className="ax-card-section ax-configure-technology">
       <p className="ax-card-label">Technology</p>
       <p className="ax-tech-basis">{basis}</p>
+      {many && (
+        <div className="ax-tech-search">
+          <input
+            type="search"
+            className="ax-field"
+            aria-label="Search technologies"
+            placeholder={`Search ${comparison.options.length} technologies`}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          {!needle && (
+            <button type="button" className="ax-tech-more" onClick={() => setShowAll((value) => !value)}>
+              {showAll ? "Show fewer" : `Show all ${comparison.options.length}`}
+            </button>
+          )}
+        </div>
+      )}
 
       {level === "Beginner" ? (
         <div role="radiogroup" aria-label="Technology" className="ax-tech-list">
-          {comparison.options.map((estimate) => {
+          {listed.map((estimate) => {
             const checked = estimate.implementation.id === current;
             return (
               <button
@@ -231,18 +280,40 @@ export function TechnologyChooser({
             className="ax-field mt-1"
             disabled={comparison.options.length < 2}
           >
-            {comparison.options.map((estimate) => (
-              <option key={estimate.implementation.id} value={estimate.implementation.id}>
-                {estimate.implementation.name} — {sizedLine(type, estimate)}
-              </option>
-            ))}
+            {many ? (
+              <>
+                <optgroup label="Common">
+                  {comparison.options.filter((estimate) => CORE_IMPLEMENTATION_IDS.has(estimate.implementation.id)).map((estimate) => (
+                    <option key={estimate.implementation.id} value={estimate.implementation.id}>
+                      {estimate.implementation.name} — {sizedLine(type, estimate)}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label={needle ? "More (matching your search)" : "More technologies"}>
+                  {comparison.options
+                    .filter((estimate) => !CORE_IMPLEMENTATION_IDS.has(estimate.implementation.id) && (!needle || matches(estimate) || estimate.implementation.id === current))
+                    .map((estimate) => (
+                      <option key={estimate.implementation.id} value={estimate.implementation.id}>
+                        {estimate.implementation.name} — {sizedLine(type, estimate)}
+                      </option>
+                    ))}
+                </optgroup>
+              </>
+            ) : (
+              comparison.options.map((estimate) => (
+                <option key={estimate.implementation.id} value={estimate.implementation.id}>
+                  {estimate.implementation.name} — {sizedLine(type, estimate)}
+                </option>
+              ))
+            )}
           </select>
           <p className="ax-tech-meta mt-1" title={tradeoffs(selected)}>
             {perInstanceLine(type, selected)}
           </p>
         </>
       )}
-      {whatIf && <DesignComparisonTable whatIf={whatIf} onChoose={choose} />}
+      {shownWhatIf && <DesignComparisonTable whatIf={shownWhatIf} onChoose={choose} />}
+      {many && needle && listed.length <= 1 && <p className="ax-tech-meta mt-1">No other technology matches “{query.trim()}”.</p>}
       {error && (
         <p role="alert" className="ax-card-label mt-1">
           {error}

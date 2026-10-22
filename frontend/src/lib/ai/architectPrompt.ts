@@ -1,6 +1,7 @@
 import type { ArchitectureEvaluation } from "../architecture/evaluation/contract.ts";
 import {
   COMPONENT_IMPLEMENTATIONS,
+  CORE_IMPLEMENTATION_IDS,
   COMPONENT_TYPES,
   resolveImplementation,
 } from "../architecture/componentLibrary.ts";
@@ -134,13 +135,24 @@ export function describeFocus(graph: GraphDocument, evaluation: ArchitectureEval
   };
 }
 
-export function describeLibrary(): string {
+// Per type: the core technologies, those the design already uses, and a few more from the wider
+// catalog by name. Listing all ~300 would cost thousands of prompt tokens on every question;
+// any catalog id is still accepted in a proposed change.
+export const MAX_EXTRA_TECHNOLOGIES_PER_TYPE = 6;
+
+export function describeLibrary(graph?: GraphDocument): string {
+  const used = new Set((graph?.nodes ?? []).map((node) => node.data.implementation).filter((id): id is string => typeof id === "string"));
   return COMPONENT_TYPES.filter((type) => type.name !== "custom")
     .map((type) => {
-      const technologies = COMPONENT_IMPLEMENTATIONS.filter((implementation) => implementation.componentType === type.name)
+      const all = COMPONENT_IMPLEMENTATIONS.filter((implementation) => implementation.componentType === type.name);
+      const shown = all.filter((implementation) => CORE_IMPLEMENTATION_IDS.has(implementation.id) || used.has(implementation.id));
+      const extras = all.filter((implementation) => !shown.includes(implementation));
+      shown.push(...extras.slice(0, MAX_EXTRA_TECHNOLOGIES_PER_TYPE));
+      const more = extras.length - Math.min(extras.length, MAX_EXTRA_TECHNOLOGIES_PER_TYPE);
+      const technologies = shown
         .map((implementation) => `${implementation.name} [${implementation.id}]${implementation.isDefault ? " (default)" : ""}`)
         .join(", ");
-      return `- ${type.label} [${type.name}]: ${technologies}`;
+      return `- ${type.label} [${type.name}]: ${technologies}${more > 0 ? ` (+${more} more)` : ""}`;
     })
     .join("\n");
 }
@@ -189,7 +201,7 @@ export function buildArchitectSystemPrompt(input: {
     "- Do not propose changes when the user only asks a question that needs no change.",
     "",
     "Component library (type [id]: technologies [id]):",
-    describeLibrary(),
+    describeLibrary(input.graph),
     "",
     "<design>",
     blockJson(describeDesign(input.graph)),
