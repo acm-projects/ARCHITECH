@@ -156,6 +156,7 @@ export default function ArchitectPanel({
   projectId,
   onClose,
   backLabel,
+  embedded = false,
   onApply,
   customTechnologies,
 }: {
@@ -163,6 +164,7 @@ export default function ArchitectPanel({
   projectId: string;
   onClose: () => void;
   backLabel?: string;
+  embedded?: boolean;
   // Replaces the design in one undo step.
   onApply: (next: { nodes: ArchitectureFlowNode[]; edges: Edge[] }) => void;
   customTechnologies?: readonly CustomTechnology[];
@@ -297,6 +299,7 @@ export default function ArchitectPanel({
 
   return (
     <ArchiePanel
+      embedded={embedded}
       empty={turns.length === 0}
       messageRef={list}
       headerAction={
@@ -306,9 +309,11 @@ export default function ArchitectPanel({
               <MessageSquarePlus size={14} aria-hidden="true" />
             </button>
           )}
-          <button type="button" className="ax-icon-btn" aria-label={backLabel ?? "Close Archie"} title={backLabel} onClick={onClose}>
-            {backLabel ? <ArrowLeft size={14} aria-hidden="true" /> : <X size={14} aria-hidden="true" />}
-          </button>
+          {!embedded && (
+            <button type="button" className="ax-icon-btn" aria-label={backLabel ?? "Close Archie"} title={backLabel} onClick={onClose}>
+              {backLabel ? <ArrowLeft size={14} aria-hidden="true" /> : <X size={14} aria-hidden="true" />}
+            </button>
+          )}
         </span>
       }
       focus={<>

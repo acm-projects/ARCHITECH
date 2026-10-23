@@ -1,6 +1,6 @@
 import type { RunResult } from "../../lib/architecture/evaluation/runSession.ts";
 
-export type InspectorSectionId = "metrics";
+export type InspectorSectionId = "metrics" | "run";
 export type InspectorState = {
   section: InspectorSectionId | null;
   archieOpen: boolean;
@@ -10,7 +10,7 @@ export type InspectorState = {
 };
 
 export const INITIAL_INSPECTOR_STATE: InspectorState = {
-  section: "metrics",
+  section: null,
   archieOpen: false,
   historyOpen: false,
   selectionKey: "",
@@ -62,10 +62,10 @@ export function inspectorReducer(state: InspectorState, action: InspectorAction)
   }
 }
 
-export type ReviewView = "overview" | "metrics" | "comparison";
+export type ReviewView = "overview" | "settings" | "comparison";
 export type ReviewSelection = { run: RunResult | null; view: ReviewView };
 
 // Stale projections and failed retries still belong to the same completed run.
 export function reviewViewForRun(selection: ReviewSelection, run: RunResult | null): ReviewView {
-  return selection.run === run ? selection.view : "overview";
+  return selection.run === run ? selection.view : run ? "overview" : "settings";
 }

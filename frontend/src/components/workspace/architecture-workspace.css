@@ -138,7 +138,6 @@
   position: absolute;
   inset: var(--ax-header-clearance) 0 0;
   pointer-events: none;
-  anchor-name: --ax-run-canvas;
 }
 .ax-workspace .ax-canvas-overlays > .ax-live { pointer-events: auto; }
 
@@ -1317,37 +1316,9 @@
   color: var(--ax-muted);
 }
 
-/* Traffic settings belong to Run; native popovers provide Escape and outside-click dismissal. */
+/* Traffic settings share the Run inspector with its completed results. */
 .ax-workspace .ax-run-trigger { display: inline-flex; align-items: center; gap: 8px; }
 .ax-workspace .ax-run-trigger:disabled { opacity: .5; cursor: default; }
-.ax-workspace .ax-run-popover {
-  position: fixed;
-  top: calc(var(--ax-header-clearance) + 12px);
-  right: 12px;
-  left: auto;
-  bottom: auto;
-  width: min(340px, calc(100vw - 24px));
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: 16px;
-  background: var(--ax-surface);
-  color: var(--ax-ink);
-}
-.ax-workspace .ax-run-popover::backdrop { background: transparent; }
-.ax-workspace .ax-run-popover h2 { margin: 0; padding: 12px 12px 0; font-size: 12px; font-weight: 500; }
-.ax-workspace .ax-run-popover [hidden] { display: none !important; }
-@supports (position-anchor: --ax-run-canvas) {
-  /* Match the inspector's right inset and width while keeping settings inside the canvas. */
-  .ax-workspace .ax-run-popover {
-    position-anchor: --ax-run-canvas;
-    top: calc(anchor(top) + 12px);
-    right: calc(anchor(right) + 12px);
-    width: min(340px, calc(anchor-size(width) - 24px));
-    max-height: calc(anchor-size(height) - 24px);
-    overflow-y: auto;
-  }
-}
 .ax-workspace .ax-stress[data-embedded="true"] {
   width: 100%;
   padding: 0 12px 12px;

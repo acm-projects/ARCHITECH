@@ -5496,6 +5496,18 @@ body,
   padding: 64px clamp(24px, 8vw, 128px);
 }
 
+/* Keep the logo orbit available in code while the auth artwork is being revised. */
+.auth-page .auth-orbit-ring,
+.auth-page .auth-shell > .auth-orbit {
+  display: none;
+}
+
+.auth-page .auth-shell:has(> .auth-orbit) {
+  grid-template-columns: minmax(0, 474px);
+  justify-content: center;
+}
+
+
 /* One slow orbit; the marks themselves remain upright. */
 .auth-orbit {
   --orbit-radius: clamp(100px, 12vw, 180px);
