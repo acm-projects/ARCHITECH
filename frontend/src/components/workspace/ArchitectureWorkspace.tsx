@@ -41,7 +41,7 @@ import { InspectorContext } from "./InspectorContext";
 import { useWorkspaceInspector } from "./useWorkspaceInspector";
 import WorkspaceInspector from "./WorkspaceInspector";
 import { ArchitectToggle } from "./ai/ArchitectPanel";
-import { ExportButton } from "./ExportButton";
+import { ExportButton, RunnableAppButton } from "./ExportButton";
 import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
@@ -464,6 +464,7 @@ function Workspace({ project }: { project: Project }) {
             <div hidden={!showInspector}>
               <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />
               <ExportButton title={title} popoverTarget={menuId} />
+              <RunnableAppButton projectId={project.id} popoverTarget={menuId} />
             </div>
           )}
         />

@@ -2,7 +2,7 @@
 
 import type { Edge } from "@xyflow/react";
 import { useReactFlow } from "@xyflow/react";
-import { Download } from "lucide-react";
+import { Download, Play } from "lucide-react";
 
 import { toDockerCompose } from "../../lib/architecture/export/dockerCompose";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
@@ -25,5 +25,43 @@ export function ExportButton({ title, popoverTarget }: { title: string; popoverT
       <Download size={15} aria-hidden="true" />
       Export
     </button>
+  );
+}
+
+// The design as an app you can use, with Archie showing what each part of the design does:
+//   Run as app            opens it inside ARCHITECH (/workspace/[id]/run), nothing to install;
+//   Download app (Docker) a .zip with a docker-compose project, every part of the design as its
+//                         own container.
+// Both are built on the server from the saved project, so they reflect the last saved version.
+export function RunnableAppButton({ projectId, popoverTarget }: { projectId: string; popoverTarget?: string }) {
+  const closeMenu = (element: HTMLElement) => {
+    const target = element.ownerDocument.getElementById(popoverTarget ?? "");
+    if (target && "hidePopover" in target) (target as HTMLElement & { hidePopover: () => void }).hidePopover();
+  };
+  const id = encodeURIComponent(projectId);
+  return (
+    <>
+      <a
+        className="ax-ai-toggle"
+        href={`/workspace/${id}/run`}
+        target="_blank"
+        rel="noopener"
+        onClick={(event) => closeMenu(event.currentTarget)}
+        title="Use this design as a working app, right here, while Archie shows what each part does"
+      >
+        <Play size={15} aria-hidden="true" />
+        Run as app
+      </a>
+      <a
+        className="ax-ai-toggle"
+        href={`/api/projects/${id}/export/runnable-app`}
+        download
+        onClick={(event) => closeMenu(event.currentTarget)}
+        title="Download this design as an app that runs every part in its own container (docker compose)"
+      >
+        <Download size={15} aria-hidden="true" />
+        Download app (Docker)
+      </a>
+    </>
   );
 }
