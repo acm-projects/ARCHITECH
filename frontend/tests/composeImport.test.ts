@@ -45,7 +45,8 @@ test("each compose service becomes a component, wired the way the services depen
   assert.deepEqual(design.graph.nodes.map((n) => n.id).sort(), ["client", "db", "redis", "result", "vote", "worker"], "the optional seed job is left out");
   assert.equal(node(design, "vote")?.data.implementation, "python-flask");
   assert.equal(node(design, "result")?.data.implementation, "nodejs-express");
-  assert.deepEqual(node(design, "worker")?.data.properties, { technology: ".NET worker", actsAs: "worker", build: "worker" }, "and where it is built, for export");
+  assert.equal(node(design, "worker")?.data.implementation, "dotnet-worker", "its language's worker technology, from the Dockerfile");
+  assert.deepEqual(node(design, "worker")?.data.properties, { build: "worker" }, "and where it is built, for export");
   assert.equal(node(design, "db")?.data.properties?.image, "postgres:15-alpine");
   assert.deepEqual(
     [...edgesOf(design)].sort(),
@@ -206,4 +207,83 @@ test("image paths: a generic image name is matched by its path", async () => {
   assert.equal(modeledImage("mcr.microsoft.com/mssql/server:2022-latest")?.implementation, "sql-server");
   assert.equal(modeledImage("acme/server:1"), null, "not every image called server is SQL Server");
   assert.equal(modeledImage("valkey/valkey:8")?.implementation, "valkey");
+});
+
+test(".env fills in compose variables, as docker compose does", async () => {
+  const { interpolate, parseDotEnv, composeBuildFolders } = await import("../src/lib/github/composeEnv.ts");
+  const env = parseDotEnv('# demo\nIMAGE_NAME=ghcr.io/acme/demo\nexport TAG="1.2"\nEMPTY=\nAD_DOCKERFILE=./src/ad/Dockerfile # the ad service\n');
+  assert.deepEqual(env, { IMAGE_NAME: "ghcr.io/acme/demo", TAG: "1.2", EMPTY: "", AD_DOCKERFILE: "./src/ad/Dockerfile" });
+  assert.equal(interpolate("${IMAGE_NAME}:${TAG}-ad", env), "ghcr.io/acme/demo:1.2-ad");
+  assert.equal(interpolate("$IMAGE_NAME/${MISSING}", env), "ghcr.io/acme/demo/${MISSING}");
+  assert.equal(interpolate("${EMPTY:-fallback} ${EMPTY-kept} ${NOPE:-x}", env), "fallback  x");
+  assert.deepEqual(
+    composeBuildFolders("services:\n  ad:\n    build:\n      context: ./\n      dockerfile: ${AD_DOCKERFILE}\n  web:\n    build: ./web\n  bad:\n    build: ../outside\n", env),
+    ["src/ad", "web"],
+  );
+});
+
+test("services built from one folder with their own Dockerfiles stay separate, each in its language", () => {
+  const design = composeDesign(
+    files({
+      "compose.yaml": `services:
+  frontend-proxy:
+    image: \${IMAGE_NAME}:\${TAG}-frontend-proxy
+    build:
+      context: ./
+      dockerfile: src/frontend-proxy/Dockerfile
+    ports: ["8080:8080"]
+    depends_on: [checkout, cart]
+  checkout:
+    image: \${IMAGE_NAME}:\${TAG}-checkout
+    build:
+      context: ./
+      dockerfile: \${CHECKOUT_DOCKERFILE}
+    depends_on: [cart, kafka]
+  cart:
+    image: \${IMAGE_NAME}:\${TAG}-cart
+    build:
+      context: ./
+      dockerfile: src/cart/Dockerfile
+    depends_on: [valkey-cart]
+  accounting:
+    image: \${IMAGE_NAME}:\${TAG}-accounting
+    build:
+      context: ./
+      dockerfile: src/accounting/Dockerfile
+    depends_on: [kafka]
+  load-generator:
+    image: \${IMAGE_NAME}:\${TAG}-load-generator
+    build:
+      context: ./
+      dockerfile: src/load-generator/Dockerfile
+  valkey-cart:
+    image: \${VALKEY_IMAGE}
+  kafka:
+    image: apache/kafka:3.8.0
+`,
+      ".env": "IMAGE_NAME=ghcr.io/acme/demo\nTAG=1.0\nVALKEY_IMAGE=valkey/valkey:8\nCHECKOUT_DOCKERFILE=./src/checkout/Dockerfile\n",
+      "src/frontend-proxy/Dockerfile": "FROM envoyproxy/envoy:v1.32\nCOPY envoy.yaml /etc/envoy/\n",
+      "src/checkout/go.mod": "module checkout\n\ngo 1.22\n",
+      "src/cart/Dockerfile": "FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build\nFROM mcr.microsoft.com/dotnet/aspnet:8.0\n",
+      "src/accounting/Dockerfile": "FROM golang:1.23 AS build\nFROM gcr.io/distroless/static\n",
+      "src/load-generator/requirements.txt": "locust\npyzmq\n",
+    }),
+    [],
+  )!;
+  const kinds = Object.fromEntries(design.graph.nodes.map((n) => [n.id, `${n.data.type}${n.data.implementation ? `:${n.data.implementation}` : ""}`]));
+  assert.deepEqual(kinds, {
+    client: "client",
+    "frontend-proxy": "load-balancer:envoy",
+    checkout: "server:go-service",
+    cart: "server:dotnet-aspnet-core",
+    accounting: "server:go-service",
+    "load-generator": "custom",
+    "valkey-cart": "cache:valkey",
+    kafka: "queue:apache-kafka",
+  });
+  assert.equal(node(design, "load-generator")?.data.properties?.technology, "Load Generator", "a test tool, named after its service");
+  const edges = edgesOf(design);
+  assert.ok(edges.has("client>frontend-proxy") && edges.has("checkout>kafka") && edges.has("cart>valkey-cart"));
+  assert.ok(edges.has("kafka>accounting") && !edges.has("accounting>kafka") && !edges.has("frontend-proxy>accounting"), "a service that only consumes a queue is fed by it");
+  assert.ok(!design.graph.nodes.some((n) => n.data.implementation === "zeromq"), "the load generator's libraries are not the system's");
 });
