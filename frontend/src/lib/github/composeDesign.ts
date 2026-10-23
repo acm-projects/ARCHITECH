@@ -1,5 +1,7 @@
 import { parseDocument } from "yaml";
 
+import { interpolate, normalizePath, parseDotEnv } from "./composeEnv.ts";
+
 import { guessActsAs, isOperationsTool, type ActsAsType } from "../architecture/customComponents.ts";
 import type { ArchitectureNodeType, NodeProperties } from "../architecture/types.ts";
 import type { CustomTechnology } from "../projects/customTechnologies.ts";
@@ -32,6 +34,8 @@ export type ComposeService = {
   image?: string;
   // The folder its code is built from ("" for the repository root), when it is built here.
   buildContext?: string;
+  // Its Dockerfile's path from the repository root, when the compose file names one.
+  dockerfile?: string;
   dependsOn: string[];
   environment: string[];
   publishesPorts: boolean;
@@ -89,16 +93,23 @@ export function readComposeServices(files: ReadonlyMap<string, string>): Compose
     }
     if (!isRecord(parsed) || !isRecord(parsed.services)) continue;
     const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+    // Variables the compose file uses, from the .env file next to it.
+    const env = parseDotEnv(files.get(folder ? `${folder}/.env` : ".env"));
+    const fill = (value: string) => interpolate(value, env);
     for (const [name, raw] of Object.entries(parsed.services)) {
       if (services.has(name) || !isRecord(raw)) continue;
-      const buildContext = contextFolder(raw.build, folder);
+      const build = typeof raw.build === "string" ? fill(raw.build) : isRecord(raw.build) ? { ...raw.build, ...(typeof raw.build.context === "string" ? { context: fill(raw.build.context) } : {}) } : raw.build;
+      const buildContext = contextFolder(build, folder);
+      const dockerfileRaw = isRecord(raw.build) && typeof raw.build.dockerfile === "string" ? fill(raw.build.dockerfile) : undefined;
+      const dockerfile = buildContext !== undefined && dockerfileRaw && !dockerfileRaw.includes("$") ? normalizePath(dockerfileRaw, buildContext) : undefined;
       services.set(name, {
         name,
         file: path,
-        ...(typeof raw.image === "string" ? { image: raw.image } : {}),
+        ...(typeof raw.image === "string" ? { image: fill(raw.image) } : {}),
         ...(buildContext === undefined ? {} : { buildContext }),
+        ...(dockerfile ? { dockerfile } : {}),
         dependsOn: [...keysOrList(raw.depends_on), ...strings(raw.links).map((link) => link.split(":")[0]!)],
-        environment: environmentValues(raw.environment),
+        environment: environmentValues(raw.environment).map(fill),
         publishesPorts: Array.isArray(raw.ports) && raw.ports.length > 0,
         profiles: strings(raw.profiles),
       });
@@ -163,6 +174,8 @@ function kindOf(type: ArchitectureNodeType): Kind {
 // The folder holding a service's code: its build context, or a top-level folder named after
 // it (e.g. image "acme/spring-petclinic-vets-service" -> folder spring-petclinic-vets-service).
 function codeFolder(service: ComposeService, image: string, folders: readonly string[]): string | undefined {
+  // A Dockerfile in its own folder (context ".", dockerfile "src/ad/Dockerfile"): the code is there.
+  if (service.dockerfile?.includes("/")) return service.dockerfile.slice(0, service.dockerfile.lastIndexOf("/"));
   if (service.buildContext !== undefined) return service.buildContext;
   const name = squash(service.name);
   const last = squash(imageName(image));
@@ -181,6 +194,47 @@ function filesUnder(files: ReadonlyMap<string, string>, folder: string): Map<str
   return result;
 }
 
+// The server technology a Dockerfile's base images point to, if any.
+const DOCKERFILE_BASES: [RegExp, string][] = [
+  [/^(?:\S+\/)?golang(?::|$)/, "go-service"],
+  [/^(?:\S+\/)?(?:node|bun)(?::|$)|^oven\/bun/, "nodejs-express"],
+  [/^(?:\S+\/)?python(?::|$)/, "python-fastapi"],
+  [/^(?:\S+\/)?(?:openjdk|eclipse-temurin|amazoncorretto|maven|gradle|ibmjava)(?::|$)/, "java-spring-boot"],
+  [/^mcr\.microsoft\.com\/dotnet\//, "dotnet-aspnet-core"],
+  [/^(?:\S+\/)?(?:rust)(?::|$)/, "rust-axum"],
+];
+function dockerfileBases(folderFiles: ReadonlyMap<string, string>): string[] {
+  const text = [...folderFiles].find(([path]) => /(^|\/)Dockerfile$/.test(path))?.[1];
+  return text ? [...text.matchAll(/^\s*FROM\s+(?:--platform=\S+\s+)?(\S+)/gim)].map((match) => match[1]!.toLowerCase()) : [];
+}
+function serverFromDockerfile(folderFiles: ReadonlyMap<string, string>): string | undefined {
+  for (const base of dockerfileBases(folderFiles)) {
+    const found = DOCKERFILE_BASES.find(([pattern]) => pattern.test(base));
+    if (found) return found[1];
+  }
+  return undefined;
+}
+// A background worker in a language: its worker technology.
+const WORKER_FOR: Record<string, string> = {
+  "go-service": "go-worker", "go-gin": "go-worker", "go-fiber": "go-worker", "go-echo": "go-worker",
+  "dotnet-aspnet-core": "dotnet-worker", "java-spring-boot": "java-worker", "java-quarkus": "java-worker",
+  "nodejs-express": "nodejs-worker", "nodejs-fastify": "nodejs-worker", "nodejs-nestjs": "nodejs-worker",
+  "python-fastapi": "python-celery", "python-django": "python-celery", "python-flask": "python-celery",
+  "rust-axum": "rust-worker", "rust-actix": "rust-worker", "ruby-on-rails": "ruby-sidekiq", "php-laravel": "php-laravel-queue",
+};
+
+// A service built FROM nginx, envoy, postgres... is that component with its own configuration
+// (Robot Shop's web front is NGINX; the OpenTelemetry demo's frontend proxy is Envoy).
+const INFRASTRUCTURE = new Set<ArchitectureNodeType>(["load-balancer", "api-gateway", "database", "cache", "queue", "search", "object-storage"]);
+function infrastructureFromDockerfile(folderFiles: ReadonlyMap<string, string>) {
+  // The last stage is what runs.
+  for (const base of dockerfileBases(folderFiles).reverse()) {
+    const modeled = modeledImage(base);
+    if (modeled && INFRASTRUCTURE.has(modeled.type)) return modeled;
+  }
+  return null;
+}
+
 type OwnCode =
   | { type: ArchitectureNodeType; implementation?: string; properties?: undefined }
   | { type: "custom"; implementation?: undefined; properties: NodeProperties };
@@ -189,13 +243,21 @@ type OwnCode =
 // When the app has no technology for it (a .NET worker, a Spring Cloud gateway), it is a custom
 // component named after its language, acting like what it is, so it is still measured.
 function ownCode(name: string, hint: string, folderFiles: ReadonlyMap<string, string>): OwnCode {
+  const infrastructure = infrastructureFromDockerfile(folderFiles);
+  if (infrastructure) return { type: infrastructure.type, ...(infrastructure.implementation ? { implementation: infrastructure.implementation } : {}) };
   const detected = detectStack(folderFiles);
   const pick = (type: ArchitectureNodeType) => detected.find((component) => component.type === type);
   const lower = name.toLowerCase();
   const server = pick("server");
-  const language = server
-    ? resolveImplementation("server", server.implementation).name
-    : detectUnmodeled(folderFiles)[0]?.name.replace(/ \(.*\)$/, "").replace(/ (service|app)$/, "");
+  // No framework found: the Dockerfile's base image says the language (FROM golang -> Go).
+  const fromDockerfile = server ? undefined : serverFromDockerfile(folderFiles);
+  const serverImplementation = server?.implementation ?? fromDockerfile;
+  const language = serverImplementation
+    ? resolveImplementation("server", serverImplementation).name
+    : detectUnmodeled(folderFiles)
+        // Its language, not images its own compose file runs.
+        .find((technology) => !technology.evidence.some((line) => line.includes(" runs the ")))
+        ?.name.replace(/ \(.*\)$/, "").replace(/ (service|app)$/, "");
   const custom = (technology: string, actsAs: ActsAsType): OwnCode => ({ type: "custom", properties: { technology: technology.slice(0, 60), actsAs } });
   // Its own code may use a gateway or worker library the catalog knows (Spring Cloud Gateway, Celery).
   const gateway = pick("api-gateway");
@@ -204,6 +266,9 @@ function ownCode(name: string, hint: string, folderFiles: ReadonlyMap<string, st
   if (guessActsAs(lower) === "worker") {
     const worker = pick("worker");
     if (worker?.implementation) return { type: "worker", implementation: worker.implementation };
+    // The language's worker technology, from the server framework or Dockerfile found.
+    const asWorker = serverImplementation ? WORKER_FOR[serverImplementation] : undefined;
+    if (asWorker) return { type: "worker", implementation: asWorker };
     if (server?.implementation === "nodejs-express" || folderFiles.has([...folderFiles.keys()].find((path) => path.endsWith("package.json")) ?? "-")) {
       return { type: "worker", implementation: "nodejs-worker" };
     }
@@ -212,6 +277,7 @@ function ownCode(name: string, hint: string, folderFiles: ReadonlyMap<string, st
   const web = pick("web-app");
   if (web && !server) return { type: "web-app", ...(web.implementation ? { implementation: web.implementation } : {}) };
   if (server) return { type: "server", ...(server.implementation ? { implementation: server.implementation } : {}) };
+  if (fromDockerfile) return { type: "server", implementation: fromDockerfile };
   // Unknown language (e.g. a Dockerfile that only extends a published image): named by the
   // project's own name for it, acting like what that name suggests (ClickHouse: a database).
   return language ? custom(language, "server") : custom(hint, guessActsAs(`${name} ${hint}`));
@@ -256,9 +322,22 @@ function classifyComponent(service: ComposeService, files: ReadonlyMap<string, s
   const technology = (variable ? variableName(variable) : KNOWN_NAMES[last]) ?? titleCase(ownImage || !last ? service.name : last);
   const nameKey = `${service.name} ${last} ${variable ?? ""}`;
   if (isOperationsTool(nameKey)) {
-    // Placed and costed like the server it runs on; not on the request path.
+    // Placed and costed like the server it runs on; not on the request path. Named after the
+    // product when it is a known one (Zipkin), otherwise after the service.
     const actsAs: ActsAsType = "server";
-    return { ...base, type: "custom", label: titleCase(service.name).slice(0, 60), properties: { technology, actsAs }, kind: "ops", evidence };
+    const opsFolder = codeFolder(service, image, folders);
+    // The product's name (Zipkin), unless the image is the project's own (acme/demo:1.0-load-generator).
+    const ownOpsImage = squash(service.name).length >= 4 && squash(image).includes(squash(service.name));
+    const opsName = variable || ownOpsImage || !last ? titleCase(service.name) : (KNOWN_NAMES[last] ?? titleCase(last));
+    return {
+      ...base,
+      type: "custom",
+      label: titleCase(service.name).slice(0, 60),
+      properties: { technology: opsName.slice(0, 60), actsAs },
+      kind: "ops",
+      evidence,
+      ...(opsFolder === undefined ? {} : { folder: opsFolder }),
+    };
   }
 
   const folder = codeFolder(service, image, folders);
@@ -299,6 +378,13 @@ const GROUP_AT = 3;
 
 // `requireOwnCode` (default true, for repositories): null when no service runs the project's
 // own code. False for a compose file given on its own, where infrastructure is the point.
+// One compose file, with the .env file next to it that fills in its variables.
+function withEnv(files: ReadonlyMap<string, string>, path: string): Map<string, string> {
+  const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+  const envPath = folder ? `${folder}/.env` : ".env";
+  return new Map([[path, files.get(path) as string], ...(files.has(envPath) ? [[envPath, files.get(envPath) as string] as [string, string]] : [])]);
+}
+
 // Compose files for CI, tests or examples are not the system.
 const NOT_THE_SYSTEM = /(^|[.-])(ci|test|tests|e2e|debug|override|sample|example|examples)([.-]|$)/i;
 const runningCount = (services: readonly ComposeService[]) =>
@@ -318,7 +404,7 @@ export function chooseComposeFile(files: ReadonlyMap<string, string>): string | 
     const name = (path.split("/").pop() ?? path).toLowerCase();
     return {
       path,
-      count: runningCount(readComposeServices(new Map([[path, files.get(path) as string]]))),
+      count: runningCount(readComposeServices(withEnv(files, path))),
       prod: /prod/.test(name) ? 1 : 0,
       main: /^(docker-)?compose\.ya?ml$/.test(name) ? 1 : 0,
       postgres: /postgres/.test(name) ? 1 : 0,
@@ -335,7 +421,7 @@ export function composeDesign(
 ): ComposeDesign | null {
   const chosen = chooseComposeFile(files);
   if (!chosen) return null;
-  const all = readComposeServices(new Map([[chosen, files.get(chosen) as string]]));
+  const all = readComposeServices(withEnv(files, chosen));
   // Optional profiles (seed data, debugging tools) and one-shot jobs are not the running system.
   const running = all.filter((service) => service.profiles.length === 0 && !ONE_SHOT.test(service.name.toLowerCase()));
   if (running.length === 0) return null;
@@ -451,6 +537,9 @@ export function composeDesign(
     if (!DATA_TYPES.has(component.type)) continue;
     // One relational database: the code's other drivers are alternatives.
     if (isRelational(component.type, component.implementation) && placed.some((item) => isRelational(item.type, item.implementation))) continue;
+    // Only a test or operations tool uses it (a load generator's libraries): not the system's.
+    const owners = placed.filter((item) => item.folder !== undefined && item.folder !== "" && component.evidence.some((line) => line.startsWith(`${item.folder}/`)));
+    if (owners.length > 0 && owners.every((owner) => owner.kind === "ops")) continue;
     const present = placed.some(
       (item) => roleOfPlaced(item) === component.type && (component.implementation === undefined || item.implementation === undefined || item.implementation === component.implementation),
     );
@@ -486,7 +575,17 @@ export function composeDesign(
   // through the gateway.
   if (proxies.length > 0) {
     for (const item of placed) {
-      if (item.kind === "app" && roleOfPlaced(item) !== "worker" && !incoming(item) && !entry.includes(item)) connect(proxies[0]!, item);
+      if (item.kind !== "app" || roleOfPlaced(item) === "worker" || incoming(item) || entry.includes(item)) continue;
+      // A service that only talks to a queue consumes it (Robot Shop's dispatch): the queue feeds it.
+      const queues = edges.filter((edge) => edge.source === item.id).map((edge) => placed.find((other) => other.id === edge.target)).filter((other) => other && roleOfPlaced(other) === "queue");
+      if (queues.length > 0) {
+        for (const queue of queues) {
+          edges.splice(edges.findIndex((edge) => edge.source === item.id && edge.target === queue!.id), 1);
+          connect(queue!, item);
+        }
+        continue;
+      }
+      connect(proxies[0]!, item);
     }
   }
 

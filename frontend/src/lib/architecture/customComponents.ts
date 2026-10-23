@@ -119,7 +119,7 @@ export function guessActsAs(name: string): ActsAsType {
 // Operations tools: monitoring, tracing, service discovery, configuration, admin consoles.
 // Imports place and cost them, but do not route user requests through them.
 export function isOperationsTool(name: string): boolean {
-  return /prometheus|grafana|zipkin|jaeger|tempo|loki|kibana|elastic-apm|otel|opentelemetry|collector|datadog|newrelic|sentry-relay-monitor|alertmanager|node-exporter|cadvisor|eureka|consul|etcd|zookeeper|discovery|config-server|configserver|spring-cloud-config|admin|pgadmin|adminer|portainer|mailhog|mailpit|smtp|maildev|seq\b|flower|redis-commander|kafka-ui|kafdrop|akhq|healthcheck|watchtower|uptime/.test(
+  return /prometheus|grafana|zipkin|jaeger|tempo|loki|kibana|elastic-apm|otel|opentelemetry|collector|datadog|newrelic|sentry-relay-monitor|alertmanager|node-exporter|cadvisor|eureka|consul|etcd|zookeeper|discovery|config-server|configserver|spring-cloud-config|admin|pgadmin|adminer|portainer|mailhog|mailpit|smtp|maildev|seq\b|flower|redis-commander|kafka-ui|kafdrop|akhq|healthcheck|watchtower|uptime|load-?gen|loadgen|locust|k6|jmeter|gatling|telemetry-docs|swagger|docs$/.test(
     name.toLowerCase(),
   );
 }

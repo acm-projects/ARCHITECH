@@ -1,3 +1,4 @@
+import { composeBuildFolders, parseDotEnv } from "./composeEnv.ts";
 import { githubApiUrl } from "./endpoints.ts";
 
 // Reading a GitHub repository's stack files through GitHub's GraphQL API.
@@ -73,13 +74,19 @@ function fileFields(paths: readonly string[]): string {
   return paths.map((path, index) => `f${index}: object(expression: ${literal(`HEAD:${path}`)}) { ${blobFields} }`).join("\n    ");
 }
 
+// Also read at the root (after the stack files, so their aliases keep their numbers): the
+// `.env` that fills in compose files' variables, when the repository has one.
+export const ROOT_EXTRA_FILES = [".env"] as const;
+// Folders deeper than the top level that compose builds services from (e.g. src/ad), at most.
+export const MAX_BUILD_FOLDERS = 20;
+
 export function rootQuery(): string {
   return `query RepoRoot($owner: String!, $name: String!) {
   repository(owner: $owner, name: $name) {
     nameWithOwner
     description
     root: object(expression: "HEAD:") { ... on Tree { entries { name type } } }
-    ${fileFields(STACK_FILES)}
+    ${fileFields([...STACK_FILES, ...ROOT_EXTRA_FILES])}
   }
 }`;
 }
@@ -154,11 +161,21 @@ export async function readRepoFiles(graphql: GitHubGraphql, owner: string, name:
   if (!repository) throw new GitHubError("not-found", `Repository ${owner}/${name} was not found, or your GitHub account cannot see it.`);
 
   const files = new Map<string, string>();
-  collect(repository, STACK_FILES, files);
+  collect(repository, [...STACK_FILES, ...ROOT_EXTRA_FILES], files);
 
   const entries = (repository.root as { entries?: unknown } | null)?.entries;
   const composeText = ["docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"].map((path) => files.get(path) ?? "").join("\n");
-  const folders = candidateFolders(entries, composeText);
+  const topFolders = candidateFolders(entries, composeText);
+  // Services built from deeper folders: read their stack files too, so each one's language is known.
+  const env = parseDotEnv(files.get(".env"));
+  const deep = [
+    ...new Set(
+      ["docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"].flatMap((path) => (files.has(path) ? composeBuildFolders(files.get(path)!, env) : [])),
+    ),
+  ]
+    .filter((folder) => !topFolders.includes(folder))
+    .slice(0, MAX_BUILD_FOLDERS);
+  const folders = [...topFolders, ...deep];
   const variants = composeVariants(entries);
   if (folders.length > 0 || variants.length > 0) {
     const second = (await graphql(foldersQuery(folders, variants), { owner, name })) as { repository?: Record<string, unknown> | null } | null;
