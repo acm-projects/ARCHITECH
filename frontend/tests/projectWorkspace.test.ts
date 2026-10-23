@@ -578,18 +578,26 @@ test("the load is session state: it is not part of the graph history, and not sa
   assert.match(hook, /setRequestRate/);
 });
 
-test("Run owns traffic settings after Continue exploring; Metrics retains all results", () => {
+test("Run owns traffic and run reviews after Continue exploring; Metrics keeps the detailed readout", () => {
   const workspace = read("src/components/workspace/ArchitectureWorkspace.tsx");
   const inspector = read("src/components/workspace/WorkspaceInspector.tsx");
   const control = read("src/components/workspace/StressTestPanel.tsx");
+  const runPanel = read("src/components/workspace/RunPanel.tsx");
+  const metrics = read("src/components/workspace/MetricsPanel.tsx");
   assert.match(workspace, /testingEnabled=\{canRunDesign\}/);
   assert.match(workspace, /const showInspector = mode === "challenge" \|\| learn\.exploring/);
   assert.match(workspace, /runControl=\{canRunDesign \? \(/);
-  assert.match(workspace, /activeRuns\.runAtRate\(rate\)/);
+  assert.match(inspector, /runs\.runAtRate\(rate\)/);
   assert.match(inspector, /title="Metrics"/);
+  assert.match(inspector, /title="Run"/);
   assert.doesNotMatch(inspector, /title="Stress test"|title="Live estimates"|title="System review"|<StressTestPanel|role="tab"/);
-  assert.match(control, /popoverTarget="ax-run-settings"/);
-  assert.match(control, /popover="auto"/);
+  assert.match(control, /aria-controls="ax-run-panel"/);
+  assert.doesNotMatch(control, /popover=|ResizeObserver/);
+  assert.match(runPanel, /<StressTestPanel/);
+  assert.match(runPanel, /Last run/);
+  assert.match(runPanel, /Compare runs/);
+  assert.match(metrics, /<RunMetrics/);
+  assert.doesNotMatch(metrics, /Last run|Compare runs|<select|<StressTestPanel/);
 });
 
 test("both Archie entry points use the explicit tutorial availability rule", () => {
@@ -635,17 +643,41 @@ test("Configure opens explicitly and closes when another inspector tool is opene
   }
 });
 
-test("opening Metrics from selection or Archie expands it and running returns to Metrics", () => {
-  const collapsed = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "toggle-section", section: "metrics", hasSelection: false });
+test("the inspector starts compact and opening Metrics from selection or Archie expands it", () => {
+  assert.equal(INITIAL_INSPECTOR_STATE.section, null);
+  const opened = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "toggle-section", section: "metrics", hasSelection: false });
+  assert.equal(opened.section, "metrics");
+  const collapsed = inspectorReducer(opened, { type: "toggle-section", section: "metrics", hasSelection: false });
   assert.equal(collapsed.section, null);
   const archie = inspectorReducer(collapsed, { type: "open-archie" });
   const metrics = inspectorReducer(archie, { type: "toggle-section", section: "metrics", hasSelection: false });
-  assert.deepEqual(metrics, INITIAL_INSPECTOR_STATE);
+  assert.deepEqual(metrics, { ...INITIAL_INSPECTOR_STATE, section: "metrics" });
   assert.deepEqual(inspectorReducer(metrics, { type: "toggle-section", section: "metrics", hasSelection: true }), metrics);
   const review = inspectorReducer(archie, { type: "open-section", section: "metrics" });
-  assert.deepEqual(review, INITIAL_INSPECTOR_STATE);
+  assert.deepEqual(review, { ...INITIAL_INSPECTOR_STATE, section: "metrics" });
   assert.equal(inspectorReducer(archie, { type: "close-archie" }).archieOpen, false);
   assert.deepEqual(inspectorReducer(archie, { type: "reset" }), INITIAL_INSPECTOR_STATE);
+});
+
+test("Run replaces Metrics and closes other inspector tools without changing their results", () => {
+  const configured = inspectorReducer(
+    inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "selection-changed", selectionKey: "api" }),
+    { type: "open-configure" },
+  );
+  for (const previous of [configured,
+    inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-archie" }),
+    inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-history" })]) {
+    const run = inspectorReducer(previous, { type: "open-section", section: "run" });
+    assert.equal(run.section, "run");
+    assert.equal(run.archieOpen, false);
+    assert.equal(run.historyOpen, false);
+    assert.equal(run.configuring, false);
+    assert.equal(inspectorReducer(run, { type: "open-section", section: "metrics" }).section, "metrics");
+  }
+  const run = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "toggle-section", section: "run", hasSelection: false });
+  assert.equal(run.section, "run");
+  assert.equal(inspectorReducer(run, { type: "toggle-section", section: "run", hasSelection: false }).section, null);
+  assert.match(read("src/components/workspace/useWorkspaceInspector.ts"), /openSection\("run"\)/);
 });
 
 test("history, Archie and Metrics share the inspector and retain the current project", () => {
@@ -654,7 +686,7 @@ test("history, Archie and Metrics share the inspector and retain the current pro
   const archie = inspectorReducer(history, { type: "open-archie" });
   assert.equal(archie.historyOpen, false);
   assert.equal(archie.archieOpen, true);
-  assert.deepEqual(inspectorReducer(history, { type: "toggle-section", section: "metrics", hasSelection: false }), INITIAL_INSPECTOR_STATE);
+  assert.deepEqual(inspectorReducer(history, { type: "toggle-section", section: "metrics", hasSelection: false }), { ...INITIAL_INSPECTOR_STATE, section: "metrics" });
   const inspector = read("src/components/workspace/WorkspaceInspector.tsx");
   assert.match(inspector, /<ArchitectPanel\s+key=\{projectId\}\s+projectId=\{projectId\}/);
   assert.match(inspector, /<HistoryPanel projectId=\{projectId\}/);
@@ -666,13 +698,13 @@ test("review selection survives stale traffic and resets only for a new complete
   const input = { projectId: "p", ...graph, traffic: DEFAULT_TRAFFIC };
   await session.run(input);
   const completed = session.getState().current;
-  const selection: ReviewSelection = { run: completed, view: "metrics" };
+  const selection: ReviewSelection = { run: completed, view: "settings" };
   const staleFingerprint = fingerprintEvaluationInput({ graph, traffic: withRequestRate(DEFAULT_TRAFFIC, 10_000) });
   const stale = buildResultsView(session.getState(), staleFingerprint);
   assert.equal(stale.isStale, true);
-  assert.equal(reviewViewForRun(selection, session.getState().current), "metrics");
+  assert.equal(reviewViewForRun(selection, session.getState().current), "settings");
   const nextRun = session.run(input);
-  assert.equal(reviewViewForRun(selection, session.getState().current), "metrics");
+  assert.equal(reviewViewForRun(selection, session.getState().current), "settings");
   await nextRun;
   assert.notEqual(session.getState().current, completed);
   assert.equal(reviewViewForRun(selection, session.getState().current), "overview");
@@ -696,7 +728,7 @@ test("a failed retry preserves the previous result and its selected review view"
   assert.equal(view.hasResult, true);
   assert.equal(reviewViewForRun(selection, session.getState().current), "comparison");
   session.reset();
-  assert.equal(reviewViewForRun(selection, session.getState().current), "overview");
+  assert.equal(reviewViewForRun(selection, session.getState().current), "settings");
 });
 
 // ---- 11. Cycle finding ----

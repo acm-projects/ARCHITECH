@@ -29,7 +29,7 @@ export function useWorkspaceInspector({ selectedNodeIds, onClearSelection }: {
     dispatch({ type: "toggle-section", section, hasSelection });
   }, [hasSelection, onClearSelection]);
   const showResults = useCallback((run: () => void) => {
-    openSection("metrics");
+    openSection("run");
     run();
   }, [openSection]);
   const nodeActions = useMemo(() => ({
