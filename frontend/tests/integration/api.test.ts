@@ -578,6 +578,153 @@ function defineTests(dbUrl: string) {
     assert.match(text, /build: \.\/api/, "the API server is a build service");
   });
 
+  test("a project downloads as a runnable app (.zip)", T, async () => {
+    const user = await register("Runner");
+    const id = randomUUID();
+    await call("PUT", `/api/projects/${id}`, { cookie: user.cookie, body: projectBody("Run me") });
+    assert.equal((await call("GET", `/api/projects/${id}/export/runnable-app`)).status, 401);
+    const response = await fetch(`${base}/api/projects/${id}/export/runnable-app`, { headers: { Cookie: `next-auth.session-token=${user.cookie}` } });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("content-type"), "application/zip");
+    assert.match(response.headers.get("content-disposition") ?? "", /run-me\.zip/);
+    const zip = Buffer.from(await response.arrayBuffer());
+    assert.equal(zip.subarray(0, 4).toString("hex"), "504b0304", "a zip file");
+    const names = zip.toString("latin1");
+    for (const file of ["run-me/docker-compose.yml", "run-me/app.config.json", "run-me/services/api.js", "run-me/web/index.html", "run-me/README.md"]) assert.ok(names.includes(file), file);
+  });
+
+  test("a project runs as an app inside ARCHITECH, through every part of the design", T, async () => {
+    const user = await register("Run here");
+    const id = randomUUID();
+    const node = (nodeId: string, type: string, label: string, x: number, extra: Record<string, unknown> = {}) => ({ id: nodeId, type: "architecture", position: { x, y: 0 }, data: { type, label, ...extra } });
+    const link = (source: string, target: string) => ({ id: `${source}->${target}`, source, target });
+    const design = projectBody("Shop", {
+      nodes: [
+        node("c", "client", "Users", 0), node("a", "auth", "Auth", 200), node("d", "dns", "DNS", 400), node("l", "load-balancer", "Load balancer", 600),
+        node("s", "server", "API server", 800, { properties: { replicas: 2 } }), node("db", "database", "Orders DB", 1000), node("k", "cache", "Redis", 1000),
+        node("q", "queue", "Jobs", 1000), node("w", "worker", "Worker", 1200), node("se", "search", "Search", 1000), node("st", "object-storage", "Files", 1000),
+      ],
+      edges: [link("c", "a"), link("a", "d"), link("d", "l"), link("l", "s"), link("s", "db"), link("s", "k"), link("s", "q"), link("q", "w"), link("w", "db"), link("s", "se"), link("s", "st")],
+    });
+    assert.equal((await call("PUT", `/api/projects/${id}`, { cookie: user.cookie, body: design })).status, 201);
+    const runBase = `/api/projects/${id}/run`;
+
+    // The page: the Docker app's own page, pointed at this project's API. Owner only.
+    const page = await fetch(`${base}/workspace/${id}/run`, { headers: { Cookie: `next-auth.session-token=${user.cookie}` } });
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    assert.ok(html.includes(`<meta name="app-base" content="${runBase}">`), "the page knows where its API is");
+    assert.ok(html.includes("Shop · running in ARCHITECH"));
+    const stranger = await register("Not the owner");
+    assert.equal((await fetch(`${base}/workspace/${id}/run`, { headers: { Cookie: `next-auth.session-token=${stranger.cookie}` } })).status, 404);
+    assert.equal((await call("GET", `${runBase}/app.config.json`, { cookie: stranger.cookie })).status, 404);
+    assert.equal((await call("GET", `${runBase}/app.config.json`)).status, 401);
+
+    const config = (await call("GET", `${runBase}/app.config.json`, { cookie: user.cookie })).json as { auth: { mode: string }; addresses: Record<string, string>; design: unknown };
+    assert.equal(config.auth.mode, "on-path");
+    assert.ok(config.design, "the drawing for the page");
+    const at = Object.fromEntries(Object.entries(config.addresses).map(([address, container]) => [container, address]));
+
+    // Talks to the app the way the page does: ARCHITECH's sign-in cookie plus the app's own.
+    let appCookie = "";
+    const app = async (method: string, route: string, body?: unknown, extra: Record<string, string> = {}) => {
+      const response = await fetch(`${base}${runBase}${route}`, {
+        method,
+        headers: {
+          Cookie: [`next-auth.session-token=${user.cookie}`, appCookie].filter(Boolean).join("; "),
+          ...(body === undefined || body instanceof Uint8Array ? {} : { "Content-Type": "application/json" }),
+          ...extra,
+        },
+        body: body === undefined ? undefined : body instanceof Uint8Array ? Buffer.from(body) : JSON.stringify(body),
+      });
+      const setCookie = response.headers.get("set-cookie");
+      if (setCookie?.startsWith("app_session=")) appCookie = setCookie.split(";")[0]!;
+      const steps = JSON.parse(decodeURIComponent(response.headers.get("x-trace-steps") ?? "[]")) as { node: string; text: string }[];
+      const type = response.headers.get("content-type") ?? "";
+      return { status: response.status, headers: response.headers, steps, setCookie, json: type.includes("json") ? ((await response.json()) as Record<string, unknown>) : null, bytes: type.includes("json") ? null : Buffer.from(await response.arrayBuffer()) };
+    };
+
+    // Not signed in: the auth part on the path stops API calls.
+    const blocked = await app("GET", "/api/items");
+    assert.equal(blocked.status, 401);
+    assert.equal(blocked.headers.get("x-trace-auth"), "blocked");
+    assert.equal(blocked.headers.get("x-trace-web"), `${at.auth}:80`, "the page's web server sent it to the auth part");
+    assert.deepEqual(blocked.steps.map((s) => s.text), ["No session cookie: not signed in.", "Stopped the request: only signed-in users get through."]);
+
+    // Sign up: the auth part answers itself; the password is hashed and saved with a session.
+    const signup = await app("POST", "/api/auth/signup", { email: "Kim@Example.com", password: "shop password" });
+    assert.equal(signup.status, 201, JSON.stringify(signup.json));
+    assert.deepEqual(signup.json, { user: { id: 1, email: "kim@example.com" } });
+    assert.ok(signup.setCookie?.startsWith("app_session=") && signup.setCookie.includes(`; Path=${runBase}; HttpOnly; SameSite=Lax`), signup.setCookie ?? "no cookie");
+    assert.deepEqual(signup.steps.map((s) => [s.node, s.text]), [
+      ["a", "Creating an account for kim@example.com."],
+      ["db", "No account for kim@example.com yet."],
+      ["a", "Turned the password into a salted hash (scrypt), so the password itself is never stored."],
+      ["db", "Saved user #1: the email and the password hash."],
+      ["db", "Saved a new session for user #1."],
+      ["a", "Signed you in with a session cookie."],
+    ]);
+    const { rows: users } = await db.query("select email, password_hash from run_users where project_id = $1", [id]);
+    assert.equal(users.length, 1);
+    assert.ok(!users[0].password_hash.includes("shop password"), "only the hash is stored");
+    assert.equal((await app("POST", "/api/auth/signup", { email: "kim@example.com", password: "another one" })).status, 409);
+    assert.equal((await app("POST", "/api/auth/signin", { email: "kim@example.com", password: "wrong password" })).status, 401);
+
+    // Add an item: through auth, DNS (which answers with the load balancer's address), the load
+    // balancer and an API server, to the database; the cache is cleared and the item indexed.
+    const added = await app("POST", "/api/items", { title: "Order notes", body: "ship the red shoes on monday" });
+    assert.equal(added.status, 201, JSON.stringify(added.json));
+    assert.equal(added.headers.get("x-trace-auth"), `${at["load-balancer"]}:80`, "DNS answered with the load balancer");
+    const server = added.headers.get("x-trace-api")!;
+    assert.match(server, /^api-[12]$/);
+    assert.equal(added.headers.get("x-trace-load-balancer"), `${at[server]}:3000`);
+    assert.deepEqual(added.steps.map((s) => s.text), [
+      "Checked the session cookie: signed in as kim@example.com.",
+      "Looked up the session.",
+      "Let the request through for kim@example.com.",
+      `${server} received POST /api/items.`,
+      "Saved item #1.",
+      "Removed the cached item list, so the next read gets fresh data.",
+      "Indexed item #1 so it can be searched.",
+    ]);
+
+    // The load balancer takes turns; the second read is answered by the cache.
+    const first = await app("GET", "/api/items");
+    const second = await app("GET", "/api/items");
+    assert.notEqual(first.headers.get("x-trace-api"), second.headers.get("x-trace-api"), "the API servers take turns");
+    assert.ok(first.steps.some((s) => s.text === "Read 1 item."));
+    assert.ok(second.steps.some((s) => s.text.startsWith("Cache hit")));
+    assert.equal(((second.json!.items as { title: string }[])[0])!.title, "Order notes");
+
+    // Process: a job on the queue; the worker does it after its pause.
+    const queued = await app("POST", "/api/items/1/process");
+    assert.equal(queued.status, 202);
+    assert.ok(queued.steps.some((s) => s.node === "q" && s.text.startsWith("Put a job for item #1 on the queue")));
+    await new Promise((resolve) => setTimeout(resolve, 1700));
+    const processed = ((await app("GET", "/api/items")).json!.items as { status: string; wordCount: number; processedBy: string }[])[0]!;
+    assert.deepEqual([processed.status, processed.wordCount, processed.processedBy], ["processed", 6, "worker"]);
+
+    // Search, and a file through object storage.
+    const found = await app("GET", "/api/items?q=SHOES");
+    assert.ok(found.steps.some((s) => s.node === "se" && s.text === "Searched for “SHOES”: 1 match."));
+    assert.equal((found.json!.items as unknown[]).length, 1);
+    const attached = await app("PUT", "/api/items/1/file", new TextEncoder().encode("ship by monday\n"), { "Content-Type": "text/plain", "X-File-Name": "note.txt" });
+    assert.equal(attached.status, 200);
+    assert.ok(attached.steps.some((s) => s.node === "st" && s.text === "Stored “note.txt” (1 KB)."));
+    const file = await app("GET", "/api/items/1/file");
+    assert.equal(file.status, 200);
+    assert.equal(file.bytes!.toString(), "ship by monday\n");
+    assert.match(file.headers.get("content-disposition") ?? "", /note\.txt/);
+
+    // Sign out, then deleting the project deletes everything people did in its app.
+    assert.equal((await app("POST", "/api/auth/signout")).status, 200);
+    assert.equal((await app("GET", "/api/items")).status, 401);
+    assert.equal((await call("DELETE", `/api/projects/${id}`, { cookie: user.cookie })).status, 204);
+    for (const table of ["run_users", "run_sessions", "run_items"]) {
+      assert.equal((await db.query(`select count(*)::int as n from ${table} where project_id = $1`, [id])).rows[0].n, 0, table);
+    }
+  });
+
   test("a save based on an outdated copy is refused, so another device's work is not overwritten", T, async () => {
     const user = await register("Two");
     const id = randomUUID();
