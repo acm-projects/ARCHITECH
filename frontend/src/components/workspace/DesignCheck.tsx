@@ -3,7 +3,7 @@
 import type { Edge } from "@xyflow/react";
 import { ViewportPortal } from "@xyflow/react";
 import { ShieldCheck, Undo2, Wrench, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 import {
   checkedFix,
@@ -28,11 +28,70 @@ import "./design-check.css";
 type Graph = { nodes: ArchitectureFlowNode[]; edges: Edge[] };
 export type DesignCheckState = ReturnType<typeof useDesignCheck>;
 
+// On or off, remembered in this browser (in memory when storage is unavailable). On by default.
+const ENABLED_KEY = "architech.designCheck";
+let enabledInMemory: boolean | null = null;
+const enabledListeners = new Set<() => void>();
+function readEnabled(): boolean {
+  try {
+    const stored = window.localStorage.getItem(ENABLED_KEY);
+    if (stored !== null) return stored !== "off";
+  } catch {
+    // Storage blocked: fall back to memory.
+  }
+  return enabledInMemory ?? true;
+}
+function writeEnabled(on: boolean) {
+  enabledInMemory = on;
+  try {
+    window.localStorage.setItem(ENABLED_KEY, on ? "on" : "off");
+  } catch {
+    // Remembered for this page only.
+  }
+  for (const listener of enabledListeners) listener();
+}
+function subscribeEnabled(listener: () => void) {
+  enabledListeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    enabledListeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
 export function useDesignCheck() {
   const [open, setOpen] = useState(false);
   // The finding whose components are outlined on the canvas.
   const [focus, setFocus] = useState<string | null>(null);
-  return { open, setOpen, focus, setFocus };
+  // Whether the design check shows at all: badges on the canvas and the panel.
+  const enabled = useSyncExternalStore(subscribeEnabled, readEnabled, () => true);
+  const setEnabled = (on: boolean) => {
+    writeEnabled(on);
+    if (!on) {
+      setOpen(false);
+      setFocus(null);
+    }
+  };
+  return { open, setOpen, focus, setFocus, enabled, setEnabled };
+}
+
+// The on/off switch for the whole design check.
+function EnabledSwitch({ check }: { check: DesignCheckState }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={check.enabled}
+      className="ax-check-switch"
+      title={check.enabled ? "Turn the design check off (hides its marks and this panel)" : "Turn the design check on"}
+      onClick={() => check.setEnabled(!check.enabled)}
+    >
+      <span className="ax-check-switch-track" aria-hidden="true">
+        <span className="ax-check-switch-thumb" />
+      </span>
+      <span className="ax-check-sr">Design check</span>
+    </button>
+  );
 }
 
 const SEVERITY_RANK: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
@@ -70,7 +129,7 @@ export function DesignCheckBadges({ result, nodes, check }: { result: LiveResult
     () => (result?.summary.ready ? [...result.evaluation.findings].filter((finding) => finding.severity !== "low").sort(bySeverity) : []),
     [result],
   );
-  if (findings.length === 0) return null;
+  if (!check.enabled || findings.length === 0) return null;
 
   const perNode = new Map<string, EvaluationFinding[]>();
   for (const finding of findings) {
@@ -177,13 +236,25 @@ export function DesignCheckPanel({
     check.setFocus(null);
   };
 
+  if (!check.enabled) {
+    return (
+      <div className="ax-check ax-check-bar" data-off>
+        <EnabledSwitch check={check} />
+        <span className="ax-check-off-label">Design check: off</span>
+      </div>
+    );
+  }
+
   if (!check.open) {
     return (
-      <button type="button" className="ax-check ax-check-pill" data-clean={findings.length === 0 || undefined} onClick={() => check.setOpen(true)}>
-        <ShieldCheck size={14} aria-hidden="true" />
-        Design check
-        <span className="ax-check-count">{findings.length === 0 ? "no problems" : `${findings.length} problem${findings.length === 1 ? "" : "s"}${serious ? ` · ${serious} serious or worth fixing` : ""}`}</span>
-      </button>
+      <div className="ax-check ax-check-bar">
+        <EnabledSwitch check={check} />
+        <button type="button" className="ax-check-pill" data-clean={findings.length === 0 || undefined} onClick={() => check.setOpen(true)}>
+          <ShieldCheck size={14} aria-hidden="true" />
+          Design check
+          <span className="ax-check-count">{findings.length === 0 ? "no problems" : `${findings.length} problem${findings.length === 1 ? "" : "s"}${serious ? ` · ${serious} serious or worth fixing` : ""}`}</span>
+        </button>
+      </div>
     );
   }
 
@@ -191,7 +262,7 @@ export function DesignCheckPanel({
   return (
     <section className="ax-check ax-check-panel" aria-label="Design check">
       <header className="ax-check-head">
-        <ShieldCheck size={15} aria-hidden="true" />
+        <EnabledSwitch check={check} />
         <h2>Design check</h2>
         <button
           type="button"
