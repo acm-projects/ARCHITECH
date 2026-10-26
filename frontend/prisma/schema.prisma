@@ -53,6 +53,7 @@ model User {
   projects        Project[]
   aiRequests      AiRequest[]
   challengeSubmissions ChallengeSubmission[]
+  practiceAttempts     PracticeAttempt[]
 
   @@map("users")
 }
@@ -325,4 +326,31 @@ model RunItem {
   @@unique([projectId, number])
   @@index([projectId, ownerId])
   @@map("run_items")
+}
+
+// Practice: each graded attempt at "Predict, then run" (kind "prediction") or the Incident Lab
+// (kind "incident"), so learners can see whether they improve. The server grades every attempt
+// itself with the metrics engine (src/lib/architecture/practice/).
+model PracticeAttempt {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  kind         String
+  // The Incident Lab scenario; null for predictions and incidents on the learner's own design.
+  scenarioId   String?  @map("scenario_id")
+  projectId    String?  @map("project_id")
+  graph        Json
+  traffic      Json
+  // EVALUATION_MODEL_VERSION that graded it: results from an older engine can be told apart.
+  modelVersion Int      @map("model_version")
+  // What the learner predicted or answered, and the graded result.
+  answer       Json
+  result       Json
+  correct      Int
+  total        Int
+  passed       Boolean
+  createdAt    DateTime @default(now()) @map("created_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind, createdAt])
+  @@map("practice_attempts")
 }

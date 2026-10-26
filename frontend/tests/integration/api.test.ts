@@ -725,6 +725,86 @@ function defineTests(dbUrl: string) {
     }
   });
 
+  test("practice: predictions and Incident Lab attempts are graded on the server and kept as history", T, async () => {
+    const user = await register("Practice");
+    const node = (id: string, type: string, label: string, x: number, properties?: Record<string, number>) => ({ id, type: "architecture", position: { x, y: 0 }, data: { type, label, ...(properties ? { properties } : {}) } });
+    const link = (source: string, target: string) => ({ id: `${source}->${target}`, source, target });
+    const design = (replicas: number) => ({
+      schemaVersion: 1,
+      nodes: [node("client-1", "client", "Users", 0), node("load-balancer-1", "load-balancer", "LB", 200), node("server-1", "server", "API", 400, { replicas }), node("database-1", "database", "DB", 600)],
+      edges: [link("client-1", "load-balancer-1"), link("load-balancer-1", "server-1"), link("server-1", "database-1")],
+    });
+    for (const route of ["/api/practice/attempts", "/api/practice/incidents", "/api/practice/incidents/cache-outage"]) {
+      assert.equal((await call("GET", route)).status, 401, route);
+    }
+    assert.equal((await call("POST", "/api/practice/predictions", { body: { graph: design(2), prediction: { handlesLoad: true } } })).status, 401);
+
+    // Predict, then run.
+    const predicted = await call("POST", "/api/practice/predictions", {
+      cookie: user.cookie,
+      body: { graph: design(2), traffic: { requestsPerSecond: 3_000 }, after: design(4), prediction: { firstToFill: "database-1", handlesLoad: true, change: { capacity: "up" }, confidence: "medium" } },
+    });
+    assert.equal(predicted.status, 201, JSON.stringify(predicted.json));
+    const graded = predicted.json as { attempt: { id: string }; answers: { question: string; correct: boolean; explanation: string }[]; correct: number; total: number };
+    assert.deepEqual(graded.answers.map((answer) => [answer.question, answer.correct]), [["firstToFill", false], ["handlesLoad", true], ["change.capacity", true]]);
+    assert.match(graded.answers[0]!.explanation, /^API fills up first/);
+    assert.deepEqual([graded.correct, graded.total], [2, 3]);
+    assert.equal((await call("POST", "/api/practice/predictions", { cookie: user.cookie, body: { graph: design(2), prediction: { firstToFill: "nope" } } })).status, 400);
+    assert.equal((await call("POST", "/api/practice/predictions", { cookie: user.cookie, body: { graph: design(2), prediction: { change: { capacity: "up" } } } })).status, 400, "a change needs `after`");
+    assert.equal((await call("POST", "/api/practice/predictions", { cookie: user.cookie, body: { graph: design(2), prediction: { handlesLoad: true }, score: 100 } })).status, 400, "no extra fields");
+
+    // What if a part fails, on any design.
+    const impact = await call("POST", "/api/practice/impact", { cookie: user.cookie, body: { graph: design(2), incident: { kind: "component-down", nodeId: "load-balancer-1" } } });
+    assert.equal(impact.status, 200, JSON.stringify(impact.json));
+    assert.equal((impact.json as { during: { servedPercent: number } }).during.servedPercent, 0);
+    assert.equal((await call("POST", "/api/practice/impact", { cookie: user.cookie, body: { graph: design(2), incident: { kind: "component-down", nodeId: "gone" } } })).status, 400);
+
+    // Incident Lab: the scenario hides its answer until an attempt is graded.
+    const list = (await call("GET", "/api/practice/incidents", { cookie: user.cookie })).json as { scenarios: { id: string; passed: boolean }[] };
+    assert.ok(list.scenarios.some((scenario) => scenario.id === "cache-outage"));
+    const view = await call("GET", "/api/practice/incidents/cache-outage", { cookie: user.cookie });
+    assert.equal(view.status, 200);
+    const scenario = view.json as { design: { nodes: unknown[]; edges: { id: string; source: string; target: string }[] }; impact: { during: { servedPercent: number } } };
+    assert.equal(scenario.impact.during.servedPercent, 0, "the starting design fails");
+    assert.ok(!JSON.stringify(view.json).includes("debrief") && !JSON.stringify(view.json).includes("rootCause"));
+    assert.equal((await call("GET", "/api/practice/incidents/no-such-scenario", { cookie: user.cookie })).status, 404);
+
+    const wrong = await call("POST", "/api/practice/incidents/cache-outage/attempts", { cookie: user.cookie, body: { diagnosis: "server-1", graph: { schemaVersion: 1, ...scenario.design } } });
+    assert.equal(wrong.status, 201, JSON.stringify(wrong.json));
+    const first = wrong.json as { passed: boolean; diagnosis: { correct: boolean }; debrief: { rootCause: string } };
+    assert.equal(first.passed, false);
+    assert.equal(first.diagnosis.correct, false);
+    assert.match(first.debrief.rootCause, /only through Redis/);
+
+    const fixed = {
+      schemaVersion: 1,
+      nodes: (scenario.design.nodes as { id: string; data: Record<string, unknown> }[]).map((part) => (part.id === "database-1" ? { ...part, data: { ...part.data, properties: { replicas: 2 } } } : part)),
+      edges: [...scenario.design.edges, { id: "server-1->database-1", source: "server-1", target: "database-1" }],
+    };
+    const right = await call("POST", "/api/practice/incidents/cache-outage/attempts", { cookie: user.cookie, body: { diagnosis: "cache-1", graph: fixed } });
+    assert.equal(right.status, 201, JSON.stringify(right.json));
+    assert.equal((right.json as { passed: boolean }).passed, true, JSON.stringify((right.json as { checks: unknown }).checks));
+    assert.equal((await call("POST", "/api/practice/incidents/cache-outage/attempts", { cookie: user.cookie, body: {} })).status, 400);
+    assert.equal((await call("POST", "/api/practice/incidents/cache-outage/attempts", { cookie: user.cookie, body: { diagnosis: "not-in-it" } })).status, 400);
+
+    // History.
+    const history = (await call("GET", "/api/practice/attempts", { cookie: user.cookie })).json as {
+      attempts: { kind: string }[];
+      summary: { predictions: { attempts: number; accuracy: number }; incidents: { attempts: number; passedScenarios: string[] } };
+    };
+    assert.equal(history.attempts.length, 3);
+    assert.deepEqual([history.summary.predictions.attempts, history.summary.predictions.accuracy], [1, 67]);
+    assert.deepEqual(history.summary.incidents, { attempts: 2, passedScenarios: ["cache-outage"] });
+    assert.equal(((await call("GET", "/api/practice/attempts?kind=prediction", { cookie: user.cookie })).json as { attempts: unknown[] }).attempts.length, 1);
+    assert.equal((await call("GET", "/api/practice/attempts?kind=nope", { cookie: user.cookie })).status, 400);
+    const listed = (await call("GET", "/api/practice/incidents", { cookie: user.cookie })).json as { scenarios: { id: string; passed: boolean; attempts: number }[] };
+    assert.deepEqual(listed.scenarios.find((scenario) => scenario.id === "cache-outage"), { ...listed.scenarios.find((scenario) => scenario.id === "cache-outage")!, attempts: 2, passed: true });
+
+    // Someone else sees none of it.
+    const other = await register("Other learner");
+    assert.equal(((await call("GET", "/api/practice/attempts", { cookie: other.cookie })).json as { attempts: unknown[] }).attempts.length, 0);
+  });
+
   test("a save based on an outdated copy is refused, so another device's work is not overwritten", T, async () => {
     const user = await register("Two");
     const id = randomUUID();
