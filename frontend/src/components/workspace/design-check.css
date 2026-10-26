@@ -1,0 +1,128 @@
+/* Design check over the canvas (DesignCheck.tsx). Uses the workspace's tokens (--ax-*). */
+
+.ax-workspace .ax-canvas-overlays > .ax-check { pointer-events: auto; }
+
+.ax-workspace .ax-check {
+  position: absolute;
+  z-index: 10;
+  bottom: 12px;
+  /* Clear of the component toolbox on the left edge. */
+  left: 80px;
+  border: 1px solid var(--ax-line);
+  border-radius: 12px;
+  background: var(--ax-surface);
+  color: var(--ax-ink);
+  box-shadow: 0 6px 20px rgba(17, 17, 17, 0.06);
+  font-size: 12px;
+}
+.ax-workspace .ax-check-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.ax-workspace .ax-check-pill:hover { background: var(--ax-canvas); }
+.ax-workspace .ax-check-pill:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 2px; }
+.ax-workspace .ax-check-count { color: var(--ax-muted); font-weight: 400; }
+.ax-workspace .ax-check-pill[data-clean] svg { color: #16a34a; }
+
+.ax-workspace .ax-check-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(380px, calc(100% - 96px));
+  max-height: calc(100% - 120px);
+  padding: 12px;
+  overflow-y: auto;
+}
+.ax-workspace .ax-check-head { display: flex; align-items: center; gap: 6px; }
+.ax-workspace .ax-check-head h2 { flex: 1; margin: 0; font-size: 13px; font-weight: 600; }
+.ax-workspace .ax-check-close { display: inline-flex; padding: 3px; border: 0; border-radius: 6px; background: none; color: var(--ax-muted); cursor: pointer; }
+.ax-workspace .ax-check-close:hover { background: var(--ax-canvas); color: var(--ax-ink); }
+
+.ax-workspace .ax-check-applied { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; background: #ecfdf3; color: #14532d; }
+.ax-workspace .ax-check-applied p { flex: 1; margin: 0; }
+.ax-workspace .ax-check-undo { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1px solid currentColor; border-radius: 6px; background: none; color: inherit; font: inherit; cursor: pointer; }
+
+.ax-workspace .ax-check-uptime { padding: 10px; border-radius: 8px; background: var(--ax-canvas); }
+.ax-workspace .ax-check-uptime p { margin: 0; }
+.ax-workspace .ax-check-uptime-total strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.ax-workspace .ax-check-uptime-total span { color: var(--ax-muted); }
+.ax-workspace .ax-check-label { margin-top: 6px !important; color: var(--ax-ink-soft); font-size: 11px; }
+.ax-workspace .ax-check-chain { margin-top: 2px !important; font-variant-numeric: tabular-nums; line-height: 1.6; }
+.ax-workspace .ax-check-chain [data-weakest] { color: var(--ax-danger); font-weight: 600; }
+.ax-workspace .ax-check-times { color: var(--ax-muted); }
+.ax-workspace .ax-check-instances { color: var(--ax-muted); font-weight: 400; }
+.ax-workspace .ax-check-note { margin-top: 4px; color: var(--ax-ink-soft); font-size: 11px; }
+
+.ax-workspace .ax-check-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ax-workspace .ax-check-list li { padding: 8px 10px; border: 1px solid var(--ax-line); border-radius: 8px; }
+.ax-workspace .ax-check-list li[data-focused] { border-color: var(--ax-ink-soft); }
+.ax-workspace .ax-check-list p { margin: 0; }
+.ax-workspace .ax-check-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-weight: 500; }
+.ax-workspace .ax-check-severity { color: var(--ax-muted); font-size: 10.5px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.04em; }
+.ax-workspace .ax-check-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--ax-subtle); }
+.ax-workspace [data-severity="high"] > .ax-check-title .ax-check-dot { background: var(--ax-danger); }
+.ax-workspace [data-severity="medium"] > .ax-check-title .ax-check-dot { background: #d97706; }
+.ax-workspace .ax-check-message { margin-top: 2px !important; color: var(--ax-ink-soft); }
+.ax-workspace .ax-check-advice { margin-top: 4px !important; color: var(--ax-muted); font-size: 11px; }
+
+.ax-workspace .ax-check-fix { display: grid; gap: 3px; margin-top: 6px; }
+.ax-workspace .ax-check-fix button {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--ax-ink);
+  border-radius: 6px;
+  background: var(--ax-ink);
+  color: var(--ax-surface);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.ax-workspace .ax-check-fix button:hover { opacity: 0.88; }
+.ax-workspace .ax-check-fix button:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 2px; }
+.ax-workspace .ax-check-effect { display: block; color: var(--ax-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+/* On the canvas, in flow coordinates (ViewportPortal). */
+.ax-workspace .ax-check-badge {
+  position: absolute;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 2px solid var(--ax-surface);
+  border-radius: 999px;
+  background: #d97706;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: all;
+  box-shadow: 0 2px 6px rgba(17, 17, 17, 0.2);
+}
+.ax-workspace .ax-check-badge[data-severity="high"] { background: var(--ax-danger); }
+.ax-workspace .ax-check-badge:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 2px; }
+.ax-workspace .ax-check-outline {
+  position: absolute;
+  z-index: 999;
+  top: 0;
+  left: 0;
+  border: 2px dashed #d97706;
+  border-radius: 14px;
+  pointer-events: none;
+}
+.ax-workspace .ax-check-outline[data-severity="high"] { border-color: var(--ax-danger); }
+@media (prefers-reduced-motion: no-preference) {
+  .ax-workspace .ax-check-outline { animation: ax-check-pulse 1.4s ease-in-out infinite alternate; }
+}
+@keyframes ax-check-pulse { from { opacity: 1; } to { opacity: 0.45; } }

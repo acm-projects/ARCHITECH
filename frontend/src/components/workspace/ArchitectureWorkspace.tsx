@@ -48,6 +48,7 @@ import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
+import { DesignCheckBadges, DesignCheckPanel, useDesignCheck } from "./DesignCheck";
 import { LiveMetricsBar } from "./LiveMetricsBar";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
@@ -195,6 +196,8 @@ function Workspace({ project }: { project: Project }) {
   const showInspector = mode === "challenge" || learn.exploring;
   // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
   const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
+  // Problems marked on the canvas, with one-click fixes and where the uptime comes from.
+  const designCheck = useDesignCheck();
 
   // Check a connection before React Flow lets the user create it.
   // We read the current graph directly from React Flow so this never validates
@@ -498,6 +501,7 @@ function Workspace({ project }: { project: Project }) {
                   panOnScroll
                 >
                   <Controls showInteractive={false} />
+                  {canRunDesign && <DesignCheckBadges result={live.result} nodes={nodes} check={designCheck} />}
                 </ReactFlow>
               </InspectorContext.Provider>
             </div>
@@ -511,6 +515,17 @@ function Workspace({ project }: { project: Project }) {
                   changes={live.changes}
                   requestsPerSecond={activeRuns.traffic.requestsPerSecond}
                   componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+                />
+              )}
+              {canRunDesign && (
+                <DesignCheckPanel
+                  result={live.result}
+                  nodes={nodes}
+                  edges={edges}
+                  traffic={activeRuns.traffic}
+                  check={designCheck}
+                  onApply={replaceGraph}
+                  onUndo={undo}
                 />
               )}
 
