@@ -1,8 +1,11 @@
 "use client";
 
 import { useCallback, useState, type DragEvent } from "react";
+import { ChevronDown } from "lucide-react";
 import {
   Controls,
+  ConnectionLineType,
+  StepEdge,
   MarkerType,
   ReactFlow,
   ReactFlowProvider,
@@ -41,13 +44,14 @@ import { InspectorContext } from "./InspectorContext";
 import { useWorkspaceInspector } from "./useWorkspaceInspector";
 import WorkspaceInspector from "./WorkspaceInspector";
 import { ArchitectToggle } from "./ai/ArchitectPanel";
-import { ExportButton } from "./ExportButton";
+import { ExportButton, RunnableAppButton } from "./ExportButton";
 import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
+import { DesignCheckBadges, DesignCheckPanel, useDesignCheck } from "./DesignCheck";
 import { LiveMetricsBar } from "./LiveMetricsBar";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
@@ -68,8 +72,10 @@ const FIT_VIEW_OPTIONS = {
   padding: 0.4,
 };
 
-// Most edge styling lives in the CSS file. The arrowhead needs to be set here
-// because React Flow creates it as part of the edge itself.
+// Render existing default edges with angular routing without changing saved graph data.
+const edgeTypes = { default: StepEdge };
+
+// React Flow creates arrowheads from edge options rather than stylesheet rules.
 const defaultEdgeOptions = {
   markerEnd: {
     type: MarkerType.ArrowClosed,
@@ -195,6 +201,8 @@ function Workspace({ project }: { project: Project }) {
   const showInspector = mode === "challenge" || learn.exploring;
   // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
   const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
+  // Problems marked on the canvas, with one-click fixes and where the uptime comes from.
+  const designCheck = useDesignCheck();
 
   // Check a connection before React Flow lets the user create it.
   // We read the current graph directly from React Flow so this never validates
@@ -457,6 +465,7 @@ function Workspace({ project }: { project: Project }) {
             <div hidden={!showInspector}>
               <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />
               <ExportButton title={title} popoverTarget={menuId} />
+              <RunnableAppButton projectId={project.id} popoverTarget={menuId} />
             </div>
           )}
         />
@@ -474,6 +483,8 @@ function Workspace({ project }: { project: Project }) {
                   nodes={nodes}
                   edges={edges}
                   nodeTypes={nodeTypes}
+                  edgeTypes={edgeTypes}
+                  connectionLineType={ConnectionLineType.Step}
                   onNodesChange={onNodesChange}
                   onEdgesChange={onEdgesChange}
                   onConnect={handleConnect}
@@ -497,20 +508,41 @@ function Workspace({ project }: { project: Project }) {
                   panOnScroll
                 >
                   <Controls showInteractive={false} />
+                  {canRunDesign && <DesignCheckBadges result={live.result} nodes={nodes} check={designCheck} />}
                 </ReactFlow>
               </InspectorContext.Provider>
             </div>
 
             {/* Keep floating tools below the header while the graph extends behind it. */}
             <div className="ax-canvas-overlays">
-              {/* Live estimates stay on the canvas; test results stay in the inspector. */}
+              {/* Share one bottom stack so estimates and design checks cannot overlap. */}
               {canRunDesign && (
-                <LiveMetricsBar
-                  result={live.result}
-                  changes={live.changes}
-                  requestsPerSecond={activeRuns.traffic.requestsPerSecond}
-                  componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
-                />
+                <div className="ax-canvas-status">
+                  <details className="ax-live-dock">
+                    <summary onKeyDown={(event) => {
+                      if (event.key === " " || event.key === "Enter") event.stopPropagation();
+                    }}>
+                      <span>Live estimates</span>
+                      <small>{activeRuns.traffic.requestsPerSecond.toLocaleString("en-US")} req/s</small>
+                      <ChevronDown size={13} aria-hidden="true" />
+                    </summary>
+                    <LiveMetricsBar
+                      result={live.result}
+                      changes={live.changes}
+                      requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                      componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+                    />
+                  </details>
+                  <DesignCheckPanel
+                    result={live.result}
+                    nodes={nodes}
+                    edges={edges}
+                    traffic={activeRuns.traffic}
+                    check={designCheck}
+                    onApply={replaceGraph}
+                    onUndo={undo}
+                  />
+                </div>
               )}
 
               {/* If saving the selected mode fails, show the error without breaking the editor. */}

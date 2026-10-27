@@ -300,6 +300,12 @@ pre { font-family: var(--font-mono); }
 
 .ui-control:hover:not(:disabled) { transform: none; }
 
+/* Press feedback stays inside the control, so compact layouts never jump. */
+.btn.ui-control:active:not(:disabled):not([aria-disabled="true"]) {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+
 .ui-control:disabled,
 .ui-input:disabled {
   cursor: not-allowed;

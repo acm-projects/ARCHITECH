@@ -1,8 +1,9 @@
 // Custom technologies: technologies an imported repository uses that ARCHITECH does not model
 // (an unknown docker-compose service, an app written in .NET, Rust, Ruby...). They are saved
 // with the project (graph.customTechnologies) and listed in its sidebar under "From your repo",
-// so the user can drag that exact technology onto the canvas as a Custom component. They carry
-// no numbers: Run Design passes traffic through them unmeasured.
+// so the user can drag that exact technology onto the canvas as a Custom component. With
+// `actsAs` the placed component is measured as that kind of component (customComponents.ts);
+// without it, Run Design passes traffic through it unmeasured.
 
 export type CustomTechnology = {
   // Stable within the project, e.g. "traefik".
@@ -11,7 +12,11 @@ export type CustomTechnology = {
   name: string;
   // Why it was found, e.g. 'docker-compose.yml runs the "traefik" image'.
   evidence: string[];
+  // The built-in component type it behaves like, e.g. "database" for ClickHouse.
+  actsAs?: ActsAsType;
 };
+
+import { isActsAsType, type ActsAsType } from "../architecture/customComponents.ts";
 
 export const MAX_CUSTOM_TECHNOLOGIES = 30;
 export const MAX_CUSTOM_NAME_LENGTH = 60;
@@ -30,7 +35,7 @@ export function customTechnologiesProblem(raw: unknown, path: string): string | 
   for (const [index, item] of raw.entries()) {
     const at = `${path}[${index}]`;
     if (!isRecord(item)) return `${at} must be an object.`;
-    const extra = Object.keys(item).find((key) => !["id", "name", "evidence"].includes(key));
+    const extra = Object.keys(item).find((key) => !["id", "name", "evidence", "actsAs"].includes(key));
     if (extra) return `${at} has an unknown key "${extra}".`;
     if (typeof item.id !== "string" || !CUSTOM_ID_PATTERN.test(item.id)) return `${at}.id must be lowercase letters, digits or "-".`;
     if (ids.has(item.id)) return `${at}.id "${item.id}" is repeated.`;
@@ -45,6 +50,7 @@ export function customTechnologiesProblem(raw: unknown, path: string): string | 
     ) {
       return `${at}.evidence must be at most ${MAX_CUSTOM_EVIDENCE} lines of at most ${MAX_CUSTOM_EVIDENCE_LENGTH} characters.`;
     }
+    if (item.actsAs !== undefined && !isActsAsType(item.actsAs)) return `${at}.actsAs is not a component type.`;
   }
   return null;
 }
@@ -61,7 +67,7 @@ export function sanitizeCustomTechnologies(raw: unknown): CustomTechnology[] | u
       ? item.evidence.filter((line): line is string => typeof line === "string" && line.length <= MAX_CUSTOM_EVIDENCE_LENGTH).slice(0, MAX_CUSTOM_EVIDENCE)
       : [];
     seen.add(item.id);
-    clean.push({ id: item.id, name: item.name, evidence });
+    clean.push({ id: item.id, name: item.name, evidence, ...(isActsAsType(item.actsAs) ? { actsAs: item.actsAs } : {}) });
     if (clean.length === MAX_CUSTOM_TECHNOLOGIES) break;
   }
   return clean.length > 0 ? clean : undefined;

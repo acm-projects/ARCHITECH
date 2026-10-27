@@ -99,7 +99,21 @@ function sizeTechnology(
   let result = at(minReplicas);
   let replicas = minReplicas;
   let enough = true;
-  if (implementation.capacityPerInstance !== null && !fits(result)) {
+  if (implementation.capacityPerInstance !== null && !fits(result) && !isDatabase) {
+    // For non-database components, both request and connection utilization scale with
+    // 1 / instances. Size directly instead of simulating the whole graph at every guess.
+    replicas = Math.min(maxReplicas, Math.ceil(result.config.instances * result.utilization / TARGET_UTILIZATION));
+    result = at(replicas);
+    // Check the boundary with the engine too, including floating-point rounding.
+    while (!fits(result) && replicas < maxReplicas) result = at(++replicas);
+    while (replicas > minReplicas) {
+      const previous = at(replicas - 1);
+      if (!fits(previous)) break;
+      replicas -= 1;
+      result = previous;
+    }
+    enough = fits(result);
+  } else if (implementation.capacityPerInstance !== null && !fits(result)) {
     // Grow until it fits (doubling), then binary search for the fewest replicas that fit.
     let low = minReplicas;
     let high = Math.max(1, minReplicas);

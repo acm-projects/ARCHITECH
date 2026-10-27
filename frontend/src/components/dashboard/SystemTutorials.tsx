@@ -5,6 +5,7 @@ import DailyChallenge from "./DailyChallenge";
 import { urlShortenerChallenge } from "../challenge/challenges";
 import { NETFLIX_COMPONENTS, NETFLIX_CONNECTIONS, NETFLIX_NODES } from "../breakdowns/netflix";
 import TopologyPreview from "../projects/TopologyPreview";
+import ArchitectureTile from "../projects/ArchitectureTile";
 import { NETFLIX_BREAKDOWN_ROUTE } from "../../lib/routes";
 
 const UPCOMING = [
@@ -15,36 +16,33 @@ const UPCOMING = [
 export default function SystemTutorials() {
   return (
     <section className="ax-dashboard-tutorials bg-white px-5 sm:px-8 lg:px-14">
-      <div className="ax-dashboard-tutorial-heading">
-        <h2 className="ax-dashboard-section-title">System breakdowns</h2>
-        <p className="mt-1 text-xs text-[#737373]">Explore the architecture behind real-world systems.</p>
+      <div className="ax-dashboard-project-heading mb-5">
+        <div>
+          <h2 className="ax-dashboard-section-title">System breakdowns</h2>
+          <p className="mt-1 text-xs text-[#737373]">Explore the architecture behind real-world systems.</p>
+        </div>
       </div>
       <div className="ax-dashboard-learning-content">
-        <ul className="ax-breakdown-catalog" aria-label="System breakdowns">
-          <li className="ax-dashboard-project-card min-w-0">
-            <Link href={NETFLIX_BREAKDOWN_ROUTE} className="ax-breakdown-catalog-link" aria-label="Explore Netflix system breakdown">
-              <div className="ax-dashboard-project-preview ax-breakdown-catalog-preview">
-                <TopologyPreview nodes={NETFLIX_NODES} edges={[...NETFLIX_CONNECTIONS]} />
-              </div>
-              <div className="ax-dashboard-project-metadata">
-                <div className="ax-breakdown-catalog-title">
-                  <span>Netflix</span><span aria-hidden="true">&rarr;</span>
-                </div>
-                <p>Video delivery &middot; {NETFLIX_COMPONENTS.length} components</p>
-                <p className="ax-breakdown-catalog-detail">Guided by Archie</p>
-              </div>
-            </Link>
-          </li>
+        <ul className="ax-dashboard-project-grid ax-breakdown-catalog" aria-label="System breakdowns">
+          <ArchitectureTile
+            href={NETFLIX_BREAKDOWN_ROUTE}
+            label="Explore Netflix system breakdown"
+            preview={<TopologyPreview nodes={NETFLIX_NODES} edges={[...NETFLIX_CONNECTIONS]} />}
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <Link href={NETFLIX_BREAKDOWN_ROUTE} className="min-w-0 truncate text-sm font-medium tracking-tight focus-visible:underline">Netflix</Link>
+              <span className="shrink-0 text-[11px] text-neutral-500">Guided</span>
+            </div>
+            <p className="mt-1 text-[11px] text-neutral-500">Video delivery &middot; {NETFLIX_COMPONENTS.length} components</p>
+          </ArchitectureTile>
           {UPCOMING.map(item => (
-            <li key={item.company} className="ax-dashboard-project-card ax-breakdown-catalog-unavailable min-w-0">
-              <div className="ax-dashboard-project-preview ax-breakdown-catalog-preview">
-                <Image src={item.logo} alt="" width={120} height={64} className="ax-breakdown-catalog-logo" />
+            <ArchitectureTile key={item.company} preview={<Image src={item.logo} alt="" width={120} height={64} className="ax-breakdown-catalog-logo" />}>
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-sm font-medium tracking-tight">{item.company}</span>
+                <span className="shrink-0 text-[11px] text-neutral-500">Coming soon</span>
               </div>
-              <div className="ax-dashboard-project-metadata">
-                <div className="ax-breakdown-catalog-title"><span>{item.company}</span><span>Coming soon</span></div>
-                <p>{item.topic}</p>
-              </div>
-            </li>
+              <p className="mt-1 text-[11px] text-neutral-500">{item.topic}</p>
+            </ArchitectureTile>
           ))}
         </ul>
         <DailyChallenge

@@ -9,7 +9,9 @@ import { serverError } from "@/lib/server/log";
 
 // Version history of a project (rules: src/lib/projects/versions.ts).
 //   GET   200 { versions: [{ id, title, kind, label, summary, createdAt }] }, newest first
-//   POST  body { label?, kind?: "manual" | "before-restore" }: snapshot the saved project now
+//   POST  body { label?, kind?: "manual" | "before-restore" | "other-device" }: snapshot the
+//         saved project now ("other-device": the sync engine keeps a version saved elsewhere
+//         before overwriting it)
 //         201 { version }
 // Automatic versions are recorded by PUT /api/projects/[id] when the design changes.
 // 401 not signed in · 404 not one of the user's projects.
@@ -45,8 +47,8 @@ export async function POST(request: Request, { params }: Context) {
   const label = validateLabel(body.label);
   if (!label.ok) return NextResponse.json({ error: label.error }, { status: 400 });
   const kind = body.kind ?? "manual";
-  if (kind !== "manual" && kind !== "before-restore") {
-    return NextResponse.json({ error: 'kind must be "manual" or "before-restore".' }, { status: 400 });
+  if (kind !== "manual" && kind !== "before-restore" && kind !== "other-device") {
+    return NextResponse.json({ error: 'kind must be "manual", "before-restore" or "other-device".' }, { status: 400 });
   }
   try {
     const owner = await requireOwnedProject(id);

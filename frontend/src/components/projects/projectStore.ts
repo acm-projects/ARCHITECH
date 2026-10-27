@@ -45,7 +45,8 @@ export type ProjectMode = "learn" | "challenge";
 
 // Keeps track of how the project was originally created.
 // "github": built by importing a GitHub repository (POST /api/github/import).
-export type ProjectSource = "blank" | "duplicate" | "template" | "shared" | "github";
+// "compose": built from a docker-compose file (POST /api/projects/from-compose).
+export type ProjectSource = "blank" | "duplicate" | "template" | "shared" | "github" | "compose";
 
 const PROJECT_MODES: readonly ProjectMode[] = ["learn", "challenge"];
 export const DEFAULT_PROJECT_MODE: ProjectMode = "learn";
@@ -55,6 +56,7 @@ const PROJECT_SOURCES: readonly ProjectSource[] = [
   "template",
   "shared",
   "github",
+  "compose",
 ];
 
 // This is the main saved shape of a project.

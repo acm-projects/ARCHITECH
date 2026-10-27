@@ -6653,23 +6653,15 @@ body,
   padding-bottom: 16px;
 }
 
-.ax-dashboard-tutorial-heading { margin-bottom: 12px; }
 .ax-dashboard-learning-content { display: grid; gap: 16px; }
 
-/* Breakdowns use the same preview/metadata boundary as saved projects. */
-.ax-breakdown-catalog { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
-.ax-breakdown-catalog-link { display: flex; height: 100%; flex-direction: column; color: inherit; text-decoration: none; }
-.ax-breakdown-catalog-preview { flex: 1; min-height: 92px; padding: 12px; }
-.ax-breakdown-catalog-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 500; }
-.ax-breakdown-catalog .ax-dashboard-project-metadata p { margin: 5px 0 0; color: var(--color-muted); font-size: 10px; line-height: 1.4; }
-.ax-breakdown-catalog-logo { width: 90px; height: 42px; object-fit: contain; filter: grayscale(1); opacity: 0.55; }
-.ax-breakdown-catalog-unavailable .ax-breakdown-catalog-title > span:last-child { color: var(--color-muted); font-size: 9px; font-weight: 400; }
-.ax-breakdown-catalog-unavailable:hover { border-color: var(--color-line); }
-.ax-breakdown-catalog-link:focus-visible { outline: 2px solid var(--canvas-accent); outline-offset: 3px; }
+/* Examples use the project tile and spacing; only the number of available items differs. */
+.ax-breakdown-catalog { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 160px; max-height: none; align-content: start; }
+.ax-breakdown-catalog-logo { width: 90px; height: 42px; object-fit: contain; filter: grayscale(1); opacity: .55; }
+.ax-dashboard-project-card.is-unavailable:hover { border-color: var(--color-line); }
 
 @media (max-width: 639px) {
   .ax-breakdown-catalog { grid-template-columns: minmax(0, 1fr); }
-  .ax-breakdown-catalog-preview { height: 100px; flex: none; }
 }
 
 .ax-dashboard-learning-content .ax-daily-challenge {
@@ -6742,6 +6734,12 @@ body,
 .ax-new-project-dialog .ax-repository-import:hover:not(:disabled) { background: var(--neutral-800); }
 .ax-repository-back { justify-self: start; padding: 4px 0; border: 1px solid transparent; background: transparent; color: var(--color-muted); }
 .ax-repository-picker .ax-repository-error { color: var(--color-danger); }
+.ax-import-yaml { width: 100%; min-height: 260px; max-height: 45dvh; padding: 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); background: var(--neutral-50); color: var(--color-ink); font: 11px/1.5 var(--font-mono); white-space: pre; overflow: auto; resize: vertical; tab-size: 2; }
+.ax-import-yaml:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.ax-import-review code { font: 11px var(--font-mono); }
+.ax-import-notes { display: grid; gap: 4px; margin: 0; padding-left: 16px; list-style: disc; color: var(--color-muted); line-height: 1.5; }
+.ax-import-research { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); }
+.ax-import-research > button { justify-self: start; padding: 6px 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); background: var(--neutral-0); }
 
 
 .ax-challenge-intro { width: min(420px, calc(100vw - 32px)); padding: 28px; }

@@ -149,7 +149,17 @@ export const SEARCH_RATE_DEFAULT = 0.1;
 // A larger `capacity` also costs proportionally more.
 export function configureNode(node: GraphNode): NodeSimulationConfig {
   const type = node.data.type;
-  const profile = profileOf(type, node.data.implementation);
+  const standard = profileOf(type, node.data.implementation);
+  // A measured custom component's own numbers (customComponents.ts) replace the standard ones.
+  const overrides = node.data.profile;
+  const profile = overrides
+    ? {
+        ...standard,
+        ...(overrides.latencyMs === undefined ? {} : { latencyMs: overrides.latencyMs }),
+        ...(overrides.monthlyCostPerInstance === undefined ? {} : { monthlyCostPerInstance: overrides.monthlyCostPerInstance }),
+        ...(overrides.availability === undefined ? {} : { availability: overrides.availability }),
+      }
+    : standard;
   const isDatabase = roleOf(type) === "database";
 
   const replicas = Math.floor(
@@ -171,8 +181,9 @@ export function configureNode(node: GraphNode): NodeSimulationConfig {
           // A capacity below 1 is a mistake, not a tiny component.
           rejectBelowMin: true,
         });
+  // A bigger instance costs proportionally more, unless its cost was given explicitly.
   const sizeFactor =
-    capacityPerInstance === null || profile.capacityPerInstance === null
+    capacityPerInstance === null || profile.capacityPerInstance === null || overrides?.monthlyCostPerInstance !== undefined
       ? 1
       : capacityPerInstance / profile.capacityPerInstance;
 

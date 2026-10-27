@@ -6,7 +6,15 @@ export type GraphNode = {
   id: string;
   // implementation: a component_implementations id (componentLibrary.ts); optional, the
   // type's default when missing or not an implementation of this type.
-  data: { type: ArchitectureNodeType; label?: string; implementation?: string; properties?: NodeProperties };
+  data: {
+    type: ArchitectureNodeType;
+    label?: string;
+    implementation?: string;
+    properties?: NodeProperties;
+    // Set only by evaluation (customComponents.ts measuredNode): a custom component's own numbers
+    // replacing its role's standard ones. Never stored.
+    profile?: { latencyMs?: number; monthlyCostPerInstance?: number; availability?: number };
+  };
 };
 export type GraphEdge = { source: string; target: string };
 export type GraphInput = {

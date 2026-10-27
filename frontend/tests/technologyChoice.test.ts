@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { COMPONENT_TYPES, implementationById, implementationsFor } from "../src/lib/architecture/componentLibrary.ts";
 import { ASSUMPTIONS, configureNode } from "../src/lib/architecture/evaluation/capabilities.ts";
-import { simulate } from "../src/lib/architecture/evaluation/simulation.ts";
+import { simulate, type NodeSimulation } from "../src/lib/architecture/evaluation/simulation.ts";
 import { setNodeImplementation } from "../src/lib/architecture/implementationEditing.ts";
 import {
   compareTechnologiesForNode,
@@ -114,8 +114,10 @@ test("the instances needed are the fewest that keep the component under the head
   const graph = design();
   const comparison = compareTechnologiesForNode(graph, traffic(5_000), "d");
   assert.ok(comparison && comparison.basis === "design");
+  // The core databases all keep up; warehouses (Snowflake, BigQuery...) are reported as not enough.
+  for (const id of ["postgresql", "mysql", "mongodb"]) assert.ok(comparison.options.find((option) => option.implementation.id === id)?.enough, id);
   for (const option of comparison.options) {
-    assert.ok(option.enough);
+    if (!option.enough) continue;
     const at = (replicas: number) => {
       const swapped = {
         ...graph,
@@ -146,6 +148,34 @@ test("more load or more data costs more", () => {
   assert.equal(cost(5_000, 2_000).storageCost, 2_000 * ASSUMPTIONS.databaseCostPerGb);
 });
 
+test("non-database sizing matches the engine at the replica boundary for every technology", () => {
+  for (const { name } of COMPONENT_TYPES) {
+    if (name === "database") continue;
+    const graph = {
+      nodes: [node("c", "client"), node("subject", name)],
+      edges: [{ source: "c", target: "subject" }],
+    };
+    for (const load of [traffic(2_000), { ...traffic(200_000), concurrentUsers: 1_000_000 }]) {
+      const comparison = compareTechnologiesForNode(graph, load, "subject")!;
+      for (const option of comparison.options) {
+        if (option.replicasNeeded === null) continue;
+        const at = (replicas: number): NodeSimulation => simulate({
+          ...graph,
+          nodes: [graph.nodes[0], node("subject", name, option.implementation.id, { replicas })],
+        }, load).nodes.find((entry) => entry.id === "subject")!;
+        const result = at(option.replicasNeeded);
+        const label: string = `${name}: ${option.implementation.id} at ${load.requestsPerSecond} req/s`;
+        assert.equal(option.enough, result.utilization <= ASSUMPTIONS.nearCapacityUtilization, label);
+        assert.equal(option.monthlyCost, result.config.monthlyCost, label);
+        assert.equal(option.latencyMs, result.latencyMs, label);
+        if (option.enough && option.replicasNeeded > 1) {
+          assert.ok(at(option.replicasNeeded - 1).utilization > ASSUMPTIONS.nearCapacityUtilization, label);
+        }
+      }
+    }
+  }
+});
+
 test("technologies compare on their own numbers, and the node's settings are ignored for sizing", () => {
   const graph = design();
   graph.nodes[2] = node("d", "database", "mongodb", { replicas: 0, capacity: 1 });
@@ -158,7 +188,9 @@ test("technologies compare on their own numbers, and the node's settings are ign
 
 test("too many writes for one primary is reported, not hidden", () => {
   const comparison = compareTechnologiesForNode(design(), traffic(20_000, 500), "d")!;
-  for (const option of comparison.options) assert.equal(option.enough, false);
+  // The core relational and document databases write through one primary; wide-column stores
+  // such as ScyllaDB or Aerospike can take it.
+  for (const id of ["postgresql", "mysql", "mongodb"]) assert.equal(comparison.options.find((option) => option.implementation.id === id)?.enough, false, id);
   assert.match(formatInstances(comparison.options[0])!, /^over /);
 });
 

@@ -3,6 +3,7 @@
 import { ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 
+import ComponentGlyph from "../workspace/ComponentGlyph";
 import ArchiePanel from "../workspace/ai/ArchiePanel";
 import { ArchieMessage, ArchieStarters } from "../workspace/ai/ArchieConversation";
 import {
@@ -98,13 +99,15 @@ export default function NetflixGuide({ progress, connections, onNavigate }: Netf
     <ArchiePanel
       label="Archie walkthrough"
       className="ax-breakdown-guide"
+      headerAction={<span className="ax-breakdown-progress" role="status" aria-label={`${revealedCount} of ${NETFLIX_COMPONENTS.length} components built`}>{revealedCount}/{NETFLIX_COMPONENTS.length} built</span>}
       messageKey={step}
       messageRef={list}
       focus={<>
         <span className="ax-ai-focus-chip" ref={focusLabel} tabIndex={-1}>
+          {component && <ComponentGlyph type={component.type} />}
           <span className="ax-ai-focus-name">{component?.label ?? "Full system"}</span>
         </span>
-        {component && <span className="ax-ai-hint">{component.chapter}</span>}
+        {component && component.chapter !== component.label && <span className="ax-ai-hint">{component.chapter}</span>}
       </>}
       footer={
         <div className="ax-ai-composer ax-breakdown-composer">
@@ -112,7 +115,6 @@ export default function NetflixGuide({ progress, connections, onNavigate }: Netf
             <button type="button" className="ax-breakdown-back" aria-label="Previous component" title="View the previous component" onClick={() => onNavigate("previous")} disabled={stepIndex === 0}>
               <ArrowLeft size={12} aria-hidden="true" /><span>Previous</span>
             </button>
-            <span className="ax-ai-hint" role="status" aria-label={`${revealedCount} of ${NETFLIX_COMPONENTS.length} components built`}>{revealedCount}/{NETFLIX_COMPONENTS.length} built</span>
             <button type="button" className="ax-ai-send ax-breakdown-next" title={nextComponent ? `Continue building: add ${nextComponent.label}` : undefined} onClick={() => onNavigate("next")}>
               {complete ? "Start over" : nextComponent ? `Add ${nextComponent.label}` : "Review system"} <ArrowRight size={13} aria-hidden="true" />
             </button>
@@ -120,7 +122,8 @@ export default function NetflixGuide({ progress, connections, onNavigate }: Netf
         </div>
       }
     >
-      <ArchieMessage role="assistant">
+      {/* The panel header already identifies the opening explanation. Replies retain their speaker. */}
+      <ArchieMessage role="assistant" showSpeaker={false}>
         <p className="ax-ai-answer">{component?.explanation ?? REVIEW}</p>
         {component && <p className="ax-ai-answer">{component.why}</p>}
         <details className="ax-breakdown-sources">

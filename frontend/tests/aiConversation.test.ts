@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { MAX_SAVED_TURNS, validateConversation } from "../src/lib/ai/conversation.ts";
+import { MAX_SAVED_TURNS, buildChatHistory, validateConversation } from "../src/lib/ai/conversation.ts";
 
 const snapshot = { score: 70, p95LatencyMs: 40, monthlyCost: 300, capacityRps: 2000, uptimePercent: 99.9 };
 const suggestion = {
@@ -38,4 +38,44 @@ test("a conversation is validated before it is saved", () => {
     assert.ok(!result.ok, JSON.stringify(body).slice(0, 80));
     assert.match(result.error, message);
   }
+});
+
+test("chat history omits cancelled or failed exchanges while retaining successful context", () => {
+  const messages = buildChatHistory(
+    [
+      { role: "user", text: "What is an API server?" },
+      { role: "assistant", text: "A server that handles API requests.", done: true },
+      { role: "user", text: "What does my database connect to?" },
+      { role: "assistant", text: "Partial answer", done: true, notes: ["Stopped."] },
+      { role: "user", text: "What is a cache?" },
+      { role: "assistant", text: "", done: true, error: "The provider is busy." },
+      { role: "user", text: "Previous question that never finished" },
+      { role: "assistant", text: "", done: false },
+    ],
+    "What is a database?",
+  );
+
+  assert.deepEqual(messages, [
+    { role: "user", content: "What is an API server?" },
+    { role: "assistant", content: "A server that handles API requests." },
+    { role: "user", content: "What is a database?" },
+  ]);
+});
+
+test("chat history sends no more than four messages including the latest question", () => {
+  const messages = buildChatHistory(
+    [
+      { role: "user", text: "First question" },
+      { role: "assistant", text: "First answer", done: true },
+      { role: "user", text: "Second question" },
+      { role: "assistant", text: "Second answer", done: true },
+      { role: "user", text: "Third question" },
+      { role: "assistant", text: "Third answer", done: true },
+    ],
+    "Latest question",
+  );
+
+  assert.ok(messages.length <= 4);
+  assert.deepEqual(messages[messages.length - 1], { role: "user", content: "Latest question" });
+  assert.equal(messages[0].role, "user");
 });

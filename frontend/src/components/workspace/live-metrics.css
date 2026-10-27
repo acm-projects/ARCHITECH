@@ -3,15 +3,15 @@
 .ax-workspace .ax-live {
   position: absolute;
   z-index: 10;
-  top: 12px;
-  left: 12px;
-  max-width: min(560px, calc(100% - 24px));
+  bottom: 12px;
+  left: 56px;
+  max-width: min(600px, calc(100% - 68px));
   padding: 8px 12px;
-  border: 1px solid var(--ax-line);
+  border: 1px solid var(--ax-line-strong);
   border-radius: 12px;
   background: var(--ax-surface);
   color: var(--ax-ink);
-  box-shadow: 0 6px 20px rgba(17, 17, 17, 0.06);
+  box-shadow: none;
   font-size: 12px;
 }
 .ax-workspace .ax-live-head {
@@ -28,15 +28,20 @@
 .ax-workspace .ax-live-info { display: inline-flex; cursor: help; }
 .ax-workspace .ax-live-row { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 4px; }
 .ax-workspace .ax-live-metric { display: grid; }
+.ax-workspace .ax-live-metric + .ax-live-metric { padding-left: 12px; border-left: 1px solid var(--ax-line); }
+@media (max-width: 640px) {
+  .ax-workspace .ax-live-metric + .ax-live-metric { padding-left: 0; border-left: 0; }
+}
 .ax-workspace .ax-live-label { color: var(--ax-muted); font-size: 11px; }
-.ax-workspace .ax-live-value { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ax-workspace .ax-live-value { font-family: var(--font-mono); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ax-workspace .ax-live-change { margin-left: 3px; font-size: 9px; vertical-align: 2px; }
 .ax-workspace .ax-live-change[data-direction="improved"] { color: #16a34a; }
 .ax-workspace .ax-live-change[data-direction="regressed"] { color: var(--ax-danger); }
 .ax-workspace .ax-live-note { margin-top: 4px; color: var(--ax-ink-soft); font-size: 11px; }
 @media (max-width: 640px) {
-  .ax-workspace .ax-live-row { gap: 4px 10px; }
-  .ax-workspace .ax-live-value { font-size: 13px; }
+  .ax-workspace .ax-live { left: 12px; right: 12px; max-width: none; padding: 8px 10px; }
+  .ax-workspace .ax-live-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px 10px; }
+  .ax-workspace .ax-live-value { font-size: 11px; }
 }
 
 /* "In this design" comparison inside the technology picker (DesignComparisonTable.tsx). */

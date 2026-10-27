@@ -5,7 +5,7 @@ import { gradeAnswer, type CaseGrade } from "../src/lib/ai/eval/grade.ts";
 import { chatModelFromEnv } from "../src/lib/ai/model.ts";
 
 // npm run eval:ai [-- --verbose] [-- --case <id>]
-// Asks the configured AI (AI_PROVIDER / GROQ_API_KEY / ANTHROPIC_API_KEY from .env) every
+// Asks the configured AI (AI_PROVIDER / GROQ_API_KEY / ANTHROPIC_API_KEY / GEMINI_API_KEY from .env) every
 // regression case in src/lib/ai/eval/cases.ts and scores the answers: does it name the right
 // component, describe the right problem, and is any suggestion the right kind and an improvement?
 // Fails (exit 1) when fewer than AI_EVAL_MIN_PASS (default 0.8) of the cases pass. Calls the
@@ -19,7 +19,7 @@ const pauseMs = Number(process.env.AI_EVAL_PAUSE_MS ?? 2_500);
 
 const choice = chatModelFromEnv(process.env);
 if (!choice) {
-  console.error("No AI provider is configured. Set GROQ_API_KEY (and AI_PROVIDER=groq) or ANTHROPIC_API_KEY in frontend/.env.");
+  console.error("No AI provider is configured. Set GROQ_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY (and AI_PROVIDER=gemini to select Gemini) in frontend/.env.");
   process.exit(2);
 }
 const cases = EVAL_CASES.filter((c) => !only || c.id === only);

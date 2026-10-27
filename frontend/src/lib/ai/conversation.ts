@@ -1,4 +1,5 @@
-import type { MetricsSnapshot, SuggestionEvent } from "./architectChat.ts";
+import type { ChatMessage, MetricsSnapshot, SuggestionEvent } from "./architectChat.ts";
+import { MAX_MESSAGES } from "./architectChat.ts";
 
 // A project's saved AI Architect conversation: the panel's turns, so a reload or another device
 // shows the same chat. Validated before it is stored (PUT /api/projects/[id]/conversation).
@@ -14,6 +15,39 @@ export type SavedAssistantTurn = {
   applied: Record<string, string>;
 };
 export type SavedTurn = SavedUserTurn | SavedAssistantTurn;
+
+export type ChatHistoryTurn =
+  | { role: "user"; text: string }
+  | {
+      role: "assistant";
+      text: string;
+      done: boolean;
+      error?: string;
+      notes?: readonly string[];
+      suggestions?: readonly Pick<SuggestionEvent, "title">[];
+    };
+
+function isSuccessfulAssistant(turn: ChatHistoryTurn | undefined): turn is Extract<ChatHistoryTurn, { role: "assistant" }> {
+  return turn?.role === "assistant" && turn.done && !turn.error && !turn.notes?.includes("Stopped.");
+}
+
+export function buildChatHistory(turns: readonly ChatHistoryTurn[], question: string): ChatMessage[] {
+  const messages: ChatMessage[] = [];
+  for (const [index, turn] of turns.entries()) {
+    if (turn.role === "user") {
+      if (isSuccessfulAssistant(turns[index + 1])) messages.push({ role: "user", content: turn.text });
+    } else if (isSuccessfulAssistant(turn) && turns[index - 1]?.role === "user") {
+      const proposed = turn.suggestions?.map((suggestion) => `(Proposed: ${suggestion.title})`).join(" ") ?? "";
+      const content = [turn.text.trim(), proposed].filter(Boolean).join("\n");
+      if (content) messages.push({ role: "assistant", content });
+    }
+  }
+  messages.push({ role: "user", content: question });
+  // Keep the provider context small; the latest question is always retained.
+  let recent = messages.slice(-MAX_MESSAGES);
+  while (recent.length > 0 && recent[0].role !== "user") recent = recent.slice(1);
+  return recent;
+}
 
 export const MAX_SAVED_TURNS = 200;
 export const MAX_CONVERSATION_BYTES = 256 * 1024;

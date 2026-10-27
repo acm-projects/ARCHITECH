@@ -69,7 +69,7 @@ function ComponentRow({
 }
 
 // One technology from the project's imported repository that the app does not model. Dragging
-// it places a Custom component named after it (drawn and connected, not measured).
+// it places a Custom component named after it, measured as what it acts like (if known).
 function CustomTechnologyRow({ technology }: { technology: CustomTechnology }) {
   return (
     <div
@@ -80,7 +80,7 @@ function CustomTechnologyRow({ technology }: { technology: CustomTechnology }) {
         writeComponentDragData(event.dataTransfer, {
           type: "custom",
           label: technology.name,
-          properties: { technology: technology.name },
+          properties: { technology: technology.name, ...(technology.actsAs ? { actsAs: technology.actsAs } : {}) },
         });
         setComponentDragImage(
           event.dataTransfer,
@@ -145,8 +145,9 @@ export default function ComponentToolbox({
           {[...CATEGORIES.map(({ family, label }) => ({ key: family, label, Icon: CATEGORY_ICONS[family] })),
             { key: "all" as const, label: "More", Icon: MoreHorizontal },
             ...(customTechnologies.length > 0 ? [{ key: "repo" as const, label: "From your repo", Icon: Puzzle }] : [])].map(({ key, label, Icon }) => (
-            <li key={key}>
+            <li key={key} className={key === "all" ? "ax-library-divider" : undefined}>
               <button type="button" className="ax-panel-handle" aria-label={label}
+                style={{ "--ax-family": key === "all" || key === "repo" ? "var(--ax-ink-soft)" : FAMILY_COLORS[key] } as CSSProperties}
                 aria-expanded={category === key}
                 onPointerEnter={(event) => {
                   if (event.pointerType !== "mouse") return;
@@ -170,7 +171,7 @@ export default function ComponentToolbox({
     >
       <div className="ax-component-menu flex min-h-0 flex-col p-3">
         {/* More uses search as its header; categories retain their title. */}
-        <div className="flex shrink-0 items-center justify-between gap-2 pb-2">
+        <div className="ax-component-menu-header flex shrink-0 items-center justify-between gap-2 pb-2">
           {category === "all" ? <div className="ax-search min-w-0 flex-1">
             <ComponentGlyph type="search" className="ax-search-glyph" />
             <input type="search" value={query} placeholder="Search" aria-label="Search"

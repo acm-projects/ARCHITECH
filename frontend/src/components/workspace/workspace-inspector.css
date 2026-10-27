@@ -1,38 +1,70 @@
 /* Independent pills share the available height; their headers never collapse. */
-.ax-workspace .ax-inspector { --ax-inspector-radius: 16px; }
+.ax-workspace .ax-inspector { --ax-inspector-radius: var(--ax-radius-dock); }
 .ax-workspace .ax-diagram-viewport { height: 100%; }
 .ax-workspace .ax-canvas-panel.ax-inspector[data-side="right"] {
   top: 50%;
   bottom: auto;
+  /* The overlay already clears the header; reserve only the canvas edge inset. */
   height: min(680px, calc(100% - 24px));
   right: 12px;
   max-height: none;
   transform: translateY(-50%);
   align-items: center;
 }
+/* Keep the icon column fixed; labels grow toward the canvas, not under the pointer. */
 .ax-workspace .ax-inspector-frame {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 180px;
-  max-width: min(340px, calc(100vw - 24px));
+  align-items: flex-end;
+  gap: 6px;
+  width: 340px;
+  max-width: calc(100vw - 24px);
   max-height: 100%;
   min-height: 0;
   pointer-events: none;
-  transition: width 160ms var(--ax-ease);
 }
-/* Hover previews the full width; opening a tool keeps it wide after the pointer leaves. */
-.ax-workspace .ax-inspector[data-expanded="true"] .ax-inspector-frame,
-.ax-workspace .ax-inspector-frame:has(.ax-inspector-section-toggle:focus-visible) { width: 340px; }
-.ax-workspace .ax-inspector-section-toggle small { display: none; }
-.ax-workspace .ax-inspector[data-expanded="true"] .ax-inspector-section-toggle small,
-.ax-workspace .ax-inspector-frame:has(.ax-inspector-section-toggle:focus-visible) .ax-inspector-section-toggle small { display: inline; }
+.ax-workspace .ax-inspector-frame > .ax-inspector-section {
+  --ax-inspector-label-display: none;
+  --ax-inspector-status-display: none;
+  width: 46px;
+  max-width: 100%;
+  transition: width 160ms var(--ax-ease), border-color 160ms var(--ax-ease);
+}
+.ax-workspace .ax-inspector[data-expanded="true"] .ax-inspector-section,
+.ax-workspace .ax-inspector[data-selection="true"] .ax-inspector-section,
+.ax-workspace .ax-inspector-section:has(.ax-inspector-section-toggle:focus-visible) {
+  width: 220px;
+  --ax-inspector-label-display: inline;
+  --ax-inspector-status-display: inline-flex;
+}
 @media (hover: hover) and (pointer: fine) {
-  .ax-workspace .ax-inspector-frame:hover { width: 340px; }
-  .ax-workspace .ax-inspector-frame:hover .ax-inspector-section-toggle small { display: inline; }
+  .ax-workspace .ax-inspector-frame > .ax-inspector-section:hover {
+    width: 220px;
+    --ax-inspector-label-display: inline;
+    --ax-inspector-status-display: inline-flex;
+    border-color: var(--ax-line-strong);
+  }
 }
+.ax-workspace .ax-inspector-frame > .ax-inspector-section:is([data-expanded="true"], [open], .ax-inspector-guidance),
+.ax-workspace .ax-inspector-frame > .ax-inspector-section:has(.ax-inspector-archie) {
+  width: 340px;
+}
+.ax-workspace .ax-inspector-section-label {
+  display: var(--ax-inspector-label-display);
+  margin-left: 12px;
+  white-space: nowrap;
+}
+.ax-workspace .ax-inspector-section-toggle small { display: inline; }
+/* A second line leaves room for real status text in the narrow hover label. */
+.ax-workspace .ax-inspector-status { flex-wrap: wrap; justify-content: flex-end; }
+.ax-workspace .ax-inspector-section:not([data-expanded="true"]) .ax-inspector-status small {
+  max-width: 60px;
+  text-align: right;
+  line-height: 1.2;
+}
+.ax-workspace .ax-inspector-section[data-expanded="true"] { border-color: var(--ax-line-strong); }
 @media (prefers-reduced-motion: reduce) {
-  .ax-workspace .ax-inspector-frame { transition: none; }
+  .ax-workspace .ax-inspector-frame > .ax-inspector-section { transition: none; }
 }
 .ax-workspace .ax-inspector [hidden] { display: none !important; }
 .ax-workspace .ax-inspector-archie {
@@ -146,7 +178,9 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 12px;
+  min-height: 44px;
+  position: relative;
+  padding: 12px 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -161,8 +195,26 @@
   font-size: 10px;
   font-weight: 400;
 }
-.ax-workspace .ax-inspector-status { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
-.ax-workspace .ax-inspector-section-toggle > svg:first-child { flex-shrink: 0; }
+.ax-workspace .ax-inspector-status { display: var(--ax-inspector-status-display); align-items: center; gap: 8px; margin-left: auto; margin-right: 46px; flex-shrink: 0; }
+/* Each tool has a stable anchor, including while another section is open. */
+.ax-workspace .ax-inspector-tool-icon {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--ax-radius-tool);
+}
+.ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] .ax-inspector-tool-icon {
+  border-color: var(--ax-line-strong);
+  background: var(--ax-canvas);
+  color: var(--ax-ink);
+}
+.ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] .ax-inspector-section-label { font-weight: 600; }
+.ax-workspace .ax-inspector-section-toggle:active { background: var(--ax-line); }
 .ax-workspace .ax-inspector-section-toggle .ax-ai-portrait { width: 20px; height: 20px; flex-shrink: 0; }
 .ax-workspace .ax-inspector-section-toggle:disabled { opacity: .5; cursor: default; }
 .ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] .ax-inspector-status > svg { transform: rotate(180deg); }
@@ -216,12 +268,12 @@
   gap: 12px;
 }
 .ax-workspace .ax-review-view {
-  padding: 0 12px 12px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--ax-line);
   color: var(--ax-muted);
   font-size: 11px;
 }
-.ax-workspace .ax-review-view .ax-field { width: 170px; margin: 0; font-size: 12px; }
+.ax-workspace .ax-review-view .ax-field { width: 100%; margin: 0; min-height: 32px; font-size: 12px; }
 .ax-workspace .ax-review-context { color: var(--ax-muted); font-size: 11px; }
 .ax-workspace .ax-review-context strong { color: var(--ax-ink); font-weight: 500; text-transform: capitalize; }
 .ax-workspace .ax-review-findings-heading > span,
@@ -229,11 +281,14 @@
 .ax-workspace .ax-review-footer {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 10px 12px;
   border-top: 1px solid var(--ax-line);
 }
 .ax-workspace .ax-review-configure {
+  flex: 1;
+  min-height: 32px;
   padding: 6px 10px;
   border: 1px solid var(--ax-line-strong);
   border-radius: 3px;
@@ -254,7 +309,7 @@
 .ax-workspace .ax-review h3 {
   margin: 0;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.5;
 }
 .ax-workspace .ax-review-issues,
@@ -281,9 +336,13 @@
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
-.ax-workspace .ax-review-metrics-full { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Detailed results read as label/value rows; the overview keeps its three headline values. */
+.ax-workspace .ax-review-metrics-full { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.ax-workspace .ax-review-metrics-full > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; }
+.ax-workspace .ax-review-metrics-full > div + div { border-top: 1px solid var(--ax-line); }
+.ax-workspace .ax-review-metrics-full dd { margin: 0; text-align: right; }
 .ax-workspace .ax-review-group-title { padding-top: 10px; border-top: 1px solid var(--ax-line); }
-.ax-workspace .ax-review-score-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
+.ax-workspace .ax-review-score-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .ax-workspace .ax-review-score-grid > div { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; }
 .ax-workspace .ax-review-score-grid > div:first-child { grid-column: 1 / -1; font-weight: 500; }
 .ax-workspace .ax-review-score-grid dd { margin: 0; font-variant-numeric: tabular-nums; }
@@ -353,7 +412,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
 }
 .ax-workspace .ax-review-finding-title p { font-weight: 500; }
 .ax-workspace .ax-review-finding-title span {
@@ -390,17 +449,44 @@
   }
   .ax-workspace .ax-canvas-panel.ax-inspector[data-side="right"] {
     top: auto;
-    bottom: 12px;
-    left: 12px;
+    bottom: 150px;
+    left: 70px;
     right: 12px;
-    height: calc(100% - 24px);
+    height: calc(100% - 162px);
     transform: none;
     align-items: flex-end;
   }
   .ax-workspace .ax-inspector-frame {
-    max-width: 100%;
+    max-width: min(340px, calc(100vw - 82px));
   }
   .ax-workspace .ax-inspector-header {
     padding-block: 10px;
   }
 }
+
+/* Numeric readouts share the measured rhythm of an engineering instrument. */
+.ax-workspace :is(.ax-review-metrics dd, .ax-review-score-grid dd, .ax-review-comparison dd, .ax-stress-input) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: -0.025em;
+}
+
+.ax-workspace .ax-inspector-state-icon {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  border: 2px solid var(--ax-surface);
+  border-radius: 50%;
+  background: var(--ax-surface);
+  color: var(--ax-ink);
+  box-sizing: content-box;
+}
+.ax-workspace .ax-inspector-section[data-run-state="analyzing"] .ax-inspector-state-icon {
+  animation: ui-spin 900ms linear infinite;
+}
+.ax-workspace .ax-review-notices {
+  margin: 10px 12px;
+  padding: 4px 0 4px 10px;
+  border-left: 2px solid var(--ax-ink-soft);
+}
+.ax-workspace .ax-review[data-run-state="stale"] .ax-review-notices { border-left-style: dashed; }

@@ -18,7 +18,7 @@ import {
   type ProjectMode,
   type ProjectSource,
 } from "../../components/projects/projectStore.ts";
-import { getPropertyDefinition, validatePropertyValue } from "../architecture/componentProperties.ts";
+import { isConfigurableKey, validatePropertyValue } from "../architecture/componentProperties.ts";
 import {
   MAX_PROPERTY_COUNT,
   MAX_PROPERTY_KEY_LENGTH,
@@ -35,7 +35,7 @@ export const MAX_EDGES = 2_000;
 // Project ids are generated in the browser (crypto.randomUUID, or "p-..." as a fallback).
 const PROJECT_ID_PATTERN = /^[A-Za-z0-9_-]{1,100}$/;
 const PROPERTY_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
-const PROJECT_SOURCES: readonly ProjectSource[] = ["blank", "duplicate", "template", "shared", "github"];
+const PROJECT_SOURCES: readonly ProjectSource[] = ["blank", "duplicate", "template", "shared", "github", "compose"];
 
 export type GraphNodePayload = {
   id: string;
@@ -189,7 +189,7 @@ function checkProperties(raw: unknown, type: ArchitectureNodeType, path: string)
       fail(`${at} must be a string, a finite number or a boolean.`);
     }
     // Settings this component supports must be within its range (spec rule 8).
-    if (getPropertyDefinition(type, key)) {
+    if (isConfigurableKey(type, key)) {
       const result = validatePropertyValue(type, key, value);
       if (!result.ok) fail(`${at}: ${result.message}`);
     }

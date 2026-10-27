@@ -3,7 +3,8 @@ import type { Edge } from "@xyflow/react";
 import { useReactFlow } from "@xyflow/react";
 
 import { buildPropertyViews } from "../../lib/architecture/componentConfigView";
-import { commitPropertyDraft, resetComponentProperty } from "../../lib/architecture/propertyEditing";
+import { ACTS_AS_LABELS, ACTS_AS_TYPES, actsAsOf } from "../../lib/architecture/customComponents";
+import { commitPropertyDraft, resetComponentProperty, setCustomRole } from "../../lib/architecture/propertyEditing";
 import { ConfigureCard, ExplainCard } from "./NodeContextUi";
 import { TechnologyChooser } from "./TechnologyPicker";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
@@ -39,11 +40,21 @@ export default function ComponentInspector({ node, onAskArchie, showReview = tru
           type={data.type}
           name={data.label}
           onRename={(label) => updateNodeData(id, { label })}
-          properties={buildPropertyViews(data.type, data.properties, {}, data.implementation)}
+          properties={buildPropertyViews(data.type, data.properties ?? {}, {}, data.implementation)}
           onSetProperty={setProperty}
           onResetProperty={resetProperty}
           technology={
-            <TechnologyChooser nodeId={id} type={data.type} implementation={data.implementation} />
+            data.type === "custom" ? (
+              <CustomRoleChooser
+                value={actsAsOf(data.properties)}
+                onChange={(actsAs) => {
+                  const result = setCustomRole(getNodes(), id, actsAs);
+                  if (result.ok && result.changed) setNodes(result.nodes);
+                }}
+              />
+            ) : (
+              <TechnologyChooser nodeId={id} type={data.type} implementation={data.implementation} />
+            )
           }
         />
       </div>
@@ -59,5 +70,31 @@ export default function ComponentInspector({ node, onAskArchie, showReview = tru
         </details>
       )}
     </>
+  );
+}
+
+// What a custom component behaves like. Once chosen it is measured in live metrics and Run
+// Design with that role's numbers, which its settings below can then change.
+function CustomRoleChooser({ value, onChange }: { value: string | null; onChange: (actsAs: string | null) => void }) {
+  return (
+    <div className="ax-card-section ax-configure-technology">
+      <label className="ax-card-label" htmlFor="ax-custom-role">Acts like</label>
+      <select
+        id="ax-custom-role"
+        className="ax-field mt-1"
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value === "" ? null : event.target.value)}
+      >
+        <option value="">Not measured</option>
+        {ACTS_AS_TYPES.map((type) => (
+          <option key={type} value={type}>{ACTS_AS_LABELS[type]}</option>
+        ))}
+      </select>
+      <p className="ax-tech-basis">
+        {value
+          ? "Measured like this kind of component. Set its capacity, latency, cost and uptime below."
+          : "Choose what it behaves like to include it in live metrics and Run Design."}
+      </p>
+    </div>
   );
 }
