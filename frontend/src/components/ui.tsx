@@ -14,7 +14,6 @@ import {
 } from "react";
 
 import type { ExperienceLevel } from "../types";
-import { useAppTheme } from "./AppThemeBoundary";
 
 const ICON_PATHS = {
   arrow: <><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>,
@@ -134,13 +133,9 @@ const LOGO_ASSETS = {
   "with-archie": { src: "/logo-with-archie.svg", width: 1720, height: 385 },
   "without-archie": { src: "/logo-without-archie.svg", width: 1365, height: 215 },
   "archie-without-props": { src: "/logo-archie-without-props.svg", width: 1405, height: 214 },
-  "with-archie-dark": { src: "/logo-with-archie-dark.svg", width: 1720, height: 385 },
-  "without-archie-dark": { src: "/logo-without-archie-dark.svg", width: 1365, height: 215 },
-  "archie-without-props-dark": { src: "/logo-archie-without-props-dark.svg", width: 1405, height: 214 },
 } as const;
 
-type LogoVariant = "with-archie" | "without-archie" | "archie-without-props";
-type LogoAssetVariant = keyof typeof LOGO_ASSETS;
+type LogoVariant = keyof typeof LOGO_ASSETS;
 const LEVEL_LOGOS = {
   Beginner: "with-archie",
   Intermediate: "archie-without-props",
@@ -164,13 +159,11 @@ export function Logo({
 }: LogoProps) {
   // The signed-in user's experience level comes from the NextAuth session (saved in the DB during onboarding).
   const { data: session } = useSession();
-  const { theme } = useAppTheme();
   const userLevel: ExperienceLevel = session?.user?.experienceLevel ?? "Intermediate";
   const asset = useMemo(() => {
-    const logoVariant = variant === "by-level" ? LEVEL_LOGOS[userLevel] : variant;
-    const assetVariant: LogoAssetVariant = theme === "dark" ? `${logoVariant}-dark` as LogoAssetVariant : logoVariant;
-    return LOGO_ASSETS[assetVariant];
-  }, [theme, variant, userLevel]);
+    if (variant !== "by-level") return LOGO_ASSETS[variant];
+    return LOGO_ASSETS[LEVEL_LOGOS[userLevel]];
+  }, [variant, userLevel]);
   const image = (
     <Image
       {...asset}
