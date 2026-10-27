@@ -14,6 +14,7 @@ import {
   RunComparison,
   RunFindings,
   RunNotices,
+  RunMetrics,
   RunSummary,
 } from "./RunResults"
 import StressTestPanel from "./StressTestPanel"
@@ -25,7 +26,6 @@ type RunPanelProps = {
   onRateChange: (rate: number) => void
   onRun: () => void
   onRunAtRate: (rate: number) => void
-  onViewMetrics: () => void
   componentName: (id: string) => string
 }
 
@@ -43,8 +43,11 @@ export default function RunPanel(props: RunPanelProps) {
   useLayoutEffect(() => {
     details.current?.scrollTo({ top: 0 })
   }, [activeView, completedRun])
-  const selectView = (next: ReviewView) =>
+  const selectView = (next: ReviewView) => {
+    // Footer shortcuts can disappear in the selected view. Keep focus on its picker.
+    viewPicker.current?.focus()
     setSelection({ run: completedRun, view: next })
+  }
   const startRun = (action: () => void) => {
     // The traffic form is hidden after a run, so focus stays on the persistent picker.
     viewPicker.current?.focus()
@@ -58,7 +61,7 @@ export default function RunPanel(props: RunPanelProps) {
       data-run-state={view.runButtonState}
     >
       <label className="ax-review-view">
-        <span>Show</span>
+        <span className="sr-only">Run view</span>
         <select
           ref={viewPicker}
           className="ax-field"
@@ -70,6 +73,7 @@ export default function RunPanel(props: RunPanelProps) {
           <option value="overview" disabled={!result}>
             Last run
           </option>
+          <option value="metrics" disabled={!result}>Metrics</option>
           <option value="comparison" disabled={!result}>
             Compare runs
           </option>
@@ -108,6 +112,9 @@ export default function RunPanel(props: RunPanelProps) {
                 componentName={props.componentName}
               />
             </div>
+            <div hidden={activeView !== "metrics"}>
+              <RunMetrics result={result} />
+            </div>
             <div
               hidden={activeView !== "comparison"}
               className="ax-review-content"
@@ -134,13 +141,11 @@ export default function RunPanel(props: RunPanelProps) {
               Change traffic
             </button>
           )}
-          <button
-            type="button"
-            className="ax-review-configure"
-            onClick={props.onViewMetrics}
-          >
-            Detailed metrics
-          </button>
+          {activeView !== "metrics" && (
+            <button type="button" className="ax-review-configure" onClick={() => selectView("metrics")}>
+              Detailed metrics
+            </button>
+          )}
         </div>
       )}
     </div>

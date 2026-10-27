@@ -9,7 +9,7 @@ import type { DetectedComponent } from "./detectStack.ts";
 //   queue -> worker -> database
 // Connections are a best guess from what is typical; the user adjusts them on the canvas.
 
-const COLUMN_OF: Record<ArchitectureNodeType, number> = {
+export const COLUMN_OF: Record<ArchitectureNodeType, number> = {
   client: 0,
   "web-app": 1,
   "mobile-app": 1,
@@ -28,8 +28,8 @@ const COLUMN_OF: Record<ArchitectureNodeType, number> = {
   worker: 6,
   custom: 4,
 };
-const COLUMN_WIDTH = 240;
-const ROW_HEIGHT = 110;
+export const COLUMN_WIDTH = 240;
+export const ROW_HEIGHT = 110;
 
 export function buildDesign(detected: readonly DetectedComponent[]): GraphDocument {
   const items = [{ type: "client" as const, label: "Users", evidence: [] as string[] }, ...detected];

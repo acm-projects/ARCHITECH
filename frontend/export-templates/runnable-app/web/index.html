@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App</title>
+<!-- Where the app's API lives: empty in the Docker app (same server); filled in by ARCHITECH when
+     the design runs inside it. -->
+<meta name="app-base" content="">
+<link rel="icon" href="/archie.svg">
+<style>
+  :root {
+    --bg: #f6f6f4; --panel: #ffffff; --ink: #18181b; --muted: #6b6b70; --line: #dcdcd8; --soft: #efefec;
+    --archie: #0096ff; --archie-soft: #e0f1ff;
+    --accent: #2563eb; --accent-soft: #dbe6fd; --done: #15803d; --done-soft: #dcf2e3;
+    --fail: #b91c1c; --fail-soft: #fbe2e2; --warn: #a16207; --warn-soft: #fbf0d0;
+    --radius: 10px; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --shadow: 0 6px 24px rgba(0, 0, 0, .12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111113; --panel: #1b1b1e; --ink: #ededee; --muted: #9a9aa1; --line: #313136; --soft: #232327;
+      --archie: #3aaaff; --archie-soft: #10283d;
+      --accent: #7aa2ff; --accent-soft: #1e2a4a; --done: #4ade80; --done-soft: #15301f;
+      --fail: #f87171; --fail-soft: #3a1717; --warn: #facc15; --warn-soft: #362d0b;
+      --shadow: 0 6px 24px rgba(0, 0, 0, .5);
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); padding: 7px 12px; }
+  button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+  button.link { border: 0; background: none; padding: 0; color: var(--archie); text-decoration: underline; text-underline-offset: 2px; }
+  button:disabled { opacity: .55; cursor: default; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input, textarea, select { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+  textarea { resize: vertical; min-height: 70px; }
+  label { font-size: 13px; color: var(--muted); }
+
+  header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
+  header h1 { font-size: 17px; margin: 0; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  header .who { color: var(--muted); font-size: 13px; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  /* Split screen: Archie's demo on the left, the app on the right. One page, one port. */
+  body { height: 100dvh; overflow: hidden; }
+  .split { display: grid; grid-template-columns: minmax(380px, 46%) minmax(0, 1fr); height: 100dvh; }
+  .demo { display: flex; flex-direction: column; gap: 12px; padding: 16px; min-height: 0; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); }
+  .app-pane { min-height: 0; overflow-y: auto; }
+  .demo-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .demo-head h2 { font-size: 16px; margin: 0; white-space: nowrap; }
+  .map-now { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .map-now b { color: var(--archie); }
+  .stage { flex: 0 0 auto; height: clamp(220px, 44dvh, 520px); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); }
+  .stage svg { display: block; width: 100%; height: 100%; }
+  .what { border-top: 1px solid var(--line); padding-top: 10px; }
+  .what summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  .what[open] summary { margin-bottom: 8px; }
+  .what .stack { gap: 10px; }
+  @media (max-width: 900px) {
+    .split { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+    .demo { max-height: 50dvh; border-right: 0; border-bottom: 1px solid var(--line); padding: 12px; gap: 8px; }
+    .stage { height: 150px; }
+  }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .card h2 { font-size: 16px; margin: 0 0 12px; }
+  .stack { display: grid; gap: 8px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .tabs button[aria-selected="true"] { background: var(--soft); font-weight: 600; }
+  .error { color: var(--fail); margin: 0; }
+  .note { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+  .items { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .item { border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+  .item h3 { margin: 0 0 4px; font-size: 15px; overflow-wrap: anywhere; }
+  .item p { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .badge { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); }
+  .badge.queued { background: var(--warn-soft); color: var(--warn); }
+  .badge.processed { background: var(--done-soft); color: var(--done); }
+  .meta { font-size: 12px; color: var(--muted); }
+
+  /* Diagram */
+  .diagram .edge { stroke: var(--line); stroke-width: 2; fill: none; transition: stroke .25s; }
+  .diagram .edge.lit { stroke: var(--archie); stroke-width: 3; }
+  .diagram .node rect { fill: var(--panel); stroke: var(--line); stroke-width: 2; transition: fill .25s, stroke .25s; }
+  .diagram .node.added rect { stroke-dasharray: 5 4; }
+  .diagram .node text { fill: var(--ink); font: 600 15px system-ui, sans-serif; }
+  .diagram .node text.type { fill: var(--muted); font: 11px system-ui, sans-serif; }
+  .diagram .node.page rect { stroke: var(--archie); }
+  .diagram .node.active rect { fill: var(--archie-soft); stroke: var(--archie); stroke-width: 4; }
+  .diagram .node.done rect { fill: var(--done-soft); stroke: var(--done); }
+  .diagram .node.fail rect { fill: var(--fail-soft); stroke: var(--fail); }
+  .diagram .node.idle { opacity: .5; }
+  .diagram marker path { fill: var(--line); }
+  .diagram marker.lit path { fill: var(--archie); }
+
+  /* What happened */
+  .steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 13px; overflow-y: auto; }
+  .steps li.current { font-weight: 600; }
+  .steps .fail { color: var(--fail); }
+  .steps code { font-family: var(--mono); font-size: 12px; }
+
+  /* Archie, beside the diagram */
+  .archie { display: flex; align-items: flex-start; gap: 10px; }
+  .archie-face { width: 64px; height: 52px; flex-shrink: 0; border: 0; padding: 0; background: none; cursor: pointer; margin-top: 4px; }
+  .archie-face img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .2)); }
+  .archie-face.talking img { animation: bob .6s ease-in-out infinite alternate; }
+  @keyframes bob { to { transform: translateY(-4px); } }
+  .bubble { position: relative; flex: 1; min-width: 0; min-height: 76px; background: var(--archie-soft); border: 2px solid var(--archie); border-radius: 14px; padding: 10px 12px; font-size: 14px; }
+  .bubble::after { content: ""; position: absolute; left: -9px; top: 18px; border: 8px solid transparent; border-right-color: var(--archie); border-left: 0; }
+  .bubble p { margin: 0; }
+  .bubble .who-says { display: block; font-size: 12px; font-weight: 700; color: var(--archie); margin-bottom: 2px; }
+  .bubble .controls { display: flex; gap: 12px; margin-top: 6px; font-size: 12px; }
+  .archie-off { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="split">
+  <!-- Left: Archie shows what each part of your design does -->
+  <aside class="demo" aria-label="How it works">
+    <div class="demo-head">
+      <h2>How it works</h2>
+      <span class="map-now" id="map-now"></span>
+    </div>
+    <div class="stage"><svg class="diagram" id="big-svg" role="img" aria-label="Your design, with the request's path lit up"></svg></div>
+    <div class="archie" id="archie">
+      <button class="archie-face" id="face" aria-label="Archie: show or hide explanations"><img src="/archie.svg" alt=""></button>
+      <div class="bubble" id="bubble" aria-live="polite">
+        <span class="who-says">Archie</span>
+        <p id="say"></p>
+        <div class="controls">
+          <button class="link" id="skip" hidden>Skip</button>
+          <button class="link" id="quiet">Hide</button>
+        </div>
+      </div>
+      <p class="archie-off" id="archie-off" hidden>Archie is resting. Click him to turn explanations back on.</p>
+    </div>
+    <details class="what" id="what">
+      <summary>What happened, step by step</summary>
+      <div class="stack">
+        <select id="history" aria-label="Pick a request"></select>
+        <ol class="steps" id="steps"></ol>
+        <div class="row"><button id="replay">Replay with Archie</button></div>
+      </div>
+    </details>
+  </aside>
+
+  <!-- Right: the app itself -->
+  <div class="app-pane">
+<header>
+  <h1 id="title">App</h1>
+  <span class="who" id="who" hidden></span>
+  <button id="signout" hidden>Sign out</button>
+</header>
+
+<main>
+  <section class="card" id="auth" hidden>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-signin" aria-selected="true">Sign in</button>
+      <button role="tab" id="tab-signup" aria-selected="false">Create account</button>
+    </div>
+    <form id="auth-form" class="stack">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required maxlength="254">
+      <label for="password">Password (8+ characters)</label>
+      <input id="password" type="password" autocomplete="current-password" required minlength="8" maxlength="200">
+      <button class="primary" id="auth-go" type="submit">Sign in</button>
+      <p class="error" id="auth-error" role="alert"></p>
+    </form>
+  </section>
+
+  <section id="app" hidden>
+    <p class="note" id="shared-note" hidden>This design has no authentication, so everyone using this app shares the same items.</p>
+    <div class="card">
+      <h2>New item</h2>
+      <form id="new" class="stack">
+        <label for="new-title">Title</label>
+        <input id="new-title" required maxlength="200">
+        <label for="new-body">Text</label>
+        <textarea id="new-body" maxlength="10000"></textarea>
+        <div id="new-file-row" class="stack" hidden>
+          <label for="new-file">Attach a file (optional, up to 5 MB)</label>
+          <input id="new-file" type="file">
+        </div>
+        <div class="row"><button class="primary" type="submit" id="new-go">Add</button></div>
+        <p class="error" id="new-error" role="alert"></p>
+      </form>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content: space-between; margin-bottom: 12px;">
+        <h2 style="margin: 0;">Your items</h2>
+        <button id="refresh">Refresh</button>
+      </div>
+      <form id="search" class="row" hidden style="margin-bottom: 12px;">
+        <input id="q" type="search" placeholder="Search your items" aria-label="Search your items" style="flex: 1; width: auto;">
+        <button type="submit">Search</button>
+      </form>
+      <ul class="items" id="items"></ul>
+      <p class="note" id="empty" style="margin: 0;">Nothing yet. Add your first item above.</p>
+    </div>
+  </section>
+</main>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const BASE = document.querySelector('meta[name="app-base"]')?.content ?? "";
+  const html = (value) => String(value ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const plain = (value) => String(value ?? "").replace(/<[^>]+>/g, "");
+  let config, user = null, items = [], signup = false, page = null;
+  const history = [];
+  let playing = 0, fast = false, busy = false, pendingIntro = null;
+  const waiting = [];
+  const STEP_MS = 1800;
+  let quiet = false;
+  try { quiet = localStorage.getItem("archie-quiet") === "1"; } catch {}
+
+  // ---- Talking to the app's API, collecting what each part of the design did ----
+  async function api(method, path, { body, raw, headers = {}, label, quiet: background = false, then = false } = {}) {
+    let response;
+    try {
+      response = await fetch(BASE + path, {
+        method,
+        headers: raw ? headers : body !== undefined ? { "Content-Type": "application/json", ...headers } : headers,
+        body: raw ?? (body !== undefined ? JSON.stringify(body) : undefined),
+      });
+    } catch {
+      record({ label: label ?? `${method} ${path}`, method, path, status: 0, headers: new Headers(), steps: [] }, background, then);
+      throw new Error("The app did not answer. Is docker compose still running?");
+    }
+    let steps = [];
+    try { steps = JSON.parse(decodeURIComponent(response.headers.get("X-Trace-Steps") ?? "[]")); } catch { steps = []; }
+    const data = response.headers.get("Content-Type")?.includes("json") ? await response.json().catch(() => ({})) : null;
+    record({ label: label ?? `${method} ${path}`, method, path, status: response.status, headers: response.headers, steps }, background, then);
+    if (!response.ok) throw Object.assign(new Error(data?.error ?? `Request failed (${response.status}).`), { status: response.status });
+    return data;
+  }
+  // then: the request follows another one from the same click (attaching a file after adding the item), so it plays after it.
+  function record(trace, background, then = false) {
+    trace.time = new Date();
+    if (background) return;
+    history.unshift(trace);
+    history.length = Math.min(history.length, 25);
+    renderHistory();
+    play(trace, stepsFor(trace), { background: then });
+  }
+
+  // ---- The diagram (the canvas layout of the design) ----
+  function drawDiagram(svg) {
+    const W = 124, H = 40;
+    // Same layout as the canvas, scaled so the boxes are as close as they can be without overlapping:
+    // pulled together when the canvas is spread out (bigger labels), pushed apart when parts sit close.
+    // Two boxes are clear of each other when they are far enough apart side to side OR top to bottom.
+    let squeeze = 0.4;
+    for (const a of config.design.nodes) for (const b of config.design.nodes) {
+      if (a === b) continue;
+      const dx = Math.abs(a.x - b.x), dy = Math.abs(a.y - b.y);
+      squeeze = Math.max(squeeze, Math.min(dx > 0 ? (W + 26) / dx : Infinity, dy > 0 ? (H + 14) / dy : Infinity));
+    }
+    squeeze = Math.min(3, squeeze);
+    const nodes = config.design.nodes.map((n) => ({ ...n, x: n.x * squeeze, y: n.y * squeeze }));
+    const xs = nodes.map((n) => n.x), ys = nodes.map((n) => n.y);
+    const pad = 20;
+    const minX = Math.min(...xs) - pad, minY = Math.min(...ys) - pad;
+    const width = Math.max(...xs) + W + pad - minX, height = Math.max(...ys) + H + pad - minY;
+    svg.setAttribute("viewBox", `${minX} ${minY} ${width} ${height}`);
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    // The small map is as tall as the drawing needs at its width, within limits.
+    const id = svg.id;
+    const center = (n) => ({ x: n.x + W / 2, y: n.y + H / 2 });
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    // Where a line from a node's centre towards a point leaves its box.
+    const exit = (n, toward) => {
+      const c = center(n), dx = toward.x - c.x, dy = toward.y - c.y;
+      const scale = 1 / Math.max(Math.abs(dx) / (W / 2) || 1e-9, Math.abs(dy) / (H / 2) || 1e-9);
+      return { x: c.x + dx * scale, y: c.y + dy * scale };
+    };
+    const edges = config.design.edges
+      .map((e) => {
+        const a = byId.get(e.source), b = byId.get(e.target);
+        if (!a || !b) return "";
+        const from = exit(a, center(b)), to = exit(b, center(a));
+        return `<path class="edge" data-edge="${html(e.source)}>${html(e.target)}" d="M${from.x},${from.y} L${to.x},${to.y}" marker-end="url(#${id}-arrow)"/>`;
+      })
+      .join("");
+    const boxes = nodes
+      .map((n) => `<g class="node${n.added ? " added" : ""}" data-node="${html(n.id)}" transform="translate(${n.x},${n.y})">
+          <rect width="${W}" height="${H}" rx="10"/>
+          <text x="10" y="26">${html(n.label.length > 12 ? `${n.label.slice(0, 11)}…` : n.label)}</text>
+          <title>${html(`${n.label} (${n.type}${n.added ? ", added by the app" : ""})`)}</title>
+        </g>`)
+      .join("");
+    svg.innerHTML = `<defs>
+        <marker id="${id}-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>${edges}${boxes}`;
+  }
+  const diagramNodes = (node) => document.querySelectorAll(`.diagram .node[data-node="${CSS.escape(node)}"]`);
+  // Parts added by the app (the page's web server) are drawn; the browser stands for the client.
+  const drawn = (node) => (config.design.nodes.some((n) => n.id === node) ? node : null);
+  function setState(node, state) {
+    const id = drawn(node);
+    if (!id) return;
+    for (const el of diagramNodes(id)) {
+      el.classList.remove("active", "done", "fail", "idle");
+      if (state) el.classList.add(state);
+    }
+  }
+  function lightEdge(from, to) {
+    if (!from || !to || from === to) return;
+    for (const el of document.querySelectorAll(`.diagram .edge[data-edge="${CSS.escape(`${from}>${to}`)}"], .diagram .edge[data-edge="${CSS.escape(`${to}>${from}`)}"]`)) el.classList.add("lit");
+  }
+  function clearDiagram() {
+    for (const el of document.querySelectorAll(".diagram .node")) el.classList.remove("active", "done", "fail", "idle");
+    for (const el of document.querySelectorAll(".diagram .edge.lit")) el.classList.remove("lit");
+  }
+
+  // ---- What each request did, part by part (from the trace headers and steps) ----
+  const ip = (value) => (value ?? "").split(",").map((part) => part.trim()).filter(Boolean).at(-1) ?? "";
+  const containerAt = (address) => config.addresses[address.replace(/:\d+$/, "")] ?? address;
+  function stepsFor(trace) {
+    const out = [];
+    const header = (name) => trace.headers.get(name);
+    const serverNode = config.server.node;
+    const authOnPath = config.auth.mode === "on-path" ? config.auth.node : null;
+    const firstServerStep = trace.steps.findIndex((s) => s.node === serverNode);
+    const authSteps = authOnPath ? trace.steps.slice(0, firstServerStep === -1 ? trace.steps.length : firstServerStep) : [];
+    const serverSteps = firstServerStep === -1 ? (authOnPath ? [] : trace.steps) : trace.steps.slice(firstServerStep);
+    const clientNode = config.path[0]?.node;
+    if (clientNode) out.push({ node: clientNode, kind: "client", text: `Your browser sent <code>${html(trace.method)} ${html(trace.path.split("?")[0])}</code>.` });
+    for (const hop of config.path.slice(1)) {
+      if (hop.kind === "dns") {
+        const answer = ip(header(`X-Trace-${hop.resolvedBy}`));
+        if (!answer || answer === "-" || answer === "dns-failed") return [...out, { node: hop.node, kind: "dns", text: `No answer for <code>${html(hop.name)}</code>.`, ok: false }];
+        out.push({ node: hop.node, kind: "dns", name: hop.name, answer: answer.replace(/:\d+$/, ""), text: `Asked “where is <code>${html(hop.name)}</code>?” and got <code>${html(answer.replace(/:\d+$/, ""))}</code> (${html(containerAt(answer))}).` });
+      } else if (hop.kind === "proxy") {
+        const answer = ip(header(`X-Trace-${hop.container}`));
+        if (!answer || answer === "-") return [...out, { node: hop.node, kind: "proxy", text: `${html(hop.label)} could not reach the next part.`, ok: false }];
+        out.push({ node: hop.node, kind: hop.cdn ? "cdn" : "proxy", next: containerAt(answer), text: `${html(hop.does)} → <code>${html(containerAt(answer))}</code>.` });
+      } else if (hop.kind === "auth") {
+        if (!header(`X-Trace-${hop.container}`) && authSteps.length === 0) return [...out, { node: hop.node, kind: "auth", text: "The request did not get here.", ok: false }];
+        out.push(...authSteps.map((s) => ({ ...s, text: html(s.text) })));
+        if (header(`X-Trace-${hop.container}`) === "blocked" || trace.path.startsWith("/api/auth/")) return out;
+      } else if (hop.kind === "pass") {
+        out.push({ node: hop.node, kind: "pass", text: html(hop.does) });
+      } else if (hop.kind === "server") {
+        const instance = header("X-Trace-Api");
+        if (!instance) return [...out, { node: hop.node, kind: "server", text: `No API server answered (${trace.status || "no response"}).`, ok: false }];
+        out.push(...serverSteps.map((s) => ({ ...s, instance, text: html(s.text) })));
+      }
+    }
+    return out.filter((s) => s.node);
+  }
+
+  // ---- Archie: the same steps, in plain words ----
+  const label = (node) => config.labels[node] ?? "this part";
+  const typeOf = (node) => config.design.nodes.find((n) => n.id === node)?.type ?? (node === "__web" ? "web-app" : node === config.server.node ? "server" : "");
+  function explain(step, trace) {
+    const name = `<b>${html(label(step.node))}</b>`;
+    const t = plain(step.text);
+    const has = (pattern) => pattern.test(t);
+    const action = trace.label.toLowerCase();
+    switch (typeOf(step.node)) {
+      case "client":
+        return `This is you! When you chose “${html(trace.label)}”, your browser sent a request into the system. Let's follow it.`;
+      case "web-app":
+        if (step.ok === false) break;
+        return `${name} is the web server that gave you this page. For “${html(action)}”, it hands your request to the next part.`;
+      case "cdn":
+        if (step.ok === false) break;
+        return `${name} keeps copies of pages close to people so they load fast. Your data isn't cached, so this request goes straight through.`;
+      case "dns":
+        if (step.ok === false) return `${name} is the internet's phone book, but it had no number for <code>${html(trace.path)}</code>'s next stop, so the request got lost.`;
+        return `${name} is like the internet's phone book: it looked up where <code>${html(step.name)}</code> lives and answered <code>${html(step.answer)}</code>.`;
+      case "load-balancer":
+        if (step.ok === false) break;
+        return `${name} spreads the work so no single server gets overwhelmed. This time it picked <b>${html(step.next)}</b>; next time it may pick another.`;
+      case "api-gateway":
+        if (step.ok === false) break;
+        return `${name} is the API's front door: it checks where the request should go and routes it there.`;
+      case "auth":
+        if (has(/creating an account/i)) return `${name} handles accounts. It's setting up a new one for you.`;
+        if (has(/^signing in/i)) return `${name} handles sign-in. It's checking who you are.`;
+        if (has(/rejected the form/i)) return `${name} sent the form back: ${html(t.replace(/^rejected the form:\s*/i, ""))}`;
+        if (has(/email is taken/i)) return `${name} found that email already has an account, so it can't make another. Try signing in instead.`;
+        if (has(/no such account/i)) return `${name} couldn't find an account with that email. Create one first!`;
+        if (has(/turned the password/i)) return `${name} scrambled your password into a “hash”, so the real password is never stored, not even in the database.`;
+        if (has(/hashed the password/i)) return `${name} scrambled the password you typed the same way and compared it with the saved one. ${has(/does not match/i) ? "They don't match, so you're not let in." : "They match, so it's really you!"}`;
+        if (has(/no session cookie/i)) return `${name} found no sign-in ticket, so you're not signed in yet.`;
+        if (has(/unknown|expired/i)) return `${name} didn't recognise your sign-in ticket (it may have expired), so you're not signed in.`;
+        if (has(/checked the session/i)) return `${name} checked your sign-in ticket (a cookie your browser sent along) to make sure it's really you.`;
+        if (has(/signed you in/i)) return `${name} gave your browser a sign-in ticket (a cookie), so you stay signed in.`;
+        if (has(/ended the session/i)) return `${name} signed you out by cancelling your sign-in ticket.`;
+        if (has(/let the request through/i)) return `${name} is happy it's you and lets the request continue.`;
+        if (has(/stopped/i)) return `${name} stopped the request: you need to sign in first.`;
+        break;
+      case "server":
+        if (has(/received/i)) return `${name} is where the app's own code runs. <b>${html(step.instance ?? "")}</b> got your request and works out what to do.`;
+        if (has(/passed the request to the auth/i)) return `${name} passes sign-in requests to <b>${html(label(config.auth.node))}</b>, the part of your design that handles accounts.`;
+        if (has(/asked the auth/i)) return `${name} asks <b>${html(label(config.auth.node))}</b> whether you're really signed in.`;
+        if (has(/handled sign-in itself/i)) return `${name} handles sign-in itself, because the design has no separate sign-in service.`;
+        if (has(/memory/i)) return `${name} keeps items in its own memory because the design has no database, so they'd be lost on restart.`;
+        if (has(/rejected the form/i)) return `${name} sent the form back: ${html(t.replace(/^rejected the form:\s*/i, ""))}`;
+        if (has(/on the queue/i)) return `${name} put a job on the waiting line and answered you straight away; a worker does the job in the background.`;
+        break;
+      case "database":
+        if (has(/account/i)) return `${name} looks up whether an account with that email exists. ${has(/found/i) ? "It does!" : "Not yet."}`;
+        if (has(/session/i)) return `${name} ${has(/deleted/i) ? "throws away your sign-in ticket." : has(/saved/i) ? "remembers your sign-in ticket, so you stay signed in." : "looks up your sign-in ticket to check it's valid."}`;
+        if (has(/saved user/i)) return `${name} is the app's long-term memory. It's saving your account: your email and the scrambled password, never the real one.`;
+        if (has(/saved item|saved where/i)) return `${name} is the app's long-term memory. It's saving your information now, so it's still there tomorrow, even if the app restarts.`;
+        if (has(/updated/i)) return `${name} saves your changes, so everyone sees the latest version.`;
+        if (has(/deleted/i)) return `${name} deletes the item for good.`;
+        if (has(/read/i)) return `${name} reads your items from storage so the app can show them.`;
+        break;
+      case "cache":
+        if (has(/hit/i)) return `${name} remembered this answer from a moment ago, so the database didn't have to do any work. That's why caches make apps fast!`;
+        if (has(/miss/i)) return `${name} doesn't have this answer yet, so the server asks the database.`;
+        if (has(/saved the list/i)) return `${name} keeps a copy of the answer for a minute, so the next look is instant.`;
+        if (has(/removed/i)) return `${name} forgets its old copy, because your data just changed.`;
+        break;
+      case "queue":
+        if (has(/waited in line/i)) return `Your item's job waited its turn in ${name} until a worker was free.`;
+        return `${name} is a waiting line for jobs. The app answers you straight away, and the work happens in the background.`;
+      case "worker":
+        return `${name} takes jobs off the line one at a time and does the work: here, counting your item's words.`;
+      case "search":
+        if (has(/removed/i)) return `${name} takes the item out of its search index.`;
+        if (has(/indexed/i)) return `${name} adds the item to its index, like a book's index, so searching is fast.`;
+        if (has(/searched/i)) return `${name} looked up your words in its index and found the matches in a blink, without reading every item.`;
+        break;
+      case "object-storage":
+        if (step.ok === false) break;
+        return `${name} is where files like photos and documents live. Your file is stored safely here.`;
+    }
+    return step.ok === false ? `Uh oh: ${name} couldn't do its part. ${html(t)}` : `${name}: ${html(t)}`;
+  }
+
+  function say(htmlText, talking = false) {
+    $("say").innerHTML = htmlText;
+    $("face").classList.toggle("talking", talking);
+  }
+
+  // ---- Playing a request: light up the parts, Archie explains each ----
+  // Something that happened in the background (the worker finishing) waits its turn;
+  // something you just did plays straight away.
+  async function play(trace, steps = stepsFor(trace), { background = false } = {}) {
+    if (background && busy) return void waiting.push([trace, steps]);
+    const run = ++playing;
+    pendingIntro = null;
+    fast = false;
+    busy = true;
+    clearDiagram();
+    for (const el of document.querySelectorAll(".diagram .node")) el.classList.add("idle");
+    $("steps").innerHTML = steps
+      .map((s) => `<li data-step class="${s.ok === false ? "fail" : ""}"><b>${html(label(s.node))}.</b> ${s.text}${s.ms !== undefined ? ` <span class="meta">${s.ms} ms</span>` : ""}</li>`)
+      .join("");
+    $("skip").hidden = quiet;
+    let previous = null;
+    for (const [index, s] of steps.entries()) {
+      if (run !== playing) return;
+      const node = drawn(s.node) ?? previous;
+      setState(s.node, "active");
+      $("map-now").innerHTML = `Now: <b>${html(label(s.node))}</b>`;
+      lightEdge(previous, drawn(s.node));
+      $("steps").children[index]?.classList.add("current");
+      if (!quiet) say(explain(s, trace), true);
+      if (!fast) await new Promise((resolve) => setTimeout(resolve, quiet ? 650 : STEP_MS));
+      if (run !== playing) return;
+      setState(s.node, s.ok === false ? "fail" : "done");
+      $("steps").children[index]?.classList.remove("current");
+      previous = node;
+    }
+    $("skip").hidden = true;
+    $("map-now").textContent = "";
+    busy = false;
+    const failed = steps.find((s) => s.ok === false);
+    if (!quiet) {
+      say(
+        failed
+          ? `That one stopped at <b>${html(label(failed.node))}</b>, shown in red. Every step is listed under “What happened”.`
+          : `Done! “${html(trace.label)}” went through ${steps.length} step${steps.length === 1 ? "" : "s"}. They're all listed under “What happened”, and you can replay them.`,
+      );
+    }
+    showPage();
+    if (waiting.length) {
+      const [nextTrace, nextSteps] = waiting.shift();
+      setTimeout(() => {
+        if (run === playing) play(nextTrace, nextSteps);
+      }, 1500);
+      return;
+    }
+    // A page change during the request (signing in, say): introduce the new page after.
+    if (pendingIntro) {
+      const intro = pendingIntro;
+      pendingIntro = null;
+      setTimeout(() => {
+        if (run === playing && !busy && !quiet) say(intro);
+      }, fast ? 1200 : 3500);
+    }
+  }
+
+  // ---- Pages: which parts of the design serve the page you are on ----
+  function pageParts() {
+    const path = config.path.map((hop) => hop.node);
+    if (page === "signin") {
+      const authAt = path.indexOf(config.auth.node);
+      const toAuth = authAt >= 0 ? path.slice(0, authAt + 1) : path;
+      return [...toAuth, ...(config.auth.database ? [config.auth.database] : []), ...(config.auth.mode === "service" ? [config.auth.node] : [])];
+    }
+    return [...path, ...Object.values(config.data).filter(Boolean).map((part) => part.node), ...(config.auth.mode === "service" ? [config.auth.node] : [])];
+  }
+  function showPage() {
+    const parts = new Set(pageParts());
+    for (const el of document.querySelectorAll(".diagram .node")) el.classList.toggle("page", parts.has(el.dataset.node));
+  }
+  const pathWords = () => config.path.slice(1).filter((hop) => hop.kind !== "pass").map((hop) => `<b>${html(hop.label)}</b>`).join(" → ");
+  function setPage(next) {
+    if (page === next) return;
+    page = next;
+    showPage();
+    if (quiet) return;
+    const db = config.data.database;
+    const intro =
+      next === "signin"
+        ? `Hi, I'm Archie! This sign-in page is part of your design: the parts outlined in blue in your design serve it. When you sign in, your details travel ${pathWords()} and are checked by <b>${html(label(config.auth.node))}</b>.`
+        : `${config.features.auth ? "You're in! " : "Hi, I'm Archie! "}This is the app built from your design. Everything you do travels ${pathWords()}${db ? `, and what you add is saved in <b>${html(db.label)}</b>` : ""}. Try adding an item on the right and watch your design here!`;
+    if (busy) pendingIntro = intro;
+    else {
+      clearDiagram();
+      say(intro);
+    }
+  }
+
+  // ---- Accounts ----
+  function setTab(isSignup) {
+    signup = isSignup;
+    $("tab-signin").setAttribute("aria-selected", String(!isSignup));
+    $("tab-signup").setAttribute("aria-selected", String(isSignup));
+    $("auth-go").textContent = isSignup ? "Create account" : "Sign in";
+    $("password").autocomplete = isSignup ? "new-password" : "current-password";
+    $("auth-error").textContent = "";
+  }
+  function signedIn(next) {
+    user = next;
+    $("who").hidden = !user?.email;
+    $("who").textContent = user?.email ?? "";
+    $("signout").hidden = !config.features.auth || !user;
+    $("auth").hidden = !config.features.auth || Boolean(user);
+    $("app").hidden = config.features.auth && !user;
+    setPage($("app").hidden ? "signin" : "items");
+    if (!$("app").hidden) loadItems({ quiet: true });
+  }
+
+  // ---- Items ----
+  function renderItems() {
+    $("empty").hidden = items.length > 0;
+    $("items").innerHTML = items
+      .map(
+        (item) => `<li class="item" data-id="${item.id}">
+          <h3>${html(item.title)}</h3>
+          ${item.body ? `<p>${html(item.body)}</p>` : ""}
+          <div class="row">
+            <span class="badge ${html(item.status)}">${html(item.status)}</span>
+            ${item.status === "processed" ? `<span class="meta">${item.wordCount} words · by ${html(item.processedBy)}</span>` : ""}
+            ${item.hasFile ? `<a href="${BASE}/api/items/${item.id}/file" class="meta">📎 ${html(item.fileName)}</a>` : ""}
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            ${config.features.queue ? `<button data-act="process" ${item.status === "queued" ? "disabled" : ""}>Process</button>` : ""}
+            <button data-act="edit">Edit</button>
+            <button data-act="delete">Delete</button>
+          </div>
+        </li>`,
+      )
+      .join("");
+  }
+  let pollTimer = null;
+  async function loadItems({ quiet: background = false } = {}) {
+    const q = $("q").value.trim();
+    try {
+      const before = new Map(items.map((item) => [item.id, item.status]));
+      const result = await api("GET", `/api/items${q ? `?q=${encodeURIComponent(q)}` : ""}`, { label: q ? `Search “${q}”` : "Load your items", quiet: background });
+      items = result.items;
+      renderItems();
+      // The worker finished something since the last look: show that part too.
+      const done = items.find((item) => item.status === "processed" && before.get(item.id) === "queued");
+      if (done && config.data.worker) {
+        const trace = { label: `Worker processed item #${done.id}`, method: "GET", path: "/api/items", status: 200, headers: new Headers(), steps: [], time: new Date() };
+        trace.fixed = [
+          { node: config.data.queue.node, text: `The job for item #${done.id} waited in line on the queue.` },
+          { node: config.data.worker.node, text: `${html(done.processedBy)} took the job and counted ${done.wordCount} words.` },
+          ...(config.data.database ? [{ node: config.data.database.node, text: "Saved item #" + done.id + " as processed." }] : []),
+        ];
+        history.unshift(trace);
+        renderHistory();
+        play(trace, trace.fixed, { background: true });
+      }
+    } catch (error) {
+      if (error.status === 401 && config.features.auth) signedIn(null);
+    }
+    clearTimeout(pollTimer);
+    if (items.some((item) => item.status === "queued")) pollTimer = setTimeout(() => loadItems({ quiet: true }), 1500);
+  }
+
+  function renderHistory() {
+    $("history").innerHTML = history
+      .map((trace, index) => `<option value="${index}">${html(trace.time.toLocaleTimeString())} · ${html(trace.label)}${trace.status ? ` · ${trace.status}` : ""}</option>`)
+      .join("");
+  }
+
+  // ---- Wiring ----
+  $("history").addEventListener("change", (event) => {
+    const trace = history[Number(event.target.value)];
+    if (trace) play(trace, trace.fixed ?? stepsFor(trace));
+  });
+  $("replay").addEventListener("click", () => {
+    const trace = history[Number($("history").value) || 0];
+    if (trace) play(trace, trace.fixed ?? stepsFor(trace));
+  });
+  $("skip").addEventListener("click", () => {
+    fast = true;
+  });
+  const setQuiet = (value) => {
+    quiet = value;
+    try { localStorage.setItem("archie-quiet", value ? "1" : "0"); } catch {}
+    $("bubble").hidden = value;
+    $("archie-off").hidden = !value;
+    if (!value) say("I'm back! Do something in the app and I'll explain what each part of your design does.");
+  };
+  $("quiet").addEventListener("click", () => setQuiet(true));
+  $("face").addEventListener("click", () => setQuiet(!quiet));
+  $("tab-signin").addEventListener("click", () => setTab(false));
+  $("tab-signup").addEventListener("click", () => setTab(true));
+  $("auth-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    $("auth-go").disabled = true;
+    $("auth-error").textContent = "";
+    try {
+      const result = await api("POST", `/api/auth/${signup ? "signup" : "signin"}`, { body: { email: $("email").value, password: $("password").value }, label: signup ? "Create account" : "Sign in" });
+      $("password").value = "";
+      signedIn(result.user);
+    } catch (error) {
+      $("auth-error").textContent = error.message;
+    } finally {
+      $("auth-go").disabled = false;
+    }
+  });
+  $("signout").addEventListener("click", async () => {
+    await api("POST", "/api/auth/signout", { label: "Sign out" }).catch(() => undefined);
+    items = [];
+    signedIn(null);
+  });
+  $("new").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    $("new-go").disabled = true;
+    $("new-error").textContent = "";
+    try {
+      const { item } = await api("POST", "/api/items", { body: { title: $("new-title").value, body: $("new-body").value }, label: "Add an item" });
+      const file = $("new-file").files?.[0];
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) throw new Error("The item was added, but the file is over 5 MB.");
+        await api("PUT", `/api/items/${item.id}/file`, { raw: file, headers: { "Content-Type": file.type || "application/octet-stream", "X-File-Name": file.name }, label: `Attach ${file.name}`, then: true });
+      }
+      $("new").reset();
+      await loadItems({ quiet: true });
+    } catch (error) {
+      $("new-error").textContent = error.message;
+    } finally {
+      $("new-go").disabled = false;
+    }
+  });
+  $("refresh").addEventListener("click", () => loadItems());
+  $("search").addEventListener("submit", (event) => {
+    event.preventDefault();
+    loadItems();
+  });
+  $("items").addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-act]");
+    if (!button) return;
+    const id = Number(button.closest("[data-id]").dataset.id);
+    const item = items.find((candidate) => candidate.id === id);
+    try {
+      if (button.dataset.act === "delete") {
+        if (!confirm(`Delete “${item.title}”?`)) return;
+        await api("DELETE", `/api/items/${id}`, { label: `Delete “${item.title}”` });
+      } else if (button.dataset.act === "edit") {
+        const title = prompt("Title", item.title);
+        if (title === null) return;
+        const body = prompt("Text", item.body ?? "");
+        if (body === null) return;
+        await api("PATCH", `/api/items/${id}`, { body: { title, body }, label: `Edit “${item.title}”` });
+      } else if (button.dataset.act === "process") {
+        await api("POST", `/api/items/${id}/process`, { label: `Process “${item.title}”` });
+      }
+      await loadItems({ quiet: true });
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  (async function start() {
+    config = await (await fetch(`${BASE}/app.config.json`, { cache: "no-store" })).json();
+    document.title = config.title;
+    $("title").textContent = config.title;
+    config.labels = Object.fromEntries([...config.components.map((part) => [part.node, part.label]), ...config.design.nodes.map((n) => [n.id, n.label])]);
+    $("search").hidden = !config.features.search;
+    $("new-file-row").hidden = !config.features.files;
+    $("shared-note").hidden = config.features.auth;
+    $("bubble").hidden = quiet;
+    $("archie-off").hidden = !quiet;
+    drawDiagram($("big-svg"));
+    // The step list starts open where there is room for it.
+    $("what").open = matchMedia("(min-width: 901px)").matches;
+    if (config.features.auth) {
+      try {
+        const result = await api("GET", "/api/auth/me", { label: "Check if you're signed in", quiet: true });
+        signedIn(result.user);
+      } catch {
+        signedIn(null);
+      }
+    } else {
+      signedIn(null);
+    }
+  })();
+</script>
+</body>
+</html>

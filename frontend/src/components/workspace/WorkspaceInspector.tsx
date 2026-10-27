@@ -1,14 +1,12 @@
 import { useContext, useId, type ComponentProps, type ReactNode } from "react";
-import { Activity, ChevronDown, Play, X } from "lucide-react";
+import { ChevronDown, CircleAlert, Clock3, LoaderCircle, MessageSquare, Play, X } from "lucide-react";
 
 import type { CustomTechnology } from "../../lib/projects/customTechnologies";
 import ArchitectPanel from "./ai/ArchitectPanel";
-import { ArchiePortrait } from "./ai/ArchiePanel";
 import { ArchieEnabledContext } from "./ArchieContext";
 import ComponentGlyph from "./ComponentGlyph";
 import ComponentInspector from "./ComponentInspector";
 import { COMPONENT_CATALOG, FAMILY_LABELS } from "./componentCatalog";
-import MetricsPanel from "./MetricsPanel";
 import RunPanel from "./RunPanel";
 import HistoryPanel from "./history/HistoryPanel";
 import type { InspectorSectionId } from "./inspectorState";
@@ -20,7 +18,7 @@ import "./workspace-inspector.css";
 const REVIEW_STATUS_LABELS = {
   idle: "Not run",
   analyzing: "Running…",
-  ready: "Ready",
+  ready: "Tested",
   stale: "Out of date",
   error: "Failed",
 };
@@ -37,10 +35,11 @@ type WorkspaceInspectorProps = {
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate">;
 };
 
-function InspectorSection({ id, title, meta, icon, expanded, disabled, onToggle, children }: {
+function InspectorSection({ id, title, meta, state, icon, expanded, disabled, onToggle, children }: {
   id?: string;
   title: string;
   meta?: string;
+  state?: keyof typeof REVIEW_STATUS_LABELS;
   icon?: ReactNode;
   expanded: boolean;
   disabled?: boolean;
@@ -48,15 +47,26 @@ function InspectorSection({ id, title, meta, icon, expanded, disabled, onToggle,
   children: ReactNode;
 }) {
   const contentId = useId();
+  const statusId = useId();
+  const StatusIcon = state === "analyzing" ? LoaderCircle : state === "stale" ? Clock3 : state === "error" ? CircleAlert : null;
   return (
-    <section id={id} className="ax-inspector-section" aria-label={title} data-expanded={expanded}>
+    <section id={id} className="ax-inspector-section" aria-label={title} data-expanded={expanded} data-run-state={state}>
       <div className="ax-inspector-section-header">
         <h2>
-          <button type="button" className="ax-inspector-section-toggle" aria-expanded={expanded} aria-controls={contentId} onClick={onToggle} disabled={disabled}>
-            {icon}
-            <span>{title}</span>
+          <button type="button" className="ax-inspector-section-toggle" aria-label={title} aria-describedby={meta ? statusId : undefined} aria-expanded={expanded} aria-controls={contentId} onClick={onToggle} disabled={disabled} onKeyDown={(event) => {
+            if (event.key === "Escape" && expanded) {
+              event.stopPropagation();
+              onToggle();
+            }
+          }}>
+            <span className="ax-inspector-tool-icon">
+              {icon}
+              {/* Only states needing attention mark the collapsed tool; completion is not a health verdict. */}
+              {StatusIcon && <StatusIcon className="ax-inspector-state-icon" size={12} aria-hidden="true" />}
+            </span>
+            <span className="ax-inspector-section-label">{title}</span>
             <span className="ax-inspector-status">
-              {meta && <small>{meta}</small>}
+              {meta && <small id={statusId}>{meta}</small>}
               <ChevronDown size={13} aria-hidden="true" />
             </span>
           </button>
@@ -72,7 +82,7 @@ export default function WorkspaceInspector({
   nodes, controller, onClearSelection, onApply, customTechnologies,
   guidance, testingEnabled, runs,
 }: WorkspaceInspectorProps) {
-  const { archieOpen, historyOpen, configuring, section: activeSection, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory, openSection, toggleSection, showResults } = controller;
+  const { archieOpen, historyOpen, configuring, section: activeSection, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory, toggleSection, showResults } = controller;
   const archieEnabled = useContext(ArchieEnabledContext);
   const selected = nodes.filter((node) => node.selected);
   const component = selected.length === 1 ? selected[0] : null;
@@ -120,6 +130,7 @@ export default function WorkspaceInspector({
       className="ax-canvas-panel ax-inspector"
       data-side="right"
       data-expanded={panelExpanded}
+      data-selection={selected.length > 0}
       aria-label="Architecture inspector"
     >
       <div className="ax-inspector-frame">
@@ -142,26 +153,18 @@ export default function WorkspaceInspector({
           </details>
         )}
         {guidance && <section className="ax-inspector-section ax-inspector-guidance" aria-label="Challenge">{guidance}</section>}
-        {/* Keep every pill header visible; only its contents collapse. */}
+        {/* Tool buttons stay reachable while their content is collapsed. */}
         {testingEnabled && (
-          <>
-            <InspectorSection title="Metrics" icon={<Activity size={15} aria-hidden="true" />} meta={reviewStatus} expanded={expanded("metrics")}
-              onToggle={() => toggleSection("metrics")}>
-              <MetricsPanel view={runs.view} liveTraffic={runs.traffic}
-                onRun={() => showResults(runs.run)} onOpenRun={() => openSection("run")} />
-            </InspectorSection>
-            <InspectorSection id="ax-run-panel" title="Run" icon={<Play size={15} aria-hidden="true" />} meta={reviewStatus} expanded={expanded("run")}
-              onToggle={() => toggleSection("run")}>
-              <RunPanel view={runs.view} completedRun={runs.state.current} traffic={runs.traffic}
-                onRateChange={runs.setRequestRate}
-                onRun={() => showResults(runs.run)}
-                onRunAtRate={(rate) => showResults(() => runs.runAtRate(rate))}
-                onViewMetrics={() => openSection("metrics")}
-                componentName={componentName} />
-            </InspectorSection>
-          </>
+          <InspectorSection id="ax-run-panel" title="Run" icon={<Play size={15} aria-hidden="true" />} meta={reviewStatus} state={runs.view.runButtonState} expanded={expanded("run")}
+            onToggle={() => toggleSection("run")}>
+            <RunPanel view={runs.view} completedRun={runs.state.current} traffic={runs.traffic}
+              onRateChange={runs.setRequestRate}
+              onRun={() => showResults(runs.run)}
+              onRunAtRate={(rate) => showResults(() => runs.runAtRate(rate))}
+              componentName={componentName} />
+          </InspectorSection>
         )}
-        <InspectorSection title="Ask Archie" icon={<ArchiePortrait />} expanded={archieOpen} disabled={!archieEnabled}
+        <InspectorSection title="Ask Archie" icon={<MessageSquare size={15} aria-hidden="true" />} expanded={archieOpen} disabled={!archieEnabled}
           onToggle={archieOpen ? closeArchie : askArchie}>
           {archieOpen && (
             <div className="ax-inspector-archie" data-architect>

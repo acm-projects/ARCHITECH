@@ -9,6 +9,7 @@ import {
   setNodeProperty,
   type NodeLike,
 } from "./nodeOperations.ts";
+import { isActsAsType } from "./customComponents.ts";
 import type { ArchitectureNodeType } from "./types.ts";
 
 // Editing one configurable property of one component. These sit between the settings UI and
@@ -52,7 +53,15 @@ export function setComponentProperty<N extends NodeLike>(
   if (!validation.ok) return validation;
 
   // The default of the technology the component uses (its chosen implementation, if any).
-  const definition = getPropertyDefinition(node.data.type, key, node.data.implementation);
+  const definition = getPropertyDefinition(node.data.type, key, node.data.implementation, node.data.properties ?? {});
+  // A custom component's limits depend on what it acts like; the check above used the widest.
+  if (definition && (validation.value < definition.min || validation.value > definition.max)) {
+    return {
+      ok: false,
+      reason: validation.value < definition.min ? "below-minimum" : "above-maximum",
+      message: `${definition.label} must be between ${definition.min} and ${definition.max}.`,
+    };
+  }
   const update =
     validation.value === definition?.defaultValue
       ? removeNodeProperty(nodes, nodeId, key)
@@ -85,6 +94,46 @@ export function resetComponentProperty<N extends NodeLike>(
   const update = removeNodeProperty(nodes, nodeId, key);
   if (!update.ok) return nodeNotFound();
   return { ok: true, nodes: update.nodes, changed: update.changed };
+}
+
+// Sets what a custom component acts like (or, with null, stops measuring it). Its own latency,
+// cost, uptime and capacity belonged to the old role, so they return to the new role's
+// defaults; replicas are kept when the new role allows them.
+export function setCustomRole<N extends NodeLike>(
+  nodes: N[],
+  nodeId: string,
+  actsAs: string | null,
+): PropertyEditResult<N> {
+  const node = nodes.find((candidate) => candidate.id === nodeId);
+  if (!node) return nodeNotFound();
+  if (node.data.type !== "custom") {
+    return { ok: false, reason: "unsupported", message: "Only custom components can choose what they act like." };
+  }
+  if (actsAs !== null && !isActsAsType(actsAs)) {
+    return { ok: false, reason: "unsupported", message: `"${actsAs}" is not a component type a custom component can act like.` };
+  }
+  const current = node.data.properties ?? {};
+  if ((current.actsAs ?? null) === actsAs) return { ok: true, nodes, changed: false };
+  const next: Record<string, string | number | boolean> = {};
+  for (const [key, value] of Object.entries(current)) {
+    if (["actsAs", "replicas", "capacity", "latencyMs", "costPerInstance", "availability"].includes(key)) continue;
+    next[key] = value;
+  }
+  if (actsAs !== null) {
+    next.actsAs = actsAs;
+    const replicas = current.replicas;
+    const definition = getPropertyDefinition("custom", "replicas", undefined, { actsAs });
+    if (typeof replicas === "number" && definition && replicas >= definition.min && replicas <= definition.max && replicas !== definition.defaultValue) {
+      next.replicas = replicas;
+    }
+  }
+  const updated = nodes.map((candidate) => {
+    if (candidate.id !== nodeId) return candidate;
+    const data = { ...candidate.data };
+    delete data.properties;
+    return { ...candidate, data: Object.keys(next).length > 0 ? { ...data, properties: next } : data } as N;
+  });
+  return { ok: true, nodes: updated, changed: true };
 }
 
 // ---- Drafts ----

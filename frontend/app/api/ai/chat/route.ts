@@ -28,7 +28,7 @@ import { log, requestIdOf, serverError } from "@/lib/server/log";
 //   {"type":"note","text":"..."}            a proposed change that could not be used
 //   {"type":"error","error":"..."}          the model stopped part-way
 //   {"type":"done"}
-// The model is Claude or Groq, chosen by the server's environment (src/lib/ai/model.ts).
+// The model is Claude, Groq, or Gemini, chosen by the server's environment (src/lib/ai/model.ts).
 // Errors before streaming: 401 not signed in · 400 invalid request · 503 AI not configured ·
 // 429 a limit was reached, or the AI provider is busy (Retry-After header, exact) ·
 // 502 the model failed before replying.
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
     await refund();
     if (error instanceof ModelBusyError) {
       return NextResponse.json(
-        { error: `The AI Architect is busy right now (the AI provider's limit). Try again in ${error.retryAfterSeconds} seconds. This question didn't count toward your limit.` },
+        { error: `The AI provider is temporarily busy (${error.message}). Try again in ${error.retryAfterSeconds} seconds. This question didn't count toward your limit.` },
         { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds), ...usageHeaders(usage) } },
       );
     }
@@ -132,6 +132,10 @@ export async function POST(request: Request) {
         // Stopped by the user: the provider did the work, so it counts. Otherwise refund it.
         if (!request.signal.aborted) {
           await refund();
+          if (error instanceof ModelBusyError) {
+            controller.enqueue(line({ type: "error", error: `The AI provider is temporarily busy (${error.message}). Try again in ${error.retryAfterSeconds} seconds. This question didn't count.` }));
+            return;
+          }
           log.error("AI Architect reply failed.", error, { requestId: requestIdOf(request), provider: choice.provider });
           controller.enqueue(line({ type: "error", error: "The AI Architect stopped unexpectedly. Please try again (this question didn't count)." }));
         }

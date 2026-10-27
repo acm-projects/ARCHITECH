@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { formatRelativeTime } from "../projects/preview";
 import TopologyPreview from "../projects/TopologyPreview";
+import ArchitectureTile from "../projects/ArchitectureTile";
 import { projectActions, type ActionResult } from "../projects/projectActions";
 import type { Project, ProjectMode } from "../projects/projectStore";
 import { useProjectList, useProjectStorageIssue } from "../projects/useProjects";
@@ -214,30 +215,15 @@ export default function RecentProjects() {
       aria-label="Projects"
       tabIndex={0}
     >
-      {displayedProjects.map((project) => (<li key={project.id} className="ax-dashboard-project-card group/card relative min-w-0">
-        <Link
-          href={projectRoute(project.id)}
-          aria-label={`Open ${project.title}`}
-          className="ax-dashboard-project-preview-link focus-visible:outline-none"
-        >
-          <div
-            className="ax-dashboard-project-preview h-full w-full p-4 text-neutral-400"
-          >
-            {project.nodes.length > 0 ? (
-              <TopologyPreview nodes={project.nodes} edges={project.edges} />
-            ) : (
-              <span className="text-xs text-neutral-500">Empty canvas</span>
-            )}
-          </div>
-        </Link>
-
-        <ProjectMenu
-          project={project}
-          onRename={() => setRenamingId(project.id)}
-          onError={setError}
-        />
-
-        <div className="ax-dashboard-project-metadata">
+      {displayedProjects.map((project) => (<ArchitectureTile
+        key={project.id}
+        href={projectRoute(project.id)}
+        label={`Open ${project.title}`}
+        preview={project.nodes.length > 0
+          ? <TopologyPreview nodes={project.nodes} edges={project.edges} />
+          : <span className="text-xs text-neutral-500">Empty canvas</span>}
+        actions={<ProjectMenu project={project} onRename={() => setRenamingId(project.id)} onError={setError} />}
+      >
           <div className="flex items-baseline justify-between gap-3">
           {renamingId === project.id ? (<RenameField title={project.title} onCommit={(title) => commitRename(project, title)} />) : (<Link
             href={projectRoute(project.id)}
@@ -252,8 +238,7 @@ export default function RecentProjects() {
           <p className="mt-1 text-[11px] text-neutral-500">
             {project.nodes.length} nodes &middot; {project.edges.length} connections
           </p>
-        </div>
-      </li>))}
+      </ArchitectureTile>))}
     </ul>)}
   </section>);
 }

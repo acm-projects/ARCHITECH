@@ -6,7 +6,7 @@ import type { Edge } from "@xyflow/react";
 import { useOnSelectionChange, useReactFlow, useStore } from "@xyflow/react";
 import { ArrowLeft, BoxSelect, MessageSquarePlus, Send, Square, X } from "lucide-react";
 
-import type { ChatMessage, MetricsSnapshot, SuggestionEvent } from "../../../lib/ai/architectChat";
+import type { MetricsSnapshot, SuggestionEvent } from "../../../lib/ai/architectChat";
 import { applyChanges } from "../../../lib/ai/changes";
 import {
   askArchitect,
@@ -16,8 +16,7 @@ import {
   usageLabel,
   type UsageInfo,
 } from "../../../lib/ai/chatClient";
-import { validateConversation, type SavedTurn } from "../../../lib/ai/conversation";
-import { MAX_MESSAGES } from "../../../lib/ai/architectChat";
+import { buildChatHistory, validateConversation, type SavedTurn } from "../../../lib/ai/conversation";
 import type { CustomTechnology } from "../../../lib/projects/customTechnologies";
 import { graphFromCanvas } from "../../../lib/projects/projectPayload";
 import { DesignTrafficContext } from "../DesignTrafficContext";
@@ -153,25 +152,6 @@ function SuggestionCard({ suggestion, status, onApply, streaming }: {
   );
 }
 
-// The conversation sent with a new question: the latest turns as plain text, starting with a
-// user message, at most MAX_MESSAGES.
-function history(turns: readonly Turn[], question: string): ChatMessage[] {
-  const messages: ChatMessage[] = [];
-  for (const turn of turns) {
-    if (turn.role === "user") messages.push({ role: "user", content: turn.text });
-    else if (turn.done && !turn.error) {
-      const proposed = turn.suggestions.map((s) => `(Proposed: ${s.title})`).join(" ");
-      const content = [turn.text.trim(), proposed].filter(Boolean).join("\n");
-      if (content) messages.push({ role: "assistant", content });
-    }
-  }
-  messages.push({ role: "user", content: question });
-  let recent = messages.slice(-MAX_MESSAGES);
-  while (recent.length > 0 && recent[0].role !== "user") recent = recent.slice(1);
-  // Two user messages in a row (an answer that failed) are fine for the model, but keep it tidy.
-  return recent;
-}
-
 export default function ArchitectPanel({
   projectId,
   onClose,
@@ -262,7 +242,7 @@ export default function ArchitectPanel({
   const ask = async (question: string) => {
     const text = question.trim();
     if (!text || busy) return;
-    const messages = history(turns, text);
+    const messages = buildChatHistory(turns, text);
     const userId = nextId.current++;
     const answerId = nextId.current++;
     setTurns((all) => [
@@ -338,9 +318,9 @@ export default function ArchitectPanel({
       }
       focus={<>
         {focus.length === 0 && (
-          <span className="ax-ai-focus-hint">
+          <span className="ax-ai-focus-hint" title="Drag a box on empty canvas to ask about just that part">
             <BoxSelect size={13} aria-hidden="true" />
-            Drag a box on empty canvas to ask about just that part
+            Whole design · drag to focus
           </span>
         )}
         {focus.length > 0 && (
@@ -363,6 +343,7 @@ export default function ArchitectPanel({
           <textarea
             className="ax-ai-input"
             value={draft}
+            disabled={busy}
             maxLength={4_000}
             placeholder={focus.length > 0 ? "Ask Archie about the selected part…" : "Ask Archie about your architecture…"}
             aria-label="Ask Archie"
@@ -399,13 +380,15 @@ export default function ArchitectPanel({
     >
       {turns.length === 0 && (
         <div className="ax-ai-empty">
-          <p className="ax-learn-speech ax-ai-intro">
-            {focus.length > 0
-              ? focus.length === 1
-                ? "Ask how this component works, connects, or affects your system."
-                : "Ask how these components work, connect, or affect your system."
-              : "Ask about traffic, reliability, or cost. Preview changes before applying them."}
-          </p>
+          <ArchieMessage role="assistant">
+            <p className="ax-ai-answer">
+              {focus.length > 0
+                ? focus.length === 1
+                  ? "Ask how this component works, connects, or affects your system."
+                  : "Ask how these components work, connect, or affect your system."
+                : "Ask about traffic, reliability, or cost. Preview changes before applying them."}
+            </p>
+          </ArchieMessage>
           <ArchieStarters questions={focus.length > 0 ? FOCUS_STARTERS : STARTERS} onAsk={question => void ask(question)} />
         </div>
       )}

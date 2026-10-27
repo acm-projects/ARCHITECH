@@ -8,14 +8,15 @@ import type { GraphDocument } from "./projectPayload.ts";
 //
 // Automatic versions are taken when a save changes the design in a way that changes its
 // evaluation (renaming or moving components does not), at most once per AUTO_INTERVAL_MS.
-// Manual versions ("Save version", and "Before restoring …") are always taken.
+// Manual versions ("Save version", "Before restoring …", and "Saved on another device" when a
+// save from another tab or device is about to be overwritten) are always taken.
 // A project keeps at most MAX_VERSIONS; the oldest automatic ones are removed first.
 
 export const AUTO_INTERVAL_MS = 10 * 60_000;
 export const MAX_VERSIONS = 50;
 export const MAX_LABEL_LENGTH = 80;
 
-export type VersionKind = "auto" | "manual" | "before-restore";
+export type VersionKind = "auto" | "manual" | "before-restore" | "other-device";
 
 export type VersionSummary = {
   ready: boolean;

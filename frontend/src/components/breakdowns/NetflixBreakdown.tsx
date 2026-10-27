@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
@@ -23,9 +22,8 @@ import "@xyflow/react/dist/style.css";
 import "../workspace/architecture-workspace.css";
 import "./breakdowns.css";
 
-import { Logo } from "../ui";
+import WorkspaceHeaderShell from "../workspace/WorkspaceHeaderShell";
 import ArchitectureNode, { type ArchitectureFlowNode } from "../workspace/nodes/ArchitectureNode";
-import { HOME_ROUTE } from "../../lib/routes";
 import {
   NETFLIX_COMPONENTS,
   NETFLIX_NODE_SIZE,
@@ -47,7 +45,7 @@ function BreakdownNode(props: NodeProps<ArchitectureFlowNode>) {
   </>;
 }
 
-const EDGE_CORNER_RADIUS = 8;
+const EDGE_CORNER_RADIUS = 0;
 const PREPARATION_LABEL_GAP = 12;
 // Reserve a lane below the preparation row so video delivery bypasses the API
 // tier visually as well as in the topology.
@@ -56,17 +54,7 @@ const VIDEO_RETURN_ROUTE = { laneY: 620, leftClearance: 30, labelX: 280 } as con
 function videoReturnPath({ sourceX, sourceY, targetX, targetY }: Pick<EdgeProps, "sourceX" | "sourceY" | "targetX" | "targetY">): string {
   const { laneY, leftClearance } = VIDEO_RETURN_ROUTE;
   const returnX = targetX - leftClearance;
-  const radius = EDGE_CORNER_RADIUS;
-  return [
-    `M ${sourceX} ${sourceY}`,
-    `V ${laneY - radius}`,
-    `Q ${sourceX} ${laneY} ${sourceX - radius} ${laneY}`,
-    `H ${returnX + radius}`,
-    `Q ${returnX} ${laneY} ${returnX} ${laneY - radius}`,
-    `V ${targetY + radius}`,
-    `Q ${returnX} ${targetY} ${returnX + radius} ${targetY}`,
-    `H ${targetX}`,
-  ].join(" ");
+  return `M ${sourceX} ${sourceY} V ${laneY} H ${returnX} V ${targetY} H ${targetX}`;
 }
 
 function BreakdownEdge(props: EdgeProps) {
@@ -92,7 +80,7 @@ function BreakdownEdge(props: EdgeProps) {
 const NODE_TYPES = { architecture: BreakdownNode };
 const EDGE_TYPES = { breakdown: BreakdownEdge };
 // Include the outer return paths as well as the floating guide when fitting nodes.
-const FIT_OPTIONS = { padding: { left: "70px", right: "420px", top: "60px", bottom: "110px" }, maxZoom: 1.1 } as const;
+const FIT_OPTIONS = { padding: { left: "70px", right: "420px", top: "90px", bottom: "110px" }, maxZoom: 1.1 } as const;
 const MOBILE_FIT_OPTIONS = { padding: 0.15, maxZoom: 1.1 };
 
 function NetflixWalkthrough() {
@@ -166,13 +154,10 @@ function NetflixWalkthrough() {
 
   return (
     <main className="ax-workspace ax-breakdown" style={{ "--ax-breakdown-node-width": `${NETFLIX_NODE_SIZE.width}px`, "--ax-breakdown-node-height": `${NETFLIX_NODE_SIZE.height}px` } as CSSProperties}>
-      <header className="page-header ax-breakdown-header">
-        <div className="ax-breakdown-heading">
-          <Link href={HOME_ROUTE} className="ax-brand" aria-label="ARCHITECH dashboard"><Logo variant="by-level" /></Link>
-          <h1>Netflix <span>System breakdown</span></h1>
-        </div>
-        <button type="button" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>
-      </header>
+      <WorkspaceHeaderShell
+        project={<h1 className="ax-title"><span>Netflix</span><small>System breakdown</small></h1>}
+        actions={<button className="ax-header-menu-trigger" type="button" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>}
+      />
 
       <div className="ax-breakdown-body">
         <section className="ax-breakdown-diagram" aria-label="Netflix example architecture">

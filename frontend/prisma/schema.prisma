@@ -53,6 +53,7 @@ model User {
   projects        Project[]
   aiRequests      AiRequest[]
   challengeSubmissions ChallengeSubmission[]
+  practiceAttempts     PracticeAttempt[]
 
   @@map("users")
 }
@@ -160,6 +161,9 @@ model Project {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   aiConversation AiConversation?
   versions       ProjectVersion[]
+  runUsers       RunUser[]
+  runSessions    RunSession[]
+  runItems       RunItem[]
 
   @@index([userId])
   @@map("projects")
@@ -259,4 +263,94 @@ model ChallengeSubmission {
   @@index([challengeId, score])
   @@index([userId, createdAt])
   @@map("challenge_submissions")
+}
+
+// "Run in ARCHITECH": a design running as an app inside ARCHITECH, the same app the Docker export
+// runs. These hold what people do in it: the app's own accounts (not ARCHITECH accounts), their
+// sign-in sessions, and their items. Kept per project and deleted with it. `number` is the id the
+// app shows (user #1, item #1), counted per project.
+model RunUser {
+  id           String       @id @default(cuid())
+  projectId    String       @map("project_id")
+  number       Int
+  email        String
+  passwordHash String       @map("password_hash")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sessions     RunSession[]
+  items        RunItem[]
+
+  @@unique([projectId, email])
+  @@unique([projectId, number])
+  @@map("run_users")
+}
+
+// Only a hash of the session cookie is stored.
+model RunSession {
+  tokenHash String   @id @map("token_hash")
+  projectId String   @map("project_id")
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      RunUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("run_sessions")
+}
+
+model RunItem {
+  id          String    @id @default(cuid())
+  projectId   String    @map("project_id")
+  number      Int
+  // Null when the design has no authentication (everyone shares the items).
+  ownerId     String?   @map("owner_id")
+  title       String
+  body        String    @default("")
+  // new | queued | processed
+  status      String    @default("new")
+  queuedAt    DateTime? @map("queued_at")
+  queuedBy    String?   @map("queued_by")
+  wordCount   Int?      @map("word_count")
+  processedBy String?   @map("processed_by")
+  processedAt DateTime? @map("processed_at")
+  // The object storage stand-in: the attached file itself (up to 5 MB).
+  fileName    String?   @map("file_name")
+  fileType    String?   @map("file_type")
+  fileData    Bytes?    @map("file_data")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  owner       RunUser?  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, number])
+  @@index([projectId, ownerId])
+  @@map("run_items")
+}
+
+// Practice: each graded attempt at "Predict, then run" (kind "prediction") or the Incident Lab
+// (kind "incident"), so learners can see whether they improve. The server grades every attempt
+// itself with the metrics engine (src/lib/architecture/practice/).
+model PracticeAttempt {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  kind         String
+  // The Incident Lab scenario; null for predictions and incidents on the learner's own design.
+  scenarioId   String?  @map("scenario_id")
+  projectId    String?  @map("project_id")
+  graph        Json
+  traffic      Json
+  // EVALUATION_MODEL_VERSION that graded it: results from an older engine can be told apart.
+  modelVersion Int      @map("model_version")
+  // What the learner predicted or answered, and the graded result.
+  answer       Json
+  result       Json
+  correct      Int
+  total        Int
+  passed       Boolean
+  createdAt    DateTime @default(now()) @map("created_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind, createdAt])
+  @@map("practice_attempts")
 }

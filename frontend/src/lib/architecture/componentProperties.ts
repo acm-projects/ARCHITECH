@@ -9,6 +9,7 @@ import {
   profileOf,
   configureNode,
 } from "./evaluation/capabilities.ts";
+import { ACTS_AS_LABELS, CUSTOM_LIMITS, actsAsOf, measuredNode, type ActsAsType } from "./customComponents.ts";
 import type { NodeProperties, ArchitectureNodeType } from "./types.ts";
 
 // What can be configured on each kind of component, in one place. Defaults and limits are
@@ -22,7 +23,16 @@ import type { NodeProperties, ArchitectureNodeType } from "./types.ts";
 // so what is stored is always what the engine will use. (The generic sanitizer in
 // nodeProperties.ts stays the storage-level guard; this is the per-property layer on top.)
 
-export type ComponentPropertyKey = "replicas" | "capacity" | "cacheHitRate" | "authCheckRate" | "searchRate";
+export type ComponentPropertyKey =
+  | "replicas"
+  | "capacity"
+  | "cacheHitRate"
+  | "authCheckRate"
+  | "searchRate"
+  // Custom components only (customComponents.ts): their own latency, cost and availability.
+  | "latencyMs"
+  | "costPerInstance"
+  | "availability";
 
 // integer: a whole number. number: any number in range. rate: a fraction from 0 to 1
 // (0.7 means 70%), the same representation the engine reads.
@@ -147,13 +157,108 @@ function buildDefinitions(
 
 const cache = new Map<string, readonly ComponentPropertyDefinition[]>();
 
+// ---- Custom components ----
+
+// The numbers a custom component that acts like `actsAs` can set, with that role's standard
+// technology as defaults. Without actsAs (null) the defaults are 0 and the ranges the widest
+// any role allows: that set is only used to validate a stored value, never shown.
+function buildCustomDefinitions(actsAs: ActsAsType | null): ComponentPropertyDefinition[] {
+  const role = actsAs ?? "server";
+  const profile = profileOf(role, undefined);
+  const isDatabase = actsAs === "database";
+  const definitions: ComponentPropertyDefinition[] = [
+    {
+      key: "replicas",
+      label: isDatabase ? "Read replicas" : "Replicas",
+      description: isDatabase
+        ? "Copies of the primary that serve reads. 0 means the primary serves everything."
+        : "Instances running in parallel. More instances carry more load and survive failures.",
+      kind: "integer",
+      min: actsAs === null || isDatabase ? 0 : profile.minInstances,
+      max: Math.max(REPLICAS_MAX, DATABASE_REPLICAS_MAX),
+      step: 1,
+      defaultValue: actsAs === null ? 0 : isDatabase ? 0 : profile.defaultInstances,
+    },
+  ];
+  if (actsAs === null || profile.capacityPerInstance !== null) {
+    definitions.push({
+      key: "capacity",
+      label: "Capacity",
+      description: "Work one instance can do each second.",
+      kind: "number",
+      min: 1,
+      max: CAPACITY_MAX,
+      step: 100,
+      defaultValue: actsAs === null ? 1 : (profile.capacityPerInstance ?? 1),
+      unit: isDatabase ? "operations/s per instance" : "requests/s per instance",
+    });
+  }
+  definitions.push(
+    {
+      key: "latencyMs",
+      label: "Latency",
+      description: "Time it adds to a request passing through it when it is not busy.",
+      kind: "number",
+      min: CUSTOM_LIMITS.latencyMs.min,
+      max: CUSTOM_LIMITS.latencyMs.max,
+      step: 1,
+      defaultValue: actsAs === null ? 0 : profile.latencyMs,
+      unit: "ms",
+    },
+    {
+      key: "costPerInstance",
+      label: "Cost per instance",
+      description: "What one instance costs to run each month.",
+      kind: "number",
+      min: CUSTOM_LIMITS.costPerInstance.min,
+      max: CUSTOM_LIMITS.costPerInstance.max,
+      step: 10,
+      defaultValue: actsAs === null ? 0 : profile.monthlyCostPerInstance,
+      unit: "$/month",
+    },
+    {
+      key: "availability",
+      label: "Uptime per instance",
+      description: "Share of time one instance is up, from 0.5 to 1 (0.999 is 99.9%). More instances raise the total.",
+      kind: "rate",
+      min: CUSTOM_LIMITS.availability.min,
+      max: CUSTOM_LIMITS.availability.max,
+      step: 0.001,
+      defaultValue: actsAs === null ? 1 : profile.availability,
+    },
+  );
+  return definitions;
+}
+
+const NO_DEFINITIONS: readonly ComponentPropertyDefinition[] = Object.freeze([]);
+
+function customDefinitions(actsAs: ActsAsType | null): readonly ComponentPropertyDefinition[] {
+  const cacheKey = `custom:${actsAs ?? "*"}`;
+  let definitions = cache.get(cacheKey);
+  if (!definitions) {
+    definitions = Object.freeze(buildCustomDefinitions(actsAs));
+    cache.set(cacheKey, definitions);
+  }
+  return definitions;
+}
+
+export const customRoleLabel = (actsAs: ActsAsType) => ACTS_AS_LABELS[actsAs];
+
 // The properties that can be configured on a component type, in display order. Empty for
 // components with nothing to configure (clients). Defaults (capacity, hit rate) come from the
 // chosen implementation, or the type's default one. The same array is returned each time.
+//
+// A custom component's settings depend on what it acts like, read from `properties`: none
+// until it acts like something (pass the node's properties to see them).
 export function getPropertyDefinitions(
   type: ArchitectureNodeType,
   implementation?: string,
+  properties?: NodeProperties,
 ): readonly ComponentPropertyDefinition[] {
+  if (type === "custom") {
+    const actsAs = actsAsOf(properties);
+    return actsAs ? customDefinitions(actsAs) : NO_DEFINITIONS;
+  }
   // Unknown or mismatched ids behave exactly like the default, so they share its entry.
   const resolved = resolveImplementation(type, implementation);
   const cacheKey = `${type}:${resolved.id}`;
@@ -165,12 +270,24 @@ export function getPropertyDefinitions(
   return definitions;
 }
 
+// The definition a stored value is checked against. A custom component's limits depend on
+// what it acts like, so a value is accepted here if any role allows it; editing a node then
+// checks it against that node's own role (propertyEditing.ts).
+function validationDefinition(type: ArchitectureNodeType, key: string): ComponentPropertyDefinition | undefined {
+  if (type === "custom") return customDefinitions(null).find((definition) => definition.key === key);
+  return getPropertyDefinition(type, key);
+}
+
+// Whether a stored property of this component type is a setting checked by validatePropertyValue.
+export const isConfigurableKey = (type: ArchitectureNodeType, key: string) => validationDefinition(type, key) !== undefined;
+
 export function getPropertyDefinition(
   type: ArchitectureNodeType,
   key: string,
   implementation?: string,
+  properties?: NodeProperties,
 ): ComponentPropertyDefinition | undefined {
-  return getPropertyDefinitions(type, implementation).find((definition) => definition.key === key);
+  return getPropertyDefinitions(type, implementation, properties).find((definition) => definition.key === key);
 }
 
 // ---- Effective values ----
@@ -183,6 +300,7 @@ export function getEffectiveProperties(
   properties: NodeProperties | undefined,
   implementation?: string,
 ): Partial<Record<ComponentPropertyKey, number>> {
+  if (type === "custom") return customEffectiveProperties(properties);
   const config = configureNode({
     id: "-",
     data: {
@@ -208,6 +326,22 @@ export function getEffectiveProperties(
   return values;
 }
 
+// A custom component's numbers as the engine measures it (as its role, with its own numbers).
+function customEffectiveProperties(properties: NodeProperties | undefined): Partial<Record<ComponentPropertyKey, number>> {
+  const actsAs = actsAsOf(properties);
+  if (!actsAs) return {};
+  const measured = measuredNode({ id: "-", data: { type: "custom", properties: properties ?? {} } });
+  const config = configureNode(measured);
+  const values: Partial<Record<ComponentPropertyKey, number>> = {
+    replicas: actsAs === "database" ? config.instances - 1 : config.instances,
+    latencyMs: config.latencyMs,
+    costPerInstance: measured.data.profile?.monthlyCostPerInstance ?? profileOf(actsAs, undefined).monthlyCostPerInstance,
+    availability: measured.data.profile?.availability ?? profileOf(actsAs, undefined).availability,
+  };
+  if (config.capacityPerInstance !== null) values.capacity = config.capacityPerInstance;
+  return values;
+}
+
 export function getEffectiveProperty(
   type: ArchitectureNodeType,
   properties: NodeProperties | undefined,
@@ -224,7 +358,7 @@ export function isOverridden(
   key: string,
 ): boolean {
   return (
-    getPropertyDefinition(type, key) !== undefined &&
+    validationDefinition(type, key) !== undefined &&
     properties !== undefined &&
     Object.hasOwn(properties, key)
   );
@@ -257,7 +391,7 @@ export function validatePropertyValue(
   key: string,
   value: unknown,
 ): PropertyValidation {
-  const definition = getPropertyDefinition(type, key);
+  const definition = validationDefinition(type, key);
   if (!definition) return reject("unsupported", `This component has no "${key}" setting.`);
 
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -285,7 +419,7 @@ export function parsePropertyInput(
   key: string,
   text: string,
 ): PropertyValidation {
-  const definition = getPropertyDefinition(type, key);
+  const definition = validationDefinition(type, key);
   if (!definition) return reject("unsupported", `This component has no "${key}" setting.`);
   const trimmed = text.trim();
   if (trimmed === "") return reject("empty", `Enter a value for ${definition.label}.`);

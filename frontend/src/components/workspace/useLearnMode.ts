@@ -34,7 +34,6 @@ export function useLearnMode({
   initiallySkipped?: boolean;
 }) {
   const [skipped, setSkipped] = useState(initiallySkipped);
-  const [explorationStarted, setExplorationStarted] = useState(initiallySkipped);
   const [tutorialError, setTutorialError] = useState<string | null>(null);
   function setTutorialSkipped(next: boolean): boolean {
     if (scopeKey) {
@@ -57,6 +56,11 @@ export function useLearnMode({
     edges,
     enabled && !skipped,
   );
+
+  // A project that opens with the tutorial already finished (or skipped) goes straight to
+  // exploring, so the inspector, live metrics and run tools are there after a reload. The
+  // "Continue exploring" card only shows right after finishing the tutorial.
+  const [explorationStarted, setExplorationStarted] = useState(() => initiallySkipped || engine.freePlay);
 
   const freePlay = enabled && (skipped || engine.freePlay);
   const exploring = freePlay && explorationStarted;

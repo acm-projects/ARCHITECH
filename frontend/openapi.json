@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "ARCHITECH API",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "contact": {
       "name": "ARCHITECH team (ACM Projects, UT Dallas)",
       "url": "https://github.com/acm-projects/ARCHITECH"
@@ -55,6 +55,10 @@
     {
       "name": "Export",
       "description": "A design as a starter docker-compose.yml."
+    },
+    {
+      "name": "Practice",
+      "description": "Predict, then run, and the Incident Lab: exercises graded on the server with the metrics engine, saved to the learner's practice history."
     }
   ],
   "paths": {
@@ -760,7 +764,7 @@
         ],
         "operationId": "saveProject",
         "summary": "Create or replace a project",
-        "description": "Creates the project with this id, or replaces it if the user already has it. The browser generates the id, so creating offline and retrying a failed save are both safe: sending the same project twice stores it once.\n\nThe diagram is validated against docs/graph-spec.md (section 5): known component types, labels of 1-60 characters, unique node and edge ids, edges between existing nodes, no self-connections or repeated connections, settings within each component's range, and `data.implementation` must exist and belong to the node's type. At most 500 nodes and 2,000 edges.\n\nThe canvas calls this automatically: every change is synced in the background.\n\nOverwrite protection: send If-Match with the revision you loaded. A save based on an older revision gets 409 with the server's copy; without If-Match the project is replaced as before. Saves with a design change also record an automatic version (see Version history).",
+        "description": "Creates the project with this id, or replaces it if the user already has it. The browser generates the id, so creating offline and retrying a failed save are both safe: sending the same project twice stores it once.\n\nThe diagram is validated against docs/graph-spec.md (section 5): known component types, labels of 1-60 characters, unique node and edge ids, edges between existing nodes, no self-connections or repeated connections, settings within each component's range, and `data.implementation` must exist and belong to the node's type. At most 500 nodes and 2,000 edges.\n\nThe canvas calls this automatically: every change is synced in the background.\n\nOverwrite protection: send If-Match with the revision you loaded. A save based on an older revision gets 409 with the server's copy (the app then keeps that copy in the version history if it differs, and saves again); without If-Match the project is replaced as before. Saves with a design change also record an automatic version (see Version history).",
         "security": [
           {
             "sessionCookie": []
@@ -1003,7 +1007,7 @@
         ],
         "operationId": "importGithubRepo",
         "summary": "Build a design from a GitHub repository",
-        "description": "Uses the GitHub account the user connected at sign-in (its token in the `accounts` table) to read the repository through GitHub's GraphQL API (`POST https://api.github.com/graphql`): one query for the top-level file list and stack files, and one for the same files in up to 8 top-level folders (monorepos).\n\nStack files read: package.json, docker-compose.yml / compose.yml, prisma/schema.prisma, requirements.txt, pyproject.toml, go.mod, pom.xml, build.gradle.\n\nDetection rules map what they use to components and technologies (for example `next` → Web App (Next.js), `ioredis` → Cache (Redis), `@apollo/server` → API (GraphQL), a `postgres` image → Database (PostgreSQL)), each with its evidence. The design is laid out left to right with typical connections, validated against docs/graph-spec.md and saved as a new project (`source: \"github\"`, opens in free play). Connections are a best guess to adjust on the canvas.\n\nTechnologies the repository uses that ARCHITECH does not model (for example a Traefik or ClickHouse service, or a .NET worker) are returned as `customTechnologies` and saved with the project, so they appear in its sidebar under \"From your repo\" and can be dragged onto the canvas as unmeasured custom components. A repository with only such technologies still imports.",
+        "description": "Uses the GitHub account the user connected at sign-in (its token in the `accounts` table) to read the repository through GitHub's GraphQL API (`POST https://api.github.com/graphql`): one query for the top-level file list and stack files, and one for the same files in up to 8 top-level folders (monorepos).\n\nStack files read: package.json, docker-compose.yml / compose.yml, prisma/schema.prisma, requirements.txt, pyproject.toml, go.mod, pom.xml, build.gradle.\n\nDetection rules map what they use to components and technologies (for example `next` → Web App (Next.js), `ioredis` → Cache (Redis), `@apollo/server` → API (GraphQL), a `postgres` image → Database (PostgreSQL)), each with its evidence. The design is laid out left to right with typical connections, validated against docs/graph-spec.md and saved as a new project (`source: \"github\"`, opens in free play). Connections are a best guess to adjust on the canvas.\n\nTechnologies the repository uses that ARCHITECH does not model (for example a Traefik or ClickHouse service, or a .NET worker) are returned as `customTechnologies` and saved with the project, so they appear in its sidebar under \"From your repo\" and can be dragged onto the canvas as unmeasured custom components. A repository with only such technologies still imports.\n\n**Compose-first and review.** When the repository has a docker-compose file that runs its own code, every service becomes a component (known images such as postgres or nginx as that component, the repository's own services as servers, workers or gateways with their language's technology, anything else as a custom component that acts like the closest kind so it is measured), connected by depends_on, links and environment URLs that name another service. Users reach the services that publish ports, through a gateway or proxy when there is one; monitoring, tracing, discovery and config services are placed and costed but not on the request path. Otherwise the libraries the code uses decide, as above.\n\nWith `preview: true` nothing is saved: the response is the design as ARCHITECH's compose file (`yaml`), shown to the user for review; `POST /api/projects/from-compose` then creates the project from the (possibly edited) file.",
         "security": [
           {
             "sessionCookie": []
@@ -1099,6 +1103,16 @@
                 }
               }
             }
+          },
+          "200": {
+            "description": "preview: true. The design as a compose file for review; nothing saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GithubImportPreview"
+                }
+              }
+            }
           }
         }
       }
@@ -1110,7 +1124,7 @@
         ],
         "operationId": "chatWithArchitect",
         "summary": "Ask the AI Architect about a design (streamed)",
-        "description": "Validates the design like a saved project, evaluates it with the metrics engine at the given traffic (as Run Design does), and asks the configured model (Claude or Groq). The prompt contains the design (component ids, technologies, settings, connections), the evaluation (scores, metrics, per-component load, findings), the component library and the user's experience level.\n\nWith `focus`, the prompt also gets the selected part (its components with their load, the connections inside it, and every connection in from and out to the rest of the design) and the answer is about that part only.\n\nThe model can propose changes with a tool; each is checked against the design (graph spec rules) and previewed with the engine (score, capacity, p95, cost, uptime before and after) before it is sent. The canvas applies a suggestion with the same function (src/lib/ai/changes.ts) as one undo step.\n\nThe response is newline-delimited JSON (`application/x-ndjson`), one `ChatEvent` per line: `text` parts of the answer, `suggestion`s, `note`s for proposed changes that could not be used, and finally `done` (or `error` if the model stopped part-way).\n\nLimits (model calls; cached answers and failed calls do not count): 5 a minute and 50 a day per user (AI_LIMIT_PER_MINUTE, AI_LIMIT_PER_DAY), and 1000 a day for the whole app (AI_LIMIT_GLOBAL_PER_DAY). Windows slide (the last 60 seconds / 24 hours). Reserving a question is atomic, so simultaneous questions cannot slip past a limit. If the AI provider fails or is busy, the question is refunded. Every response carries `X-AI-Remaining-Today` and `X-AI-Limit-Per-Day`.\n\nThe same design + conversation (+ focus) within 24 hours is answered from a cache (header `X-AI-Cache: hit`) without calling the model or counting toward the limits. Layout (positions, edge ids) does not affect the cache. Old cache entries and usage rows are deleted about once an hour.\n\nServer configuration: AI_PROVIDER = anthropic | groq (if unset: Anthropic when ANTHROPIC_API_KEY is set, else Groq when GROQ_API_KEY is set). Anthropic: ANTHROPIC_API_KEY, ANTHROPIC_MODEL (default claude-sonnet-5-5). Groq (free plan): GROQ_API_KEY, GROQ_MODEL (default openai/gpt-oss-120b). Keys never reach the browser.",
+        "description": "Validates the design like a saved project, evaluates it with the metrics engine at the given traffic (as Run Design does), and asks the configured model (Claude, Groq, or Gemini). The prompt contains the design (component ids, technologies, settings, connections), the evaluation (scores, metrics, per-component load, findings), the component library and the user's experience level.\n\nWith `focus`, the prompt also gets the selected part (its components with their load, the connections inside it, and every connection in from and out to the rest of the design) and the answer is about that part only.\n\nThe model can propose changes with a tool; each is checked against the design (graph spec rules) and previewed with the engine (score, capacity, p95, cost, uptime before and after) before it is sent. The canvas applies a suggestion with the same function (src/lib/ai/changes.ts) as one undo step.\n\nThe response is newline-delimited JSON (`application/x-ndjson`), one `ChatEvent` per line: `text` parts of the answer, `suggestion`s, `note`s for proposed changes that could not be used, and finally `done` (or `error` if the model stopped part-way).\n\nLimits (model calls; cached answers and failed calls do not count): 5 a minute and 50 a day per user (AI_LIMIT_PER_MINUTE, AI_LIMIT_PER_DAY), and 1000 a day for the whole app (AI_LIMIT_GLOBAL_PER_DAY). Windows slide (the last 60 seconds / 24 hours). Reserving a question is atomic, so simultaneous questions cannot slip past a limit. If the AI provider fails or is busy, the question is refunded. Every response carries `X-AI-Remaining-Today` and `X-AI-Limit-Per-Day`.\n\nThe same design + conversation (+ focus) within 24 hours is answered from a cache (header `X-AI-Cache: hit`) without calling the model or counting toward the limits. Layout (positions, edge ids) does not affect the cache. Old cache entries and usage rows are deleted about once an hour.\n\nServer configuration: AI_PROVIDER = anthropic | groq | gemini (if unset: Anthropic when ANTHROPIC_API_KEY is set, else Groq when GROQ_API_KEY is set, else Gemini when GEMINI_API_KEY is set). Anthropic: ANTHROPIC_API_KEY, ANTHROPIC_MODEL (default claude-sonnet-5-5). Groq: GROQ_API_KEY, GROQ_MODEL (default openai/gpt-oss-120b). Gemini: GEMINI_API_KEY, GEMINI_MODEL (default gemini-3.8-flash). Keys never reach the browser.",
         "security": [
           {
             "sessionCookie": []
@@ -1242,7 +1256,7 @@
             }
           },
           "503": {
-            "description": "The AI Architect is not configured (no ANTHROPIC_API_KEY or GROQ_API_KEY for the chosen provider).",
+            "description": "The AI Architect is not configured (the API key for the chosen provider is missing).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1750,9 +1764,11 @@
                     "type": "string",
                     "enum": [
                       "manual",
-                      "before-restore"
+                      "before-restore",
+                      "other-device"
                     ],
-                    "default": "manual"
+                    "default": "manual",
+                    "description": "\"other-device\": the app keeps a version saved in another tab or device before overwriting it."
                   }
                 }
               }
@@ -2402,6 +2418,932 @@
           }
         }
       }
+    },
+    "/api/projects/from-compose": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "createProjectFromCompose",
+        "summary": "Create a project from a docker-compose file",
+        "description": "A file ARCHITECH wrote (top-level `x-architech`, e.g. an import preview or an export) is rebuilt exactly: each component's id, type, label, technology, settings and position, and every connection; services added by hand without `x-architech` are recognized from their image and connected by depends_on (with a warning). Any other compose file is recognized like a repository import. The result is validated like any saved graph. At most 300 KB.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "yaml"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "yaml": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Defaults to the file's x-architech title."
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "github",
+                      "compose"
+                    ],
+                    "default": "compose"
+                  },
+                  "preview": {
+                    "type": "boolean",
+                    "description": "Only check the file: 200 with counts and warnings, nothing saved."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "project": {
+                      "$ref": "#/components/schemas/Project"
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "preview: true.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "nodes": {
+                      "type": "integer"
+                    },
+                    "edges": {
+                      "type": "integer"
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or the file is not valid YAML or not a valid design (the error says what).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/research": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "operationId": "researchTechnologies",
+        "summary": "Look up a compose file's custom technologies",
+        "description": "For each distinct custom technology in an ARCHITECH compose file (at most 12): one in ARCHITECH's technology catalog becomes that component (no AI call); the rest are read on Wikipedia (free) and classified together in ONE Groq call (`GROQ_RESEARCH_EXTRACT_MODEL`, default `GROQ_MODEL`), which picks each one's role and the most similar catalog technology, whose numbers it then uses as estimates. Roles must be measurable types and the similar technology must have that role (otherwise the role's standard technology is used). Groq's rate limit is waited out briefly (up to 20 s, twice); if it stays busy, the catalog matches are still applied and the others say so. `GROQ_RESEARCH_SEARCH=compound|browser` reads with Groq's web search instead of Wikipedia. The Groq call counts as one AI question; catalog matches and results cached in the last day cost nothing. Always 200 once the file is valid.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "yaml"
+                ],
+                "properties": {
+                  "yaml": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The file with what was found applied; each technology that could not be looked up says why.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "yaml": {
+                      "type": "string"
+                    },
+                    "findings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "technology": {
+                            "type": "string"
+                          },
+                          "finding": {
+                            "type": [
+                              "object",
+                              "null"
+                            ]
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "stoppedEarly": {
+                      "type": "string",
+                      "description": "A limit was reached part-way; the technologies before it were looked up."
+                    },
+                    "remainingToday": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or file, or no custom technologies to look up.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "GROQ_API_KEY is not set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice/predictions": {
+      "post": {
+        "tags": [
+          "Practice"
+        ],
+        "operationId": "gradePrediction",
+        "summary": "Predict, then run: grade a prediction about a design",
+        "description": "The learner predicts what the design will do (first component to fill up, p95 against a target, whether it handles the load, or which way a proposed change moves capacity, p95, cost and uptime). The server evaluates the design, grades each answer, explains it with the engine's numbers, and saves the attempt. Shared with the Incident Lab: at most 120 practice attempts an hour.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "graph",
+                  "prediction"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "graph": {
+                    "$ref": "#/components/schemas/GraphDocument"
+                  },
+                  "traffic": {
+                    "$ref": "#/components/schemas/TrafficProfile"
+                  },
+                  "after": {
+                    "$ref": "#/components/schemas/GraphDocument"
+                  },
+                  "prediction": {
+                    "$ref": "#/components/schemas/Prediction"
+                  },
+                  "projectId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Graded and saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/GradedPrediction"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "attempt": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        },
+                        "adjustedInputs": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid design, traffic or prediction.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "More than 120 practice attempts in the last hour.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice/attempts": {
+      "get": {
+        "tags": [
+          "Practice"
+        ],
+        "operationId": "listPracticeAttempts",
+        "summary": "The signed-in user's practice history",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "prediction",
+                "incident"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The last 30 attempts (of the kind, when given) and a summary of all of them.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "attempts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "predictions": {
+                          "type": "object",
+                          "properties": {
+                            "attempts": {
+                              "type": "integer"
+                            },
+                            "accuracy": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "recentAccuracy": {
+                              "type": "integer",
+                              "nullable": true,
+                              "description": "Over the last 10 attempts."
+                            },
+                            "earlierAccuracy": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "byQuestion": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                  "correct": {
+                                    "type": "integer"
+                                  },
+                                  "total": {
+                                    "type": "integer"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "incidents": {
+                          "type": "object",
+                          "properties": {
+                            "attempts": {
+                              "type": "integer"
+                            },
+                            "passedScenarios": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown kind.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice/impact": {
+      "post": {
+        "tags": [
+          "Practice"
+        ],
+        "operationId": "incidentImpact",
+        "summary": "What happens to a design when part of it fails",
+        "description": "Replays a modelled incident on any design: which user operations still work, which components are cut off, and the share of requests still served. Nothing is saved.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "graph",
+                  "incident"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "graph": {
+                    "$ref": "#/components/schemas/GraphDocument"
+                  },
+                  "traffic": {
+                    "$ref": "#/components/schemas/TrafficProfile"
+                  },
+                  "incident": {
+                    "$ref": "#/components/schemas/Incident"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The impact.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentImpact"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid design or incident.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice/incidents": {
+      "get": {
+        "tags": [
+          "Practice"
+        ],
+        "operationId": "listIncidentScenarios",
+        "summary": "Incident Lab scenarios",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every scenario, with the signed-in user's attempts and whether they passed it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scenarios": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "cache-outage"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "brief": {
+                            "type": "string"
+                          },
+                          "symptom": {
+                            "type": "string"
+                          },
+                          "goal": {
+                            "type": "object",
+                            "properties": {
+                              "servedAtLeast": {
+                                "type": "number"
+                              },
+                              "mustWork": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "p95AtMostMs": {
+                                "type": "number"
+                              },
+                              "budgetAtMost": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "attempts": {
+                            "type": "integer"
+                          },
+                          "passed": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice/incidents/{scenarioId}": {
+      "get": {
+        "tags": [
+          "Practice"
+        ],
+        "operationId": "getIncidentScenario",
+        "summary": "One Incident Lab scenario to attempt",
+        "description": "The starting design, traffic, incident and goal, and what the incident does to the starting design. The root cause and debrief are only returned once an attempt is graded.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scenarioId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The scenario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "brief": {
+                      "type": "string"
+                    },
+                    "symptom": {
+                      "type": "string"
+                    },
+                    "goal": {
+                      "type": "object",
+                      "properties": {
+                        "servedAtLeast": {
+                          "type": "number"
+                        },
+                        "mustWork": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "p95AtMostMs": {
+                          "type": "number"
+                        },
+                        "budgetAtMost": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "design": {
+                      "$ref": "#/components/schemas/GraphDocument"
+                    },
+                    "traffic": {
+                      "$ref": "#/components/schemas/TrafficProfile"
+                    },
+                    "incident": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/Incident"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "description": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "impact": {
+                      "type": "object",
+                      "properties": {
+                        "operations": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/IncidentOperation"
+                          }
+                        },
+                        "healthy": {
+                          "$ref": "#/components/schemas/IncidentSnapshot"
+                        },
+                        "during": {
+                          "$ref": "#/components/schemas/IncidentSnapshot"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown scenario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/practice/incidents/{scenarioId}/attempts": {
+      "post": {
+        "tags": [
+          "Practice"
+        ],
+        "operationId": "attemptIncidentScenario",
+        "summary": "Grade an Incident Lab attempt",
+        "description": "A diagnosis (the component the learner thinks is the weakness), a revised design, or both. The incident is replayed on the revised design and each part of the goal checked; the debrief is returned with the result. The failing component must stay in the design.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scenarioId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "diagnosis": {
+                    "type": "string"
+                  },
+                  "graph": {
+                    "$ref": "#/components/schemas/GraphDocument"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Graded and saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "attempt": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "passed": {
+                      "type": "boolean"
+                    },
+                    "checks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "passed": {
+                            "type": "boolean"
+                          },
+                          "detail": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "diagnosis": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "picked": {
+                          "type": "string"
+                        },
+                        "correct": {
+                          "type": "boolean"
+                        },
+                        "explanation": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "impact": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/IncidentImpact"
+                        }
+                      ],
+                      "nullable": true
+                    },
+                    "debrief": {
+                      "type": "object",
+                      "properties": {
+                        "rootCause": {
+                          "type": "string"
+                        },
+                        "weakness": {
+                          "type": "string"
+                        },
+                        "mitigation": {
+                          "type": "string"
+                        },
+                        "tradeoff": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither a diagnosis nor a design, or an invalid one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown scenario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "More than 120 practice attempts in the last hour.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2980,6 +3922,10 @@
             "type": "string",
             "description": "Repository name.",
             "example": "shop"
+          },
+          "preview": {
+            "type": "boolean",
+            "description": "Return the design as ARCHITECH's compose file for review instead of saving it (200 GithubImportPreview)."
           }
         }
       },
@@ -3052,6 +3998,23 @@
             "example": [
               "docker-compose.yml runs the \"traefik\" image"
             ]
+          },
+          "actsAs": {
+            "type": "string",
+            "enum": [
+              "server",
+              "worker",
+              "api-gateway",
+              "load-balancer",
+              "database",
+              "cache",
+              "queue",
+              "object-storage",
+              "search",
+              "auth",
+              "cdn"
+            ],
+            "description": "The component type it behaves like; a component placed from it is measured as that type."
           }
         }
       },
@@ -3485,7 +4448,8 @@
             "enum": [
               "auto",
               "manual",
-              "before-restore"
+              "before-restore",
+              "other-device"
             ]
           },
           "label": {
@@ -3549,6 +4513,332 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "GithubImportPreview": {
+        "type": "object",
+        "required": [
+          "title",
+          "yaml",
+          "detected",
+          "customTechnologies",
+          "scannedFiles"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "yaml": {
+            "type": "string",
+            "description": "The design as ARCHITECH's docker-compose file: a runnable compose file whose x-architech fields hold every component (type, label, technology, settings, position), every connection and the custom technologies. Edit it, then POST it to /api/projects/from-compose."
+          },
+          "detected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DetectedComponent"
+            }
+          },
+          "customTechnologies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomTechnology"
+            }
+          },
+          "scannedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Incident": {
+        "description": "A modelled failure. component-down: every instance of a component is gone, with its connections. instance-down: one instance is lost (a database promotes a replica); a component with one instance is then down. capacity-drop: each instance does `factor` of its usual work. traffic-spike: requests arrive `multiplier` times faster.",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "nodeId"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "component-down",
+                  "instance-down"
+                ]
+              },
+              "nodeId": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "nodeId",
+              "factor"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "capacity-drop"
+                ]
+              },
+              "nodeId": {
+                "type": "string"
+              },
+              "factor": {
+                "type": "number",
+                "minimum": 0.05,
+                "maximum": 0.95
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "multiplier"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "traffic-spike"
+                ]
+              },
+              "multiplier": {
+                "type": "number",
+                "minimum": 1.1,
+                "maximum": 100
+              }
+            }
+          }
+        ]
+      },
+      "IncidentSnapshot": {
+        "type": "object",
+        "properties": {
+          "ready": {
+            "type": "boolean"
+          },
+          "servedPercent": {
+            "type": "number",
+            "description": "Percent of API requests still answered, 0-100."
+          },
+          "capacityRps": {
+            "type": "number",
+            "nullable": true
+          },
+          "p95LatencyMs": {
+            "type": "number"
+          },
+          "monthlyCost": {
+            "type": "number"
+          },
+          "overloaded": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nodeId": {
+                  "type": "string"
+                },
+                "utilization": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "IncidentOperation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "use-app",
+              "read",
+              "save",
+              "sign-in",
+              "search",
+              "files",
+              "jobs"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "works",
+              "partly",
+              "down"
+            ]
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "IncidentImpact": {
+        "type": "object",
+        "description": "What still works during the incident, from what the clients can still reach, and the engine's numbers before and during it.",
+        "properties": {
+          "incident": {
+            "$ref": "#/components/schemas/Incident"
+          },
+          "description": {
+            "type": "string",
+            "example": "Orders DB's only instance fails, so Orders DB is down."
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Components the failure removed."
+          },
+          "cutOff": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Components still there but no longer reachable by clients."
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentOperation"
+            }
+          },
+          "healthy": {
+            "$ref": "#/components/schemas/IncidentSnapshot"
+          },
+          "during": {
+            "$ref": "#/components/schemas/IncidentSnapshot"
+          },
+          "explanation": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Prediction": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "At least one of firstToFill, meetsTarget (with p95TargetMs), handlesLoad, change (with `after`).",
+        "properties": {
+          "firstToFill": {
+            "type": "string",
+            "description": "The component that fills up first as traffic grows, or \"none\"."
+          },
+          "meetsTarget": {
+            "type": "boolean"
+          },
+          "p95TargetMs": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 60000
+          },
+          "handlesLoad": {
+            "type": "boolean",
+            "description": "Serves the whole requested load without dropping requests."
+          },
+          "change": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "capacity": {
+                "type": "string",
+                "enum": [
+                  "up",
+                  "down",
+                  "same"
+                ]
+              },
+              "p95": {
+                "type": "string",
+                "enum": [
+                  "up",
+                  "down",
+                  "same"
+                ]
+              },
+              "cost": {
+                "type": "string",
+                "enum": [
+                  "up",
+                  "down",
+                  "same"
+                ]
+              },
+              "uptime": {
+                "type": "string",
+                "enum": [
+                  "up",
+                  "down",
+                  "same"
+                ]
+              }
+            }
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "reasoning": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "GradedPrediction": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "example": "firstToFill"
+                },
+                "predicted": {},
+                "actual": {},
+                "correct": {
+                  "type": "boolean"
+                },
+                "explanation": {
+                  "type": "string",
+                  "example": "API fills up first: at 3,000 req/s it runs at 60% of its capacity, so the design tops out around 5,000 req/s."
+                }
+              }
+            }
+          },
+          "correct": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "actual": {
+            "type": "object",
+            "description": "The engine's numbers (and `after`, for a change)."
           }
         }
       }

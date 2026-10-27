@@ -22,7 +22,7 @@ function technologyTables(): string[] {
     if (options.length === 0) continue;
     out.push(`### ${type.label} (\`${type.name}\`, role: ${roleOf(type.name)})`, "", type.description, "");
     if (type.name === "custom") {
-      out.push("Not measured: passes requests on with no capacity limit, latency, cost or downtime of its own.", "");
+      out.push("Measured as the component type it acts like (its \"Acts like\" setting), using that type's standard technology unless its own capacity, latency, monthly cost per instance and per-instance uptime are set. With no \"Acts like\" it passes requests on with no capacity limit, latency, cost or downtime of its own.", "");
       continue;
     }
     const hasHit = options.some((option) => option.hitRate !== null);
@@ -91,7 +91,7 @@ export function renderMetricsDoc(): string {
     "- Static files never touch the database. A CDN answers its hit rate of them at the edge; object storage serves the rest when connected; otherwise the service serves them itself.",
     `- Authentication is called for ${pct(AUTH_CHECK_RATE_DEFAULT)} of requests by default (JWTs are checked locally; only sign-ins and refreshes reach it). Search handles ${pct(SEARCH_RATE_DEFAULT)} of requests by default. Both are settings on the component.`,
     `- A write costs a database primary ${n(a.databaseWriteCost)}× a read. A dataset of ${n(a.databaseDatasetHalvingGb)} GB halves a database's capacity.`,
-    "- Custom components (technologies ARCHITECH does not model, e.g. from an imported repository) pass requests on and are not measured.",
+    "- Custom components (technologies ARCHITECH does not model, e.g. ClickHouse or Zipkin from an imported repository) are measured as the kind of component they act like (\"Acts like\" in their settings), with that kind's standard numbers unless their own capacity, latency, monthly cost per instance and per-instance uptime are set. A custom component that acts like nothing passes requests on and is not measured.",
     "- Cycles are cut where they close. The flow is linear in the request rate, so it is computed once and scaled.",
     "",
     "## Per component",

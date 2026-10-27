@@ -41,7 +41,7 @@ export default function ArchiePanel({
       {/* An inspector pill supplies the title; conversation actions stay beside focus. */}
       {!embedded && (
         <div className="ax-ai-header">
-          <p className="ax-ai-title"><ArchiePortrait />Archie</p>
+          <p className="ax-ai-title">Archie</p>
           {headerAction}
         </div>
       )}
