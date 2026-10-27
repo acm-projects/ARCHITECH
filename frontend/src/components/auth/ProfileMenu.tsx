@@ -1,0 +1,67 @@
+// this file owns the signed-in user's small account menu and sign out behavior
+"use client";
+
+import { signOut, useSession } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
+
+// Account menu for the signed-in user and the UI entry point for signing out.
+export default function ProfileMenu() {
+  const { data: session } = useSession();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const displayName = session?.user?.name || session?.user?.email || "User";
+  const userInitial = displayName.charAt(0).toUpperCase();
+  const handleToggle = () => setOpen((value) => !value);
+
+  // while the menu is open, close it when the user clicks outside or presses escape
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-label={`Account: ${displayName}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={handleToggle}
+        className="ax-dashboard-avatar flex h-9 w-9 items-center justify-center rounded-full bg-[#0A0A0A] text-lg font-semibold leading-none text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+      >
+        {userInitial}
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-9 z-20 w-44 rounded-md border border-neutral-200 bg-white py-1 text-[13px]"
+        >
+          <p className="truncate px-3 py-1.5 text-neutral-500">{displayName}</p>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              void signOut({ callbackUrl: "/" });
+            }}
+            className="block w-full px-3 py-1.5 text-left hover:bg-neutral-100"
+          >
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

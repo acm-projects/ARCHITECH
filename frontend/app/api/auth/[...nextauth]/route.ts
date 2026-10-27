@@ -1,0 +1,128 @@
+import NextAuth from "next-auth";
+import type { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
+import { isValidAuthEmail, normalizeAuthEmail } from "@/lib/authEmail";
+import { isExperienceLevel } from "@/lib/experienceLevel";
+import { attemptLimitsFromEnv, checkLogin, clientIp, createAttemptPruner, recordLogin } from "@/lib/auth/attemptLimits";
+import { attemptStore } from "@/lib/auth/attemptStore";
+
+const pruneAttempts = createAttemptPruner(attemptStore);
+import GithubProvider from "next-auth/providers/github";
+import GoogleProvider from "next-auth/providers/google";
+
+export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: "jwt", //Required for email/password logins
+  },
+  providers: [
+    GoogleProvider({
+    clientId: process.env.GOOGLE_CLIENT_ID as string,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+  }),
+    GithubProvider({
+    clientId: process.env.GITHUB_ID as string,
+    clientSecret: process.env.GITHUB_SECRET as string,
+    authorization: {
+    params: {
+      // 'repo' grants access to read/write both public and private repositories
+      scope: "read:user user:email repo", 
+    }
+  }
+    },
+    ),
+    CredentialsProvider({
+      name: "Email and Password",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials, req) {
+        if (
+          typeof credentials?.email !== "string" ||
+          typeof credentials.password !== "string" ||
+          !isValidAuthEmail(normalizeAuthEmail(credentials.email))
+        ) {
+          throw new Error("Invalid email or password");
+        }
+
+        const email = normalizeAuthEmail(credentials.email);
+        // Throttle guessing: 5 failures per email and 20 per network in 15 minutes
+        // (src/lib/auth/attemptLimits.ts). The message is shown on the sign-in form.
+        const ip = clientIp(req?.headers);
+        pruneAttempts();
+        const verdict = await checkLogin(attemptStore, email, ip, attemptLimitsFromEnv());
+        if (!verdict.ok) throw new Error(verdict.error);
+
+        const user = await prisma.user.findFirst({
+          where: { email: { equals: email, mode: "insensitive" } },
+        });
+
+        //Compare the hashed password
+        const isPasswordValid = !!user?.passwordHash && (await bcrypt.compare(credentials.password, user.passwordHash));
+        // Unknown emails count as failures too, so the limit cannot be used to find accounts.
+        await recordLogin(attemptStore, email, ip, isPasswordValid);
+
+        if (!user || !isPasswordValid) {
+          throw new Error("Invalid email or password");
+        }
+
+        return { id: user.id, name: user.name, email: user.email };
+      }
+    })
+  ],
+  events: {
+    // The Prisma adapter stores a provider's tokens only when the account is first linked.
+    // GitHub tokens expire, so save the fresh ones on every GitHub sign-in; otherwise the
+    // GitHub routes (/api/github/repos, /api/github/import) keep using an expired token.
+    async signIn({ account }) {
+      if (account?.provider !== "github") return;
+      await prisma.account.updateMany({
+        where: { provider: "github", providerAccountId: account.providerAccountId },
+        data: {
+          access_token: account.access_token ?? null,
+          refresh_token: account.refresh_token ?? null,
+          expires_at: account.expires_at ?? null,
+          refresh_token_expires_in:
+            typeof account.refresh_token_expires_in === "number" ? account.refresh_token_expires_in : null,
+          token_type: account.token_type ?? null,
+          scope: account.scope ?? null,
+        },
+      });
+    },
+  },
+  callbacks: {
+    async jwt({ token, user, trigger }) {
+      if (token.sub && (user || trigger === "update")) {
+        const profile = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { experienceLevel: true },
+        });
+        token.experienceLevel = isExperienceLevel(profile?.experienceLevel)
+          ? profile.experienceLevel
+          : null;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
+        session.user.experienceLevel = isExperienceLevel(token.experienceLevel)
+          ? token.experienceLevel
+          : null;
+      }
+      return session;
+    },
+  },
+  //This tells NextAuth to use Jie's UI pages
+  pages: {
+    signIn: '/', //Change this to wherever Jie's login page is located
+  }
+};
+
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };

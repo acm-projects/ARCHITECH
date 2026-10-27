@@ -1,0 +1,19 @@
+/* Version history panel (HistoryPanel.tsx). Reuses the AI panel's shell (.ax-ai-panel). */
+.ax-workspace .ax-history-save { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--ax-line); }
+.ax-workspace .ax-history-save .ax-field { flex: 1; min-width: 0; }
+.ax-workspace .ax-history-message { padding: 8px 14px 0; font-size: 12px; color: var(--ax-ink-soft); }
+.ax-workspace .ax-history-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.ax-workspace .ax-history-item { padding: 9px 10px; border-bottom: 1px solid var(--ax-line); }
+.ax-workspace .ax-history-item[data-kind="manual"] { border-color: var(--ax-line-strong); }
+.ax-workspace .ax-history-row { display: flex; justify-content: space-between; gap: 8px; }
+.ax-workspace .ax-history-name { font-weight: 500; overflow-wrap: anywhere; }
+.ax-workspace .ax-history-time { color: var(--ax-muted); font-size: 11px; white-space: nowrap; }
+.ax-workspace .ax-history-metrics { margin-top: 3px; color: var(--ax-ink-soft); font-size: 12px; font-variant-numeric: tabular-nums; }
+.ax-workspace .ax-history-delta[data-tone="better"] { color: #16a34a; }
+.ax-workspace .ax-history-delta[data-tone="worse"] { color: var(--ax-danger); }
+.ax-workspace .ax-history-restore {
+  display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 0;
+  border: 0; background: none; color: var(--ax-ink-soft); font-size: 12px; cursor: pointer;
+}
+.ax-workspace .ax-history-restore:hover { color: var(--ax-ink); text-decoration: underline; }
+.ax-workspace .ax-history-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--ax-ink-soft); }
