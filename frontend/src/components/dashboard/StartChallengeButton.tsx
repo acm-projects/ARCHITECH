@@ -2,8 +2,9 @@
 // Starts the daily challenge as a project in Challenge mode.
 import { useState } from "react";
 import { useStartProject } from "../projects/useStartProject";
-export default function StartChallengeButton({ title }: {
+export default function StartChallengeButton({ title, label = "Start" }: {
   title: string;
+  label?: string;
 }) {
   const start = useStartProject();
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export default function StartChallengeButton({ title }: {
       className="ax-dashboard-challenge-start group flex h-12 items-center justify-center rounded-[9px] bg-[#155DFC] px-8 text-sm text-white transition-colors duration-200 hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-500 motion-reduce:transition-none"
     >
       <span className="flex items-center gap-1.5">
-        Start
+        {label}
         <span
           aria-hidden="true"
           className="transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none"

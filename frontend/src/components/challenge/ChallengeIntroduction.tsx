@@ -36,14 +36,13 @@ export default function ChallengeIntroduction({ enabled, projectId, challengeId,
       ref={dialogRef}
       className="ax-new-project-dialog ax-challenge-intro"
       aria-labelledby="challenge-intro-title"
-      aria-describedby="challenge-intro-description"
       onKeyDown={event => event.stopPropagation()}
       onCancel={event => { event.preventDefault(); start(); }}
     >
-      <span className="ax-challenge-intro-symbol" aria-hidden="true"><Flag size={20} /></span>
-      <p className="ax-challenge-intro-label">Challenge mode</p>
-      <h2 id="challenge-intro-title">You’re entering Challenge mode</h2>
-      <p id="challenge-intro-description">Design a system that meets the requirements, without step-by-step guidance.</p>
+      <div className="ax-challenge-intro-heading">
+        <span className="ax-challenge-intro-symbol" aria-hidden="true"><Flag size={20} /></span>
+        <h2 id="challenge-intro-title" className="ax-challenge-intro-label">Challenge mode</h2>
+      </div>
       <p className="ax-challenge-intro-name">{title}</p>
       <ul>
         <li>Review the requirements in the challenge panel.</li>

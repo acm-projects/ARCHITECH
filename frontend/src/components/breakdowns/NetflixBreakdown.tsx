@@ -12,7 +12,6 @@ import {
   Position,
   ReactFlow,
   ReactFlowProvider,
-  getSmoothStepPath,
   useNodesInitialized,
   useReactFlow,
   type Edge,
@@ -36,6 +35,7 @@ import {
   type NetflixNavigation,
 } from "./netflix";
 import NetflixGuide from "./NetflixGuide";
+import { getOrthogonalEdgePath } from "../workspace/OrthogonalEdge";
 
 function BreakdownNode(props: NodeProps<ArchitectureFlowNode>) {
   const component = NETFLIX_COMPONENTS.find(item => item.id === props.id);
@@ -71,7 +71,7 @@ function videoReturnPath({ sourceX, sourceY, targetX, targetY }: Pick<EdgeProps,
 
 function BreakdownEdge(props: EdgeProps) {
   const { id, label, markerEnd, style } = props;
-  let [path, labelX, labelY] = getSmoothStepPath({ ...props, borderRadius: EDGE_CORNER_RADIUS });
+  let [path, labelX, labelY] = getOrthogonalEdgePath(props);
   if (id === "cdn-viewer") {
     path = videoReturnPath(props);
     labelX = VIDEO_RETURN_ROUTE.labelX;
