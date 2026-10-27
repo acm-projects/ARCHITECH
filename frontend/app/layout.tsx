@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 
 import AuthSessionProvider from "@/components/auth/AuthSessionProvider";
-import AppThemeBoundary from "@/components/AppThemeBoundary";
 import ProjectSync from "@/components/projects/ProjectSync";
 import "../src/index.css";
 
@@ -20,9 +19,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <AuthSessionProvider>
           <ProjectSync />
-          <div id="root">
-            <AppThemeBoundary>{children}</AppThemeBoundary>
-          </div>
+          <div id="root">{children}</div>
         </AuthSessionProvider>
       </body>
     </html>

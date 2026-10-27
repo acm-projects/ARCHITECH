@@ -3,13 +3,10 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
-import { Moon, Sun } from "lucide-react";
-import { useAppTheme } from "../AppThemeBoundary";
 
 // Account menu for the signed-in user and the UI entry point for signing out.
 export default function ProfileMenu() {
   const { data: session } = useSession();
-  const { theme, toggleTheme } = useAppTheme();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const displayName = session?.user?.name || session?.user?.email || "User";
@@ -34,17 +31,7 @@ export default function ProfileMenu() {
   }, [open]);
 
   return (
-    <div className="flex items-center gap-3">
-      <button
-        type="button"
-        aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-        title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-        onClick={toggleTheme}
-        className="ax-theme-toggle flex h-9 w-9 items-center justify-center"
-      >
-        {theme === "dark" ? <Sun size={17} aria-hidden="true" /> : <Moon size={17} aria-hidden="true" />}
-      </button>
-      <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative">
       <button
         type="button"
         aria-label={`Account: ${displayName}`}
@@ -75,7 +62,6 @@ export default function ProfileMenu() {
           </button>
         </div>
       )}
-    </div>
     </div>
   );
 }

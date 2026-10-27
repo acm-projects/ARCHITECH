@@ -1366,33 +1366,3 @@
 .ax-workspace .ax-stress[data-embedded="true"] .ax-stress-run[aria-disabled="true"] {
   opacity: .5;
 }
-
-.ax-workspace .ax-header { box-shadow: 0 3px 12px rgb(0 0 0 / 12%); }
-.ax-workspace .ax-theme-toggle { border-radius: 50%; }
-.ax-workspace .ax-title { font-size: 19.5px; font-weight: 700; }
-.ax-workspace .ax-header-title-input { font-size: 19.5px; font-weight: 700; }
-.ax-workspace .ax-panel-rail { box-shadow: 0 4px 14px rgb(0 0 0 / 12%); }
-.ax-workspace .ax-panel-content { box-shadow: 0 8px 24px rgb(0 0 0 / 18%); }
-.ax-workspace .ax-node { box-shadow: 0 2px 8px rgb(0 0 0 / 14%); }
-.ax-workspace .ax-node .ax-node-name { font-size: 12px; font-weight: 700; }
-.ax-workspace .ax-learn { box-shadow: 0 8px 24px rgb(0 0 0 / 20%); }
-.ax-workspace .ax-canvas-panel[data-learn-movable] {
-  top: calc(50% + var(--ax-learn-offset, 0px));
-}
-.ax-workspace .ax-learn-header {
-  cursor: grab;
-  touch-action: none;
-}
-.ax-workspace .ax-learn-header:active { cursor: grabbing; }
-.ax-workspace .ax-learn-header:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 3px; }
-
-@media (max-width: 600px) {
-  .ax-workspace .ax-title,
-  .ax-workspace .ax-header-title-input { font-size: 18px; }
-}
-
-@media (max-width: 767px) {
-  .ax-workspace .ax-canvas-panel[data-learn-movable] {
-    top: calc(12px + var(--ax-learn-offset, 0px));
-  }
-}
