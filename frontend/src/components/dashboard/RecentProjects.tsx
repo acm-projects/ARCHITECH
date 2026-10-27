@@ -173,7 +173,6 @@ export default function RecentProjects() {
     <div className="ax-dashboard-project-heading mb-5">
       <div>
         <h2 className="ax-dashboard-section-title ax-dashboard-project-title">Projects</h2>
-        <p className="mt-1 text-xs text-[#737373]">Continue your projects</p>
       </div>
       <button
         type="button"

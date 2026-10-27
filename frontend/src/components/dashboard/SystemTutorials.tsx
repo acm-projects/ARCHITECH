@@ -1,8 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import DailyChallenge from "./DailyChallenge";
-import { urlShortenerChallenge } from "../challenge/challenges";
 import { NETFLIX_COMPONENTS, NETFLIX_CONNECTIONS, NETFLIX_NODES } from "../breakdowns/netflix";
 import TopologyPreview from "../projects/TopologyPreview";
 import { NETFLIX_BREAKDOWN_ROUTE } from "../../lib/routes";
@@ -17,7 +15,6 @@ export default function SystemTutorials() {
     <section className="ax-dashboard-tutorials bg-white px-5 sm:px-8 lg:px-14">
       <div className="ax-dashboard-tutorial-heading">
         <h2 className="ax-dashboard-section-title">System breakdowns</h2>
-        <p className="mt-1 text-xs text-[#737373]">Explore the architecture behind real-world systems.</p>
       </div>
       <div className="ax-dashboard-learning-content">
         <ul className="ax-breakdown-catalog" aria-label="System breakdowns">
@@ -47,12 +44,6 @@ export default function SystemTutorials() {
             </li>
           ))}
         </ul>
-        <DailyChallenge
-          compact
-          title={urlShortenerChallenge.title}
-          difficulty={urlShortenerChallenge.difficulty}
-          requirement={urlShortenerChallenge.summary[0]}
-        />
       </div>
     </section>
   );
