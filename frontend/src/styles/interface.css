@@ -6543,6 +6543,11 @@ body,
   letter-spacing: -0.025em;
 }
 
+.ax-dashboard-section-title {
+  font-size: 34px;
+  font-weight: 700;
+}
+
 /* The project pane keeps two visible rows on desktop. */
 .ax-dashboard-project-grid {
   display: grid;
@@ -6760,3 +6765,156 @@ body,
 .ax-challenge-intro-start { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 38px; padding: 10px 14px; border: 1px solid var(--neutral-950); border-radius: var(--radius-action); background: var(--neutral-950); color: var(--neutral-0); font-size: 12px; font-weight: 500; }
 .ax-new-project-dialog .ax-challenge-intro-start:hover:not(:disabled) { background: var(--neutral-800); }
 .ax-new-project-dialog .ax-challenge-intro-start:active:not(:disabled) { background: var(--neutral-700); }
+
+.ax-dashboard-challenge-region {
+  flex-shrink: 0;
+  padding-top: 18px;
+  padding-bottom: 0;
+}
+
+.ax-daily-challenge-banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(370px, 46%);
+  align-items: center;
+  gap: 12px;
+  margin-right: 19px;
+  padding: 12px 14px;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 6px 20px rgb(15 23 42 / 8%), 0 2px 6px rgb(15 23 42 / 4%);
+}
+
+.ax-daily-challenge-banner::before {
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: 0;
+  width: 5px;
+  border-radius: 4px;
+  background: var(--canvas-accent);
+  content: "";
+}
+
+.ax-daily-challenge-kicker {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  min-width: max-content;
+  min-height: 30px;
+  padding-right: 12px;
+  border-right: 1px solid var(--color-line);
+}
+
+.ax-daily-challenge-kicker span {
+  color: var(--color-ink);
+  font-variant-caps: small-caps;
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.ax-daily-challenge-kicker span::first-letter { font-size: 1.2em; }
+
+.ax-daily-challenge-title {
+  margin: 0;
+  color: var(--neutral-950);
+  font-family: var(--font-sans);
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 700;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.ax-daily-challenge-banner .ax-dashboard-challenge-start {
+  width: 156px;
+  min-height: 30px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-action);
+  color: var(--neutral-0);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.ax-daily-challenge-banner .ax-dashboard-challenge-start > span {
+  width: 100%;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  white-space: nowrap;
+}
+
+.ax-daily-challenge-details {
+  display: grid;
+  grid-template-columns: 156px max-content;
+  min-width: 0;
+  align-items: stretch;
+  justify-content: end;
+  gap: 8px;
+}
+
+.ax-daily-challenge-actions {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 3px;
+}
+
+.ax-daily-challenge-actions > div,
+.ax-daily-challenge-actions > div > button { width: 100%; }
+
+.ax-daily-challenge-metrics {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  align-items: center;
+  justify-content: start;
+  column-gap: 8px;
+  border-left: 1px solid var(--color-line);
+  padding-left: 6px;
+}
+
+.ax-daily-challenge-detail { min-width: 0; }
+.ax-daily-challenge-detail-heading { display: flex; min-width: 0; align-items: center; gap: 5px; }
+.ax-daily-challenge-detail-heading > svg { width: 18px; height: 18px; flex: 0 0 18px; color: var(--canvas-accent); stroke-width: 1.8; }
+.ax-daily-challenge-detail-copy { display: grid; min-width: 0; gap: 1px; }
+.ax-daily-challenge-detail-heading > .ax-daily-challenge-detail-copy { flex: 1; }
+.ax-daily-challenge-detail span { color: var(--color-muted); font-size: 10px; }
+.ax-daily-challenge-detail strong { color: var(--color-ink); font-size: 12px; font-weight: 650; overflow-wrap: anywhere; }
+
+.ax-challenge-intro {
+  width: min(460px, calc(100vw - 32px));
+  padding: 28px;
+  border-radius: 8px;
+  background: var(--neutral-0);
+  color: var(--challenge-intro-ink);
+  box-shadow: 0 14px 40px rgb(0 0 0 / 24%);
+}
+
+.ax-challenge-intro-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.ax-challenge-intro-symbol { display: grid; place-items: center; width: 38px; height: 38px; flex: none; margin: 0; border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--neutral-0); color: var(--canvas-accent); }
+.ax-challenge-intro-label { margin: 0; color: var(--challenge-intro-ink); font-size: 18px; font-weight: 700; }
+.ax-challenge-intro h2 { margin: 0 0 12px; font-size: 21px; }
+.ax-challenge-intro > .ax-challenge-intro-name { margin: 0 0 14px; color: var(--challenge-intro-ink); font-size: 20px; font-weight: 700; line-height: 1.25; }
+.ax-challenge-intro ul { display: grid; gap: 10px; margin: 0 0 24px; padding-left: 20px; color: var(--challenge-intro-ink); font-size: 14px; line-height: 1.5; }
+.ax-challenge-intro-start { min-height: 48px; border: 1px solid var(--challenge-intro-ink); border-radius: 8px; background: var(--challenge-intro-ink); color: var(--neutral-0); font-size: 14px; font-weight: 600; }
+.ax-challenge-intro .ax-challenge-intro-start:hover:not(:disabled) { border-color: var(--challenge-intro-hover); background: var(--challenge-intro-hover); }
+
+@media (max-width: 700px) {
+  .ax-daily-challenge-banner { grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 8px 12px; margin-right: 0; }
+  .ax-daily-challenge-kicker { min-width: max-content; min-height: 26px; padding-right: 8px; }
+  .ax-daily-challenge-kicker span { font-size: 16px; }
+  .ax-daily-challenge-kicker span::first-letter { font-size: 1.15em; }
+  .ax-daily-challenge-title { font-size: clamp(16px, 3.4vw, 20px); }
+  .ax-daily-challenge-details { grid-column: 1 / -1; grid-template-columns: 120px max-content; justify-content: end; gap: 6px; padding: 4px 0 0; border-top: 1px solid var(--color-line); }
+  .ax-daily-challenge-banner .ax-dashboard-challenge-start,
+  .ax-daily-challenge-actions { width: 120px; }
+  .ax-daily-challenge-banner .ax-dashboard-challenge-start { min-width: 120px; min-height: 36px; height: 36px; font-size: 12px; }
+  .ax-daily-challenge-metrics { column-gap: 6px; padding-left: 4px; }
+}
