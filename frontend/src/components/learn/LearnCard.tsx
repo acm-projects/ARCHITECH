@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { FREE_PLAY_BODY, FREE_PLAY_TITLE, type ConnectionFeedback, type Lesson } from "./lessons";
 import type { LessonStatus } from "./useLessonEngine";
@@ -19,6 +19,8 @@ type LearnCardProps = {
   // A hint worked out from the design, shown when the learner is stuck.
   hint?: string | null;
   onDismissFeedback?: () => void;
+  verticalOffset: number;
+  onVerticalOffsetChange: (offset: number) => void;
 };
 
 function DialogueText({ text }: { text: string }) {
@@ -83,7 +85,15 @@ export default function LearnCard({
   feedback,
   hint,
   onDismissFeedback,
+  verticalOffset,
+  onVerticalOffsetChange,
 }: LearnCardProps) {
+  const dragStart = useRef<{
+    pointerY: number;
+    offset: number;
+    minOffset: number;
+    maxOffset: number;
+  } | null>(null);
   const step = lesson.steps[stepIndex];
   // Add-component instructions follow the catalog when a component moves categories.
   const category = step.objective.kind === "node"
@@ -94,9 +104,58 @@ export default function LearnCard({
     ? skipped ? "Free play" : FREE_PLAY_TITLE
     : feedback ? feedback.title : step.title;
 
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    const panel = event.currentTarget.closest(".ax-canvas-panel");
+    const overlay = panel?.parentElement;
+    if (!panel || !overlay) return;
+    const panelRect = panel.getBoundingClientRect();
+    const overlayRect = overlay.getBoundingClientRect();
+    dragStart.current = {
+      pointerY: event.clientY,
+      offset: verticalOffset,
+      minOffset: verticalOffset + overlayRect.top - panelRect.top,
+      maxOffset: verticalOffset + overlayRect.bottom - panelRect.bottom,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const start = dragStart.current;
+    if (!start || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    const requested = start.offset + event.clientY - start.pointerY;
+    onVerticalOffsetChange(Math.max(start.minOffset, Math.min(start.maxOffset, requested)));
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    event.stopPropagation();
+    const panel = event.currentTarget.closest(".ax-canvas-panel");
+    const overlay = panel?.parentElement;
+    if (!panel || !overlay) return;
+    const panelRect = panel.getBoundingClientRect();
+    const overlayRect = overlay.getBoundingClientRect();
+    const minOffset = verticalOffset + overlayRect.top - panelRect.top;
+    const maxOffset = verticalOffset + overlayRect.bottom - panelRect.bottom;
+    const change = event.key === "ArrowUp" ? -24 : 24;
+    onVerticalOffsetChange(Math.max(minOffset, Math.min(maxOffset, verticalOffset + change)));
+  };
+
   return (
     <div className="ax-card ax-learn" aria-live="polite" data-learn-phase={freePlay ? "free-play" : "guided"}>
-      <div className="ax-learn-header" data-celebrating={status === "success"}>
+      <div
+        className="ax-learn-header"
+        data-celebrating={status === "success"}
+        role="group"
+        aria-label="Move lesson panel vertically. Drag or use the up and down arrow keys."
+        tabIndex={0}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={() => { dragStart.current = null; }}
+        onPointerCancel={() => { dragStart.current = null; }}
+        onKeyDown={handleKeyDown}
+      >
         <p className="ax-card-title">{heading}</p>
         <span key={`${step.id}-${status}`} className="ax-learn-portrait" aria-hidden="true">
           <Image src="/archie.svg" alt="" width={518} height={400} />

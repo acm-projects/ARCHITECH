@@ -1,8 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import DailyChallenge from "./DailyChallenge";
-import { urlShortenerChallenge } from "../challenge/challenges";
 import { NETFLIX_COMPONENTS, NETFLIX_CONNECTIONS, NETFLIX_NODES } from "../breakdowns/netflix";
 import TopologyPreview from "../projects/TopologyPreview";
 import ArchitectureTile from "../projects/ArchitectureTile";
@@ -16,11 +14,8 @@ const UPCOMING = [
 export default function SystemTutorials() {
   return (
     <section className="ax-dashboard-tutorials bg-white px-5 sm:px-8 lg:px-14">
-      <div className="ax-dashboard-project-heading mb-5">
-        <div>
-          <h2 className="ax-dashboard-section-title">System breakdowns</h2>
-          <p className="mt-1 text-xs text-[#737373]">Explore the architecture behind real-world systems.</p>
-        </div>
+      <div className="ax-dashboard-tutorial-heading">
+        <h2 className="ax-dashboard-section-title">System breakdowns</h2>
       </div>
       <div className="ax-dashboard-learning-content">
         <ul className="ax-dashboard-project-grid ax-breakdown-catalog" aria-label="System breakdowns">
@@ -45,12 +40,6 @@ export default function SystemTutorials() {
             </ArchitectureTile>
           ))}
         </ul>
-        <DailyChallenge
-          compact
-          title={urlShortenerChallenge.title}
-          difficulty={urlShortenerChallenge.difficulty}
-          requirement={urlShortenerChallenge.summary[0]}
-        />
       </div>
     </section>
   );

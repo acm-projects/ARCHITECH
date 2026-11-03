@@ -1,15 +1,12 @@
 "use client";
 
-import { useCallback, useState, type DragEvent } from "react";
+import { useCallback, useMemo, useState, type CSSProperties, type DragEvent } from "react";
 import { Gauge, ShieldCheck } from "lucide-react";
 import {
   Controls,
-  ConnectionLineType,
-  StepEdge,
   MarkerType,
   ReactFlow,
   ReactFlowProvider,
-  SelectionMode,
   useEdgesState,
   useNodesState,
   useReactFlow,
@@ -57,6 +54,7 @@ import { LiveEstimatesPanel } from "./LiveMetricsBar";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
+import OrthogonalEdge from "./OrthogonalEdge";
 import ArchitectureNode, {
   type ArchitectureFlowNode,
   type ArchitectureNodeData,
@@ -72,11 +70,13 @@ const FIT_VIEW_OPTIONS = {
   padding: 0.4,
 };
 
-// Render existing default edges with angular routing without changing saved graph data.
-const edgeTypes = { default: StepEdge };
+const edgeTypes = {
+  orthogonal: OrthogonalEdge,
+};
 
 // React Flow creates arrowheads from edge options rather than stylesheet rules.
 const defaultEdgeOptions = {
+  type: "orthogonal" as const,
   markerEnd: {
     type: MarkerType.ArrowClosed,
     color: "#b4b4af",
@@ -107,6 +107,10 @@ function Workspace({ project }: { project: Project }) {
   const [nodes, setNodes, onNodesChange] =
     useNodesState<ArchitectureFlowNode>(project.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(project.edges);
+  const visibleEdges = useMemo(
+    () => edges.map((edge) => edge.type === "orthogonal" ? edge : { ...edge, type: "orthogonal" }),
+    [edges],
+  );
 
   const {
     screenToFlowPosition,
@@ -122,6 +126,8 @@ function Workspace({ project }: { project: Project }) {
   );
 
   const [title, setTitle] = useState(project.title);
+  const [learnPanelOffset, setLearnPanelOffset] = useState(0);
+  const learnPanelStyle = { "--ax-learn-offset": `${learnPanelOffset}px` } as CSSProperties;
   // Clear node/edge selection without changing the architecture itself.
   const clearCanvasSelection = useCallback(() => {
     const next = clearSelection({
@@ -564,10 +570,9 @@ function Workspace({ project }: { project: Project }) {
               <InspectorContext.Provider value={showInspector ? inspector.nodeActions : null}>
                 <ReactFlow
                   nodes={nodes}
-                  edges={edges}
+                  edges={visibleEdges}
                   nodeTypes={nodeTypes}
                   edgeTypes={edgeTypes}
-                  connectionLineType={ConnectionLineType.Step}
                   onNodesChange={onNodesChange}
                   onEdgesChange={onEdgesChange}
                   onConnect={handleConnect}
@@ -580,14 +585,8 @@ function Workspace({ project }: { project: Project }) {
                   defaultEdgeOptions={defaultEdgeOptions}
                   fitView
                   fitViewOptions={FIT_VIEW_OPTIONS}
-                  // Figma-style navigation. Click-dragging empty canvas (on a touchpad: hold with one
-                  // finger, drag with another) draws a selection box that picks every component it
-                  // touches; the AI Architect then explains that part. Pan with a two-finger swipe,
-                  // the mouse wheel, Space+drag, or a middle/right-button drag. Zoom with a pinch or
-                  // Ctrl/Cmd+scroll. Dragging a component still moves it.
-                  selectionOnDrag
-                  selectionMode={SelectionMode.Partial}
-                  panOnDrag={[1, 2]}
+                  // Drag empty canvas to pan; dragging a component still moves it.
+                  panOnDrag
                   panOnScroll
                 >
                   <Controls showInteractive={false} />
@@ -640,7 +639,13 @@ function Workspace({ project }: { project: Project }) {
                   ) : null}
                 />
               ) : (
-                <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
+                <aside
+                  className="ax-canvas-panel"
+                  data-side="right"
+                  data-learn-movable={!inspector.historyOpen || undefined}
+                  style={!inspector.historyOpen ? learnPanelStyle : undefined}
+                  aria-label="Guidance"
+                >
                   <div className="ax-panel-content" data-architect={inspector.historyOpen || undefined}>
                     {inspector.historyOpen ? (
                       <HistoryPanel projectId={project.id} onClose={inspector.closeHistory} onRestore={replaceGraph} />
@@ -656,6 +661,8 @@ function Workspace({ project }: { project: Project }) {
                       feedback={learn.engine.feedback}
                       hint={learn.engine.hintVisible ? learn.engine.hint?.text : null}
                       onDismissFeedback={learn.engine.dismissFeedback}
+                      verticalOffset={learnPanelOffset}
+                      onVerticalOffsetChange={setLearnPanelOffset}
                     />
                     )}
                     {/* Keep Archie mounted, but out of the guided tutorial. */}
