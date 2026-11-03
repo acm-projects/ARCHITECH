@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
@@ -11,7 +12,6 @@ import {
   Position,
   ReactFlow,
   ReactFlowProvider,
-  getSmoothStepPath,
   useNodesInitialized,
   useReactFlow,
   type Edge,
@@ -22,7 +22,8 @@ import "@xyflow/react/dist/style.css";
 import "../workspace/architecture-workspace.css";
 import "./breakdowns.css";
 
-import WorkspaceHeaderShell from "../workspace/WorkspaceHeaderShell";
+import { Logo } from "../ui";
+import { HOME_ROUTE } from "../../lib/routes";
 import ArchitectureNode, { type ArchitectureFlowNode } from "../workspace/nodes/ArchitectureNode";
 import {
   NETFLIX_COMPONENTS,
@@ -34,6 +35,7 @@ import {
   type NetflixNavigation,
 } from "./netflix";
 import NetflixGuide from "./NetflixGuide";
+import { getOrthogonalEdgePath } from "../workspace/OrthogonalEdge";
 
 function BreakdownNode(props: NodeProps<ArchitectureFlowNode>) {
   const component = NETFLIX_COMPONENTS.find(item => item.id === props.id);
@@ -45,7 +47,6 @@ function BreakdownNode(props: NodeProps<ArchitectureFlowNode>) {
   </>;
 }
 
-const EDGE_CORNER_RADIUS = 0;
 const PREPARATION_LABEL_GAP = 12;
 // Reserve a lane below the preparation row so video delivery bypasses the API
 // tier visually as well as in the topology.
@@ -59,7 +60,7 @@ function videoReturnPath({ sourceX, sourceY, targetX, targetY }: Pick<EdgeProps,
 
 function BreakdownEdge(props: EdgeProps) {
   const { id, label, markerEnd, style } = props;
-  let [path, labelX, labelY] = getSmoothStepPath({ ...props, borderRadius: EDGE_CORNER_RADIUS });
+  let [path, labelX, labelY] = getOrthogonalEdgePath(props);
   if (id === "cdn-viewer") {
     path = videoReturnPath(props);
     labelX = VIDEO_RETURN_ROUTE.labelX;
@@ -154,10 +155,13 @@ function NetflixWalkthrough() {
 
   return (
     <main className="ax-workspace ax-breakdown" style={{ "--ax-breakdown-node-width": `${NETFLIX_NODE_SIZE.width}px`, "--ax-breakdown-node-height": `${NETFLIX_NODE_SIZE.height}px` } as CSSProperties}>
-      <WorkspaceHeaderShell
-        project={<h1 className="ax-title"><span>Netflix</span><small>System breakdown</small></h1>}
-        actions={<button className="ax-header-menu-trigger" type="button" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>}
-      />
+      <header className="page-header ax-breakdown-header">
+        <div className="ax-breakdown-heading">
+          <Link href={HOME_ROUTE} className="ax-brand" aria-label="ARCHITECH dashboard"><Logo variant="by-level" /></Link>
+          <h1>Netflix <span>System breakdown</span></h1>
+        </div>
+        <button type="button" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>
+      </header>
 
       <div className="ax-breakdown-body">
         <section className="ax-breakdown-diagram" aria-label="Netflix example architecture">
