@@ -1,70 +1,43 @@
-/* Independent pills share the available height; their headers never collapse. */
+/* One inspector surface with persistent tools and context below. */
 .ax-workspace .ax-inspector { --ax-inspector-radius: var(--ax-radius-dock); }
 .ax-workspace .ax-diagram-viewport { height: 100%; }
 .ax-workspace .ax-canvas-panel.ax-inspector[data-side="right"] {
-  top: 50%;
-  bottom: auto;
-  /* The overlay already clears the header; reserve only the canvas edge inset. */
-  height: min(680px, calc(100% - 24px));
+  top: 12px;
+  bottom: 12px;
+  height: auto;
   right: 12px;
   max-height: none;
-  transform: translateY(-50%);
-  align-items: center;
+  transform: none;
+  align-items: flex-start;
 }
-/* Keep the icon column fixed; labels grow toward the canvas, not under the pointer. */
 .ax-workspace .ax-inspector-frame {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
+  align-items: stretch;
+  gap: 0;
   width: 340px;
   max-width: calc(100vw - 24px);
   max-height: 100%;
   min-height: 0;
-  pointer-events: none;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: var(--ax-inspector-radius);
+  background: var(--ax-surface);
+  overflow: hidden;
+  pointer-events: auto;
 }
-.ax-workspace .ax-inspector-frame > .ax-inspector-section {
-  --ax-inspector-label-display: none;
-  --ax-inspector-status-display: none;
-  width: 46px;
-  max-width: 100%;
-  transition: width 160ms var(--ax-ease), border-color 160ms var(--ax-ease);
-}
-.ax-workspace .ax-inspector[data-expanded="true"] .ax-inspector-section,
-.ax-workspace .ax-inspector[data-selection="true"] .ax-inspector-section,
-.ax-workspace .ax-inspector-section:has(.ax-inspector-section-toggle:focus-visible) {
-  width: 220px;
-  --ax-inspector-label-display: inline;
-  --ax-inspector-status-display: inline-flex;
-}
-@media (hover: hover) and (pointer: fine) {
-  .ax-workspace .ax-inspector-frame > .ax-inspector-section:hover {
-    width: 220px;
-    --ax-inspector-label-display: inline;
-    --ax-inspector-status-display: inline-flex;
-    border-color: var(--ax-line-strong);
-  }
-}
-.ax-workspace .ax-inspector-frame > .ax-inspector-section:is([data-expanded="true"], [open], .ax-inspector-guidance),
-.ax-workspace .ax-inspector-frame > .ax-inspector-section:has(.ax-inspector-archie) {
-  width: 340px;
+.ax-workspace .ax-inspector-tools {
+  display: flex;
+  flex: 0 0 auto;
+  padding: 4px;
+  gap: 4px;
 }
 .ax-workspace .ax-inspector-section-label {
-  display: var(--ax-inspector-label-display);
-  margin-left: 12px;
   white-space: nowrap;
 }
 .ax-workspace .ax-inspector-section-toggle small { display: inline; }
-/* A second line leaves room for real status text in the narrow hover label. */
-.ax-workspace .ax-inspector-status { flex-wrap: wrap; justify-content: flex-end; }
-.ax-workspace .ax-inspector-section:not([data-expanded="true"]) .ax-inspector-status small {
-  max-width: 60px;
-  text-align: right;
-  line-height: 1.2;
-}
-.ax-workspace .ax-inspector-section[data-expanded="true"] { border-color: var(--ax-line-strong); }
-@media (prefers-reduced-motion: reduce) {
-  .ax-workspace .ax-inspector-frame > .ax-inspector-section { transition: none; }
+.ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] {
+  background: var(--ax-canvas);
+  border-color: var(--ax-ink-soft);
 }
 .ax-workspace .ax-inspector [hidden] { display: none !important; }
 .ax-workspace .ax-inspector-archie {
@@ -104,7 +77,7 @@
 }
 .ax-workspace .ax-inspector-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
   overflow-wrap: anywhere;
@@ -151,38 +124,29 @@
   flex-direction: column;
   flex: 0 1 auto;
   min-height: 44px;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: var(--ax-inspector-radius);
+  border: 0;
+  border-top: 1px solid var(--ax-line);
+  border-radius: 0;
   background: var(--ax-surface);
   overflow: hidden;
   pointer-events: auto;
 }
 .ax-workspace .ax-inspector-frame > details,
 .ax-workspace .ax-inspector-guidance { overflow-y: auto; }
-.ax-workspace .ax-inspector-section[open] > .ax-inspector-header,
-.ax-workspace .ax-inspector-section[data-expanded="true"] > .ax-inspector-section-header {
+.ax-workspace .ax-inspector-section[open] > .ax-inspector-header {
   border-bottom: 1px solid var(--ax-line);
-}
-.ax-workspace .ax-inspector-section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.ax-workspace .ax-inspector-section-header h2 {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
 }
 .ax-workspace .ax-inspector-section-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
-  min-height: 44px;
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
   position: relative;
-  padding: 12px 0;
-  border: 0;
-  border-radius: 0;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 2px;
   background: transparent;
   color: var(--ax-ink);
   font-size: 12px;
@@ -195,30 +159,19 @@
   font-size: 10px;
   font-weight: 400;
 }
-.ax-workspace .ax-inspector-status { display: var(--ax-inspector-status-display); align-items: center; gap: 8px; margin-left: auto; margin-right: 46px; flex-shrink: 0; }
-/* Each tool has a stable anchor, including while another section is open. */
+.ax-workspace .ax-inspector-status { display: inline-flex; align-items: center; margin-left: auto; }
 .ax-workspace .ax-inspector-tool-icon {
-  position: absolute;
-  right: 6px;
-  top: 6px;
+  position: relative;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid transparent;
-  border-radius: var(--ax-radius-tool);
-}
-.ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] .ax-inspector-tool-icon {
-  border-color: var(--ax-line-strong);
-  background: var(--ax-canvas);
-  color: var(--ax-ink);
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
 }
 .ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] .ax-inspector-section-label { font-weight: 600; }
 .ax-workspace .ax-inspector-section-toggle:active { background: var(--ax-line); }
-.ax-workspace .ax-inspector-section-toggle .ax-ai-portrait { width: 20px; height: 20px; flex-shrink: 0; }
+.ax-workspace .ax-inspector-section-toggle .ax-ai-portrait { width: 26px; height: 26px; border-width: 1px; }
 .ax-workspace .ax-inspector-section-toggle:disabled { opacity: .5; cursor: default; }
-.ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] .ax-inspector-status > svg { transform: rotate(180deg); }
-.ax-workspace .ax-inspector-section-toggle:hover { background: var(--ax-canvas); }
 .ax-workspace .ax-inspector-section-toggle:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: -3px; }
 .ax-workspace .ax-inspector .ax-ai-focus-bar .ax-ai-header-actions { margin-left: auto; }
 .ax-workspace .ax-inspector-details {
@@ -247,7 +200,7 @@
   min-height: 0;
   overflow: hidden;
 }
-.ax-workspace .ax-inspector-section-header,
+.ax-workspace .ax-inspector-tools,
 .ax-workspace .ax-review-view,
 .ax-workspace .ax-review-footer { flex-shrink: 0; }
 .ax-workspace .ax-review-scroll {
@@ -481,7 +434,7 @@
   color: var(--ax-ink);
   box-sizing: content-box;
 }
-.ax-workspace .ax-inspector-section[data-run-state="analyzing"] .ax-inspector-state-icon {
+.ax-workspace .ax-inspector-section-toggle[data-run-state="analyzing"] .ax-inspector-state-icon {
   animation: ui-spin 900ms linear infinite;
 }
 .ax-workspace .ax-review-notices {
@@ -490,3 +443,19 @@
   border-left: 2px solid var(--ax-ink-soft);
 }
 .ax-workspace .ax-review[data-run-state="stale"] .ax-review-notices { border-left-style: dashed; }
+
+/* Findings share the check panel's disclosure pattern. */
+.ax-workspace .ax-review-finding-title {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 13px;
+  align-items: baseline; gap: 8px; padding: 10px 0;
+  cursor: pointer; list-style: none;
+}
+.ax-workspace .ax-review-finding-title::-webkit-details-marker { display: none; }
+.ax-workspace .ax-review-finding-title .ax-review-finding-name {
+  color: var(--ax-ink); font-size: 12px; font-weight: 500; text-transform: none;
+}
+.ax-workspace .ax-review-finding-title .ax-review-severity { color: var(--ax-muted); font-size: 11px; }
+.ax-workspace .ax-review-finding[open] > summary > svg { transform: rotate(180deg); }
+.ax-workspace .ax-review-finding > p { padding: 0 0 12px; line-height: 1.6; }
+.ax-workspace .ax-inspector-findings { gap: 0; }
+.ax-workspace .ax-inspector-findings > li { padding: 0; }

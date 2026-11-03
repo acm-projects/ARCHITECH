@@ -138,7 +138,7 @@ export default function LearnCard({
               Open{" "}<span className="ax-learn-category">
                 <CategoryIcon size={16} color={FAMILY_COLORS[category]} aria-hidden="true" />
                 <span>{FAMILY_LABELS[category]}</span>
-              </span>{" "}in the left toolbar.
+              </span>{" "}in the bottom toolbar.
             </p>}
             <p>{step.instruction}</p>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 // Canvas chrome for the toolbox rail and flyout; content and project logic stay outside.
 export default function CanvasPanel({
@@ -11,7 +11,7 @@ export default function CanvasPanel({
   rail,
   expanded,
   onExpandedChange,
-  flyoutOffset,
+  hoverFlyout = false,
   children,
 }: {
   side: "left" | "right";
@@ -21,7 +21,7 @@ export default function CanvasPanel({
   rail?: ReactNode;
   expanded?: boolean;
   onExpandedChange?: (open: boolean) => void;
-  flyoutOffset?: number;
+  hoverFlyout?: boolean;
   children: ReactNode;
 }) {
   // Category selection controls the toolbox's open state; an optional local toggle
@@ -30,18 +30,40 @@ export default function CanvasPanel({
   const open = expanded ?? localOpen;
   const setOpen = onExpandedChange ?? setLocalOpen;
   const id = useId();
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelClose = () => {
+    if (closeTimer.current !== null) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  };
+  useEffect(() => () => {
+    if (closeTimer.current !== null) clearTimeout(closeTimer.current);
+  }, []);
 
   return (
     <aside className="ax-canvas-panel" data-side={side} data-wide={wide} aria-label={label}
-      data-hover-flyout={flyoutOffset !== undefined || undefined}
-      style={flyoutOffset === undefined ? undefined : { "--ax-flyout-offset": `${flyoutOffset}px` } as CSSProperties}
-      onPointerLeave={flyoutOffset === undefined ? undefined : (event) => {
-        if (event.pointerType === "mouse" && !event.currentTarget.contains(document.activeElement)) setOpen(false);
+      data-hover-flyout={hoverFlyout || undefined}
+      onPointerEnter={cancelClose}
+      onPointerLeave={!hoverFlyout ? undefined : (event) => {
+        if (event.pointerType !== "mouse") return;
+        const panel = event.currentTarget;
+        cancelClose();
+        // Allow diagonal travel into the flyout without a flash of closed content.
+        closeTimer.current = setTimeout(() => {
+          closeTimer.current = null;
+          if (!panel.matches(":hover") && !panel.contains(document.activeElement)) setOpen(false);
+        }, 150);
       }}
-      onBlur={flyoutOffset === undefined ? undefined : (event) => {
+      onBlur={!hoverFlyout ? undefined : (event) => {
         if (!event.currentTarget.contains(event.relatedTarget) && !event.currentTarget.matches(":hover")) setOpen(false);
       }}
-      onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); }}>
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && open) {
+          event.stopPropagation();
+          cancelClose();
+          event.currentTarget.querySelector<HTMLButtonElement>('.ax-panel-rail button[aria-expanded="true"]')?.focus();
+          setOpen(false);
+        }
+      }}>
       <div className="ax-panel-rail">
         {rail}
       {!rail && <button
