@@ -585,10 +585,10 @@ test("Run owns traffic, metrics and reviews after Continue exploring", () => {
   const runPanel = read("src/components/workspace/RunPanel.tsx");
   assert.match(workspace, /testingEnabled=\{canRunDesign\}/);
   assert.match(workspace, /const showInspector = mode === "challenge" \|\| learn\.exploring/);
-  assert.match(workspace, /runControl=\{canRunDesign \? \(/);
+  assert.match(workspace, /runControl=\{canRunDesign && <SimulationControl/);
   assert.match(inspector, /runs\.runAtRate\(rate\)/);
   assert.doesNotMatch(inspector, /title="Metrics"/);
-  assert.match(inspector, /title="Run"/);
+  assert.match(inspector, /title="Simulation"/);
   assert.doesNotMatch(inspector, /title="Stress test"|title="Live estimates"|title="System review"|<StressTestPanel|role="tab"/);
   assert.match(control, /aria-controls="ax-run-panel"/);
   assert.doesNotMatch(control, /popover=|ResizeObserver/);
@@ -641,9 +641,9 @@ test("Configure opens explicitly and closes when another inspector tool is opene
   }
 });
 
-test("the inspector starts compact and opening Run from selection or Archie expands it", () => {
+test("the inspector starts closed and can open, collapse or switch tools", () => {
   assert.equal(INITIAL_INSPECTOR_STATE.section, null);
-  const opened = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "toggle-section", section: "run", hasSelection: false });
+  const opened = inspectorReducer({ ...INITIAL_INSPECTOR_STATE, section: null }, { type: "toggle-section", section: "run", hasSelection: false });
   assert.equal(opened.section, "run");
   const collapsed = inspectorReducer(opened, { type: "toggle-section", section: "run", hasSelection: false });
   assert.equal(collapsed.section, null);
@@ -672,7 +672,7 @@ test("Run closes other inspector tools without changing their results", () => {
     assert.equal(run.configuring, false);
     assert.equal(inspectorReducer(run, { type: "open-section", section: "run" }).section, "run");
   }
-  const run = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "toggle-section", section: "run", hasSelection: false });
+  const run = inspectorReducer({ ...INITIAL_INSPECTOR_STATE, section: null }, { type: "toggle-section", section: "run", hasSelection: false });
   assert.equal(run.section, "run");
   assert.equal(inspectorReducer(run, { type: "toggle-section", section: "run", hasSelection: false }).section, null);
   assert.match(read("src/components/workspace/useWorkspaceInspector.ts"), /openSection\("run"\)/);

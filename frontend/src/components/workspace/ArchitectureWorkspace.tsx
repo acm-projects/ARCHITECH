@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, type DragEvent } from "react";
-import { ChevronDown } from "lucide-react";
+import { Gauge, ShieldCheck } from "lucide-react";
 import {
   Controls,
   ConnectionLineType,
@@ -42,8 +42,9 @@ import { ArchieContext, ArchieEnabledContext } from "./ArchieContext";
 import { DesignTrafficContext } from "./DesignTrafficContext";
 import { InspectorContext } from "./InspectorContext";
 import { useWorkspaceInspector } from "./useWorkspaceInspector";
-import WorkspaceInspector from "./WorkspaceInspector";
+import WorkspaceInspector, { SimulationControl } from "./WorkspaceInspector";
 import { ArchitectToggle } from "./ai/ArchitectPanel";
+import { ArchiePortrait } from "./ai/ArchiePanel";
 import { ExportButton, RunnableAppButton } from "./ExportButton";
 import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import { useChallengeMode } from "./useChallengeMode";
@@ -52,11 +53,10 @@ import { useGraphHistory } from "./useGraphHistory";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
 import { DesignCheckBadges, DesignCheckPanel, useDesignCheck } from "./DesignCheck";
-import { LiveMetricsBar } from "./LiveMetricsBar";
+import { LiveEstimatesPanel } from "./LiveMetricsBar";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
-import { RunControl } from "./StressTestPanel";
 import ArchitectureNode, {
   type ArchitectureFlowNode,
   type ArchitectureNodeData,
@@ -202,7 +202,28 @@ function Workspace({ project }: { project: Project }) {
   // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
   const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
   // Problems marked on the canvas, with one-click fixes and where the uptime comes from.
-  const designCheck = useDesignCheck();
+  const rawDesignCheck = useDesignCheck();
+  const liveReady = Boolean(live.result?.summary.ready);
+  const findingCount = liveReady ? (live.result?.evaluation.findings.length ?? 0) : 0;
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [liveOpen, setLiveOpen] = useState(false);
+  const closeUtilityPanels = () => {
+    setLibraryOpen(false);
+    setLiveOpen(false);
+    rawDesignCheck.setOpen(false);
+    rawDesignCheck.setFocus(null);
+  };
+  const designCheck = {
+    ...rawDesignCheck,
+    setOpen: (value: Parameters<typeof rawDesignCheck.setOpen>[0]) => {
+      const open = typeof value === "function" ? value(rawDesignCheck.open) : value;
+      if (open) {
+        closeUtilityPanels();
+        inspector.openSection(null);
+      }
+      rawDesignCheck.setOpen(open);
+    },
+  };
 
   // Check a connection before React Flow lets the user create it.
   // We read the current graph directly from React Flow so this never validates
@@ -453,14 +474,15 @@ function Workspace({ project }: { project: Project }) {
                 : undefined
               : challenge.challenge.title
           }
-          runControl={canRunDesign ? (
-            <RunControl
-              open={inspector.section === "run" && !inspector.archieOpen && !inspector.historyOpen && !nodes.some((node) => node.selected)}
-              running={activeRuns.view.isRunning}
-              onToggle={() => inspector.toggleSection("run")}
-            />
-          ) : undefined}
           saveStatus={saveStatus}
+          runControl={canRunDesign && <SimulationControl
+            runs={activeRuns}
+            componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+            onShowResults={inspector.showResults}
+            state={activeRuns.view.runButtonState}
+            expanded={!inspector.archieOpen && !inspector.historyOpen && !nodes.some((node) => node.selected) && inspector.section === "run"}
+            onToggle={() => { closeUtilityPanels(); inspector.toggleSection("run"); }}
+          />}
           projectActions={(menuId) => (
             <div hidden={!showInspector}>
               <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />
@@ -472,7 +494,68 @@ function Workspace({ project }: { project: Project }) {
 
         <div className="relative flex min-h-0 flex-1 flex-row bg-(--ax-canvas)">
           {/* Components are dragged from here onto the shared project canvas. */}
-          <ComponentToolbox customTechnologies={project.customTechnologies} />
+          <ComponentToolbox customTechnologies={project.customTechnologies} active={libraryOpen}
+            onActivate={() => { closeUtilityPanels(); inspector.openSection(null); setLibraryOpen(true); }}
+            tools={[
+              ...(canRunDesign ? [{
+                key: "live",
+                label: "Live estimates",
+                icon: <Gauge size={16} aria-hidden="true" />,
+                open: liveOpen,
+                onToggle: () => {
+                  const next = !liveOpen;
+                  closeUtilityPanels();
+                  inspector.openSection(null);
+                  setLiveOpen(next);
+                },
+              }, {
+                key: "check",
+                label: "Design check",
+                icon: <ShieldCheck size={16} aria-hidden="true" />,
+                badge: designCheck.enabled && liveReady ? String(findingCount) : undefined,
+                open: designCheck.enabled && designCheck.open,
+                disabled: !liveReady,
+                title: "Connect a client to check the design.",
+                onToggle: () => {
+                  if (designCheck.enabled && designCheck.open) {
+                    designCheck.setOpen(false);
+                    designCheck.setFocus(null);
+                    return;
+                  }
+                  if (!designCheck.enabled) designCheck.setEnabled(true);
+                  designCheck.setOpen(true);
+                },
+              }] : []),
+              ...(showInspector ? [{
+                key: "archie",
+                label: "Ask Archie",
+                icon: <ArchiePortrait />,
+                open: inspector.archieOpen,
+                disabled: !archieEnabled,
+                title: "Available after Continue exploring.",
+                // Last on the bar; Archie opens in the right-hand panel, not the bar's flyout.
+                onToggle: inspector.archieOpen ? inspector.closeArchie : () => { closeUtilityPanels(); inspector.askArchie(); },
+              }] : []),
+            ]}
+            toolContent={!canRunDesign ? null : liveOpen ? (
+              <LiveEstimatesPanel
+                result={live.result}
+                changes={live.changes}
+                requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+                onClose={() => setLiveOpen(false)}
+              />
+            ) : designCheck.enabled && designCheck.open ? (
+              <DesignCheckPanel
+                result={live.result}
+                nodes={nodes}
+                edges={edges}
+                traffic={activeRuns.traffic}
+                check={designCheck}
+                onApply={replaceGraph}
+                onUndo={undo}
+              />
+            ) : null} />
 
           <main className="ax-workspace-canvas relative min-h-0 min-w-0 flex-1 bg-(--ax-canvas)" data-inspector={showInspector}>
             {/* React Flow is only responsible for displaying/interacting with the graph.
@@ -515,35 +598,7 @@ function Workspace({ project }: { project: Project }) {
 
             {/* Keep floating tools below the header while the graph extends behind it. */}
             <div className="ax-canvas-overlays">
-              {/* Share one bottom stack so estimates and design checks cannot overlap. */}
-              {canRunDesign && (
-                <div className="ax-canvas-status">
-                  <details className="ax-live-dock">
-                    <summary onKeyDown={(event) => {
-                      if (event.key === " " || event.key === "Enter") event.stopPropagation();
-                    }}>
-                      <span>Live estimates</span>
-                      <small>{activeRuns.traffic.requestsPerSecond.toLocaleString("en-US")} req/s</small>
-                      <ChevronDown size={13} aria-hidden="true" />
-                    </summary>
-                    <LiveMetricsBar
-                      result={live.result}
-                      changes={live.changes}
-                      requestsPerSecond={activeRuns.traffic.requestsPerSecond}
-                      componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
-                    />
-                  </details>
-                  <DesignCheckPanel
-                    result={live.result}
-                    nodes={nodes}
-                    edges={edges}
-                    traffic={activeRuns.traffic}
-                    check={designCheck}
-                    onApply={replaceGraph}
-                    onUndo={undo}
-                  />
-                </div>
-              )}
+
 
               {/* If saving the selected mode fails, show the error without breaking the editor. */}
               {modeError && (

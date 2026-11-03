@@ -205,6 +205,7 @@ function PropertyField({ type, view, onCommit, onReset }: PropertyFieldProps) {
     <div className="ax-configure-property">
       <label htmlFor={inputId} className="ax-card-label block" title={view.description}>
         {view.label}
+        {view.unit && <small className="ax-property-unit">{view.unit}</small>}
       </label>
       <input
         id={inputId}
@@ -212,6 +213,7 @@ function PropertyField({ type, view, onCommit, onReset }: PropertyFieldProps) {
         inputMode="decimal"
         autoComplete="off"
         aria-invalid={error !== null}
+        aria-describedby={`${inputId}-default`}
         onChange={(event) => {
           setDraft(event.target.value);
           setError(null);
@@ -232,7 +234,7 @@ function PropertyField({ type, view, onCommit, onReset }: PropertyFieldProps) {
           {error}
         </p>
       )}
-      <p className="ax-card-label mt-1">
+      <p id={`${inputId}-default`} className="ax-card-label ax-property-default mt-1" data-overridden={view.canReset || undefined}>
         Default {formatPropertyValue(view.defaultValue)}
         {view.unit ? ` ${view.unit}` : ""}
         {view.canReset && (

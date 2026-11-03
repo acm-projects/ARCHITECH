@@ -8,22 +8,22 @@
   bottom: 12px;
   /* Clear of the component toolbox on the left edge. */
   left: 80px;
-  border: 1px solid var(--ax-line);
+  border: 1px solid var(--ax-line-strong);
   border-radius: var(--ax-radius-dock);
   background: var(--ax-surface);
   color: var(--ax-ink);
-  box-shadow: 0 6px 20px rgba(17, 17, 17, 0.06);
+  box-shadow: none;
   font-size: 12px;
 }
 /* Closed (or off): the switch and the "Design check" button in one bar. */
-.ax-workspace .ax-check-bar { display: inline-flex; align-items: center; gap: 2px; padding: 3px 4px 3px 8px; }
+.ax-workspace .ax-check-bar { display: inline-flex; align-items: center; gap: 2px; min-height: 36px; padding: 3px 4px 3px 8px; }
 .ax-workspace .ax-check-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ax-radius-dock);
   background: none;
   color: inherit;
   font: inherit;
@@ -56,12 +56,12 @@
 }
 .ax-workspace .ax-check-head { flex-shrink: 0; padding: 10px 12px; border-bottom: 1px solid var(--ax-line); display: flex; align-items: center; gap: 6px; }
 .ax-workspace .ax-check-head h2 { flex: 1; margin: 0; font-size: 13px; font-weight: 600; }
-.ax-workspace .ax-check-close { display: inline-flex; padding: 3px; border: 0; border-radius: 6px; background: none; color: var(--ax-muted); cursor: pointer; }
+.ax-workspace .ax-check-close { display: inline-flex; padding: 3px; border: 0; border-radius: var(--ax-radius-dock); background: none; color: var(--ax-muted); cursor: pointer; }
 .ax-workspace .ax-check-close:hover { background: var(--ax-canvas); color: var(--ax-ink); }
 
 .ax-workspace .ax-check-applied { flex-shrink: 0; margin: 10px 12px; display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-left: 2px solid #16a34a; border-radius: 3px; background: var(--ax-canvas); color: var(--ax-ink); }
 .ax-workspace .ax-check-applied p { flex: 1; margin: 0; }
-.ax-workspace .ax-check-undo { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1px solid currentColor; border-radius: 6px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.ax-workspace .ax-check-undo { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1px solid currentColor; border-radius: var(--ax-radius-dock); background: none; color: inherit; font: inherit; cursor: pointer; }
 
 .ax-workspace .ax-check-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 12px; }
 .ax-workspace .ax-check-summary { margin: 10px 0; color: var(--ax-muted); font-size: 11px; }

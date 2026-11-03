@@ -1,5 +1,8 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
+import type { ReactNode } from "react";
+
 import type { WhatIf, WhatIfOption } from "../../lib/architecture/evaluation/whatIf";
 import { formatLatency, formatMonthlyCost } from "../../lib/architecture/implementationStats";
 
@@ -22,12 +25,13 @@ function tone(value: number, current: number, higherIsBetter: boolean): "better"
   return (value > current) === higherIsBetter ? "better" : "worse";
 }
 
-export function DesignComparisonTable({ whatIf, onChoose }: { whatIf: WhatIf; onChoose: (id: string) => void }) {
+export function DesignComparisonTable({ whatIf, onChoose, context }: { whatIf: WhatIf; onChoose: (id: string) => void; context?: ReactNode }) {
   if (!whatIf.ready || whatIf.options.length < 2) return null;
   const current = whatIf.options.find((option) => option.current) ?? whatIf.options[0];
   return (
-    <details className="ax-whatif" open>
-      <summary>In this design</summary>
+    <details className="ax-whatif ax-panel-disclosure">
+      <summary><span>Compare technologies</span><ChevronDown size={13} aria-hidden="true" /></summary>
+      {context}
       <table>
         <thead>
           <tr>

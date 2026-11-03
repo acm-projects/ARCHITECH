@@ -142,7 +142,7 @@ function SuggestionCard({ suggestion, status, onApply, streaming }: {
         {status === "applied" ? (
           <span className="ax-ai-applied">Applied · undo with Ctrl/Cmd+Z</span>
         ) : (
-          <button type="button" className="ax-ai-apply" onClick={onApply} disabled={streaming}>
+          <button type="button" className="ax-ai-apply ax-panel-action" data-variant="secondary" onClick={onApply} disabled={streaming}>
             Apply
           </button>
         )}
@@ -366,11 +366,11 @@ export default function ArchitectPanel({
               )}
             </span>
             {busy ? (
-              <button type="button" className="ax-ai-send" onClick={() => abort.current?.abort()}>
+              <button type="button" className="ax-ai-send ax-panel-action" data-variant="secondary" onClick={() => abort.current?.abort()}>
                 <Square size={11} aria-hidden="true" /> Stop
               </button>
             ) : (
-              <button type="submit" className="ax-ai-send" disabled={!draft.trim()}>
+              <button type="submit" className="ax-ai-send ax-panel-action" data-variant="primary" disabled={!draft.trim()}>
                 <Send size={12} aria-hidden="true" /> Send
               </button>
             )}

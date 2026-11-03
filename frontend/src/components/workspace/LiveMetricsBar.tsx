@@ -1,10 +1,11 @@
 "use client";
 
-import { Info } from "lucide-react";
+import { ChevronDown, Gauge } from "lucide-react";
 
 import type { Direction } from "../../lib/architecture/evaluation/comparison";
 import type { LiveChanges, LiveResult } from "../../lib/architecture/evaluation/liveMetrics";
 import { formatLatency, formatMonthlyCost, formatRate } from "../../lib/architecture/implementationStats";
+import ToolPanelHeader from "./ToolPanelHeader";
 import "./live-metrics.css";
 
 // Live metrics over the canvas: the design's score and headline numbers at the current traffic,
@@ -40,12 +41,10 @@ function Metric({ label, value, direction }: { label: string; value: string; dir
 export function LiveMetricsBar({
   result,
   changes,
-  requestsPerSecond,
   componentName,
 }: {
   result: LiveResult | null;
   changes: LiveChanges | null;
-  requestsPerSecond: number;
   // Display name for a component id (the limiting component).
   componentName: (id: string) => string;
 }) {
@@ -53,36 +52,64 @@ export function LiveMetricsBar({
   const { summary } = result;
   return (
     <section className="ax-live" aria-label="Live metrics" aria-live="polite" data-health={summary.health}>
-      <div className="ax-live-head">
-        <span className="ax-live-dot" aria-hidden="true" />
-        <span>Live · {formatRate(requestsPerSecond)} req/s</span>
-        <span className="ax-live-info" title={EXPLANATION} aria-label={EXPLANATION} role="img">
-          <Info size={12} aria-hidden="true" />
-        </span>
-      </div>
       {summary.ready ? (
         <>
-          <div className="ax-live-row">
-            <Metric label="Score" value={String(summary.score)} direction={changes?.score} />
+          <div className="ax-live-row ax-panel-metrics">
             <Metric
               label="Capacity"
               value={summary.capacityRps === null ? "no limit" : `${formatRate(summary.capacityRps)} req/s`}
               direction={changes?.capacityRps}
             />
-            <Metric label="p95" value={formatLatency(summary.p95LatencyMs)} direction={changes?.p95LatencyMs} />
-            <Metric label="Cost" value={formatMonthlyCost(summary.monthlyCost)} direction={changes?.monthlyCost} />
-            <Metric label="Uptime" value={`${summary.uptimePercent}%`} direction={changes?.uptimePercent} />
+            <Metric label="p95 latency" value={formatLatency(summary.p95LatencyMs)} direction={changes?.p95LatencyMs} />
+            <Metric label="Monthly cost" value={formatMonthlyCost(summary.monthlyCost)} direction={changes?.monthlyCost} />
           </div>
-          {(summary.limitingNodeId || summary.topIssue) && (
-            <p className="ax-live-note">
-              {summary.limitingNodeId && <>Fills up first: {componentName(summary.limitingNodeId)}. </>}
-              {summary.topIssue && <>{summary.topIssue.title}</>}
-            </p>
-          )}
+          <details className="ax-panel-disclosure ax-live-details">
+            <summary>More metrics<ChevronDown size={13} aria-hidden="true" /></summary>
+            <div className="ax-live-row ax-panel-metrics">
+              <Metric label="Score" value={String(summary.score)} direction={changes?.score} />
+              <Metric label="Uptime" value={`${summary.uptimePercent}%`} direction={changes?.uptimePercent} />
+            </div>
+            {(summary.limitingNodeId || summary.topIssue) && (
+              <p className="ax-live-note">
+                {summary.limitingNodeId && <>Bottleneck: {componentName(summary.limitingNodeId)}. </>}
+                {summary.topIssue && <>{summary.topIssue.title}</>}
+              </p>
+            )}
+          </details>
         </>
       ) : (
         <p className="ax-live-note">Connect a client to your components to see live metrics.</p>
       )}
+    </section>
+  );
+}
+
+// The bottom bar's Live estimates panel: the shared tool header (traffic and health as its
+// state, the estimate's basis on hover) above the metrics, matching Design check.
+export function LiveEstimatesPanel({
+  result,
+  changes,
+  requestsPerSecond,
+  componentName,
+  onClose,
+}: {
+  result: LiveResult | null;
+  changes: LiveChanges | null;
+  requestsPerSecond: number;
+  componentName: (id: string) => string;
+  onClose: () => void;
+}) {
+  return (
+    <section className="ax-tool-panel" aria-label="Live estimates" data-health={result?.summary.health}>
+      <ToolPanelHeader
+        toolKey="live"
+        icon={<Gauge size={16} aria-hidden="true" />}
+        title="Live estimates"
+        meta={<><span className="ax-live-dot" aria-hidden="true" />{formatRate(requestsPerSecond)} req/s</>}
+        metaTitle={EXPLANATION}
+        onClose={onClose}
+      />
+      <LiveMetricsBar result={result} changes={changes} componentName={componentName} />
     </section>
   );
 }

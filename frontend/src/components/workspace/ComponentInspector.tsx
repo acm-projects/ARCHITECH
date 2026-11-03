@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Edge } from "@xyflow/react";
 import { useReactFlow } from "@xyflow/react";
+import { ChevronDown } from "lucide-react";
 
 import { buildPropertyViews } from "../../lib/architecture/componentConfigView";
 import { ACTS_AS_LABELS, ACTS_AS_TYPES, actsAsOf } from "../../lib/architecture/customComponents";
@@ -60,12 +61,12 @@ export default function ComponentInspector({ node, onAskArchie, showReview = tru
       </div>
       {showReview && (
         <details
-          className="ax-inspector-details"
+          className="ax-inspector-details ax-panel-disclosure"
           hidden={hidden}
           open={reviewOpen}
           onToggle={(event) => setReviewOpen(event.currentTarget.open)}
         >
-          <summary>Component review</summary>
+          <summary>Component review<ChevronDown size={13} aria-hidden="true" /></summary>
           <ExplainCard type={data.type} nodeId={id} onAskArchie={onAskArchie} compact />
         </details>
       )}

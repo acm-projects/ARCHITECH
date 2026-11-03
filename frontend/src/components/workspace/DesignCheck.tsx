@@ -2,8 +2,8 @@
 
 import type { Edge } from "@xyflow/react";
 import { ViewportPortal } from "@xyflow/react";
-import { ChevronDown, ShieldCheck, Undo2, Wrench, X } from "lucide-react";
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { ChevronDown, ShieldCheck, Undo2, Wrench } from "lucide-react";
+import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import {
   checkedFix,
@@ -18,6 +18,7 @@ import type { LiveResult, LiveSummary } from "../../lib/architecture/evaluation/
 import type { TrafficProfile } from "../../lib/architecture/evaluation/traffic";
 import { formatLatency, formatMonthlyCost, formatRate } from "../../lib/architecture/implementationStats";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
+import ToolPanelHeader from "./ToolPanelHeader";
 import "./design-check.css";
 
 // Design check over the canvas: the engine's findings marked on the components they are about,
@@ -95,7 +96,7 @@ function EnabledSwitch({ check }: { check: DesignCheckState }) {
 }
 
 const SEVERITY_RANK: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
-const SEVERITY_WORD: Record<Severity, string> = { high: "Serious", medium: "Worth fixing", low: "Minor" };
+const SEVERITY_WORD: Record<Severity, string> = { high: "High", medium: "Medium", low: "Low" };
 const bySeverity = (a: EvaluationFinding, b: EvaluationFinding) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity];
 
 // The components a finding is about, for its marks on the canvas: not every component it
@@ -208,6 +209,19 @@ export function DesignCheckPanel({
   onUndo: () => void;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(false);
+  useLayoutEffect(() => {
+    if (!check.open && restoreFocus.current) {
+      restoreFocus.current = false;
+      trigger.current?.focus();
+    }
+  }, [check.open]);
+  const closePanel = () => {
+    restoreFocus.current = true;
+    check.setOpen(false);
+    check.setFocus(null);
+  };
   const [applied, setApplied] = useState<{ label: string; effect: string[] } | null>(null);
   const ready = Boolean(result?.summary.ready);
   const findings = useMemo(() => (result && ready ? [...result.evaluation.findings].sort(bySeverity) : []), [result, ready]);
@@ -229,7 +243,6 @@ export function DesignCheckPanel({
   }, [check.open, result, ready, findings, nodes, edges, traffic]);
 
   if (!result || !ready) return null;
-  const serious = findings.filter((finding) => finding.severity !== "low").length;
 
   const apply = (fix: CheckedFix) => {
     // A fix may remove its finding, so keep focus on a persistent panel element.
@@ -239,23 +252,19 @@ export function DesignCheckPanel({
     check.setFocus(null);
   };
 
-  if (!check.enabled) {
-    return (
-      <div className="ax-check ax-check-bar" data-off>
-        <EnabledSwitch check={check} />
-        <span className="ax-check-off-label">Design check: off</span>
-      </div>
-    );
-  }
-
-  if (!check.open) {
+  if (!check.enabled || !check.open) {
     return (
       <div className="ax-check ax-check-bar">
-        <EnabledSwitch check={check} />
-        <button type="button" className="ax-check-pill" data-clean={findings.length === 0 || undefined} onClick={() => check.setOpen(true)}>
-          <ShieldCheck size={14} aria-hidden="true" />
-          Design check
-          <span className="ax-check-count">{findings.length === 0 ? "no problems" : `${findings.length} problem${findings.length === 1 ? "" : "s"}`}</span>
+        <button ref={trigger} type="button" className="ax-check-pill" aria-expanded={false}
+          aria-label={!check.enabled ? "Enable design check" : undefined}
+          onClick={() => {
+            if (!check.enabled) check.setEnabled(true);
+            check.setOpen(true);
+          }}>
+          <span className="ax-inspector-tool-icon"><ShieldCheck size={16} aria-hidden="true" /></span>
+          <span>Design check</span>
+          <span className="ax-check-count">{!check.enabled ? "Off" : findings.length === 0 ? "Clear" : `${findings.length} ${findings.length === 1 ? "issue" : "issues"}`}</span>
+          <ChevronDown size={13} aria-hidden="true" className="ax-tool-chevron" />
         </button>
       </div>
     );
@@ -263,22 +272,17 @@ export function DesignCheckPanel({
 
   const uptime = checked?.uptime;
   return (
-    <section className="ax-check ax-check-panel" aria-label="Design check">
-      <header className="ax-check-head">
-        <EnabledSwitch check={check} />
-        <h2 ref={heading} tabIndex={-1}>Design check</h2>
-        <button
-          type="button"
-          className="ax-check-close"
-          aria-label="Close design check"
-          onClick={() => {
-            check.setOpen(false);
-            check.setFocus(null);
-          }}
-        >
-          <X size={15} aria-hidden="true" />
-        </button>
-      </header>
+    // Escape is handled by the bottom bar's flyout, the same way as Live estimates.
+    <section className="ax-check ax-check-panel ax-tool-panel" aria-label="Design check">
+      <ToolPanelHeader
+        toolKey="check"
+        icon={<ShieldCheck size={16} aria-hidden="true" />}
+        title="Design check"
+        meta={findings.length === 0 ? "No findings" : `${findings.length} ${findings.length === 1 ? "finding" : "findings"}`}
+        actions={<EnabledSwitch check={check} />}
+        onClose={closePanel}
+        headingRef={heading}
+      />
 
       {applied && (
         <div className="ax-check-applied" role="status">
@@ -301,7 +305,6 @@ export function DesignCheckPanel({
       )}
 
       <div className="ax-check-body">
-        <p className="ax-check-summary">{findings.length} findings{serious > 0 ? ` · ${serious} serious or worth fixing` : ""}</p>
         {findings.length === 0 ? (
           <p className="ax-check-note">No problems found at {formatRate(traffic.requestsPerSecond)} req/s.</p>
         ) : (
@@ -322,12 +325,11 @@ export function DesignCheckPanel({
                     }} onKeyDown={(event) => {
                       if (event.key === " " || event.key === "Enter") event.stopPropagation();
                     }}>
-                      <span className="ax-check-dot" aria-hidden="true" />
                       <span>{finding.title}</span>
+                      <span className="ax-check-severity">{SEVERITY_WORD[finding.severity]}</span>
                       <ChevronDown size={13} aria-hidden="true" />
                     </summary>
                     <div className="ax-check-finding-body">
-                      <p className="ax-check-severity">{SEVERITY_WORD[finding.severity]}</p>
                       <p className="ax-check-message">{finding.message}</p>
                       {fix ? <FixButton fix={fix} onApply={apply} /> : <p className="ax-check-advice">{finding.recommendation}</p>}
                     </div>
@@ -338,7 +340,7 @@ export function DesignCheckPanel({
           </ol>
         )}
         {uptime && (
-          <details className="ax-check-uptime">
+          <details className="ax-check-uptime ax-panel-disclosure">
             <summary>
               <span>Availability calculation</span>
               <strong>{uptime.percent}%</strong>
@@ -389,7 +391,7 @@ function FixButton({ fix, onApply }: { fix: CheckedFix; onApply: (fix: CheckedFi
   const changes = effect(fix.before, fix.after);
   return (
     <div className="ax-check-fix">
-      <button type="button" onClick={() => onApply(fix)}>
+      <button type="button" className="ax-panel-action" data-variant="secondary" onClick={() => onApply(fix)}>
         <Wrench size={13} aria-hidden="true" /> {fix.label}
       </button>
       {changes.length > 0 && <span className="ax-check-effect">{changes.join(" · ")}</span>}

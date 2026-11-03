@@ -53,10 +53,13 @@ export default function StressTestPanel({
   };
 
   return (
-    <div className="ax-card ax-learn ax-stress" data-stress-panel data-embedded={embedded || undefined}>
-      <span className="ax-panel-title" hidden={embedded}>Stress test</span>
+    <section className="ax-card ax-learn ax-stress ax-review-section" aria-label="Traffic" data-stress-panel data-embedded={embedded || undefined}>
+      <div className="ax-review-section-head">
+        <h3>Traffic</h3>
+        <span>Baseline {format(BASELINE_REQUESTS_PER_SECOND)} req/s</span>
+      </div>
 
-      <label className="ax-stress-rate mt-3 flex items-baseline justify-between gap-3 text-(length:--ax-t-sm)">
+      <label className="ax-stress-rate">
         <span>Request rate</span>
         <span className="flex items-baseline gap-1">
           <input
@@ -75,18 +78,18 @@ export default function StressTestPanel({
                 event.currentTarget.blur();
               }
             }}
-            className="ax-field ax-stress-input w-20 py-0.5 text-right tabular-nums"
+            className="ax-field ax-stress-input tabular-nums"
           />
           <span className="ax-card-label">req/s</span>
         </span>
       </label>
       {error && (
-        <p role="alert" className="ax-card-label mt-1">
+        <p role="alert" className="ax-review-note">
           {error}
         </p>
       )}
 
-      <ul className="ax-stress-presets mt-3 flex gap-1.5" aria-label="Traffic multiples of the baseline load">
+      <ul className="ax-stress-presets" aria-label="Traffic multiples of the baseline load">
         {STRESS_MULTIPLIERS.map((multiplier) => {
           const target = stressRate(multiplier);
           return (
@@ -110,7 +113,6 @@ export default function StressTestPanel({
           );
         })}
       </ul>
-      <p className="ax-card-label mt-2">Baseline {format(BASELINE_REQUESTS_PER_SECOND)} req/s</p>
 
       <button
         type="button"
@@ -118,11 +120,12 @@ export default function StressTestPanel({
         onClick={() => {
           if (!running) onRun();
         }}
-        className="ax-card-link ax-stress-run"
+        className="ax-card-link ax-stress-run ax-panel-action"
+        data-variant="primary"
       >
-        {runLabel ?? `Run at ${format(rate)} req/s \u2192`}
+        {runLabel ?? `Run at ${format(rate)} req/s →`}
       </button>
-    </div>
+    </section>
   );
 }
 
