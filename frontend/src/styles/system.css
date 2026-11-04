@@ -719,6 +719,13 @@ pre { font-family: var(--font-mono); }
 .ax-dark-app {
   color-scheme: dark;
   --ax-dark-text: #d4d4d4;
+  /* Shared with the canvas: page, panel and hairline values match .ax-workspace below. */
+  --ax-dark-page: #141414;
+  --ax-dark-panel: #000000;
+  --ax-dark-line: #383838;
+  --ax-dark-line-strong: #6b6b6b;
+  --ax-dark-muted: #a3a3a3;
+  --ax-dark-accent: #75beff;
   --neutral-950: var(--ax-dark-text);
   --neutral-900: var(--ax-dark-text);
   --neutral-800: var(--ax-dark-text);
@@ -760,14 +767,23 @@ pre { font-family: var(--font-mono); }
   --canvas-line-strong: #555555;
   --canvas-dot: #606060;
   min-height: 100dvh;
-  background: #1e1e1e;
+  background: var(--ax-dark-page);
   color: var(--ax-dark-text);
 }
 
 .ax-dark-app .ax-dashboard-shell {
-  background: #1e1e1e;
+  --color-muted: var(--ax-dark-muted);
+  --color-subtle: var(--ax-dark-muted);
+  --color-line: var(--ax-dark-line);
+  background: var(--ax-dark-page);
   color: var(--ax-dark-text);
 }
+
+.ax-dark-app body { background: var(--ax-dark-page); }
+
+/* Loading, not-found and error screens outside the dashboard and workspace shells. */
+.ax-dark-app .ax-status-page { background: var(--ax-dark-page); }
+.ax-dark-app .ax-status-page [class~="text-blue-700"] { color: var(--ax-dark-accent); }
 
 .ax-dark-app .page-header,
 .ax-dark-app .ax-dashboard-shell :is(.bg-white, [class~="bg-neutral-0"]) {
@@ -798,6 +814,16 @@ pre { font-family: var(--font-mono); }
   color: var(--ax-dark-text);
 }
 
+/* Outside the canvas, secondary text stays a step below primary text. */
+.ax-dark-app :is(.ax-dashboard-shell, .ax-status-page) :is(
+  [class~="text-neutral-600"],
+  [class~="text-neutral-500"],
+  [class~="text-neutral-400"],
+  [class~="text-[#737373]"]
+) {
+  color: var(--ax-dark-muted);
+}
+
 .ax-dark-app :is(
   [class~="border-neutral-100"],
   [class~="border-neutral-200"],
@@ -807,22 +833,22 @@ pre { font-family: var(--font-mono); }
   border-color: #454545;
 }
 
-/* Dialogs keep their light surface in dark mode, so they also keep the light palette;
-   otherwise their text, hover, border and focus colors flip to near-white on white. */
+/* Dialogs paint from the neutral scale, so inverting it here turns every surface, border and
+   primary button dark together. Applies on the canvas too. */
 .ax-dark-app .ax-new-project-dialog {
-  color-scheme: light;
-  --neutral-950: #111111;
-  --neutral-900: #222222;
-  --neutral-800: #3d3d3d;
-  --neutral-700: #555555;
-  --neutral-600: #666666;
-  --neutral-500: #8a8a84;
-  --neutral-400: #a9a9a4;
-  --neutral-300: #d0d0cc;
-  --neutral-250: #d8d8d4;
-  --neutral-200: #ededeb;
-  --neutral-100: #f3f3f0;
-  --neutral-50: #f7f7f4;
+  --neutral-0: #1c1c1c;
+  --neutral-50: #232323;
+  --neutral-100: #2d2d2d;
+  --neutral-200: #383838;
+  --neutral-250: #404040;
+  --neutral-300: #454545;
+  --neutral-400: #6b6b6b;
+  --neutral-500: #a3a3a3;
+  --neutral-600: #a3a3a3;
+  --neutral-700: #bdbdbd;
+  --neutral-800: #d4d4d4;
+  --neutral-900: #e5e5e5;
+  --neutral-950: #f5f5f5;
   --color-ink: var(--neutral-950);
   --color-muted: var(--neutral-600);
   --color-subtle: var(--neutral-500);
@@ -832,9 +858,14 @@ pre { font-family: var(--font-mono); }
   --color-surface-2: var(--neutral-100);
   --color-canvas: var(--neutral-50);
   --color-focus: var(--neutral-950);
-  --color-ink-deep: #0a0a0a;
+  --color-ink-deep: #ffffff;
+  --challenge-intro-ink: var(--neutral-950);
+  --challenge-intro-hover: var(--neutral-800);
   color: var(--color-ink);
 }
+
+.ax-dark-app .ax-new-project-dialog::backdrop { background: rgb(0 0 0 / 60%); }
+.ax-dark-app .ax-new-project-dialog [class~="text-red-700"] { color: #ff8a8a; }
 
 .ax-dark-app .ax-workspace {
   --ax-canvas: #141414;
@@ -943,47 +974,44 @@ pre { font-family: var(--font-mono); }
 .ax-light-app .ax-dashboard-project-grid > .ax-dashboard-project-card:nth-child(5n + 4) .ax-dashboard-project-preview { background: #edf8f2; }
 .ax-light-app .ax-dashboard-project-grid > .ax-dashboard-project-card:nth-child(5n) .ax-dashboard-project-preview { background: #fff0f3; }
 
-.ax-dark-app :is(
-  .ax-dashboard-project-grid > .ax-dashboard-project-card,
-  .ax-breakdown-catalog > .ax-dashboard-project-card
-) {
+/* Same language as the canvas panels: black fill, hairline border, no lift or shadow. */
+.ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card {
   overflow: hidden;
-  border: 1px solid var(--preview-outline, #75beff);
+  border: 1px solid var(--ax-dark-line);
   border-radius: 13px;
-  background: #000000;
-  box-shadow: 0 6px 20px rgb(15 23 42 / 20%), 0 2px 6px rgb(15 23 42 / 12%);
-  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  background: var(--ax-dark-panel);
+  transition: border-color 200ms ease;
 }
 
-.ax-dark-app :is(
-  .ax-dashboard-project-grid > .ax-dashboard-project-card:hover,
-  .ax-dashboard-project-grid > .ax-dashboard-project-card:focus-within,
-  .ax-breakdown-catalog > .ax-dashboard-project-card:hover,
-  .ax-breakdown-catalog > .ax-dashboard-project-card:focus-within
-) {
-  transform: translateY(-2px);
-  border-color: var(--preview-outline, #75beff);
-  box-shadow: 0 10px 26px rgb(15 23 42 / 28%), 0 3px 8px rgb(15 23 42 / 16%);
+.ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card:is(:hover, :focus-within) {
+  border-color: var(--ax-dark-line-strong);
+}
+
+.ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card.is-unavailable:is(:hover, :focus-within) {
+  border-color: var(--ax-dark-line);
 }
 
 .ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card .ax-dashboard-project-preview {
-  border: 1px solid var(--preview-outline, #75beff);
   border-radius: 12px 12px 0 0;
-  background: #000000;
+  background: var(--ax-dark-panel);
 }
 
 .ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card .ax-dashboard-project-metadata {
   border-radius: 0 0 12px 12px;
-  background: #000000;
+  background: var(--ax-dark-panel);
 }
 
-.ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card:nth-child(5n + 1) { --preview-outline: #8ab4f8; }
-.ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card:nth-child(5n + 2) { --preview-outline: #f3b777; }
-.ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card:nth-child(5n + 3) { --preview-outline: #b9a2ff; }
-.ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card:nth-child(5n + 4) { --preview-outline: #82c99a; }
-.ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card:nth-child(5n) { --preview-outline: #f29aad; }
+/* The upcoming logos are black artwork. */
+.ax-dark-app .ax-breakdown-catalog-logo { filter: grayscale(1) invert(1); opacity: .6; }
+
 .ax-dark-app .ax-dashboard-section-title { color: #ffffff; }
-.ax-dark-app .ax-daily-challenge-banner { border-color: #454545; background: #000000; box-shadow: 0 4px 16px rgb(0 0 0 / 24%); }
+
+.ax-dark-app .ax-daily-challenge-banner {
+  --canvas-accent: var(--ax-dark-accent);
+  border-color: var(--ax-dark-line);
+  background: var(--ax-dark-panel);
+  box-shadow: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .ax-light-app :is(.ax-dashboard-project-grid > .ax-dashboard-project-card, .ax-breakdown-catalog > .ax-dashboard-project-card),
