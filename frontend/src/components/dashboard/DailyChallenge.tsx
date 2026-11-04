@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Hourglass } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 
 import type { ChallengeDifficulty } from "../challenge/challenges";
 import StartChallengeButton from "./StartChallengeButton";
@@ -132,15 +132,6 @@ export default function DailyChallenge({
                 <div className="ax-daily-challenge-detail-copy">
                   <span>Difficulty</span>
                   <strong>{difficulty}</strong>
-                </div>
-              </div>
-            </div>
-            <div className="ax-daily-challenge-detail">
-              <div className="ax-daily-challenge-detail-heading">
-                <Hourglass aria-hidden="true" />
-                <div className="ax-daily-challenge-detail-copy">
-                  <span>Est. time</span>
-                  <strong>Not specified</strong>
                 </div>
               </div>
             </div>

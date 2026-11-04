@@ -22,7 +22,7 @@ export default async function DashboardPage() {
         </nav>
       </header>
 
-      <div className="ax-dashboard-challenge-region px-5 sm:px-8 lg:px-14">
+      <div className="ax-dashboard-challenge-region px-4 md:px-6">
         <DailyChallenge
           compact
           title={urlShortenerChallenge.title}

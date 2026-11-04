@@ -6374,13 +6374,13 @@ body,
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 36px;
-  padding: 0 14px;
+  min-height: 32px;
+  padding: 0 12px;
   border: 1px solid transparent;
   border-radius: var(--radius-action);
   background: var(--dashboard-action, rgb(21 93 252));
   color: var(--neutral-0);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.2;
 }
@@ -6489,30 +6489,20 @@ body,
 .ax-dashboard-section-title {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 32px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.2;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.01em;
 }
 
-.ax-dashboard-section-title {
-  font-size: 34px;
-  font-weight: 600;
-}
-
-/* The project pane keeps two visible rows on desktop. */
+/* The -4px margin keeps tile edges on the page inset; the padding leaves room for focus rings. */
 .ax-dashboard-project-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-auto-rows: 160px;
-  gap: 20px;
-  max-height: 348px;
-  margin: 0;
+  grid-auto-rows: 176px;
+  gap: 12px;
+  margin: 0 -4px;
   padding: 4px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable;
   list-style: none;
 }
 
@@ -6524,17 +6514,12 @@ body,
   .ax-dashboard-project-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-/* Match the grid's padding and reserved scrollbar gutter. */
 .ax-dashboard-project-heading {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 4px;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable;
 }
 
 .ax-dashboard-project-heading .ax-dashboard-project-create {
@@ -6555,7 +6540,7 @@ body,
 
 .ax-dashboard-projects {
   display: flex;
-  min-height: 0;
+  flex: none;
   flex-direction: column;
 }
 
@@ -6572,7 +6557,7 @@ body,
 
 .ax-dashboard-project-card:hover,
 .ax-dashboard-project-card:focus-within {
-  border-color: var(--canvas-accent);
+  border-color: var(--color-line-strong);
 }
 
 .ax-dashboard-project-preview-link { flex: 1; min-height: 0; }
@@ -6605,22 +6590,15 @@ body,
 }
 
 .ax-dashboard-tutorials {
-  min-height: 0;
-  padding-top: 16px;
-  padding-bottom: 16px;
+  padding-bottom: 24px;
 }
 
 .ax-dashboard-tutorial-heading { margin-bottom: 12px; }
 .ax-dashboard-learning-content { display: grid; gap: 16px; }
 
-/* Examples use the project tile and spacing; only the number of available items differs. */
-.ax-breakdown-catalog { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 160px; max-height: none; align-content: start; }
+/* Examples use the project tile and grid, so both sections share their columns. */
 .ax-breakdown-catalog-logo { width: 90px; height: 42px; object-fit: contain; filter: grayscale(1); opacity: .55; }
 .ax-dashboard-project-card.is-unavailable:hover { border-color: var(--color-line); }
-
-@media (max-width: 639px) {
-  .ax-breakdown-catalog { grid-template-columns: minmax(0, 1fr); }
-}
 
 .ax-dashboard-learning-content .ax-daily-challenge {
   width: min(100%, 320px);
@@ -6650,24 +6628,14 @@ body,
 }
 
 @media (min-width: 1024px) {
-  .ax-dashboard-content {
-    display: grid;
-    grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
-  }
+  .ax-dashboard-content { overflow-y: auto; }
 
-  .ax-dashboard-project-grid {
-    flex: 1;
-    min-height: 0;
-    max-height: none;
-    grid-auto-rows: max(160px, calc((100% - 20px) / 2));
-    align-content: start;
-  }
-
-  .ax-dashboard-tutorials { overflow-y: auto; }
-
-  .ax-dashboard-learning-content {
-    grid-template-columns: minmax(0, 1fr) 280px;
-    align-items: stretch;
+  /* Projects shows two rows and scrolls past that, so breakdowns stay in reach. */
+  .ax-dashboard-project-grid:not(.ax-breakdown-catalog) {
+    max-height: calc(2 * 176px + 12px + 8px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
   }
 }
 
@@ -6724,26 +6692,23 @@ body,
 .ax-daily-challenge-banner {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(370px, 46%);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  margin-right: 19px;
-  padding: 12px 14px;
+  padding: 8px 12px 8px 16px;
   overflow: hidden;
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   color: var(--color-ink);
-  box-shadow: 0 6px 20px rgb(15 23 42 / 8%), 0 2px 6px rgb(15 23 42 / 4%);
 }
 
 .ax-daily-challenge-banner::before {
   position: absolute;
-  top: 7px;
-  bottom: 7px;
+  top: 0;
+  bottom: 0;
   left: 0;
-  width: 5px;
-  border-radius: 4px;
+  width: 3px;
   background: var(--canvas-accent);
   content: "";
 }
@@ -6755,38 +6720,37 @@ body,
   justify-content: center;
   gap: 3px;
   min-width: max-content;
-  min-height: 30px;
+  min-height: 20px;
   padding-right: 12px;
   border-right: 1px solid var(--color-line);
 }
 
 .ax-daily-challenge-kicker span {
-  color: var(--color-ink);
+  color: var(--color-muted);
   font-family: var(--font-sans);
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 400;
   line-height: 1;
-  letter-spacing: -0.025em;
 }
 
 .ax-daily-challenge-title {
   margin: 0;
-  color: var(--neutral-950);
+  color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: 22px;
-  font-weight: 400;
-  line-height: 1;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
 .ax-daily-challenge-banner .ax-dashboard-challenge-start {
-  width: 156px;
-  min-height: 30px;
-  height: 36px;
+  width: 132px;
+  min-height: 32px;
+  height: 32px;
   padding: 0 10px;
   border-radius: var(--radius-action);
   color: var(--neutral-0);
-  font-size: 15px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -6799,11 +6763,11 @@ body,
 
 .ax-daily-challenge-details {
   display: grid;
-  grid-template-columns: 156px max-content;
+  grid-template-columns: max-content 132px;
   min-width: 0;
-  align-items: stretch;
+  align-items: center;
   justify-content: end;
-  gap: 8px;
+  gap: 12px;
 }
 
 .ax-daily-challenge-actions {
@@ -6815,22 +6779,21 @@ body,
   gap: 3px;
 }
 
+.ax-daily-challenge-actions { grid-column: 2; grid-row: 1; }
 .ax-daily-challenge-actions > div,
 .ax-daily-challenge-actions > div > button { width: 100%; }
 
 .ax-daily-challenge-metrics {
   display: grid;
-  grid-template-columns: max-content max-content;
+  grid-column: 1;
+  grid-row: 1;
   align-items: center;
   justify-content: start;
-  column-gap: 8px;
-  border-left: 1px solid var(--color-line);
-  padding-left: 6px;
 }
 
 .ax-daily-challenge-detail { min-width: 0; }
 .ax-daily-challenge-detail-heading { display: flex; min-width: 0; align-items: center; gap: 5px; }
-.ax-daily-challenge-detail-heading > svg { width: 18px; height: 18px; flex: 0 0 18px; color: var(--canvas-accent); stroke-width: 1.8; }
+.ax-daily-challenge-detail-heading > svg { width: 16px; height: 16px; flex: 0 0 16px; color: var(--color-muted); stroke-width: 1.8; }
 .ax-daily-challenge-detail-copy { display: grid; min-width: 0; gap: 1px; }
 .ax-daily-challenge-detail-heading > .ax-daily-challenge-detail-copy { flex: 1; }
 .ax-daily-challenge-detail span { color: var(--color-muted); font-size: 10px; }
@@ -6855,13 +6818,7 @@ body,
 .ax-challenge-intro .ax-challenge-intro-start:hover:not(:disabled) { border-color: var(--challenge-intro-hover); background: var(--challenge-intro-hover); }
 
 @media (max-width: 700px) {
-  .ax-daily-challenge-banner { grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 8px 12px; margin-right: 0; }
-  .ax-daily-challenge-kicker { min-width: max-content; min-height: 26px; padding-right: 8px; }
-  .ax-daily-challenge-kicker span { font-size: 16px; }
-  .ax-daily-challenge-title { font-size: 16px; }
-  .ax-daily-challenge-details { grid-column: 1 / -1; grid-template-columns: 120px max-content; justify-content: end; gap: 6px; padding: 4px 0 0; border-top: 1px solid var(--color-line); }
-  .ax-daily-challenge-banner .ax-dashboard-challenge-start,
-  .ax-daily-challenge-actions { width: 120px; }
-  .ax-daily-challenge-banner .ax-dashboard-challenge-start { min-width: 120px; min-height: 36px; height: 36px; font-size: 14px; }
-  .ax-daily-challenge-metrics { column-gap: 6px; padding-left: 4px; }
+  .ax-daily-challenge-banner { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px 12px 10px 14px; }
+  .ax-daily-challenge-kicker { min-height: 0; padding-right: 0; border-right: 0; justify-content: flex-start; }
+  .ax-daily-challenge-details { grid-template-columns: minmax(0, 1fr) 132px; justify-content: stretch; }
 }
