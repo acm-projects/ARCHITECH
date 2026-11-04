@@ -6374,14 +6374,14 @@ body,
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 32px;
-  padding: 0 12px;
+  min-height: 40px;
+  padding: 0 16px;
   border: 1px solid transparent;
   border-radius: var(--radius-action);
   background: var(--dashboard-action, rgb(21 93 252));
   color: var(--neutral-0);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   line-height: 1.2;
 }
 
@@ -6489,18 +6489,18 @@ body,
 .ax-dashboard-section-title {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 30px;
+  font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 
 /* The -4px margin keeps tile edges on the page inset; the padding leaves room for focus rings. */
 .ax-dashboard-project-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-auto-rows: 176px;
-  gap: 12px;
+  grid-auto-rows: 260px;
+  gap: 16px;
   margin: 0 -4px;
   padding: 4px;
   list-style: none;
@@ -6511,7 +6511,7 @@ body,
 }
 
 @media (min-width: 1024px) {
-  .ax-dashboard-project-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ax-dashboard-project-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 .ax-dashboard-project-heading {
@@ -6585,7 +6585,7 @@ body,
 
 .ax-dashboard-project-metadata {
   flex-shrink: 0;
-  padding: 8px 12px 10px;
+  padding: 12px 16px 14px;
   border-top: 1px solid var(--color-line);
 }
 
@@ -6597,34 +6597,89 @@ body,
 .ax-dashboard-learning-content { display: grid; gap: 16px; }
 
 /* Examples use the project tile and grid, so both sections share their columns. */
-.ax-breakdown-catalog-logo { width: 90px; height: 42px; object-fit: contain; filter: grayscale(1); opacity: .55; }
 .ax-dashboard-project-card.is-unavailable:hover { border-color: var(--color-line); }
 
-.ax-dashboard-learning-content .ax-daily-challenge {
-  width: min(100%, 320px);
-  margin: 0 0 0 auto;
-  padding-top: 0;
-  align-self: start;
+/* Breakdowns are canvases: canvas panels around the dot grid, with the real node and edge styles. */
+.ax-workspace.ax-breakdown-catalog { background: none; }
+
+.ax-workspace.ax-breakdown-catalog > .ax-dashboard-project-card {
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 20px;
+  background: var(--ax-surface);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
 }
 
-.ax-dashboard-learning-content .ax-daily-challenge > img {
-  width: 64px;
-  height: auto;
+.ax-workspace.ax-breakdown-catalog > .ax-dashboard-project-card:is(:hover, :focus-within) { border-color: var(--breakdown-accent); }
+
+.ax-workspace.ax-breakdown-catalog > .ax-dashboard-project-card .ax-dashboard-project-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: 19px 19px 0 0;
+  background: radial-gradient(circle, var(--ax-canvas-dot) 0.8px, transparent 0.9px) 10px 10px / 20px 20px, var(--ax-canvas-paper);
 }
 
-.ax-dashboard-learning-content .ax-daily-challenge .ax-learn-speech {
-  grid-template-columns: minmax(0, 1fr);
+.ax-workspace.ax-breakdown-catalog > .ax-dashboard-project-card .ax-dashboard-project-metadata {
+  border-top-color: var(--ax-line);
+  border-radius: 0 0 19px 19px;
+  background: var(--ax-surface);
 }
 
-.ax-dashboard-learning-content .ax-daily-challenge-action {
-  grid-column: 1;
-  grid-row: auto;
+/* Each breakdown wears its brand; hovering lifts the logo away to show the system behind it. */
+.ax-breakdown-topology,
+.ax-breakdown-brand { position: absolute; inset: 0; }
+.ax-breakdown-topology { padding: 16px; }
+
+.ax-breakdown-brand {
+  display: grid;
+  place-items: center;
+  background: var(--breakdown-surface);
+  transition: opacity 240ms ease;
 }
 
-.ax-dashboard-learning-content .ax-dashboard-challenge-start {
-  height: 32px;
-  padding: 0 16px;
-  font-size: 12px;
+.ax-breakdown-catalog-logo {
+  width: 188px;
+  height: 100px;
+  object-fit: contain;
+  filter: var(--breakdown-logo-filter, none);
+  transition: transform 320ms var(--ax-ease);
+}
+
+.ax-breakdown-topology .ax-topology-preview line {
+  opacity: 0;
+  transition: opacity 200ms ease 120ms;
+}
+
+.ax-breakdown-topology .ax-topology-preview rect {
+  opacity: 0;
+  transform: scale(0.4);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 160ms ease, transform 260ms cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+/* A short stagger, so nodes arrive in groups rather than all at once. */
+.ax-breakdown-topology .ax-topology-preview rect:nth-of-type(3n + 1) { transition-delay: 60ms; }
+.ax-breakdown-topology .ax-topology-preview rect:nth-of-type(3n + 2) { transition-delay: 120ms; }
+.ax-breakdown-topology .ax-topology-preview rect:nth-of-type(3n) { transition-delay: 180ms; }
+
+@media (hover: hover) {
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-breakdown-brand { opacity: 0; }
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-breakdown-catalog-logo { transform: scale(1.14); }
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-topology-preview line { opacity: 1; }
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-topology-preview rect { opacity: 1; transform: none; }
+}
+
+/* Keyboard users get the same reveal; touch devices keep the logo. */
+.ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-breakdown-brand { opacity: 0; }
+.ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-topology-preview line { opacity: 1; }
+.ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-topology-preview rect { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-breakdown-brand,
+  .ax-breakdown-catalog-logo,
+  .ax-breakdown-topology .ax-topology-preview line,
+  .ax-breakdown-topology .ax-topology-preview rect { transition: none; }
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-breakdown-catalog-logo { transform: none; }
 }
 
 @media (min-width: 1024px) {
@@ -6632,7 +6687,7 @@ body,
 
   /* Projects shows two rows and scrolls past that, so breakdowns stay in reach. */
   .ax-dashboard-project-grid:not(.ax-breakdown-catalog) {
-    max-height: calc(2 * 176px + 12px + 8px);
+    max-height: calc(2 * 260px + 16px + 8px);
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: thin;
@@ -6694,8 +6749,8 @@ body,
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px 8px 16px;
+  gap: 16px;
+  padding: 14px 18px 14px 22px;
   overflow: hidden;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-panel);
@@ -6720,15 +6775,15 @@ body,
   justify-content: center;
   gap: 3px;
   min-width: max-content;
-  min-height: 20px;
-  padding-right: 12px;
+  min-height: 28px;
+  padding-right: 16px;
   border-right: 1px solid var(--color-line);
 }
 
 .ax-daily-challenge-kicker span {
   color: var(--color-muted);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 400;
   line-height: 1;
 }
@@ -6737,20 +6792,20 @@ body,
   margin: 0;
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 22px;
+  font-weight: 600;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
 .ax-daily-challenge-banner .ax-dashboard-challenge-start {
-  width: 132px;
-  min-height: 32px;
-  height: 32px;
-  padding: 0 10px;
+  width: 172px;
+  min-height: 40px;
+  height: 40px;
+  padding: 0 14px;
   border-radius: var(--radius-action);
   color: var(--neutral-0);
-  font-size: 13px;
+  font-size: 15px;
   white-space: nowrap;
 }
 
@@ -6763,11 +6818,11 @@ body,
 
 .ax-daily-challenge-details {
   display: grid;
-  grid-template-columns: max-content 132px;
+  grid-template-columns: max-content 172px;
   min-width: 0;
   align-items: center;
   justify-content: end;
-  gap: 12px;
+  gap: 16px;
 }
 
 .ax-daily-challenge-actions {
@@ -6793,11 +6848,11 @@ body,
 
 .ax-daily-challenge-detail { min-width: 0; }
 .ax-daily-challenge-detail-heading { display: flex; min-width: 0; align-items: center; gap: 5px; }
-.ax-daily-challenge-detail-heading > svg { width: 16px; height: 16px; flex: 0 0 16px; color: var(--color-muted); stroke-width: 1.8; }
+.ax-daily-challenge-detail-heading > svg { width: 22px; height: 22px; flex: 0 0 22px; color: var(--color-muted); stroke-width: 1.8; }
 .ax-daily-challenge-detail-copy { display: grid; min-width: 0; gap: 1px; }
 .ax-daily-challenge-detail-heading > .ax-daily-challenge-detail-copy { flex: 1; }
-.ax-daily-challenge-detail span { color: var(--color-muted); font-size: 10px; }
-.ax-daily-challenge-detail strong { color: var(--color-ink); font-size: 12px; font-weight: 650; overflow-wrap: anywhere; }
+.ax-daily-challenge-detail span { color: var(--color-muted); font-size: 12px; }
+.ax-daily-challenge-detail strong { color: var(--color-ink); font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
 
 .ax-challenge-intro {
   width: min(460px, calc(100vw - 32px));
@@ -6820,5 +6875,6 @@ body,
 @media (max-width: 700px) {
   .ax-daily-challenge-banner { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px 12px 10px 14px; }
   .ax-daily-challenge-kicker { min-height: 0; padding-right: 0; border-right: 0; justify-content: flex-start; }
-  .ax-daily-challenge-details { grid-template-columns: minmax(0, 1fr) 132px; justify-content: stretch; }
+  .ax-daily-challenge-title { font-size: 20px; }
+  .ax-daily-challenge-details { grid-template-columns: minmax(0, 1fr) 172px; justify-content: stretch; }
 }
