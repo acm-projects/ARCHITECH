@@ -588,7 +588,8 @@ test("Run owns traffic, metrics and reviews after Continue exploring", () => {
   assert.match(workspace, /runControl=\{canRunDesign && <SimulationControl/);
   assert.match(inspector, /runs\.runAtRate\(rate\)/);
   assert.doesNotMatch(inspector, /title="Metrics"/);
-  assert.match(inspector, /title="Simulation"/);
+  assert.match(inspector, /aria-label="Run simulation"/);
+  assert.match(inspector, /onClick=\{\(\) => onShowResults\(runs\.run\)\}/);
   assert.doesNotMatch(inspector, /title="Stress test"|title="Live estimates"|title="System review"|<StressTestPanel|role="tab"/);
   assert.match(control, /aria-controls="ax-run-panel"/);
   assert.doesNotMatch(control, /popover=|ResizeObserver/);

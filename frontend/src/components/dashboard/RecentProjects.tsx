@@ -170,7 +170,7 @@ export default function RecentProjects() {
     const result = projectActions.rename(project.id, title);
     setError(result.ok ? null : result.message);
   };
-  return (<section className="ax-dashboard-projects bg-white px-5 py-6 sm:px-8 lg:px-14">
+  return (<section className="ax-dashboard-projects px-5 py-6 sm:px-8 lg:px-14">
     <div className="ax-dashboard-project-heading mb-5">
       <div>
         <h2 className="ax-dashboard-section-title ax-dashboard-project-title">Projects</h2>

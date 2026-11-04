@@ -16,6 +16,9 @@
   --ax-header-clearance: 72px;
   /* Color */
   --ax-canvas: #f5f5f5;
+  --ax-canvas-paper: #ffffff;
+  --ax-canvas-dot: #c7ddf0;
+  --ax-canvas-tint: #e4f3ff;
   --ax-surface: #ffffff;
   --ax-ink: #111111;
   --ax-ink-soft: #4a4a46;
@@ -381,18 +384,22 @@
 .ax-workspace .ax-panel-rail .ax-item .ax-item-glyph { width: 16px; height: 16px; }
 .ax-workspace .ax-panel-rail ul { margin: 0; padding: 0; list-style: none; }
 .ax-workspace [data-side="left"] .ax-panel-rail {
-  padding: 4px;
+  padding: 12px;
   border: 1px solid var(--ax-line-strong);
-  border-radius: var(--ax-radius-dock);
+  border-radius: 12px;
   background: var(--ax-surface);
 }
-.ax-workspace [data-side="left"] .ax-panel-rail ul { display: grid; gap: 2px; }
+.ax-workspace [data-side="left"] .ax-panel-rail ul { display: grid; gap: 6px; }
 .ax-workspace [data-side="left"] .ax-panel-handle {
-  width: 40px;
-  height: 40px;
+  width: 120px;
+  height: 120px;
   border-color: transparent;
-  border-radius: 2px;
+  border-radius: 12px;
   background: transparent;
+}
+.ax-workspace [data-side="left"] .ax-panel-handle svg {
+  width: 38.4px;
+  height: 38.4px;
 }
 .ax-workspace .ax-component-menu ul { margin: 0; padding: 0; list-style: none; }
 .ax-workspace .ax-component-menu { overflow: hidden; }
@@ -677,13 +684,20 @@
 
 /* ---- React Flow: canvas, controls, attribution ---- */
 
+/* One background layer per canvas, shared by every workspace mode and breakdown. */
+.ax-workspace .react-flow {
+  background-image:
+    radial-gradient(circle, var(--ax-canvas-dot) 0.8px, transparent 0.9px),
+    radial-gradient(ellipse at 100% 0%, var(--ax-canvas-tint), transparent 72%),
+    linear-gradient(var(--ax-canvas-paper), var(--ax-canvas-paper));
+  background-size: 20px 20px, 100% 100%, 100% 100%;
+  background-position: 10px 10px, 0 0, 0 0;
+}
+.ax-workspace .ax-workspace-canvas { background-image: none; }
+
+
 .ax-workspace .react-flow,
 .ax-workspace .ax-workspace-canvas {
-  /* Uniform graph-paper squares. */
-  background-image:
-    linear-gradient(to right, rgba(17, 17, 17, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(17, 17, 17, 0.045) 1px, transparent 1px);
-  background-size: 24px 24px;
   --xy-background-color: var(--ax-canvas);
   --xy-edge-stroke: var(--ax-edge);
   --xy-edge-stroke-selected: var(--ax-accent);
@@ -762,7 +776,7 @@
   height: 27px;
   padding: 0 5px;
   border: 1px solid var(--ax-line-strong);
-  border-radius: 2px;
+  border-radius: 12px;
   background: var(--ax-surface);
   transition: border-color var(--ax-fast) var(--ax-ease);
 }
@@ -1547,9 +1561,9 @@
 
 /* Insertion below the canvas; analysis on the left; simulation in the header. */
 .ax-workspace .ax-canvas-panel[data-side="left"] { top: auto; bottom: 12px; left: 50%; margin: 0; transform: translateX(-50%); }
-.ax-workspace [data-side="left"] .ax-panel-rail { padding: 3px; }
-.ax-workspace [data-side="left"] .ax-panel-rail > ul { display: flex; gap: 2px; }
-.ax-workspace [data-side="left"] .ax-panel-handle { width: 38px; height: 38px; }
+.ax-workspace [data-side="left"] .ax-panel-rail { border-radius: 24px; padding: 10px; max-width: calc(100vw - 24px); overflow-x: auto; scrollbar-width: thin; }
+.ax-workspace [data-side="left"] .ax-panel-rail > ul { display: flex; gap: 4px; width: max-content; }
+.ax-workspace [data-side="left"] .ax-panel-handle { width: 54px; height: 46px; }
 .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content {
   position: absolute; left: 50%; top: auto; bottom: calc(100% + 8px); transform: translateX(-50%);
   width: min(540px, calc(100vw - 24px)); max-height: min(300px, calc(100dvh - 150px)); animation: none;
@@ -2148,4 +2162,46 @@
   .ax-workspace .ax-canvas-panel[data-learn-movable] {
     top: calc(12px + var(--ax-learn-offset, 0px));
   }
+}
+
+/* Numbered lesson instructions stay below the header, rather than vertically centered. */
+.ax-workspace .ax-canvas-panel[data-learn-movable] {
+  top:calc(12px + var(--ax-learn-offset, 0px));
+  transform:none;
+  max-height:calc(100% - 112px);
+}
+.ax-workspace .ax-canvas-panel[data-learn-collapsed="true"] { display:none; }
+.ax-workspace .ax-canvas-panel[data-learn-movable] .ax-panel-content {
+  width:min(380px, calc(100vw - 32px));
+  max-height:100%;
+  border-radius:24px;
+}
+.ax-workspace .ax-panel-content .ax-card.ax-learn { border-radius:24px; }
+.ax-workspace .ax-learn-header { grid-template-columns:minmax(0,1fr) 40px 30px; }
+.ax-workspace .ax-learn-header .ax-card-title { font-size:calc(var(--ax-t-md) * 2); line-height:1.25; color:var(--ax-ink); }
+.ax-workspace .ax-learn .ax-learn-speech { background:#fff; border-color:#109bfd; color:#000; border-radius:12px; }
+.ax-workspace .ax-learn .ax-learn-speech::before { background:#fff; border-color:#109bfd; }
+.ax-workspace .ax-learn .ax-learn-speech .ax-card-body { color:#000; }
+@media(max-width:767px) {
+  .ax-workspace .ax-canvas-panel[data-learn-movable] { top:calc(12px + var(--ax-learn-offset, 0px)); max-height:calc(100% - 112px); }
+  .ax-workspace .ax-canvas-panel[data-learn-movable] .ax-panel-content { max-height:min(55dvh, 100%); }
+}
+
+/* Component categories open on hover, with a safe gap into the flyout. */
+.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) { border-radius:20px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-panel-title { font-size:15px; line-height:22px; font-weight:600; }
+
+/* The header runs the design model; Run as app remains a separate project action. */
+.ax-workspace .ax-header .ax-run-button {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:36px; padding:8px 18px; border:1px solid #155dfc; border-radius:12px;
+  background:#155dfc; color:#fff; font-size:13px; font-weight:600; cursor:pointer;
+}
+.ax-workspace .ax-header .ax-run-button:hover:not(:disabled) { background:#1447e6; border-color:#1447e6; }
+.ax-workspace .ax-header .ax-run-button:active:not(:disabled) { background:#193cb8; }
+.ax-workspace .ax-header .ax-run-button:disabled { opacity:.6; cursor:wait; }
+/* React Flow's viewport already begins below the header, so no second header offset. */
+.ax-workspace .ax-workspace-canvas .ax-diagram-viewport .react-flow__controls,
+.ax-workspace.ax-breakdown .ax-breakdown-canvas .react-flow__controls {
+  top:12px; left:12px; right:auto; bottom:auto; margin:0; visibility:visible;
 }

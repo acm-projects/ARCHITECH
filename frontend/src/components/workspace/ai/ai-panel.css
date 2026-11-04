@@ -205,3 +205,28 @@
 .ax-workspace .ax-ai-user-focus { display: block; margin-bottom: 2px; font-size: 11px; color: var(--ax-muted); }
 .ax-workspace .ax-ai-usage-low { color: #b45309; font-weight: 500; }
 .ax-workspace .ax-ai-header-actions { display: inline-flex; align-items: center; gap: 4px; }
+
+/* Shared collapse control for walkthroughs and live conversations. */
+.ax-workspace .ax-ai-panel { border-radius: 24px; overflow: hidden; }
+.ax-workspace.ax-breakdown .ax-ai-panel.ax-breakdown-guide { border-radius: 24px; }
+.ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame:has(.ax-ai-panel) { border-radius: 24px; }
+.ax-workspace .ax-archie-panel-actions { display:inline-flex; align-items:center; gap:8px; margin-left:auto; }
+.ax-workspace .ax-archie-collapse { display:grid; place-items:center; flex-shrink:0; width:30px; height:30px; padding:0; border:1px solid var(--ax-line); border-radius:8px; background:transparent; color:var(--ax-ink-soft); cursor:pointer; }
+.ax-workspace .ax-archie-collapse:hover { background:var(--ax-canvas); color:var(--ax-ink); }
+.ax-workspace .ax-archie-collapse:focus-visible,
+.ax-workspace .ax-archie-launcher:focus-visible { outline:2px solid var(--ax-accent); outline-offset:3px; }
+.ax-workspace .ax-ai-panel[data-collapsed="true"],
+.ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame:has(.ax-ai-panel[data-collapsed="true"]) { display:none; }
+.ax-workspace .ax-archie-launcher {
+  position:absolute; right:12px; bottom:12px; z-index:40;
+  display:grid; place-items:center; width:60px; height:60px; padding:7.5px;
+  border:1px solid var(--ax-line-strong); border-radius:24px;
+  background:var(--ax-surface); color:var(--ax-ink);
+  box-shadow:0 4px 14px rgb(0 0 0 / 12%); cursor:pointer;
+}
+.ax-workspace .ax-archie-launcher:hover { border-color:var(--ax-accent); }
+.ax-workspace .ax-archie-launcher .ax-ai-portrait { display:block; width:39px; height:39px; border-width:2px; }
+.ax-workspace:has(> .ax-archie-launcher) .react-flow__controls { bottom:84px; }
+@media(max-width:600px) {
+  .ax-workspace:has(> .ax-archie-launcher) .ax-canvas-panel[data-side="left"] .ax-panel-rail { max-width:calc(100vw - 96px); }
+}

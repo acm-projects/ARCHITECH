@@ -16,7 +16,7 @@ const THEME_STORAGE_KEY = "architech-theme";
 export default function AppThemeBoundary({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isLanding = pathname === "/";
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     try {
