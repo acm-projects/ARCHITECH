@@ -946,16 +946,10 @@ pre { font-family: var(--font-mono); }
   border-color: var(--ax-dark-line-strong);
 }
 
-.ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card.is-unavailable:is(:hover, :focus-within) {
-  border-color: var(--ax-dark-line);
-}
-
 .ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card .ax-dashboard-project-preview {
   background: var(--ax-dark-panel);
 }
 
-/* The upcoming logos are black artwork. */
-.ax-dark-app .ax-breakdown-catalog-logo { filter: grayscale(1) invert(1); opacity: .6; }
 
 .ax-dark-app .ax-dashboard-section-title { color: #ffffff; }
 
@@ -965,4 +959,3 @@ pre { font-family: var(--font-mono); }
   background: var(--ax-dark-panel);
   box-shadow: none;
 }
-

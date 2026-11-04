@@ -206,7 +206,7 @@ export default function RecentProjects() {
       </p>
     )}
     {displayedProjects?.length === 0 && (
-      <p className="text-sm text-[#737373]">No architectures yet.</p>
+      <p className="text-base text-[#737373]">No architectures yet.</p>
     )}
 
     {displayedProjects !== null && displayedProjects.length > 0 && (<ul
@@ -220,21 +220,21 @@ export default function RecentProjects() {
         label={`Open ${project.title}`}
         preview={project.nodes.length > 0
           ? <TopologyPreview nodes={project.nodes} edges={project.edges} />
-          : <span className="text-xs text-neutral-500">Empty canvas</span>}
+          : <span className="text-sm text-neutral-500">Empty canvas</span>}
         actions={<ProjectMenu project={project} onRename={() => setRenamingId(project.id)} onError={setError} />}
       >
           <div className="flex items-baseline justify-between gap-3">
           {renamingId === project.id ? (<RenameField title={project.title} onCommit={(title) => commitRename(project, title)} />) : (<Link
             href={projectRoute(project.id)}
-            className="min-w-0 truncate text-sm font-medium tracking-tight focus-visible:underline focus-visible:outline-none"
+            className="min-w-0 truncate text-[17px] font-semibold tracking-tight focus-visible:underline focus-visible:outline-none"
           >
             {project.title}
           </Link>)}
-          <span className="shrink-0 text-[11px] text-neutral-500">
+          <span className="shrink-0 text-[13px] text-neutral-500">
             {formatRelativeTime(project.updatedAt, nowMs)}
           </span>
           </div>
-          <p className="mt-1 text-[11px] text-neutral-500">
+          <p className="mt-1 text-[13px] text-neutral-500">
             {project.nodes.length} nodes &middot; {project.edges.length} connections
           </p>
       </ArchitectureTile>))}
