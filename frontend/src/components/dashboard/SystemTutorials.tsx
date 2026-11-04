@@ -13,7 +13,7 @@ const UPCOMING = [
 
 export default function SystemTutorials() {
   return (
-    <section className="ax-dashboard-tutorials bg-white px-5 sm:px-8 lg:px-14">
+    <section className="ax-dashboard-tutorials px-5 sm:px-8 lg:px-14">
       <div className="ax-dashboard-tutorial-heading">
         <h2 className="ax-dashboard-section-title">System breakdowns</h2>
       </div>

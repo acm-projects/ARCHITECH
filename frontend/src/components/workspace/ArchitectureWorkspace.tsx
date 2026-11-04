@@ -126,6 +126,7 @@ function Workspace({ project }: { project: Project }) {
     return () => window.clearTimeout(timer);
   }, [connectionNotice]);
   const [learnPanelOffset, setLearnPanelOffset] = useState(0);
+  const [learnPanelCollapsed, setLearnPanelCollapsed] = useState(false);
   const learnPanelStyle = { "--ax-learn-offset": `${learnPanelOffset}px` } as CSSProperties;
   // Clear node/edge selection without changing the architecture itself.
   const clearCanvasSelection = useCallback(() => {
@@ -171,6 +172,8 @@ function Workspace({ project }: { project: Project }) {
     (next: ProjectMode) => {
       // Switch the UI right away, then persist that choice on the project.
       setMode(next);
+      setLearnPanelCollapsed(false);
+      setLearnPanelOffset(0);
       resetInspector();
 
       const result = projectActions.setMode(project.id, next);
@@ -481,6 +484,14 @@ function Workspace({ project }: { project: Project }) {
     <ArchieContext.Provider value={archie}>
       <DesignTrafficContext.Provider value={activeRuns.traffic}>
       <div className="ax-workspace flex h-screen flex-col overflow-hidden">
+        {((showInspector && !inspector.archieOpen) || (!showInspector && learnPanelCollapsed && !inspector.historyOpen)) && <button
+          type="button" className="ax-archie-launcher" aria-label={showInspector ? "Expand Archie" : "Expand lesson guidance"}
+          title={showInspector ? "Expand Archie" : "Expand lesson guidance"} aria-expanded={false}
+          onClick={() => {
+            if (showInspector) { closeUtilityPanels(); inspector.askArchie(); }
+            else setLearnPanelCollapsed(false);
+          }}><ArchiePortrait /></button>}
+
         <ChallengeIntroduction
           key={`${project.id}:${challenge.challenge.id}`}
           enabled={mode === "challenge"}
@@ -507,8 +518,7 @@ function Workspace({ project }: { project: Project }) {
           runControl={canRunDesign && <SimulationControl
             runs={activeRuns}
             componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
-            onShowResults={inspector.showResults}
-            state={activeRuns.view.runButtonState}
+            onShowResults={(action) => { closeUtilityPanels(); inspector.showResults(action); }}
             expanded={!inspector.archieOpen && !inspector.historyOpen && !nodes.some((node) => node.selected) && inspector.section === "run"}
             onToggle={() => { closeUtilityPanels(); inspector.toggleSection("run"); }}
           />}
@@ -555,16 +565,6 @@ function Workspace({ project }: { project: Project }) {
                   designCheck.setOpen(true);
                 },
               }] : []),
-              ...(showInspector ? [{
-                key: "archie",
-                label: "Ask Archie",
-                icon: <ArchiePortrait />,
-                open: inspector.archieOpen,
-                disabled: !archieEnabled,
-                title: "Available after Continue exploring.",
-                // Last on the bar; Archie opens in the right-hand panel, not the bar's flyout.
-                onToggle: inspector.archieOpen ? inspector.closeArchie : () => { closeUtilityPanels(); inspector.askArchie(); },
-              }] : []),
             ]}
             toolContent={!canRunDesign ? null : liveOpen ? (
               <LiveEstimatesPanel
@@ -601,7 +601,7 @@ function Workspace({ project }: { project: Project }) {
                   onConnect={handleConnect}
                   onConnectEnd={handleConnectEnd}
                   isValidConnection={isValidConnection}
-                  connectionLineType={ConnectionLineType.Step}
+                  connectionLineType={ConnectionLineType.SmoothStep}
                   // Delete and Backspace are handled by useWorkspaceKeyboard so all
                   // keyboard behavior goes through the same history-aware path.
                   deleteKeyCode={null}
@@ -673,6 +673,7 @@ function Workspace({ project }: { project: Project }) {
                   className="ax-canvas-panel"
                   data-side="right"
                   data-learn-movable={!inspector.historyOpen || undefined}
+                  data-learn-collapsed={learnPanelCollapsed && !inspector.historyOpen || undefined}
                   style={!inspector.historyOpen ? learnPanelStyle : undefined}
                   aria-label="Guidance"
                 >
@@ -693,6 +694,7 @@ function Workspace({ project }: { project: Project }) {
                       onDismissFeedback={learn.engine.dismissFeedback}
                       verticalOffset={learnPanelOffset}
                       onVerticalOffsetChange={setLearnPanelOffset}
+                      onCollapse={() => setLearnPanelCollapsed(true)}
                     />
                     )}
                     {/* Keep Archie mounted, but out of the guided tutorial. */}

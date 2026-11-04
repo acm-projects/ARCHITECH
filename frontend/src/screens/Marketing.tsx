@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import "./landing-actions.css"
 
 import { Button, Icon, Logo } from "../components/ui"
 import SystemStory from "./SystemStory/SystemStory"
@@ -31,22 +32,20 @@ export function Landing({
     }
 
     window.addEventListener("pointermove", handlePointerMove, { passive: true })
-
     window.addEventListener("scroll", handleScroll, { passive: true })
 
     return () => {
       window.removeEventListener("pointermove", handlePointerMove)
-
       window.removeEventListener("scroll", handleScroll)
     }
   }, [])
 
   const actions = (
     <>
-      <Button onClick={signUp}>
+      <Button className="landing-start-action" onClick={signUp}>
         Start building <Icon name="arrow" />
       </Button>
-      <Button variant="ghost" onClick={demo}>
+      <Button className="landing-explore-action" variant="ghost" onClick={demo}>
         Explore a system <Icon name="arrow" />
       </Button>
     </>
@@ -54,22 +53,16 @@ export function Landing({
 
   return (
     <main className="landing landing-v2">
-
       <nav
         className={`page-header landing-nav smart-nav ${navVisible ? "is-visible" : ""}`}
         onFocusCapture={() => setNavVisible(true)}
       >
         <div className="logo"><Logo /></div>
-
-        <div className="nav-actions">
-          {actions}
-        </div>
+        <div className="nav-actions">{actions}</div>
       </nav>
 
       <ArchieHero actions={actions} />
-
       <SystemStory onGetStarted={signUp} />
-
     </main>
   )
 }

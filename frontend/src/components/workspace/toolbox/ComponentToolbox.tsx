@@ -142,7 +142,8 @@ export default function ComponentToolbox({
       : (CATEGORIES.find((group) => group.family === category)?.label ?? "Components");
   // Clear the old search when switching categories.
   const selectCategory = (next: ComponentFamily | "all" | "repo" | null) => {
-    setCategory(active && next === category ? null : next);
+    if (active && next === category) return;
+    setCategory(next);
     if (next !== null) onActivate?.();
     setQuery("");
     setTechnologiesOf(null);
@@ -154,6 +155,7 @@ export default function ComponentToolbox({
   return (
     <CanvasPanel
       side="left"
+      hoverFlyout
       label="Components"
       wide={category === "all" && !flyoutTool}
       icon={<Layers size={16} aria-hidden="true" />}
@@ -172,8 +174,10 @@ export default function ComponentToolbox({
               <button type="button" className="ax-panel-handle" aria-label={label}
                 style={{ "--ax-family": key === "all" || key === "repo" ? "var(--ax-ink-soft)" : FAMILY_COLORS[key] } as CSSProperties}
                 aria-expanded={active && category === key}
+                onPointerEnter={event => { if (event.pointerType === "mouse") selectCategory(key); }}
+                onFocus={() => selectCategory(key)}
                 onClick={() => selectCategory(key)}>
-                <Icon size={16} color={key === "all" || key === "repo" ? undefined : FAMILY_COLORS[key]} aria-hidden="true" />
+                <Icon size={38.4} color={key === "all" || key === "repo" ? undefined : FAMILY_COLORS[key]} aria-hidden="true" />
                 <span className="ax-rail-name" aria-hidden="true">{label}</span>
               </button>
             </li>

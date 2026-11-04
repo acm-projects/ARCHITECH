@@ -1,5 +1,5 @@
 import { useId, useRef, type ComponentProps, type ReactNode } from "react";
-import { ChevronDown, CircleAlert, Clock3, LoaderCircle, Play, X } from "lucide-react";
+import { ChevronDown, LoaderCircle, Play, X } from "lucide-react";
 
 import type { CustomTechnology } from "../../lib/projects/customTechnologies";
 import ArchitectPanel from "./ai/ArchitectPanel";
@@ -13,14 +13,6 @@ import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 import type { useRunSession } from "./useRunSession";
 import "./workspace-inspector.css";
 
-const REVIEW_STATUS_LABELS = {
-  idle: "Not run",
-  analyzing: "Running…",
-  ready: "Tested",
-  stale: "Out of date",
-  error: "Failed",
-};
-
 type WorkspaceInspectorProps = {
   projectId: string;
   nodes: ArchitectureFlowNode[];
@@ -33,74 +25,7 @@ type WorkspaceInspectorProps = {
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate">;
 };
 
-function InspectorTool({
-  contentId,
-  title,
-  meta,
-  state,
-  icon,
-  expanded,
-  disabled,
-  onToggle,
-}: {
-  contentId: string
-  title: string
-  meta?: string
-  state?: keyof typeof REVIEW_STATUS_LABELS
-  icon?: ReactNode
-  expanded: boolean
-  disabled?: boolean
-  onToggle: () => void
-}) {
-  const statusId = useId()
-  const StatusIcon =
-    state === "analyzing"
-      ? LoaderCircle
-      : state === "stale"
-        ? Clock3
-        : state === "error"
-          ? CircleAlert
-          : null
-  return (
-    <button
-      type="button"
-      className="ax-inspector-section-toggle"
-      data-run-state={state}
-      aria-label={title}
-      aria-describedby={meta ? statusId : undefined}
-      aria-expanded={expanded}
-      aria-controls={contentId}
-      onClick={onToggle}
-      disabled={disabled}
-      onKeyDown={(event) => {
-        if (event.key === "Escape" && expanded) {
-          event.stopPropagation()
-          onToggle()
-        }
-      }}
-    >
-      <span className="ax-inspector-tool-icon">
-        {icon}
-        {/* Only states needing attention mark the collapsed tool; completion is not a health verdict. */}
-        {StatusIcon && (
-          <StatusIcon
-            className="ax-inspector-state-icon"
-            size={12}
-            aria-hidden="true"
-          />
-        )}
-      </span>
-      <span className="ax-inspector-section-label">{title}</span>
-      <span className="ax-inspector-status">
-        {meta && <small id={statusId}>{meta}</small>}
-        {!state && <ChevronDown size={13} aria-hidden="true" className="ax-tool-chevron" />}
-      </span>
-    </button>
-  )
-}
-
-export function SimulationControl({ state, expanded, onToggle, runs, componentName, onShowResults }: {
-  state: keyof typeof REVIEW_STATUS_LABELS;
+export function SimulationControl({ expanded, onToggle, runs, componentName, onShowResults }: {
   expanded: boolean;
   onToggle: () => void;
   runs: WorkspaceInspectorProps["runs"];
@@ -115,9 +40,12 @@ export function SimulationControl({ state, expanded, onToggle, runs, componentNa
       anchor.current?.querySelector<HTMLButtonElement>("button")?.focus();
     }
   }}>
-    <InspectorTool contentId="ax-run-panel" title="Simulation"
-      icon={<Play size={15} aria-hidden="true" />} meta={REVIEW_STATUS_LABELS[state]}
-      state={state} expanded={expanded} onToggle={onToggle} />
+    <button type="button" className="ax-run-button" aria-label="Run simulation"
+      aria-controls="ax-run-panel" aria-expanded={expanded} aria-busy={runs.view.isRunning}
+      disabled={runs.view.isRunning} onClick={() => onShowResults(runs.run)}>
+      {runs.view.isRunning ? <LoaderCircle size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
+      Run
+    </button>
     <section id="ax-run-panel" className="ax-inspector ax-simulation-panel" aria-label="Simulation" hidden={!expanded}>
       <div className="ax-inspector-frame">
         <div className="ax-panel-heading">

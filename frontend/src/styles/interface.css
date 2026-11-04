@@ -5451,8 +5451,7 @@ body,
   overflow-x: clip;
   background: var(--auth-surface);
   color: var(--auth-ink);
-  /* system-ui first so the 600 heading weight renders as a true semibold (Arial has none) */
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, var(--font-sans);
+  font-family: var(--font-sans);
 }
 
 /* base h1/button/input rules pin --font-sans; let them follow the auth stack */
@@ -5582,11 +5581,12 @@ body,
   line-height: 1.5;
 }
 
-/* Social providers: three equal icon-only buttons */
+/* Social providers: two centered icon-only buttons */
 .auth-social-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 160px));
   gap: 10px;
+  justify-content: center;
 }
 
 .auth-social-button {
@@ -5900,7 +5900,7 @@ body,
   overflow-x: clip;
   background: var(--onb-surface);
   color: var(--onb-ink);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, var(--font-sans);
+  font-family: var(--font-sans);
 }
 
 /* base h1/button/input rules pin --font-sans; follow the onboarding stack */
@@ -6374,25 +6374,24 @@ body,
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 34px;
+  min-height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--color-ink);
-  border-radius: var(--radius-panel);
-  background: var(--color-ink);
-  color: var(--color-surface);
-  font-size: 13px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-action);
+  background: var(--dashboard-action, rgb(21 93 252));
+  color: var(--neutral-0);
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.2;
 }
 
-/* The dashboard's primary actions (New project, Start challenge) share one style. */
-.ax-dashboard-project-create:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-ink) 82%, var(--color-surface));
+.ax-dashboard-project-create:hover {
+  background: rgb(20 71 230);
 }
 
 .ax-dashboard-project-create:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline: 2px solid var(--dashboard-action, rgb(21 93 252));
+  outline-offset: 3px;
 }
 
 .ax-new-project-dialog {
@@ -6484,11 +6483,12 @@ body,
   border-radius: var(--radius-action);
   color: var(--neutral-0);
   font-size: 14px;
+  font-weight: 500;
 }
 
 .ax-dashboard-section-title {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
   font-size: 32px;
   font-weight: 600;
   line-height: 1.2;
@@ -6497,7 +6497,7 @@ body,
 
 .ax-dashboard-section-title {
   font-size: 34px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* The project pane keeps two visible rows on desktop. */
@@ -6715,112 +6715,126 @@ body,
   padding-bottom: 0;
 }
 
-/* Daily challenge: one bordered row in the same flat language as the workspace panels and
-   onboarding tiles. Archie wears the hat of the challenge's difficulty. */
+.ax-dashboard-shell { background: var(--neutral-0); }
+
+.ax-dashboard-shell .page-header {
+  background: transparent;
+}
+
 .ax-daily-challenge-banner {
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(370px, 46%);
   align-items: center;
-  gap: 14px;
-  min-height: 64px;
-  padding: 8px 12px 8px 10px;
+  gap: 12px;
+  margin-right: 19px;
+  padding: 12px 14px;
+  overflow: hidden;
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-panel);
+  border-radius: 12px;
   background: var(--color-surface);
   color: var(--color-ink);
+  box-shadow: 0 6px 20px rgb(15 23 42 / 8%), 0 2px 6px rgb(15 23 42 / 4%);
 }
 
-.ax-daily-challenge-archie {
-  position: relative;
-  flex: none;
-  width: 44px;
-  aspect-ratio: 1000 / 1020;
-}
-
-.ax-daily-challenge-archie > .onboarding-option-media {
+.ax-daily-challenge-banner::before {
   position: absolute;
-  inset: 0;
+  top: 7px;
+  bottom: 7px;
+  left: 0;
+  width: 5px;
+  border-radius: 4px;
+  background: var(--canvas-accent);
+  content: "";
 }
 
-.ax-daily-challenge-copy {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-  gap: 4px;
+.ax-daily-challenge-kicker {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: max-content;
+  min-height: 30px;
+  padding-right: 12px;
+  border-right: 1px solid var(--color-line);
+}
+
+.ax-daily-challenge-kicker span {
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.025em;
 }
 
 .ax-daily-challenge-title {
   margin: 0;
-  color: var(--color-ink);
+  color: var(--neutral-950);
   font-family: var(--font-sans);
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
   overflow-wrap: anywhere;
 }
 
-.ax-daily-challenge-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 6px;
-  margin: 0;
-  color: var(--color-muted);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-/* The separator ends each item, so a wrapped line never starts with a dot. */
-.ax-daily-challenge-meta > span:not(:last-child)::after {
-  content: "·";
-  margin-left: 6px;
-}
-
-.ax-daily-challenge-action {
-  display: grid;
-  flex: none;
-  justify-items: end;
-  gap: 4px;
-}
-
-/* Same primary action as onboarding and the Challenge mode dialog. */
-.ax-daily-challenge-start {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 34px;
-  padding: 0 14px;
-  border: 1px solid var(--color-ink);
-  border-radius: var(--radius-panel);
-  background: var(--color-ink);
-  color: var(--color-surface);
-  font-size: 13px;
-  font-weight: 500;
+.ax-daily-challenge-banner .ax-dashboard-challenge-start {
+  width: 156px;
+  min-height: 30px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-action);
+  color: var(--neutral-0);
+  font-size: 15px;
   white-space: nowrap;
-  cursor: pointer;
-  transition: background-color 150ms ease;
 }
 
-.ax-daily-challenge-start:hover {
-  background: color-mix(in srgb, var(--color-ink) 82%, var(--color-surface));
+.ax-daily-challenge-banner .ax-dashboard-challenge-start > span {
+  width: 100%;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  white-space: nowrap;
 }
 
-.ax-daily-challenge-start:active {
-  background: color-mix(in srgb, var(--color-ink) 70%, var(--color-surface));
+.ax-daily-challenge-details {
+  display: grid;
+  grid-template-columns: 156px max-content;
+  min-width: 0;
+  align-items: stretch;
+  justify-content: end;
+  gap: 8px;
 }
 
-.ax-daily-challenge-start:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+.ax-daily-challenge-actions {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 3px;
 }
 
-.ax-daily-challenge-error {
-  margin: 0;
-  color: var(--color-danger);
-  font-size: 12px;
+.ax-daily-challenge-actions > div,
+.ax-daily-challenge-actions > div > button { width: 100%; }
+
+.ax-daily-challenge-metrics {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  align-items: center;
+  justify-content: start;
+  column-gap: 8px;
+  border-left: 1px solid var(--color-line);
+  padding-left: 6px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ax-daily-challenge-start { transition: none; }
-}
+.ax-daily-challenge-detail { min-width: 0; }
+.ax-daily-challenge-detail-heading { display: flex; min-width: 0; align-items: center; gap: 5px; }
+.ax-daily-challenge-detail-heading > svg { width: 18px; height: 18px; flex: 0 0 18px; color: var(--canvas-accent); stroke-width: 1.8; }
+.ax-daily-challenge-detail-copy { display: grid; min-width: 0; gap: 1px; }
+.ax-daily-challenge-detail-heading > .ax-daily-challenge-detail-copy { flex: 1; }
+.ax-daily-challenge-detail span { color: var(--color-muted); font-size: 10px; }
+.ax-daily-challenge-detail strong { color: var(--color-ink); font-size: 12px; font-weight: 650; overflow-wrap: anywhere; }
 
 .ax-challenge-intro {
   width: min(460px, calc(100vw - 32px));
@@ -6841,9 +6855,13 @@ body,
 .ax-challenge-intro .ax-challenge-intro-start:hover:not(:disabled) { border-color: var(--challenge-intro-hover); background: var(--challenge-intro-hover); }
 
 @media (max-width: 700px) {
-  /* Archie and the title stay on the first line; the action drops under the title. */
-  .ax-daily-challenge-banner { flex-wrap: wrap; row-gap: 8px; }
-  .ax-daily-challenge-copy { flex-basis: calc(100% - 58px); }
-  .ax-daily-challenge-action { margin-left: 58px; justify-items: start; }
+  .ax-daily-challenge-banner { grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 8px 12px; margin-right: 0; }
+  .ax-daily-challenge-kicker { min-width: max-content; min-height: 26px; padding-right: 8px; }
+  .ax-daily-challenge-kicker span { font-size: 16px; }
   .ax-daily-challenge-title { font-size: 16px; }
+  .ax-daily-challenge-details { grid-column: 1 / -1; grid-template-columns: 120px max-content; justify-content: end; gap: 6px; padding: 4px 0 0; border-top: 1px solid var(--color-line); }
+  .ax-daily-challenge-banner .ax-dashboard-challenge-start,
+  .ax-daily-challenge-actions { width: 120px; }
+  .ax-daily-challenge-banner .ax-dashboard-challenge-start { min-width: 120px; min-height: 36px; height: 36px; font-size: 14px; }
+  .ax-daily-challenge-metrics { column-gap: 6px; padding-left: 4px; }
 }

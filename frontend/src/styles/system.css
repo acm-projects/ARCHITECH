@@ -8,7 +8,7 @@
  */
 :root {
   color-scheme: light;
-  --font-sans: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 
   /* Fixed neutral scale. Route CSS consumes these tokens instead of inventing near-duplicate grays. */
@@ -838,6 +838,9 @@ pre { font-family: var(--font-mono); }
 
 .ax-dark-app .ax-workspace {
   --ax-canvas: #141414;
+  --ax-canvas-paper: #141414;
+  --ax-canvas-dot: #31465a;
+  --ax-canvas-tint: #172d40;
   --ax-surface: #000000;
   --ax-ink: var(--ax-dark-text);
   --ax-ink-soft: var(--ax-dark-text);
@@ -861,9 +864,6 @@ pre { font-family: var(--font-mono); }
 
 .ax-dark-app .ax-workspace :is(.react-flow, .ax-workspace-canvas) {
   background-color: #141414;
-  background-image:
-    linear-gradient(to right, rgb(255 255 255 / 3.5%) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(255 255 255 / 3.5%) 1px, transparent 1px);
 }
 
 .ax-dark-app .ax-workspace .ax-node {
@@ -983,7 +983,7 @@ pre { font-family: var(--font-mono); }
 .ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card:nth-child(5n + 4) { --preview-outline: #82c99a; }
 .ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card:nth-child(5n) { --preview-outline: #f29aad; }
 .ax-dark-app .ax-dashboard-section-title { color: #ffffff; }
-.ax-dark-app .ax-daily-challenge-banner { border-color: #454545; background: #000000; }
+.ax-dark-app .ax-daily-challenge-banner { border-color: #454545; background: #000000; box-shadow: 0 4px 16px rgb(0 0 0 / 24%); }
 
 @media (prefers-reduced-motion: reduce) {
   .ax-light-app :is(.ax-dashboard-project-grid > .ax-dashboard-project-card, .ax-breakdown-catalog > .ax-dashboard-project-card),

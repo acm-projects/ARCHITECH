@@ -155,10 +155,10 @@ function NetflixWalkthrough() {
   return (
     <main className="ax-workspace ax-breakdown" style={{ "--ax-breakdown-node-width": `${NETFLIX_NODE_SIZE.width}px`, "--ax-breakdown-node-height": `${NETFLIX_NODE_SIZE.height}px` } as CSSProperties}>
       <WorkspaceHeaderShell
-        project={<h1 className="ax-title"><span>Netflix</span><small>System breakdown</small></h1>}
+        project={<h1 className="ax-title"><span>Netflix System breakdown</span></h1>}
         actions={<>
           <ThemeToggle />
-          <button className="ax-header-menu-trigger" type="button" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>
+          <button type="button" className="ax-action" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>
         </>}
       />
 

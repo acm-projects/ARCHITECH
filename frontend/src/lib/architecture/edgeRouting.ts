@@ -37,7 +37,7 @@ export function getOrthogonalEdgePath({
     targetX,
     targetY,
     targetPosition,
-    borderRadius: 0,
+    borderRadius: 12,
     offset: EDGE_STUB,
   });
 }

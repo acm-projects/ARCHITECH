@@ -13,8 +13,8 @@ type Box = { x: number; y: number };
 const out = (box: Box) => ({ x: box.x + W, y: box.y + H / 2 });
 const inp = (box: Box) => ({ x: box.x, y: box.y + H / 2 });
 
-// The corner points of an SVG path made of M/L/H/V commands. React Flow writes square
-// corners as zero-radius Q curves, whose end point is the corner. Repeated points are dropped.
+// The corner points of an SVG path made of M/L/H/V/Q commands. React Flow rounds corners with
+// Q curves, whose control point is the corner the route turns at. Repeated points are dropped.
 function points(path: string): { x: number; y: number }[] {
   const result: { x: number; y: number }[] = [];
   let x = 0;
@@ -23,6 +23,7 @@ function points(path: string): { x: number; y: number }[] {
     const numbers = args.trim().split(/[\s,]+/).filter(Boolean).map(Number);
     if (command === "H") x = numbers[0];
     else if (command === "V") y = numbers[0];
+    else if (command === "Q") [x, y] = numbers.slice(0, 2);
     else [x, y] = numbers.slice(-2);
     const previous = result[result.length - 1];
     if (!previous || previous.x !== x || previous.y !== y) result.push({ x, y });
