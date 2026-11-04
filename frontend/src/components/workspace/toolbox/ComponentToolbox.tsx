@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { ChevronDown, Layers, MoreHorizontal, Puzzle, X } from "lucide-react";
 
@@ -33,7 +33,6 @@ function ComponentRow({
 }) {
   const listId = `technologies-${component.type}`;
   return (
-    <>
     <div
       draggable
       aria-label={component.label}
@@ -63,8 +62,6 @@ function ComponentRow({
         <ChevronDown size={12} aria-hidden="true" data-open={open || undefined} />
       </button>
     </div>
-    {open && <TechnologyDragList component={component} id={listId} />}
-    </>
   );
 }
 
@@ -101,76 +98,111 @@ function CustomTechnologyRow({ technology }: { technology: CustomTechnology }) {
 // Match the catalog's families; component definitions and ordering stay in the catalog.
 const CATEGORIES = componentGroups("");
 
+// A canvas tool that shares the bar with the library (Ask Archie, Live estimates, Design check).
+// It either opens its content in the bar's flyout (`toolContent`) or opens a panel elsewhere.
+export type ToolboxTool = {
+  key: string;
+  label: string;
+  icon: ReactNode;
+  // Short real state on the button, such as an issue count.
+  badge?: string;
+  open: boolean;
+  disabled?: boolean;
+  title?: string;
+  onToggle: () => void;
+};
+
 export default function ComponentToolbox({
   customTechnologies = [],
+  active = true,
+  onActivate,
+  tools = [],
+  toolContent = null,
 }: {
   // Technologies from the project's imported repository; shown under "From your repo".
   customTechnologies?: readonly CustomTechnology[];
+  active?: boolean;
+  onActivate?: () => void;
+  tools?: readonly ToolboxTool[];
+  // What the open tool shows in the flyout; null when the open tool uses its own panel.
+  toolContent?: ReactNode;
 }) {
   // null closes the flyout; a family opens only its components; "all" is the More library;
   // "repo" is the imported repository's own technologies.
   const [category, setCategory] = useState<ComponentFamily | "all" | "repo" | null>(null);
   const [query, setQuery] = useState("");
-  const [flyoutOffset, setFlyoutOffset] = useState(6);
   // The one component whose technologies are showing, if any.
   const [technologiesOf, setTechnologiesOf] = useState<ComponentDefinition["type"] | null>(null);
   const groups =
     category === "repo" ? [] : componentGroups(query).filter((group) => category === "all" || group.family === category);
+  const expandedComponent = groups.flatMap((group) => group.components).find((component) => component.type === technologiesOf);
   const title =
     category === "repo"
       ? "From your repo"
       : (CATEGORIES.find((group) => group.family === category)?.label ?? "Components");
-  const alignFlyout = (button: HTMLButtonElement) => {
-    const rail = button.closest(".ax-panel-rail");
-    if (rail) setFlyoutOffset(button.getBoundingClientRect().top - rail.getBoundingClientRect().top);
-  };
-  // Clicking the active category closes it. Clear the old search when switching so
-  // a query from More cannot accidentally hide the next category's components.
+  // Clear the old search when switching categories.
   const selectCategory = (next: ComponentFamily | "all" | "repo" | null) => {
-    setCategory(next === category ? null : next);
+    if (active && next === category) return;
+    setCategory(next);
+    if (next !== null) onActivate?.();
     setQuery("");
+    setTechnologiesOf(null);
   };
+
+  const libraryOpen = active && category !== null;
+  const flyoutTool = toolContent ? tools.find((tool) => tool.open) : undefined;
 
   return (
     <CanvasPanel
       side="left"
+      hoverFlyout
       label="Components"
-      wide={category === "all"}
+      wide={category === "all" && !flyoutTool}
       icon={<Layers size={16} aria-hidden="true" />}
-      expanded={category !== null}
-      flyoutOffset={flyoutOffset}
-      onExpandedChange={(open) => { if (!open) selectCategory(null); }}
+      expanded={libraryOpen || Boolean(flyoutTool)}
+      onExpandedChange={(open) => {
+        if (open) return;
+        if (flyoutTool) flyoutTool.onToggle();
+        else selectCategory(null);
+      }}
       rail={
         <ul aria-label="Component categories">
           {[...CATEGORIES.map(({ family, label }) => ({ key: family, label, Icon: CATEGORY_ICONS[family] })),
             { key: "all" as const, label: "More", Icon: MoreHorizontal },
             ...(customTechnologies.length > 0 ? [{ key: "repo" as const, label: "From your repo", Icon: Puzzle }] : [])].map(({ key, label, Icon }) => (
-            <li key={key}>
+            <li key={key} className={key === "all" ? "ax-library-divider" : undefined}>
               <button type="button" className="ax-panel-handle" aria-label={label}
-                aria-expanded={category === key}
-                onPointerEnter={(event) => {
-                  if (event.pointerType !== "mouse") return;
-                  alignFlyout(event.currentTarget);
-                  if (category !== key) { setCategory(key); setQuery(""); }
-                }}
-                onClick={(event) => {
-                  alignFlyout(event.currentTarget);
-                  // Mouse hover already opened the menu; clicks must not immediately hide it.
-                  if (event.detail > 0 && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-                    if (category !== key) { setCategory(key); setQuery(""); }
-                  } else selectCategory(key);
-                }}>
-                <Icon size={16} color={key === "all" || key === "repo" ? undefined : FAMILY_COLORS[key]} aria-hidden="true" />
+                style={{ "--ax-family": key === "all" || key === "repo" ? "var(--ax-ink-soft)" : FAMILY_COLORS[key] } as CSSProperties}
+                aria-expanded={active && category === key}
+                onPointerEnter={event => { if (event.pointerType === "mouse") selectCategory(key); }}
+                onFocus={() => selectCategory(key)}
+                onClick={() => selectCategory(key)}>
+                <Icon size={38.4} color={key === "all" || key === "repo" ? undefined : FAMILY_COLORS[key]} aria-hidden="true" />
                 <span className="ax-rail-name" aria-hidden="true">{label}</span>
+              </button>
+            </li>
+          ))}
+          {tools.length > 0 && <li className="ax-rail-separator" aria-hidden="true" />}
+          {tools.map((tool) => (
+            <li key={tool.key}>
+              <button type="button" className="ax-panel-handle" data-tool={tool.key}
+                aria-label={tool.badge ? `${tool.label}, ${tool.badge}` : tool.label}
+                aria-expanded={tool.open} disabled={tool.disabled} title={tool.disabled ? tool.title : undefined}
+                onClick={tool.onToggle}>
+                {tool.icon}
+                {tool.badge && <span className="ax-rail-badge" aria-hidden="true">{tool.badge}</span>}
+                <span className="ax-rail-name" aria-hidden="true">{tool.label}</span>
               </button>
             </li>
           ))}
         </ul>
       }
     >
-      <div className="ax-component-menu flex min-h-0 flex-col p-3">
+      {flyoutTool && <div className="ax-inspector ax-tool-flyout">{toolContent}</div>}
+      {/* Stays mounted while a tool uses the flyout, so the search survives switching back. */}
+      <div className={`ax-component-menu ${flyoutTool ? "hidden" : "flex"} min-h-0 flex-col p-3`}>
         {/* More uses search as its header; categories retain their title. */}
-        <div className="flex shrink-0 items-center justify-between gap-2 pb-2">
+        <div className="ax-component-menu-header flex shrink-0 items-center justify-between gap-2 pb-2">
           {category === "all" ? <div className="ax-search min-w-0 flex-1">
             <ComponentGlyph type="search" className="ax-search-glyph" />
             <input type="search" value={query} placeholder="Search" aria-label="Search"
@@ -186,7 +218,7 @@ export default function ComponentToolbox({
           {category === "repo" && (
             <section aria-label="From your repo">
               <p className="ax-tech-basis">Found in your imported repository. Drawn and connected, but not measured in Run Design.</p>
-              <ul>
+              <ul className="ax-component-options">
                 {customTechnologies.map((technology) => (
                   <li key={technology.id}>
                     <CustomTechnologyRow technology={technology} />
@@ -197,9 +229,9 @@ export default function ComponentToolbox({
           )}
           {category !== "repo" && groups.length === 0 && <p className="ax-card-body">No matching components</p>}
           {groups.map((group) => (
-            <section key={group.family} aria-label={group.label}>
+            <section key={group.family} aria-label={group.label} className="ax-library-group" data-detail={expandedComponent?.family === group.family || undefined}>
               {category === "all" && <h3 className="ax-section-label">{group.label}</h3>}
-              <ul>
+              <ul className="ax-component-options">
                 {group.components.map((component) => (
                   <li key={component.type}>
                     <ComponentRow
@@ -212,6 +244,10 @@ export default function ComponentToolbox({
                   </li>
                 ))}
               </ul>
+              {expandedComponent?.family === group.family && <div className="ax-library-detail">
+                <h3>{expandedComponent.label}</h3>
+                <TechnologyDragList component={expandedComponent} id={`technologies-${expandedComponent.type}`} />
+              </div>}
             </section>
           ))}
         </div>

@@ -126,7 +126,7 @@ export default function HistoryPanel({
           aria-label="Version name"
           onChange={(event) => setLabel(event.target.value)}
         />
-        <button type="submit" className="ax-ai-send" disabled={busy}>
+        <button type="submit" className="ax-ai-send ax-panel-action" data-variant="primary" disabled={busy}>
           Save version
         </button>
       </form>
@@ -161,15 +161,15 @@ export default function HistoryPanel({
               {confirming === version.id ? (
                 <div className="ax-history-confirm">
                   <span>Your current design is saved first.</span>
-                  <button type="button" className="ax-ai-apply" disabled={busy} onClick={() => void restore(version)}>
+                  <button type="button" className="ax-ai-apply ax-panel-action" data-variant="primary" disabled={busy} onClick={() => void restore(version)}>
                     Restore
                   </button>
-                  <button type="button" className="ax-ai-starter" onClick={() => setConfirming(null)}>
+                  <button type="button" className="ax-history-cancel ax-panel-action" data-variant="secondary" onClick={() => setConfirming(null)}>
                     Cancel
                   </button>
                 </div>
               ) : (
-                <button type="button" className="ax-history-restore" disabled={busy} onClick={() => setConfirming(version.id)}>
+                <button type="button" className="ax-history-restore ax-panel-action" data-variant="secondary" disabled={busy} onClick={() => setConfirming(version.id)}>
                   <RotateCcw size={12} aria-hidden="true" /> Restore
                 </button>
               )}

@@ -8,7 +8,7 @@
  */
 :root {
   color-scheme: light;
-  --font-sans: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 
   /* Fixed neutral scale. Route CSS consumes these tokens instead of inventing near-duplicate grays. */
@@ -301,6 +301,12 @@ pre { font-family: var(--font-mono); }
 }
 
 .ui-control:hover:not(:disabled) { transform: none; }
+
+/* Press feedback stays inside the control, so compact layouts never jump. */
+.btn.ui-control:active:not(:disabled):not([aria-disabled="true"]) {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
 
 .ui-control:disabled,
 .ui-input:disabled {
@@ -803,6 +809,9 @@ pre { font-family: var(--font-mono); }
 
 .ax-dark-app .ax-workspace {
   --ax-canvas: #141414;
+  --ax-canvas-paper: #141414;
+  --ax-canvas-dot: #31465a;
+  --ax-canvas-tint: #172d40;
   --ax-surface: #000000;
   --ax-ink: var(--ax-dark-text);
   --ax-ink-soft: var(--ax-dark-text);
@@ -821,9 +830,6 @@ pre { font-family: var(--font-mono); }
 
 .ax-dark-app .ax-workspace :is(.react-flow, .ax-workspace-canvas) {
   background-color: #141414;
-  background-image:
-    linear-gradient(to right, rgb(255 255 255 / 3.5%) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(255 255 255 / 3.5%) 1px, transparent 1px);
 }
 
 .ax-dark-app .ax-workspace .ax-node {

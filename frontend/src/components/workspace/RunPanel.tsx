@@ -6,16 +6,18 @@ import type { ResultsView } from "../../lib/architecture/evaluation/resultsView"
 import type { RunResult } from "../../lib/architecture/evaluation/runSession"
 import type { TrafficProfile } from "../../lib/architecture/evaluation/traffic"
 import {
+  ReviewSection,
+  RunComparison,
+  RunFindings,
+  RunNotices,
+  RunMetrics,
+  RunSummary,
+} from "./RunResults"
+import {
   reviewViewForRun,
   type ReviewSelection,
   type ReviewView,
 } from "./inspectorState"
-import {
-  RunComparison,
-  RunFindings,
-  RunNotices,
-  RunSummary,
-} from "./RunResults"
 import StressTestPanel from "./StressTestPanel"
 
 type RunPanelProps = {
@@ -25,14 +27,22 @@ type RunPanelProps = {
   onRateChange: (rate: number) => void
   onRun: () => void
   onRunAtRate: (rate: number) => void
-  onViewMetrics: () => void
   componentName: (id: string) => string
 }
+
+// The Simulation panel: a tab per part of a run. Every tab is built from the same sections
+// (RunResults' ReviewSection), so Traffic, Last run, Scores and Compare runs read alike.
+const VIEWS = [
+  ["settings", "Traffic"],
+  ["overview", "Last run"],
+  ["metrics", "Scores"],
+  ["comparison", "Compare runs"],
+] as const
 
 export default function RunPanel(props: RunPanelProps) {
   const { view, completedRun, traffic } = props
   const { result, comparison } = view
-  const viewPicker = useRef<HTMLSelectElement>(null)
+  const viewPicker = useRef<HTMLButtonElement>(null)
   const details = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<ReviewSelection>(() => ({
     run: completedRun,
@@ -43,8 +53,11 @@ export default function RunPanel(props: RunPanelProps) {
   useLayoutEffect(() => {
     details.current?.scrollTo({ top: 0 })
   }, [activeView, completedRun])
-  const selectView = (next: ReviewView) =>
+  const selectView = (next: ReviewView) => {
+    // Keep keyboard focus within the persistent view controls.
+    viewPicker.current?.focus()
     setSelection({ run: completedRun, view: next })
+  }
   const startRun = (action: () => void) => {
     // The traffic form is hidden after a run, so focus stays on the persistent picker.
     viewPicker.current?.focus()
@@ -57,24 +70,18 @@ export default function RunPanel(props: RunPanelProps) {
       aria-live="polite"
       data-run-state={view.runButtonState}
     >
-      <label className="ax-review-view">
-        <span>Show</span>
-        <select
-          ref={viewPicker}
-          className="ax-field"
-          aria-label="Run view"
-          value={activeView}
-          onChange={(event) => selectView(event.target.value as ReviewView)}
-        >
-          <option value="settings">Traffic</option>
-          <option value="overview" disabled={!result}>
-            Last run
-          </option>
-          <option value="comparison" disabled={!result}>
-            Compare runs
-          </option>
-        </select>
-      </label>
+      <div className="ax-review-view" role="group" aria-label="Run view" hidden={!result}>
+        {VIEWS.map(([value, label]) => (
+          <button
+            key={value}
+            ref={value === activeView ? viewPicker : undefined}
+            type="button"
+            aria-pressed={activeView === value}
+            disabled={value !== "settings" && !result}
+            onClick={() => selectView(value)}
+          >{label}</button>
+        ))}
+      </div>
       <div
         ref={details}
         className="ax-review-scroll"
@@ -92,7 +99,7 @@ export default function RunPanel(props: RunPanelProps) {
           <StressTestPanel
             traffic={traffic}
             embedded
-            runLabel="Run"
+            runLabel={view.isRunning ? "Running…" : "Run simulation"}
             running={view.isRunning}
             onRateChange={props.onRateChange}
             onRun={() => startRun(props.onRun)}
@@ -103,46 +110,23 @@ export default function RunPanel(props: RunPanelProps) {
           <>
             <div hidden={activeView !== "overview"}>
               <RunSummary result={result} />
-              <RunFindings
-                result={result}
-                componentName={props.componentName}
-              />
+              <RunFindings result={result} componentName={props.componentName} />
             </div>
-            <div
-              hidden={activeView !== "comparison"}
-              className="ax-review-content"
-            >
+            <div hidden={activeView !== "metrics"}>
+              <RunMetrics result={result} />
+            </div>
+            <div hidden={activeView !== "comparison"}>
               {comparison ? (
                 <RunComparison comparison={comparison} />
               ) : (
-                <p className="ax-card-label">
-                  Run another test to compare it with this one.
-                </p>
+                <ReviewSection title="Compare runs">
+                  <p className="ax-review-note">Run another test to compare it with this one.</p>
+                </ReviewSection>
               )}
             </div>
           </>
         )}
       </div>
-      {result && (
-        <div className="ax-review-footer">
-          {activeView !== "settings" && (
-            <button
-              type="button"
-              className="ax-review-configure"
-              onClick={() => selectView("settings")}
-            >
-              Change traffic
-            </button>
-          )}
-          <button
-            type="button"
-            className="ax-review-configure"
-            onClick={props.onViewMetrics}
-          >
-            Detailed metrics
-          </button>
-        </div>
-      )}
     </div>
   )
 }

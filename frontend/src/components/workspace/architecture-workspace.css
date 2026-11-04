@@ -1,10 +1,9 @@
 /*
  * Visual system for the shared architecture workspace (/workspace, /learn, /challenge).
  *
- * Composition: one warm canvas with floating tool surfaces and pill handles. Type is
- * small and contrast comes from size, not weight. Elevation is reserved for the one
- * thing that floats over content: popovers. Blue means selection, focus or the primary
- * action; family colors appear only on tiny glyphs.
+ * Warm canvas, compact controls, and quiet floating surfaces. Component families
+ * keep their glyph colors through hover and selection. Dark fills identify primary
+ * actions; borders distinguish selected tools without competing with the graph.
  *
  * Everything is scoped under .ax-workspace because the legacy global stylesheets still
  * style bare button / input / h2 elements for the landing, auth and dashboard screens.
@@ -16,8 +15,11 @@
   position: relative;
   --ax-header-clearance: 72px;
   /* Color */
-  --ax-canvas: #f5f5f2;
-  --ax-surface: #fdfdfc;
+  --ax-canvas: #f5f5f5;
+  --ax-canvas-paper: #ffffff;
+  --ax-canvas-dot: #c7ddf0;
+  --ax-canvas-tint: #e4f3ff;
+  --ax-surface: #ffffff;
   --ax-ink: #111111;
   --ax-ink-soft: #4a4a46;
   --ax-muted: #77776f;
@@ -44,9 +46,11 @@
   --ax-s6: 32px;
 
   /* Radius: small and precise */
-  --ax-radius-xs: 4px;
-  --ax-radius-sm: 5px;
-  --ax-radius-md: 8px;
+  --ax-radius-xs: 3px;
+  --ax-radius-sm: 3px;
+  --ax-radius-md: 3px;
+  --ax-radius-dock: 3px;
+  --ax-radius-tool: 3px;
 
   /* Motion */
   --ax-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -98,6 +102,9 @@
 /* The header floats above the graph; only tool surfaces intercept canvas input. */
 .ax-workspace .ax-header {
   --ax-header-control-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   position: absolute;
   z-index: 30;
   top: 12px;
@@ -108,7 +115,7 @@
   gap: 16px;
   padding: 7px 8px 7px 18px;
   border: 1px solid var(--ax-line-strong);
-  border-radius: 999px;
+  border-radius: var(--ax-radius-dock);
   background: var(--ax-surface);
 }
 .ax-workspace .ax-header-project {
@@ -130,7 +137,7 @@
 .ax-workspace .ax-header .ax-action-primary {
   height: var(--ax-header-control-height);
   padding: 7px 15px;
-  border-radius: 999px;
+  border-radius: var(--ax-radius-dock);
   font-size: 12px;
 }
 .ax-workspace .ax-header .ax-action-primary:hover { background: var(--ax-ink-soft); }
@@ -163,6 +170,8 @@
     border-color var(--ax-fast) var(--ax-ease),
     color var(--ax-fast) var(--ax-ease);
 }
+.ax-workspace h1.ax-title { margin: 0; white-space: nowrap; }
+.ax-workspace .ax-title small { color: var(--ax-muted); font-size: 10px; font-weight: 400; }
 .ax-workspace .ax-title:hover {
   color: var(--ax-ink-soft);
 }
@@ -179,7 +188,7 @@
   height: var(--ax-header-control-height);
   padding: 6px 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ax-radius-dock);
   background: transparent;
   color: var(--ax-ink-soft);
   font-size: 12px;
@@ -202,7 +211,7 @@
   margin: 0;
   padding: 4px;
   border: 1px solid var(--ax-line-strong);
-  border-radius: 8px;
+  border-radius: var(--ax-radius-dock);
   background: var(--ax-surface);
   color: var(--ax-ink);
 }
@@ -244,6 +253,8 @@
   .ax-workspace .ax-header-project { gap: 10px; flex: 1; }
   .ax-workspace .ax-header .brand-wordmark-header { width: 100px; height: 28px; }
   .ax-workspace .ax-title { padding-left: 10px; font-size: 12px; }
+  .ax-workspace h1.ax-title { display: block; overflow: hidden; text-overflow: ellipsis; }
+  .ax-workspace .ax-title small { display: block; margin-top: 2px; font-size: 9px; }
   .ax-workspace .ax-title > svg { display: none; }
   .ax-workspace .ax-header .ax-save[data-state="saved"] { display: none; }
   .ax-workspace .ax-header-menu-trigger { gap: 4px; padding-inline: 8px; }
@@ -279,7 +290,7 @@
   transition: background-color var(--ax-base) var(--ax-ease);
 }
 .ax-workspace .ax-action-primary:hover {
-  background: var(--ax-accent);
+  background: var(--ax-ink-soft);
   color: #fff;
 }
 .ax-workspace .ax-action-primary .ax-arrow {
@@ -313,16 +324,16 @@
   color: var(--ax-danger);
 }
 
-/* Floating canvas tools share one surface and one pill handle. */
+/* Canvas tools share their footprint, borders and interaction states. */
 /* Let canvas interactions pass through the gap between the rail and its flyout.
    The visible surfaces below opt back into pointer events. */
 .ax-workspace .ax-canvas-panel {
   /* Panel text stays readable independently of the smaller diagram and header type. */
-  --ax-t-micro: 12px;
-  --ax-t-xs: 13px;
-  --ax-t-sm: 14px;
-  --ax-t-md: 15px;
-  --ax-t-lg: 16px;
+  --ax-t-micro: 10px;
+  --ax-t-xs: 11px;
+  --ax-t-sm: 12px;
+  --ax-t-md: 12px;
+  --ax-t-lg: 13px;
   --ax-muted: #4a4a46;
   --ax-subtle: #62625c;
 
@@ -342,11 +353,14 @@
   right: 16px;
   flex-direction: row-reverse;
 }
+.ax-workspace .ax-canvas-panel[data-side="left"] {
+  top: calc(var(--ax-header-clearance) + 12px);
+  left: 12px;
+  transform: none;
+  align-items: flex-start;
+}
 .ax-workspace .ax-panel-rail {
-  padding: 5px;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: 999px;
-  background: var(--ax-surface);
+  padding: 0;
   pointer-events: auto;
 }
 .ax-workspace .ax-panel-handle,
@@ -355,17 +369,34 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 38px;
+  width: 46px;
+  height: 46px;
   padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: var(--ax-radius-dock);
+  background: var(--ax-surface);
   color: var(--ax-ink-soft);
 }
 .ax-workspace .ax-panel-rail .ax-item .ax-item-glyph { width: 16px; height: 16px; }
 .ax-workspace .ax-panel-rail ul { margin: 0; padding: 0; list-style: none; }
-.ax-workspace [data-side="left"] .ax-panel-rail ul { display: grid; gap: 2px; }
+.ax-workspace [data-side="left"] .ax-panel-rail {
+  padding: 12px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 12px;
+  background: var(--ax-surface);
+}
+.ax-workspace [data-side="left"] .ax-panel-rail ul { display: grid; gap: 6px; }
+.ax-workspace [data-side="left"] .ax-panel-handle {
+  width: 120px;
+  height: 120px;
+  border-color: transparent;
+  border-radius: 12px;
+  background: transparent;
+}
+.ax-workspace [data-side="left"] .ax-panel-handle svg {
+  width: 38.4px;
+  height: 38.4px;
+}
 .ax-workspace .ax-component-menu ul { margin: 0; padding: 0; list-style: none; }
 .ax-workspace .ax-component-menu { overflow: hidden; }
 .ax-workspace .ax-component-list {
@@ -392,7 +423,7 @@
   left: calc(100% + 12px);
   padding: 6px 10px;
   border: 1px solid var(--ax-line-strong);
-  border-radius: 999px;
+  border-radius: var(--ax-radius-dock);
   background: var(--ax-surface);
   color: var(--ax-ink);
   font-size: var(--ax-t-md);
@@ -406,9 +437,44 @@
   .ax-workspace .ax-canvas-panel:not([data-hover-flyout]) .ax-panel-handle[aria-expanded="false"]:hover .ax-rail-name,
   .ax-workspace .ax-panel-rail .ax-item:hover .ax-component-name { display: block; }
 }
-.ax-workspace .ax-panel-handle:hover,
-.ax-workspace .ax-panel-handle[aria-expanded="true"] { background: var(--ax-line); }
-.ax-workspace .ax-panel-handle[aria-expanded="true"] { outline: 1px solid var(--ax-ink-soft); }
+/* Both docks share neutral hover surfaces; family colors remain on the glyphs. */
+.ax-workspace .ax-panel-handle[aria-expanded="true"] {
+  background: var(--ax-canvas);
+}
+.ax-workspace .ax-panel-handle[aria-expanded="true"] {
+  border-color: var(--ax-ink-soft);
+}
+.ax-workspace :is(.ax-panel-handle, .ax-inspector-section-toggle, .ax-inspector-header) {
+  transition: background-color var(--ax-fast) var(--ax-ease), border-color var(--ax-fast) var(--ax-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ax-workspace .ax-panel-handle:hover,
+  .ax-workspace .ax-inspector-section-toggle:hover:not(:disabled),
+  .ax-workspace .ax-inspector-header:hover { background: var(--ax-canvas); }
+}
+.ax-workspace .ax-panel-handle:active { background: var(--ax-line); }
+/* A small entrance confirms opening without moving the controls under the pointer. */
+.ax-workspace .ax-canvas-panel[data-side="left"] { --ax-panel-enter-x: -4px; }
+.ax-workspace .ax-canvas-panel[data-side="right"] { --ax-panel-enter-x: 4px; }
+.ax-workspace .ax-canvas-panel[data-hover-flyout] .ax-panel-content:not([hidden]),
+.ax-workspace .ax-inspector-section-content:not([hidden]) {
+  animation: ax-panel-open var(--ax-base) var(--ax-ease);
+}
+@keyframes ax-panel-open {
+  from { opacity: 0; transform: translateX(var(--ax-panel-enter-x)); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.ax-workspace .ax-panel-rail .ax-library-divider {
+  margin-top: 0;
+}
+.ax-workspace .ax-panel-handle:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: -3px; }
+.ax-workspace .ax-component-menu-header {
+  margin: -12px -12px 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--ax-line);
+}
+.ax-workspace .ax-component-menu .ax-item { border-radius: 3px; cursor: grab; }
+.ax-workspace .ax-component-menu .ax-item:active { background: var(--ax-canvas); cursor: grabbing; }
 .ax-workspace .ax-panel-content {
   width: 190px;
   font-size: var(--ax-t-sm);
@@ -417,7 +483,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--ax-line-strong);
-  border-radius: 16px;
+  border-radius: var(--ax-radius-dock);
   background: var(--ax-surface);
   pointer-events: auto;
 }
@@ -428,8 +494,9 @@
 .ax-workspace .ax-canvas-panel[data-hover-flyout] .ax-panel-content {
   position: absolute;
   left: calc(100% + 10px);
-  top: var(--ax-flyout-offset);
-  max-height: min(420px, calc(50dvh - var(--ax-flyout-offset) + 60px));
+  top: 0;
+  width: 240px;
+  max-height: min(520px, calc(100dvh - var(--ax-header-clearance) - 24px));
 }
 .ax-workspace .ax-canvas-panel[data-hover-flyout]:has(.ax-panel-content:not([hidden]))::after {
   content: "";
@@ -442,7 +509,7 @@
 }
 .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content { overflow: hidden; }
 .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:not([hidden]) { display: flex; flex-direction: column; }
-.ax-workspace .ax-canvas-panel[data-wide="true"] .ax-panel-content { width: 200px; }
+.ax-workspace .ax-canvas-panel[data-wide="true"] .ax-panel-content { width: 260px; }
 .ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content { width: 310px; }
 .ax-workspace .ax-panel-content .ax-search-input { height: 34px; }
 .ax-workspace .ax-panel-content .ax-panel-title { font-weight: 500; color: var(--ax-ink-soft); }
@@ -613,13 +680,20 @@
 
 /* ---- React Flow: canvas, controls, attribution ---- */
 
+/* One background layer per canvas, shared by every workspace mode and breakdown. */
+.ax-workspace .react-flow {
+  background-image:
+    radial-gradient(circle, var(--ax-canvas-dot) 0.8px, transparent 0.9px),
+    radial-gradient(ellipse at 100% 0%, var(--ax-canvas-tint), transparent 72%),
+    linear-gradient(var(--ax-canvas-paper), var(--ax-canvas-paper));
+  background-size: 20px 20px, 100% 100%, 100% 100%;
+  background-position: 10px 10px, 0 0, 0 0;
+}
+.ax-workspace .ax-workspace-canvas { background-image: none; }
+
+
 .ax-workspace .react-flow,
 .ax-workspace .ax-workspace-canvas {
-  /* Uniform graph-paper squares. */
-  background-image:
-    linear-gradient(to right, rgba(17, 17, 17, 0.07) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(17, 17, 17, 0.07) 1px, transparent 1px);
-  background-size: 24px 24px;
   --xy-background-color: var(--ax-canvas);
   --xy-edge-stroke: #b4b4af;
   --xy-edge-stroke-selected: var(--ax-accent);
@@ -635,11 +709,14 @@
   --xy-attribution-background-color: transparent;
 }
 
-/* Controls are present but nearly invisible; they show through interaction. */
+/* Zoom controls share the component rail surface. */
 .ax-workspace .react-flow__controls {
-  border: 0;
+  padding: 4px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: var(--ax-radius-dock);
+  background: var(--ax-surface);
   box-shadow: none;
-  opacity: 0.55;
+  opacity: 1;
   transition: opacity var(--ax-fast) var(--ax-ease);
 }
 .ax-workspace .react-flow__controls:hover,
@@ -647,8 +724,8 @@
   opacity: 1;
 }
 .ax-workspace .react-flow__controls-button {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border: 0;
   border-radius: var(--ax-radius-xs);
   transition:
@@ -656,8 +733,8 @@
     color var(--ax-fast) var(--ax-ease);
 }
 .ax-workspace .react-flow__controls-button svg {
-  width: 9px;
-  height: 9px;
+  width: 12px;
+  height: 12px;
 }
 
 /* Required by React Flow's license: kept readable, but quiet. */
@@ -690,7 +767,7 @@
   height: 27px;
   padding: 0 5px;
   border: 1px solid var(--ax-line-strong);
-  border-radius: 4px;
+  border-radius: 12px;
   background: var(--ax-surface);
   transition: border-color var(--ax-fast) var(--ax-ease);
 }
@@ -707,8 +784,8 @@
   color: var(--ax-family, var(--ax-muted));
 }
 .ax-workspace .ax-node .ax-node-glyph {
-  width: 9px;
-  height: 9px;
+  width: 12px;
+  height: 12px;
 }
 .ax-workspace .ax-node .ax-node-text {
   min-width: 0;
@@ -736,11 +813,11 @@
 .ax-workspace .ax-node:hover {
   border-color: var(--ax-subtle);
 }
-/* Selected: a 1px blue border and a hairline offset ring. Same size, no glow. */
+/* A second outline makes selection readable without relying on family color. */
 .ax-workspace .ax-node.is-selected,
 .ax-workspace .ax-node.is-selected:hover {
   border-color: var(--ax-accent);
-  outline: 1px solid rgba(29, 78, 216, 0.22);
+  outline: 1px solid var(--ax-ink);
   outline-offset: 2px;
 }
 .ax-workspace .react-flow__node.dragging .ax-node {
@@ -1296,7 +1373,7 @@
 .ax-workspace .ax-tech-tag {
   padding: 0 4px;
   border: 1px solid var(--ax-line);
-  border-radius: 999px;
+  border-radius: var(--ax-radius-dock);
   font-size: var(--ax-t-micro);
   color: var(--ax-muted);
 }
@@ -1367,6 +1444,661 @@
   opacity: .5;
 }
 
+/* Status surfaces share one anchored stack while retaining their own controls and scroll areas. */
+.ax-workspace .ax-canvas-status {
+  position: absolute;
+  bottom: 12px;
+  left: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: min(600px, calc(100% - 68px));
+  max-height: calc(100% - 24px);
+  min-height: 0;
+}
+.ax-workspace .ax-canvas-status > :is(.ax-live-dock, .ax-check) {
+  position: relative;
+  inset: auto;
+  max-width: 100%;
+  box-shadow: none;
+  pointer-events: auto;
+}
+.ax-workspace .ax-live-dock { flex-shrink: 0; border: 1px solid var(--ax-line-strong); border-radius: var(--ax-radius-dock); background: var(--ax-surface); }
+.ax-workspace .ax-live-dock > summary { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 8px 12px; font-size: 12px; cursor: pointer; list-style: none; }
+.ax-workspace .ax-live-dock > summary small { margin-left: auto; color: var(--ax-muted); font-family: var(--font-mono); font-size: 10px; }
+.ax-workspace .ax-live-dock > summary::-webkit-details-marker { display: none; }
+.ax-workspace .ax-live-dock > summary:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 2px; }
+.ax-workspace .ax-live-dock[open] > summary { border-bottom: 1px solid var(--ax-line); }
+.ax-workspace .ax-live-dock[open] > summary .ax-tool-chevron { transform: rotate(180deg); }
+.ax-workspace .ax-live-dock > .ax-live { position: relative; inset: auto; max-width: 100%; border: 0; border-radius: 0 0 var(--ax-radius-dock) var(--ax-radius-dock); box-shadow: none; }
+.ax-workspace .ax-canvas-status > .ax-check-panel { max-height: none; min-height: 0; flex-shrink: 1; }
+/* On phones the inspector uses the space above the measured status stack. */
+@media (max-width: 767px) {
+  .ax-workspace .ax-canvas-panel[data-side="left"] { position: absolute; top: calc(var(--ax-header-clearance) + 12px); left: 12px; margin: 0; }
+  .ax-workspace .ax-canvas-overlays { display: flex; flex-direction: column; gap: 12px; padding: 76px 12px 12px; }
+  .ax-workspace .ax-canvas-status {
+    position: static;
+    order: 2;
+    max-width: 100%;
+    max-height: 55%;
+    flex-shrink: 0;
+  }
+  .ax-workspace .ax-canvas-status > .ax-live-dock { width: 100%; }
+  .ax-workspace .ax-canvas-status > .ax-check-panel { width: 100%; }
+  .ax-workspace .ax-canvas-status > .ax-check-bar { max-width: 100%; }
+  .ax-workspace .ax-check-count { white-space: normal; }
+  .ax-workspace .ax-workspace-canvas .ax-canvas-overlays > .ax-inspector[data-side="right"] {
+    position: relative;
+    inset: auto;
+    order: 1;
+    align-self: flex-end;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+    width: calc(100% - 58px);
+    min-height: 0;
+    height: auto;
+    transform: none;
+  }
+  .ax-workspace .ax-workspace-canvas:has(.ax-live) .react-flow__controls { top: calc(var(--ax-header-clearance) + 76px); bottom: auto; }
+  .ax-workspace [data-side="left"] .ax-panel-rail > ul { display: flex; gap: 4px; }
+  .ax-workspace [data-side="left"] .ax-panel-handle { width: 40px; height: 40px; }
+  .ax-workspace .ax-panel-rail .ax-library-divider { margin: 0; }
+  .ax-workspace .ax-canvas-panel[data-hover-flyout] .ax-panel-content { left: 0; top: calc(100% + 8px); width: min(280px, calc(100vw - 24px)); }
+  .ax-workspace .ax-canvas-panel[data-hover-flyout]:has(.ax-panel-content:not([hidden]))::after { left: 0; top: 100%; width: 100%; height: 8px; }
+}
+
+/* Simulation controls use the same compact treatment as the canvas tools. */
+.ax-workspace .ax-review-view { display: flex; gap: 2px; padding: 8px; border-bottom: 1px solid var(--ax-line); }
+.ax-workspace .ax-review-view button { flex: 1; padding: 7px 4px; border: 1px solid transparent; border-radius: 3px; background: transparent; font-size: 11px; color: var(--ax-muted); white-space: nowrap; }
+.ax-workspace .ax-review-view button:hover:not(:disabled) { background: var(--ax-canvas); color: var(--ax-ink); }
+.ax-workspace .ax-review-view button[aria-pressed="true"] { background: var(--ax-canvas); border-color: var(--ax-line-strong); color: var(--ax-ink); }
+.ax-workspace .ax-review-view button:disabled { opacity: .4; cursor: default; }
+.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-rate { flex-direction: column; align-items: stretch; gap: 8px; margin-top: 0; }
+.ax-workspace .ax-stress-rate > span:last-child { padding: 8px 10px; border: 1px solid var(--ax-line-strong); border-radius: 3px; }
+.ax-workspace .ax-stress-rate .ax-stress-input { flex: 1; width: 100%; text-align: left; border: 0; font-size: 18px; }
+.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-run { min-height: 36px; margin-top: 16px; }
+@media (min-width: 1000px) {
+  .ax-workspace { --ax-header-clearance: 52px; }
+  .ax-workspace .ax-header { inset: 0 0 auto; border-width: 0 0 1px; border-radius: 0; padding-inline: 16px; }
+}
+
+/* Insertion below the canvas; analysis on the left; simulation in the header. */
+.ax-workspace .ax-canvas-panel[data-side="left"] { top: auto; bottom: 12px; left: 50%; margin: 0; transform: translateX(-50%); }
+.ax-workspace [data-side="left"] .ax-panel-rail { border-radius: 24px; padding: 10px; max-width: calc(100vw - 24px); overflow-x: auto; scrollbar-width: thin; }
+.ax-workspace [data-side="left"] .ax-panel-rail > ul { display: flex; gap: 4px; width: max-content; }
+.ax-workspace [data-side="left"] .ax-panel-handle { width: 54px; height: 46px; }
+.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content {
+  position: absolute; left: 50%; top: auto; bottom: calc(100% + 8px); transform: translateX(-50%);
+  width: min(540px, calc(100vw - 24px)); max-height: min(300px, calc(100dvh - 150px)); animation: none;
+}
+.ax-workspace .ax-canvas-panel[data-hover-flyout]:has(.ax-panel-content:not([hidden]))::after { left: 0; top: auto; bottom: 100%; width: 100%; height: 8px; }
+.ax-workspace [data-side="left"] .ax-rail-name { left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); }
+.ax-workspace .ax-canvas-overlays { display: block; padding: 0; }
+.ax-workspace .ax-workspace-canvas .ax-canvas-overlays > .ax-inspector[data-side="right"] {
+  position: absolute; inset: 12px auto 70px 12px; width: auto; height: auto; max-height: none;
+  align-items: flex-start; align-self: stretch; justify-content: flex-start; transform: none;
+}
+.ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame { width: 248px; max-width: calc(100vw - 24px); max-height: 100%; overflow-y: auto; }
+.ax-workspace .ax-canvas-panel.ax-inspector[data-expanded="true"] .ax-inspector-frame,
+.ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame:has(.ax-live-dock[open], .ax-check-panel) { width: 340px; }
+.ax-workspace .ax-inspector-frame .ax-inspector-tools { padding: 3px; gap: 2px; }
+.ax-workspace .ax-inspector-frame .ax-inspector-section-toggle { min-height: 34px; padding: 4px 8px; }
+.ax-workspace .ax-inspector .ax-canvas-status {
+  position: static; display: flex; flex-direction: column; align-items: stretch; gap: 0;
+  width: 100%; max-width: 100%; max-height: none; flex-shrink: 0;
+}
+.ax-workspace .ax-inspector .ax-canvas-status > :is(.ax-live-dock, .ax-check) { width: 100%; max-width: 100%; border: 0; border-top: 1px solid var(--ax-line); border-radius: 0; }
+.ax-workspace .ax-inspector .ax-live-dock > summary { min-height: 40px; padding: 8px 12px; gap: 6px; }
+.ax-workspace .ax-inspector .ax-live-dock > summary:hover { background: var(--ax-canvas); }
+.ax-workspace .ax-inspector .ax-live-row { flex-wrap: wrap; }
+.ax-workspace .ax-inspector .ax-check-bar { min-height: 40px; }
+.ax-workspace .ax-inspector .ax-check-panel { max-height: 300px; }
+.ax-workspace .ax-header .ax-inspector-section-toggle { flex: none; min-height: 34px; padding: 4px 10px; border-color: var(--ax-line-strong); }
+.ax-workspace .ax-header .ax-inspector-section-toggle:hover { background: var(--ax-canvas); }
+.ax-workspace .ax-header .ax-inspector-tool-icon { width: 18px; height: 18px; }
+.ax-workspace .ax-header .ax-inspector-section-toggle[aria-expanded="true"] { border-color: var(--ax-ink); }
+.ax-workspace .react-flow__controls,
+.ax-workspace .ax-workspace-canvas:has(.ax-live) .react-flow__controls { display: flex; flex-direction: row; align-items: center; top: auto; left: auto; right: 12px; bottom: 12px; margin: 0; padding: 3px; }
+.ax-workspace .react-flow__controls-button { width: 30px; height: 30px; }
+@media (max-width: 600px) {
+  .ax-workspace .ax-header .ax-inspector-status { display: none; }
+  .ax-workspace .ax-header .ax-inspector-section-toggle { padding-inline: 6px; gap: 4px; font-size: 11px; }
+  .ax-workspace .ax-header .brand-wordmark-header { width: 80px; }
+  .ax-workspace .ax-header-project { gap: 6px; }
+  .ax-workspace .ax-header-actions { gap: 4px; }
+  .ax-workspace .ax-header .ax-title { padding-left: 6px; }
+  .ax-workspace .ax-canvas-panel[data-side="left"] { left: 12px; transform: none; }
+  .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content { left: 0; transform: none; }
+  .ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame { width: 236px; }
+  .ax-workspace .ax-canvas-panel.ax-inspector[data-expanded="true"] .ax-inspector-frame,
+  .ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame:has(.ax-live-dock[open], .ax-check-panel) { width: min(340px, calc(100vw - 24px)); }
+  .ax-workspace .react-flow__controls-button { width: 26px; }
+}
+
+@media (max-width: 360px) {
+  .ax-workspace .react-flow__controls,
+  .ax-workspace .ax-workspace-canvas:has(.ax-live) .react-flow__controls { bottom: 66px; }
+}
+
+/* Wide, shallow component shelves leave the graph visible above the insertion tools. */
+.ax-workspace .ax-component-menu { padding: 8px; }
+.ax-workspace .ax-component-menu-header { margin: -8px -8px 4px; padding: 6px 12px; min-height: 32px; }
+.ax-workspace .ax-component-menu .ax-panel-title { padding: 0; font-size: 12px; }
+.ax-workspace .ax-component-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 8px; }
+.ax-workspace .ax-component-menu .ax-item { min-height: 36px; padding: 6px 8px; }
+.ax-workspace .ax-component-menu .ax-item:has([aria-expanded="true"]) { background: var(--ax-canvas); box-shadow: inset 0 -1px var(--ax-ink-soft); }
+.ax-workspace .ax-component-menu .ax-section-label { padding: 8px 8px 4px; }
+.ax-workspace .ax-component-menu .ax-tech-list { margin: 4px 0 0; padding: 8px 0 0; border-left: 0; border-top: 1px solid var(--ax-line); }
+.ax-workspace .ax-component-menu .ax-tech-basis { padding-inline: 8px; }
+.ax-workspace .ax-component-menu .ax-tech-list ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 8px; }
+.ax-workspace .ax-component-menu .ax-tech-option { padding: 6px 8px; }
+.ax-workspace .ax-component-menu .ax-tech-toggle { width: 24px; height: 24px; }
+.ax-workspace .ax-inspector-tools .ax-ai-portrait { width: 22px; height: 22px; }
+@media (max-width: 600px) {
+  .ax-workspace .ax-component-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; }
+  .ax-workspace .ax-component-menu .ax-tech-list ul { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Shared panel rhythm: compact rows, clear separators, and readable values. */
+.ax-workspace { --ax-panel-inset: 12px; --ax-panel-row: 40px; --ax-panel-type: 12px; --ax-panel-control: 32px; --ax-panel-disclosure: 36px; --ax-panel-meta: 11px; --ax-panel-gap: 8px; }
+.ax-workspace .ax-inspector-frame .ax-inspector-tools { padding: 0; }
+.ax-workspace .ax-inspector-frame .ax-inspector-section-toggle {
+  min-height: 40px; padding: 6px var(--ax-panel-inset); border: 0; border-radius: 0;
+  font-weight: 500;
+}
+.ax-workspace .ax-inspector-frame .ax-inspector-tool-icon { width: 22px; height: 22px; }
+.ax-workspace .ax-inspector .ax-live-dock > summary { min-height: 40px; padding: 8px var(--ax-panel-inset); }
+.ax-workspace .ax-inspector .ax-check-bar { min-height: var(--ax-panel-row); gap: 0; }
+.ax-workspace .ax-inspector .ax-check-pill { flex: 1; min-width: 0; min-height: var(--ax-panel-row); padding: 6px var(--ax-panel-inset); gap: 8px; justify-content: flex-start; font-weight: 500; border-radius: 0; }
+.ax-workspace .ax-inspector .ax-check-head,
+.ax-workspace .ax-inspector .ax-inspector-header,
+.ax-workspace .ax-inspector .ax-ai-focus-bar { min-height: 40px; padding: 8px var(--ax-panel-inset); }
+.ax-workspace .ax-inspector .ax-live-dock > .ax-live { padding: 10px var(--ax-panel-inset) 12px; }
+.ax-workspace .ax-inspector .ax-live-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 8px; }
+.ax-workspace .ax-inspector .ax-live-metric { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 6px 0; }
+.ax-workspace .ax-inspector .ax-live-metric + .ax-live-metric { padding-left: 0; border: 0; border-top: 1px solid var(--ax-line); }
+.ax-workspace .ax-inspector .ax-live-note { margin-top: 10px; line-height: 1.45; }
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-rate { flex-direction: row; align-items: center; gap: 12px; }
+.ax-workspace .ax-inspector .ax-stress-rate > span:last-child { min-width: 0; width: 150px; padding: 6px 8px; }
+.ax-workspace .ax-inspector .ax-stress-rate .ax-stress-input { font-size: 13px; }
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-presets { margin-top: 10px; }
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-run { margin-top: 12px; }
+.ax-workspace .ax-inspector .ax-inspector-archie { height: min(400px, 55dvh); }
+.ax-workspace .ax-inspector .ax-ai-messages { gap: 12px; padding: 12px; }
+.ax-workspace .ax-inspector .ax-ai-starters { margin-top: 8px; }
+.ax-workspace .ax-component-menu-header { min-height: 40px; padding-block: 8px; }
+
+/* Simulation belongs to its header trigger; all floating surfaces share the panel frame. */
+.ax-workspace .ax-simulation-anchor { position: relative; flex-shrink: 0; }
+.ax-workspace .ax-simulation-panel {
+  position: absolute; top: calc(100% + 12px); right: 0;
+  width: min(340px, calc(100vw - 32px)); z-index: 30;
+}
+.ax-workspace .ax-simulation-panel[hidden] { display: none; }
+.ax-workspace .ax-simulation-panel .ax-inspector-frame {
+  width: 100%; max-width: none; max-height: min(420px, calc(100dvh - 140px));
+}
+.ax-workspace .ax-simulation-panel .ax-review { overflow: hidden; }
+.ax-workspace :is(.ax-inspector-frame, .ax-panel-content, .ax-project-menu) {
+  border-color: var(--ax-line-strong); border-radius: var(--ax-radius-dock);
+  background: var(--ax-surface); box-shadow: none;
+}
+/* One visual contract for the picker, inspector, checks, simulation and history. */
+.ax-workspace :is(.ax-inspector, .ax-panel-content) {
+  font-size: var(--ax-panel-type); line-height: 1.5; color: var(--ax-ink);
+}
+.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-heading, .ax-component-menu-header, .ax-inspector-header, .ax-check-head, .ax-ai-header, .ax-ai-focus-bar) {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: var(--ax-panel-row); padding: 6px var(--ax-panel-inset);
+  border-bottom: 1px solid var(--ax-line); flex-shrink: 0;
+  background: var(--ax-surface);
+}
+.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-heading h2, .ax-panel-title, .ax-inspector-title, .ax-check-head h2, .ax-ai-title) {
+  margin: 0; padding: 0; color: var(--ax-ink); font-family: inherit;
+  font-size: var(--ax-panel-type); font-weight: 500; line-height: 20px;
+  letter-spacing: normal; text-transform: none;
+}
+.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-icon-btn, .ax-check-close) {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; flex-shrink: 0;
+  border: 0; border-radius: 2px; background: transparent; color: var(--ax-muted);
+}
+.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-icon-btn, .ax-check-close):hover {
+  background: var(--ax-canvas); color: var(--ax-ink);
+}
+.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-field, .ax-ai-input) {
+  min-height: var(--ax-panel-control); padding: 6px 8px;
+  border: 1px solid var(--ax-line-strong); border-radius: 2px;
+  background: var(--ax-surface); color: var(--ax-ink); font-size: var(--ax-panel-type);
+}
+.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-review-configure, .ax-check-fix button, .ax-check-undo, .ax-history-restore, .ax-ai-apply) {
+  min-height: var(--ax-panel-control); padding: 5px 10px;
+  border: 1px solid var(--ax-line-strong); border-radius: 2px;
+  background: var(--ax-surface); color: var(--ax-ink);
+  font-size: var(--ax-panel-type); font-weight: 500; line-height: 20px;
+}
+.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-review-configure, .ax-check-fix button, .ax-check-undo, .ax-history-restore, .ax-ai-apply):hover:not(:disabled) {
+  background: var(--ax-canvas); border-color: var(--ax-ink-soft);
+}
+.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--ax-ink); outline-offset: -2px;
+}
+.ax-workspace :is(.ax-inspector, .ax-panel-content) button:disabled { opacity: .45; cursor: default; }
+.ax-workspace .ax-inspector :is(.ax-live, .ax-ai-panel, .ax-card.ax-configure) { font-size: var(--ax-panel-type); }
+.ax-workspace .ax-inspector :is(.ax-history-save, .ax-review-footer, .ax-ai-composer) {
+  padding: 10px var(--ax-panel-inset); gap: 8px;
+}
+.ax-workspace .ax-inspector :is(.ax-inspector-meta, .ax-check-summary, .ax-live-note, .ax-card-label) {
+  font-size: 11px; line-height: 1.5; color: var(--ax-muted);
+}
+.ax-workspace .ax-inspector .ax-check-switch[aria-checked="true"] .ax-check-switch-track { background: var(--ax-ink); }
+.ax-workspace .ax-inspector .ax-check-switch-thumb { box-shadow: none; }
+
+.ax-workspace .ax-inspector .ax-stress-rate .ax-stress-input {
+  min-height: 0; padding: 0; border: 0; background: transparent;
+}
+
+/* The left dock uses one icon column and one trailing control column. */
+.ax-workspace .ax-inspector .ax-inspector-tool-icon { color: var(--ax-ink-soft); }
+.ax-workspace .ax-inspector .ax-live-dock > summary { gap: 8px; font-weight: 500; }
+.ax-workspace .ax-inspector :is(.ax-live-dock > summary small, .ax-check-count) { font: 400 11px/20px var(--font-sans); color: var(--ax-muted); }
+.ax-workspace .ax-inspector .ax-check-switch { padding: 6px 4px; }
+.ax-workspace .ax-inspector .ax-check-switch-track { width: 24px; height: 14px; }
+.ax-workspace .ax-inspector .ax-check-switch-thumb { width: 10px; height: 10px; }
+.ax-workspace .ax-inspector .ax-check-switch[aria-checked="true"] .ax-check-switch-thumb { transform: translateX(10px); }
+.ax-workspace .ax-inspector .ax-check-bar[data-off] { padding-left: var(--ax-panel-inset); gap: 8px; }
+.ax-workspace .ax-inspector .ax-check-off-label { padding: 0; font-weight: 500; }
+.ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] .ax-tool-chevron { transform: rotate(180deg); }
+.ax-workspace .ax-inspector .ax-check-head { gap: 8px; }
+.ax-workspace .ax-inspector .ax-inspector-frame { scrollbar-width: thin; scrollbar-color: var(--ax-line-strong) transparent; }
+.ax-workspace .ax-inspector .ax-ai-focus-bar { background: var(--ax-canvas); }
+
+/* Expanded surfaces: navigation at the edge, one readable content region. */
+.ax-workspace .ax-inspector .ax-review-view { padding: 0 12px; gap: 16px; }
+.ax-workspace .ax-inspector .ax-review-view button {
+  flex: 0 1 auto; min-height: 38px; padding: 8px 0;
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  background: transparent;
+}
+.ax-workspace .ax-inspector .ax-review-view button[aria-pressed="true"] {
+  border-color: var(--ax-ink); background: transparent; color: var(--ax-ink);
+}
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: var(--ax-panel-inset);
+}
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-rate { grid-column: 1 / -1; margin: 0; }
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-presets {
+  grid-column: 1 / -1; margin: 0; gap: 0; border: 1px solid var(--ax-line-strong); border-radius: 2px;
+}
+.ax-workspace .ax-inspector .ax-stress-preset {
+  border: 0; border-radius: 0; min-height: 30px; box-shadow: none;
+}
+.ax-workspace .ax-inspector .ax-stress-presets li + li { border-left: 1px solid var(--ax-line); }
+.ax-workspace .ax-inspector .ax-stress-preset[aria-pressed="true"] { background: var(--ax-canvas); box-shadow: inset 0 -2px var(--ax-ink); }
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] > .ax-card-label { align-self: center; margin: 0; }
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-run { width: auto; margin: 0; padding: 5px 10px; min-height: var(--ax-panel-control); border-radius: 2px; }
+.ax-workspace .ax-inspector .ax-stress [role="alert"] { grid-column: 1 / -1; }
+.ax-workspace .ax-component-menu .ax-library-group[data-detail] {
+  display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 0 12px;
+}
+.ax-workspace .ax-library-group[data-detail] > .ax-section-label { grid-column: 1 / -1; }
+.ax-workspace .ax-library-group[data-detail] > .ax-component-options { display: flex; flex-direction: column; gap: 2px; }
+.ax-workspace .ax-library-detail { min-width: 0; border-left: 1px solid var(--ax-line); padding: 8px 0 8px 12px; }
+.ax-workspace .ax-library-detail h3 { margin: 0; padding: 0 8px; font-size: 12px; font-weight: 500; }
+.ax-workspace .ax-component-menu .ax-library-detail .ax-tech-list { border: 0; margin: 4px 0 0; padding: 0; }
+.ax-workspace .ax-component-menu .ax-library-detail .ax-tech-list ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 8px; }
+.ax-workspace .ax-library-detail .ax-tech-list li { border-top: 1px solid var(--ax-line); }
+.ax-workspace .ax-component-menu .ax-tech-option { padding: 8px; }
+.ax-workspace .ax-component-menu .ax-item:has([aria-expanded="true"]) { box-shadow: inset 2px 0 var(--ax-ink); }
+.ax-workspace .ax-inspector .ax-check-finding-body { padding: 0 0 12px; line-height: 1.5; }
+.ax-workspace .ax-inspector .ax-check-summary { padding-bottom: 2px; }
+.ax-workspace .ax-inspector .ax-check-fix { gap: 6px; margin-top: 10px; }
+.ax-workspace .ax-inspector .ax-inspector-details.ax-panel-disclosure > summary { padding-inline: var(--ax-panel-inset); }
+@media (max-width: 600px) {
+  .ax-workspace .ax-component-menu .ax-library-group[data-detail] { grid-template-columns: 112px minmax(0, 1fr); gap: 8px; }
+  .ax-workspace .ax-library-detail { padding-left: 8px; }
+  .ax-workspace .ax-component-menu .ax-library-detail .ax-tech-list ul { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Utility launcher: consistent targets, quiet metadata, one action per row. */
+.ax-workspace .ax-inspector .ax-check-bar { padding: 0; }
+.ax-workspace .ax-inspector-frame .ax-inspector-section-toggle,
+.ax-workspace .ax-inspector .ax-live-dock > summary,
+.ax-workspace .ax-inspector .ax-check-pill {
+  min-height: var(--ax-panel-row); padding: 6px var(--ax-panel-inset); gap: var(--ax-panel-gap);
+  font-size: var(--ax-panel-type); font-weight: 500; line-height: 20px;
+  color: var(--ax-ink); cursor: pointer;
+}
+.ax-workspace .ax-inspector .ax-inspector-tool-icon { width: 22px; height: 22px; flex: 0 0 22px; }
+.ax-workspace .ax-inspector .ax-check-pill > svg,
+.ax-workspace .ax-inspector .ax-live-dock > summary > svg,
+.ax-workspace .ax-inspector .ax-tool-chevron { flex-shrink: 0; color: var(--ax-muted); }
+.ax-workspace .ax-inspector .ax-check-count { margin-left: auto; white-space: nowrap; }
+.ax-workspace .ax-inspector .ax-check-pill:hover,
+.ax-workspace .ax-inspector .ax-live-dock > summary:hover,
+.ax-workspace .ax-inspector .ax-inspector-section-toggle:hover:not(:disabled) { background: var(--ax-canvas); }
+.ax-workspace .ax-inspector .ax-inspector-section-toggle[aria-expanded="true"],
+.ax-workspace .ax-inspector .ax-live-dock[open] > summary,
+.ax-workspace .ax-inspector .ax-check-panel > .ax-check-head { box-shadow: inset 2px 0 var(--ax-ink); }
+/* Every launcher row: one 22px icon column, label, tabular meta, chevron. Open state is the inset rule, not weight or fill. */
+.ax-workspace .ax-inspector .ax-inspector-section-toggle[aria-expanded="true"] { background: transparent; }
+.ax-workspace .ax-inspector .ax-inspector-section-toggle[aria-expanded="true"] .ax-inspector-section-label { font-weight: 500; }
+.ax-workspace .ax-inspector .ax-inspector-tool-icon .ax-ai-portrait { width: 20px; height: 20px; border: 1px solid var(--ax-line-strong); }
+.ax-workspace .ax-inspector :is(.ax-live-dock > summary small, .ax-check-count) { font-variant-numeric: tabular-nums; }
+.ax-workspace .ax-inspector .ax-tool-chevron { width: 13px; height: 13px; transition: transform 120ms ease; }
+.ax-workspace .ax-inspector .ax-check-head .ax-check-switch { margin-left: auto; }
+.ax-workspace .ax-inspector .ax-check-head h2 { flex: 0 1 auto; }
+@media (prefers-reduced-motion: reduce) {
+  .ax-workspace .ax-inspector .ax-tool-chevron { transition: none; }
+}
+
+/* Panel interiors use document hierarchy rather than nested containers. */
+.ax-workspace .ax-inspector :is(.ax-review-content, .ax-ai-messages) { padding: var(--ax-panel-inset); gap: 12px; }
+.ax-workspace .ax-inspector :is(.ax-review-finding-title p, .ax-check-title, .ax-ai-answer) { font-size: var(--ax-panel-type); line-height: 1.5; }
+.ax-workspace .ax-inspector :is(.ax-review-finding, .ax-check-finding-body) { line-height: 1.6; }
+.ax-workspace .ax-inspector .ax-review-context { align-items: baseline; padding-bottom: 4px; }
+.ax-workspace .ax-inspector .ax-review-finding-title { align-items: start; }
+.ax-workspace .ax-inspector .ax-check-body { padding: 0 var(--ax-panel-inset) var(--ax-panel-inset); }
+.ax-workspace .ax-inspector .ax-check-finding-body { padding-left: 0; color: var(--ax-ink-soft); }
+.ax-workspace .ax-inspector .ax-check-fix { padding-top: 8px; }
+.ax-workspace .ax-inspector .ax-check-effect { padding-top: 4px; line-height: 1.6; }
+.ax-workspace .ax-inspector .ax-ai-starters { margin-left: 35px; }
+.ax-workspace .ax-inspector .ax-ai-starter { padding: 10px 0; font-size: 12px; line-height: 1.5; }
+.ax-workspace .ax-inspector .ax-ai-composer { padding: var(--ax-panel-inset); }
+.ax-workspace .ax-inspector .ax-ai-input { min-height: 64px; padding: 8px 10px; }
+.ax-workspace .ax-inspector .ax-card.ax-configure { padding: var(--ax-panel-inset); }
+.ax-workspace .ax-inspector .ax-configure .ax-card-section { margin-top: 16px; padding-top: 12px; }
+.ax-workspace .ax-inspector .ax-configure-properties { gap: 12px 16px; }
+.ax-workspace .ax-inspector .ax-configure-type-value { border: 0; background: transparent; padding-left: 0; }
+.ax-workspace .ax-library-detail .ax-tech-head { flex-wrap: wrap; }
+.ax-workspace .ax-library-detail .ax-tech-name { font-size: 12px; color: var(--ax-ink); }
+.ax-workspace .ax-library-detail .ax-tech-meta { font-size: 11px; line-height: 1.5; }
+.ax-workspace .ax-library-detail .ax-tech-option { gap: 3px; }
+
+/* Property editing follows the same label/value rhythm as metric readouts. */
+.ax-workspace .ax-inspector .ax-configure-properties { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.ax-workspace .ax-inspector .ax-configure-properties > .ax-configure-property {
+  display: grid; grid-template-columns: minmax(0, 1fr) 108px;
+  align-items: center; gap: 4px 12px; padding: 8px 0;
+}
+.ax-workspace .ax-inspector .ax-configure-properties > .ax-configure-property + .ax-configure-property { border-top: 1px solid var(--ax-line); }
+.ax-workspace .ax-inspector .ax-configure-properties .ax-field { margin-top: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.ax-workspace .ax-inspector .ax-configure-properties .ax-card-label:first-child { color: var(--ax-ink); font-size: 12px; }
+.ax-workspace .ax-inspector .ax-configure-properties p { grid-column: 1 / -1; margin: 0; }
+.ax-workspace :is(.ax-component-list, .ax-check-body, .ax-review-scroll, .ax-ai-messages, .ax-inspector-frame) {
+  overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--ax-line-strong) transparent;
+}
+.ax-workspace .ax-inspector :is(.ax-field, .ax-ai-input):hover:not(:disabled) { border-color: var(--ax-muted); }
+.ax-workspace .ax-inspector :is(.ax-field, .ax-ai-input)[aria-invalid="true"] { border-color: var(--ax-danger); }
+.ax-workspace .ax-inspector [role="alert"] { color: var(--ax-danger); }
+.ax-workspace .ax-inspector .ax-review-view { gap: 12px; }
+.ax-workspace .ax-inspector .ax-review-view button { min-width: 0; white-space: normal; line-height: 1.4; }
+.ax-workspace .ax-inspector .ax-tech-label-row { display: flex; align-items: center; justify-content: space-between; min-height: 28px; }
+.ax-workspace .ax-inspector .ax-tech-label-row .ax-card-label { color: var(--ax-ink); font-size: 12px; }
+.ax-workspace .ax-inspector .ax-tech-search { margin: 4px 0 8px; }
+.ax-workspace .ax-inspector .ax-tech-comparison-context { padding: 4px 0 8px; }
+.ax-workspace .ax-inspector .ax-property-unit { display: block; margin-top: 2px; color: var(--ax-muted); font-size: 10px; font-weight: 400; }
+.ax-workspace .ax-inspector .ax-property-default:not([data-overridden]) { display: none; }
+.ax-workspace .ax-inspector .ax-configure-property:focus-within .ax-property-default { display: block; }
+.ax-workspace .ax-inspector .ax-panel-disclosure > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: var(--ax-panel-disclosure); padding: 8px 0; list-style: none; cursor: pointer; font-size: var(--ax-panel-type); font-weight: 500; line-height: 20px; color: var(--ax-ink-soft);
+}
+.ax-workspace .ax-panel-disclosure > summary::-webkit-details-marker { display: none; }
+.ax-workspace .ax-panel-disclosure > summary:hover { color: var(--ax-ink); background: var(--ax-canvas); }
+.ax-workspace .ax-panel-disclosure[open] > summary > svg { transform: rotate(180deg); }
+.ax-workspace .ax-inspector .ax-live-details { margin-top: 8px; border-top: 1px solid var(--ax-line); }
+.ax-workspace .ax-inspector .ax-live-details .ax-live-row { margin-top: 0; }
+
+/* Shared primitives for panel readouts, disclosures and actions. */
+.ax-workspace .ax-inspector .ax-panel-metrics {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin: 0;
+}
+.ax-workspace .ax-inspector .ax-panel-metrics > div {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; padding: 8px 0; border: 0;
+}
+.ax-workspace .ax-inspector .ax-panel-metrics > div + div { border-top: 1px solid var(--ax-line); }
+.ax-workspace .ax-inspector .ax-panel-metrics :is(dt, .ax-live-label) { color: var(--ax-muted); font-size: var(--ax-panel-meta); }
+.ax-workspace .ax-inspector .ax-panel-metrics :is(dd, .ax-live-value) {
+  margin: 0; color: var(--ax-ink); font: 500 var(--ax-panel-type)/20px var(--font-mono);
+  font-variant-numeric: tabular-nums; letter-spacing: normal; text-align: right;
+}
+.ax-workspace .ax-inspector :is(.ax-check-title, .ax-review-finding-title) {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 13px;
+  align-items: center; gap: var(--ax-panel-gap); min-height: var(--ax-panel-row);
+  margin: 0; padding: 10px 0; font-size: var(--ax-panel-type); line-height: 1.5;
+}
+.ax-workspace .ax-inspector :is(.ax-check-title, .ax-review-finding-title):hover { background: var(--ax-canvas); }
+.ax-workspace .ax-inspector :is(.ax-check-title .ax-check-severity, .ax-review-finding-title .ax-review-severity) {
+  margin: 0; padding: 0; font-size: var(--ax-panel-meta); font-weight: 400; color: var(--ax-muted);
+}
+.ax-workspace .ax-inspector .ax-check-uptime > summary > strong { margin-left: auto; font: 500 var(--ax-panel-meta)/20px var(--font-mono); }
+.ax-workspace .ax-inspector .ax-configure :is(label.ax-card-label, .ax-tech-label-row .ax-card-label, .ax-configure-type > .ax-card-label) {
+  color: var(--ax-ink); font-size: var(--ax-panel-type); font-weight: 400;
+}
+.ax-workspace .ax-inspector .ax-inspector-heading > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.ax-workspace .ax-inspector .ax-inspector-meta { margin: 0; }
+.ax-workspace .ax-inspector .ax-panel-action {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: var(--ax-panel-control); padding: 5px 10px;
+  border: 1px solid var(--ax-line-strong); border-radius: 2px;
+  background: var(--ax-surface); color: var(--ax-ink);
+  font: 500 var(--ax-panel-type)/20px var(--font-sans); text-decoration: none; cursor: pointer;
+}
+.ax-workspace .ax-inspector .ax-panel-action:hover:not(:disabled) { border-color: var(--ax-muted); background: var(--ax-canvas); text-decoration: none; opacity: 1; }
+.ax-workspace .ax-inspector .ax-panel-action[data-variant="primary"] { border-color: var(--ax-ink); background: var(--ax-ink); color: var(--ax-surface); }
+.ax-workspace .ax-inspector .ax-panel-action[data-variant="primary"]:hover:not(:disabled) { background: var(--ax-ink-soft); }
+.ax-workspace .ax-inspector .ax-panel-action:disabled { opacity: .45; cursor: default; }
+
+@media (max-width: 420px) {
+  .ax-workspace .ax-inspector .ax-configure-identity { grid-template-columns: minmax(0, 1fr); }
+  .ax-workspace .ax-inspector .ax-configure-type { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .ax-workspace .ax-inspector .ax-configure-type-value { min-height: 0; margin: 0; padding: 0; }
+  .ax-workspace .ax-inspector .ax-review-view { gap: 8px; }
+}
+
+/* ---- Bottom bar: component library and canvas tools ----
+   The library keeps its grid and dropdowns with a compact, even rhythm (30px rows) so the
+   flyout stays shallow over the canvas. Scoped through .ax-panel-content to win over the
+   shared panel header and button rules. */
+.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) {
+  width: min(500px, calc(100vw - 24px)); max-height: min(280px, calc(100dvh - 150px));
+}
+.ax-workspace .ax-panel-content .ax-component-menu { padding: 6px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-component-menu-header {
+  min-height: var(--ax-panel-row); margin: -6px -6px 4px; padding: 4px 6px 4px 12px;
+}
+.ax-workspace .ax-panel-content .ax-component-menu .ax-panel-title { font-size: 12px; line-height: 20px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-icon-btn { width: 24px; height: 24px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-search-input { height: 28px; }
+.ax-workspace .ax-panel-content .ax-component-options { gap: 2px 6px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-item { min-height: 30px; padding: 4px 6px 4px 8px; gap: 8px; font-size: 12px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-tech-toggle { width: 22px; height: 22px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-section-label { padding: 8px 8px 4px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-library-group[data-detail] { grid-template-columns: 144px minmax(0, 1fr); gap: 0 10px; }
+.ax-workspace .ax-panel-content .ax-library-detail { padding: 4px 0 4px 10px; }
+.ax-workspace .ax-panel-content .ax-library-detail h3 { padding: 0 8px; line-height: 24px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-tech-list { margin: 0; padding: 4px 0 0; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-tech-basis { margin: 0; padding: 0 8px 4px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-tech-option { gap: 2px; padding: 6px 8px; }
+@media (max-width: 600px) {
+  .ax-workspace .ax-panel-content .ax-component-menu .ax-library-group[data-detail] { grid-template-columns: 112px minmax(0, 1fr); }
+}
+
+/* Canvas tools after the categories: a hairline separates them from the library. */
+.ax-workspace [data-side="left"] .ax-panel-rail .ax-rail-separator {
+  align-self: center; width: 1px; height: 22px; margin: 0 4px; background: var(--ax-line-strong);
+}
+.ax-workspace .ax-panel-handle .ax-ai-portrait { width: 20px; height: 20px; border-width: 1px; }
+.ax-workspace .ax-panel-handle:disabled { opacity: .45; cursor: default; }
+.ax-workspace .ax-panel-handle:disabled:hover { background: transparent; }
+/* Design check's finding count: real state, kept small and neutral. */
+.ax-workspace .ax-rail-badge {
+  position: absolute; top: 3px; right: 3px; min-width: 15px; height: 15px; padding: 0 4px;
+  border-radius: 8px; background: var(--ax-ink); color: var(--ax-surface);
+  font: 600 9px/15px var(--font-mono); font-variant-numeric: tabular-nums; text-align: center;
+  pointer-events: none;
+}
+
+/* Live estimates and Design check open in the bar's flyout, sized to their content. */
+.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-tool-flyout) {
+  width: min(340px, calc(100vw - 24px)); max-height: min(420px, calc(100dvh - 150px));
+}
+.ax-workspace .ax-tool-flyout { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+.ax-workspace .ax-tool-flyout .ax-live {
+  position: static; max-width: none; padding: 10px var(--ax-panel-inset) 12px;
+  border: 0; border-radius: 0; background: transparent;
+}
+.ax-workspace .ax-tool-flyout .ax-check.ax-check-panel {
+  position: static; width: auto; max-height: none; min-height: 0;
+  border: 0; border-radius: 0;
+}
+.ax-workspace .ax-tool-flyout .ax-check-panel > .ax-check-head { box-shadow: none; }
+
+/* Archie docks to the right edge as a slim, full-height side panel (below the header) instead
+   of a floating card, so a conversation has room while the canvas stays visible beside it. */
+@media (min-width: 768px) {
+  .ax-workspace .ax-workspace-canvas .ax-canvas-overlays > .ax-inspector[data-archie] {
+    inset: 0 0 0 auto; height: 100%; align-items: stretch;
+  }
+  .ax-workspace .ax-canvas-panel.ax-inspector[data-archie] .ax-inspector-frame {
+    width: 320px; height: 100%; max-height: none;
+    border: 0; border-left: 1px solid var(--ax-line-strong); border-radius: 0;
+    overflow: hidden;
+  }
+  .ax-workspace .ax-inspector[data-archie] .ax-inspector-section:has(> .ax-inspector-archie) {
+    flex: 1 1 auto; min-height: 0; border-top: 0;
+  }
+  .ax-workspace .ax-inspector[data-archie] .ax-inspector-component + .ax-inspector-section:has(> .ax-inspector-archie) {
+    border-top: 1px solid var(--ax-line);
+  }
+  .ax-workspace .ax-inspector[data-archie] .ax-inspector-archie { height: 100%; }
+  /* Keep the zoom controls clear of the docked panel. */
+  .ax-workspace .ax-workspace-canvas:has(.ax-inspector[data-archie]) .react-flow__controls { right: 332px; }
+}
+
+/* Simulation docks to the right edge with the same size as Archie's panel: 320px wide,
+   full height below the header. The two never show together (opening one closes the other). */
+@media (min-width: 768px) {
+  .ax-workspace .ax-simulation-panel {
+    position: fixed; top: var(--ax-header-clearance); right: 0; bottom: 0; width: 320px;
+  }
+  .ax-workspace .ax-simulation-panel .ax-inspector-frame {
+    width: 100%; height: 100%; max-height: none;
+    border: 0; border-left: 1px solid var(--ax-line-strong); border-radius: 0;
+  }
+  .ax-workspace:has(.ax-simulation-panel:not([hidden])) .ax-workspace-canvas .react-flow__controls { right: 332px; }
+}
+
+/* ---- Simulation: one stack of identical sections ----
+   Traffic, Last run, Findings, Scores and Compare share one anatomy: a head (title left,
+   muted meta right), then rows or controls; 12px inset and a hairline between sections. */
+.ax-workspace .ax-inspector .ax-review-section {
+  display: grid; gap: 8px; margin: 0; padding: 12px var(--ax-panel-inset) 14px;
+  border: 0; border-bottom: 1px solid var(--ax-line); border-radius: 0; background: transparent;
+}
+.ax-workspace .ax-inspector .ax-review-section-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-height: 20px;
+}
+.ax-workspace .ax-inspector .ax-review-section-head h3 { margin: 0; color: var(--ax-ink); font-size: 12px; font-weight: 500; line-height: 20px; }
+.ax-workspace .ax-inspector .ax-review-section-head > span {
+  color: var(--ax-muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.ax-workspace .ax-inspector .ax-review-health { color: var(--ax-ink); text-transform: capitalize; }
+.ax-workspace .ax-inspector .ax-review-health[data-demand="exceeds"] { color: var(--ax-danger); }
+.ax-workspace .ax-inspector .ax-review-note { margin: 0; color: var(--ax-muted); font-size: 11px; line-height: 1.5; }
+.ax-workspace .ax-inspector .ax-review-section .ax-panel-metrics { margin: 0; }
+.ax-workspace .ax-inspector .ax-review-scores > div:first-child :is(dt, dd) { color: var(--ax-ink); font-weight: 500; }
+.ax-workspace .ax-inspector .ax-review-comparison dd { display: flex; align-items: baseline; justify-content: flex-end; gap: 6px; font-size: 11px; }
+.ax-workspace .ax-inspector .ax-review-comparison small { margin: 0; color: var(--ax-muted); font: 400 10px/1 var(--font-sans); }
+.ax-workspace .ax-inspector .ax-review-section .ax-inspector-findings { margin: 0; }
+.ax-workspace .ax-inspector .ax-review-section .ax-review-finding-title { padding-inline: 0; }
+
+/* Traffic section controls. */
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-rate {
+  display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; margin: 0;
+  color: var(--ax-ink-soft); font-size: 12px;
+}
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-presets { display: flex; margin: 0; }
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-presets li { flex: 1; }
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-preset { width: 100%; }
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-run {
+  display: flex; justify-content: center; width: 100%; min-height: 32px; margin: 0; padding: 6px 12px;
+}
+
+/* Notices sit between Traffic and the results as a slim status row. */
+.ax-workspace .ax-inspector .ax-review-notices { margin: 0; padding: 8px var(--ax-panel-inset); border-bottom: 1px solid var(--ax-line); }
+
+/* Tabs: one per part of a run, in the section heads' type (12px), underlined when open. */
+.ax-workspace .ax-inspector .ax-review-view {
+  display: flex; gap: 16px; padding: 0 var(--ax-panel-inset); border-bottom: 1px solid var(--ax-line);
+}
+.ax-workspace .ax-inspector .ax-review-view button {
+  flex: 0 0 auto; min-height: 36px; padding: 8px 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  background: transparent; color: var(--ax-muted); font-size: 12px; font-weight: 400; line-height: 18px; white-space: nowrap;
+}
+.ax-workspace .ax-inspector .ax-review-view button:hover:not(:disabled) { background: transparent; color: var(--ax-ink); }
+.ax-workspace .ax-inspector .ax-review-view button[aria-pressed="true"] { border-color: var(--ax-ink); color: var(--ax-ink); font-weight: 500; }
+
+/* Docked: the active tab scrolls inside the full-height panel. */
+@media (min-width: 768px) {
+  .ax-workspace .ax-simulation-panel .ax-inspector-frame > .ax-review { flex: 1 1 auto; min-height: 0; }
+  .ax-workspace .ax-simulation-panel .ax-review-scroll { flex: 1 1 auto; }
+}
+
+/* ---- Bottom-bar tool panels: Live estimates and Design check read alike ----
+   Same header (icon, title, state on the right, controls, close), same body inset,
+   same row rhythm, same disclosure at the end. */
+.ax-workspace .ax-tool-flyout .ax-tool-head { justify-content: flex-start; gap: 8px; padding: 6px 6px 6px var(--ax-panel-inset); }
+.ax-workspace .ax-tool-head-icon {
+  display: inline-grid; place-items: center; width: 16px; height: 16px; flex-shrink: 0; color: var(--ax-ink-soft);
+}
+.ax-workspace .ax-tool-flyout .ax-tool-head h2 { flex: 0 1 auto; min-width: 0; white-space: nowrap; }
+.ax-workspace .ax-tool-flyout .ax-tool-head h2:focus { outline: none; }
+.ax-workspace .ax-tool-head-meta {
+  display: inline-flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0;
+  color: var(--ax-muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.ax-workspace .ax-tool-head-meta[title] { cursor: help; }
+.ax-workspace .ax-tool-head .ax-check-switch { margin: 0; }
+.ax-workspace .ax-tool-panel[data-health="healthy"] .ax-live-dot { background: #16a34a; }
+.ax-workspace .ax-tool-panel[data-health="warning"] .ax-live-dot { background: #d97706; }
+.ax-workspace .ax-tool-panel[data-health="critical"] .ax-live-dot { background: var(--ax-danger); }
+.ax-workspace .ax-tool-head .ax-live-dot { width: 6px; height: 6px; }
+
+/* One body inset for both panels. */
+.ax-workspace .ax-tool-flyout .ax-live,
+.ax-workspace .ax-tool-flyout .ax-check-body { padding: 4px var(--ax-panel-inset) 8px; }
+.ax-workspace .ax-tool-flyout .ax-live-row { margin-top: 0; }
+.ax-workspace .ax-tool-flyout .ax-check-applied { margin: 8px var(--ax-panel-inset) 0; }
+
+/* Rows: metric rows and finding rows share one height and hairline. */
+.ax-workspace .ax-tool-flyout .ax-panel-metrics > div { min-height: 36px; align-items: center; padding: 6px 0; }
+.ax-workspace .ax-tool-flyout .ax-check-title { min-height: 36px; padding-block: 6px; }
+.ax-workspace .ax-tool-flyout .ax-check-list li:first-child { border-top: 0; }
+.ax-workspace .ax-tool-flyout :is(.ax-check-note, .ax-live-note) { margin: 8px 0 4px; color: var(--ax-muted); font-size: 11px; line-height: 1.5; }
+
+/* The closing disclosure (More metrics / Availability calculation) looks the same in both. */
+.ax-workspace .ax-tool-flyout :is(.ax-live-details, .ax-check-uptime) { margin-top: 0; border-top: 1px solid var(--ax-line); }
+.ax-workspace .ax-tool-flyout :is(.ax-live-details, .ax-check-uptime) > summary {
+  display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 0;
+  color: var(--ax-ink-soft); font-size: 12px; font-weight: 500;
+}
+.ax-workspace .ax-tool-flyout .ax-live-details > summary > svg { margin-left: auto; }
+.ax-workspace .ax-tool-flyout .ax-check-uptime > summary > strong { margin-left: auto; }
+
+/* Phones: the bottom bar (library plus tools) spans the width, so the zoom controls sit above it. */
+@media (max-width: 600px) {
+  .ax-workspace .react-flow__controls,
+  .ax-workspace .ax-workspace-canvas:has(.ax-live) .react-flow__controls { bottom: 66px; }
+  /* An open bar flyout covers that corner; hide the zoom controls until it closes. */
+  .ax-workspace:has([data-side="left"] .ax-panel-content:not([hidden])) .react-flow__controls { visibility: hidden; }
+}
+
 .ax-workspace .ax-header { box-shadow: 0 3px 12px rgb(0 0 0 / 12%); }
 .ax-workspace .ax-theme-toggle { border-radius: 50%; }
 .ax-workspace .ax-title { font-size: 19.5px; font-weight: 700; }
@@ -1395,4 +2127,46 @@
   .ax-workspace .ax-canvas-panel[data-learn-movable] {
     top: calc(12px + var(--ax-learn-offset, 0px));
   }
+}
+
+/* Numbered lesson instructions stay below the header, rather than vertically centered. */
+.ax-workspace .ax-canvas-panel[data-learn-movable] {
+  top:calc(12px + var(--ax-learn-offset, 0px));
+  transform:none;
+  max-height:calc(100% - 112px);
+}
+.ax-workspace .ax-canvas-panel[data-learn-collapsed="true"] { display:none; }
+.ax-workspace .ax-canvas-panel[data-learn-movable] .ax-panel-content {
+  width:min(380px, calc(100vw - 32px));
+  max-height:100%;
+  border-radius:24px;
+}
+.ax-workspace .ax-panel-content .ax-card.ax-learn { border-radius:24px; }
+.ax-workspace .ax-learn-header { grid-template-columns:minmax(0,1fr) 40px 30px; }
+.ax-workspace .ax-learn-header .ax-card-title { font-size:calc(var(--ax-t-md) * 2); line-height:1.25; color:var(--ax-ink); }
+.ax-workspace .ax-learn .ax-learn-speech { background:#fff; border-color:#109bfd; color:#000; border-radius:12px; }
+.ax-workspace .ax-learn .ax-learn-speech::before { background:#fff; border-color:#109bfd; }
+.ax-workspace .ax-learn .ax-learn-speech .ax-card-body { color:#000; }
+@media(max-width:767px) {
+  .ax-workspace .ax-canvas-panel[data-learn-movable] { top:calc(12px + var(--ax-learn-offset, 0px)); max-height:calc(100% - 112px); }
+  .ax-workspace .ax-canvas-panel[data-learn-movable] .ax-panel-content { max-height:min(55dvh, 100%); }
+}
+
+/* Component categories open on hover, with a safe gap into the flyout. */
+.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) { border-radius:20px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-panel-title { font-size:15px; line-height:22px; font-weight:600; }
+
+/* The header runs the design model; Run as app remains a separate project action. */
+.ax-workspace .ax-header .ax-run-button {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:36px; padding:8px 18px; border:1px solid #155dfc; border-radius:12px;
+  background:#155dfc; color:#fff; font-size:13px; font-weight:600; cursor:pointer;
+}
+.ax-workspace .ax-header .ax-run-button:hover:not(:disabled) { background:#1447e6; border-color:#1447e6; }
+.ax-workspace .ax-header .ax-run-button:active:not(:disabled) { background:#193cb8; }
+.ax-workspace .ax-header .ax-run-button:disabled { opacity:.6; cursor:wait; }
+/* React Flow's viewport already begins below the header, so no second header offset. */
+.ax-workspace .ax-workspace-canvas .ax-diagram-viewport .react-flow__controls,
+.ax-workspace.ax-breakdown .ax-breakdown-canvas .react-flow__controls {
+  top:12px; left:12px; right:auto; bottom:auto; margin:0; visibility:visible;
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useMemo, useState, type CSSProperties, type DragEvent } from "react";
+import { Gauge, ShieldCheck } from "lucide-react";
 import {
   Controls,
+  ConnectionLineType,
   MarkerType,
   ReactFlow,
   ReactFlowProvider,
@@ -38,8 +40,9 @@ import { ArchieContext, ArchieEnabledContext } from "./ArchieContext";
 import { DesignTrafficContext } from "./DesignTrafficContext";
 import { InspectorContext } from "./InspectorContext";
 import { useWorkspaceInspector } from "./useWorkspaceInspector";
-import WorkspaceInspector from "./WorkspaceInspector";
+import WorkspaceInspector, { SimulationControl } from "./WorkspaceInspector";
 import { ArchitectToggle } from "./ai/ArchitectPanel";
+import { ArchiePortrait } from "./ai/ArchiePanel";
 import { ExportButton, RunnableAppButton } from "./ExportButton";
 import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import { useChallengeMode } from "./useChallengeMode";
@@ -48,11 +51,10 @@ import { useGraphHistory } from "./useGraphHistory";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
 import { DesignCheckBadges, DesignCheckPanel, useDesignCheck } from "./DesignCheck";
-import { LiveMetricsBar } from "./LiveMetricsBar";
+import { LiveEstimatesPanel } from "./LiveMetricsBar";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
-import { RunControl } from "./StressTestPanel";
 import OrthogonalEdge from "./OrthogonalEdge";
 import ArchitectureNode, {
   type ArchitectureFlowNode,
@@ -65,16 +67,15 @@ const nodeTypes = {
   architecture: ArchitectureNode,
 };
 
-const edgeTypes = {
-  orthogonal: OrthogonalEdge,
-};
-
 const FIT_VIEW_OPTIONS = {
   padding: 0.4,
 };
 
-// Most edge styling lives in the CSS file. The arrowhead needs to be set here
-// because React Flow creates it as part of the edge itself.
+const edgeTypes = {
+  orthogonal: OrthogonalEdge,
+};
+
+// React Flow creates arrowheads from edge options rather than stylesheet rules.
 const defaultEdgeOptions = {
   type: "orthogonal" as const,
   markerEnd: {
@@ -127,6 +128,7 @@ function Workspace({ project }: { project: Project }) {
 
   const [title, setTitle] = useState(project.title);
   const [learnPanelOffset, setLearnPanelOffset] = useState(0);
+  const [learnPanelCollapsed, setLearnPanelCollapsed] = useState(false);
   const learnPanelStyle = { "--ax-learn-offset": `${learnPanelOffset}px` } as CSSProperties;
   // Clear node/edge selection without changing the architecture itself.
   const clearCanvasSelection = useCallback(() => {
@@ -172,6 +174,8 @@ function Workspace({ project }: { project: Project }) {
     (next: ProjectMode) => {
       // Switch the UI right away, then persist that choice on the project.
       setMode(next);
+      setLearnPanelCollapsed(false);
+      setLearnPanelOffset(0);
       resetInspector();
 
       const result = projectActions.setMode(project.id, next);
@@ -208,7 +212,28 @@ function Workspace({ project }: { project: Project }) {
   // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
   const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
   // Problems marked on the canvas, with one-click fixes and where the uptime comes from.
-  const designCheck = useDesignCheck();
+  const rawDesignCheck = useDesignCheck();
+  const liveReady = Boolean(live.result?.summary.ready);
+  const findingCount = liveReady ? (live.result?.evaluation.findings.length ?? 0) : 0;
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [liveOpen, setLiveOpen] = useState(false);
+  const closeUtilityPanels = () => {
+    setLibraryOpen(false);
+    setLiveOpen(false);
+    rawDesignCheck.setOpen(false);
+    rawDesignCheck.setFocus(null);
+  };
+  const designCheck = {
+    ...rawDesignCheck,
+    setOpen: (value: Parameters<typeof rawDesignCheck.setOpen>[0]) => {
+      const open = typeof value === "function" ? value(rawDesignCheck.open) : value;
+      if (open) {
+        closeUtilityPanels();
+        inspector.openSection(null);
+      }
+      rawDesignCheck.setOpen(open);
+    },
+  };
 
   // Check a connection before React Flow lets the user create it.
   // We read the current graph directly from React Flow so this never validates
@@ -437,6 +462,14 @@ function Workspace({ project }: { project: Project }) {
     <ArchieContext.Provider value={archie}>
       <DesignTrafficContext.Provider value={activeRuns.traffic}>
       <div className="ax-workspace flex h-screen flex-col overflow-hidden">
+        {((showInspector && !inspector.archieOpen) || (!showInspector && learnPanelCollapsed && !inspector.historyOpen)) && <button
+          type="button" className="ax-archie-launcher" aria-label={showInspector ? "Expand Archie" : "Expand lesson guidance"}
+          title={showInspector ? "Expand Archie" : "Expand lesson guidance"} aria-expanded={false}
+          onClick={() => {
+            if (showInspector) { closeUtilityPanels(); inspector.askArchie(); }
+            else setLearnPanelCollapsed(false);
+          }}><ArchiePortrait /></button>}
+
         <ChallengeIntroduction
           key={`${project.id}:${challenge.challenge.id}`}
           enabled={mode === "challenge"}
@@ -459,14 +492,14 @@ function Workspace({ project }: { project: Project }) {
                 : undefined
               : challenge.challenge.title
           }
-          runControl={canRunDesign ? (
-            <RunControl
-              open={inspector.section === "run" && !inspector.archieOpen && !inspector.historyOpen && !nodes.some((node) => node.selected)}
-              running={activeRuns.view.isRunning}
-              onToggle={() => inspector.toggleSection("run")}
-            />
-          ) : undefined}
           saveStatus={saveStatus}
+          runControl={canRunDesign && <SimulationControl
+            runs={activeRuns}
+            componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+            onShowResults={(action) => { closeUtilityPanels(); inspector.showResults(action); }}
+            expanded={!inspector.archieOpen && !inspector.historyOpen && !nodes.some((node) => node.selected) && inspector.section === "run"}
+            onToggle={() => { closeUtilityPanels(); inspector.toggleSection("run"); }}
+          />}
           projectActions={(menuId) => (
             <div hidden={!showInspector}>
               <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />
@@ -478,7 +511,58 @@ function Workspace({ project }: { project: Project }) {
 
         <div className="relative flex min-h-0 flex-1 flex-row bg-(--ax-canvas)">
           {/* Components are dragged from here onto the shared project canvas. */}
-          <ComponentToolbox customTechnologies={project.customTechnologies} />
+          <ComponentToolbox customTechnologies={project.customTechnologies} active={libraryOpen}
+            onActivate={() => { closeUtilityPanels(); inspector.openSection(null); setLibraryOpen(true); }}
+            tools={[
+              ...(canRunDesign ? [{
+                key: "live",
+                label: "Live estimates",
+                icon: <Gauge size={16} aria-hidden="true" />,
+                open: liveOpen,
+                onToggle: () => {
+                  const next = !liveOpen;
+                  closeUtilityPanels();
+                  inspector.openSection(null);
+                  setLiveOpen(next);
+                },
+              }, {
+                key: "check",
+                label: "Design check",
+                icon: <ShieldCheck size={16} aria-hidden="true" />,
+                badge: designCheck.enabled && liveReady ? String(findingCount) : undefined,
+                open: designCheck.enabled && designCheck.open,
+                disabled: !liveReady,
+                title: "Connect a client to check the design.",
+                onToggle: () => {
+                  if (designCheck.enabled && designCheck.open) {
+                    designCheck.setOpen(false);
+                    designCheck.setFocus(null);
+                    return;
+                  }
+                  if (!designCheck.enabled) designCheck.setEnabled(true);
+                  designCheck.setOpen(true);
+                },
+              }] : []),
+            ]}
+            toolContent={!canRunDesign ? null : liveOpen ? (
+              <LiveEstimatesPanel
+                result={live.result}
+                changes={live.changes}
+                requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+                onClose={() => setLiveOpen(false)}
+              />
+            ) : designCheck.enabled && designCheck.open ? (
+              <DesignCheckPanel
+                result={live.result}
+                nodes={nodes}
+                edges={edges}
+                traffic={activeRuns.traffic}
+                check={designCheck}
+                onApply={replaceGraph}
+                onUndo={undo}
+              />
+            ) : null} />
 
           <main className="ax-workspace-canvas relative min-h-0 min-w-0 flex-1 bg-(--ax-canvas)" data-inspector={showInspector}>
             {/* React Flow is only responsible for displaying/interacting with the graph.
@@ -500,6 +584,7 @@ function Workspace({ project }: { project: Project }) {
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                   defaultEdgeOptions={defaultEdgeOptions}
+                  connectionLineType={ConnectionLineType.SmoothStep}
                   fitView
                   fitViewOptions={FIT_VIEW_OPTIONS}
                   // Drag empty canvas to pan; dragging a component still moves it.
@@ -514,26 +599,7 @@ function Workspace({ project }: { project: Project }) {
 
             {/* Keep floating tools below the header while the graph extends behind it. */}
             <div className="ax-canvas-overlays">
-              {/* Live estimates stay on the canvas; test results stay in the inspector. */}
-              {canRunDesign && (
-                <LiveMetricsBar
-                  result={live.result}
-                  changes={live.changes}
-                  requestsPerSecond={activeRuns.traffic.requestsPerSecond}
-                  componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
-                />
-              )}
-              {canRunDesign && (
-                <DesignCheckPanel
-                  result={live.result}
-                  nodes={nodes}
-                  edges={edges}
-                  traffic={activeRuns.traffic}
-                  check={designCheck}
-                  onApply={replaceGraph}
-                  onUndo={undo}
-                />
-              )}
+
 
               {/* If saving the selected mode fails, show the error without breaking the editor. */}
               {modeError && (
@@ -579,6 +645,7 @@ function Workspace({ project }: { project: Project }) {
                   className="ax-canvas-panel"
                   data-side="right"
                   data-learn-movable={!inspector.historyOpen || undefined}
+                  data-learn-collapsed={learnPanelCollapsed && !inspector.historyOpen || undefined}
                   style={!inspector.historyOpen ? learnPanelStyle : undefined}
                   aria-label="Guidance"
                 >
@@ -599,6 +666,7 @@ function Workspace({ project }: { project: Project }) {
                       onDismissFeedback={learn.engine.dismissFeedback}
                       verticalOffset={learnPanelOffset}
                       onVerticalOffsetChange={setLearnPanelOffset}
+                      onCollapse={() => setLearnPanelCollapsed(true)}
                     />
                     )}
                     {/* Keep Archie mounted, but out of the guided tutorial. */}

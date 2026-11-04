@@ -15,7 +15,6 @@ export function useHeroPlayback(
     const query = window.matchMedia("(prefers-reduced-motion: reduce)")
     const paintDiagram = createDiagramPainter(root)
     let inView = true
-    let focused = document.hasFocus()
     let frame = 0
     let previous = 0
     let videoFrame = 0
@@ -69,7 +68,7 @@ export function useHeroPlayback(
     const update = () => {
       stopFrames()
       const playing =
-        !document.hidden && focused && inView && !query.matches
+        !document.hidden && inView && !query.matches
       root.dataset.playing = String(playing)
       root.dataset.reduced = String(query.matches)
       root.dataset.videoReady = String(hasVideo())
@@ -110,14 +109,6 @@ export function useHeroPlayback(
       videoFailed = true
       update()
     }
-    const focus = () => {
-      focused = true
-      update()
-    }
-    const blur = () => {
-      focused = false
-      update()
-    }
     const observer = new IntersectionObserver(([entry]) => {
       inView = entry.isIntersecting
       update()
@@ -127,8 +118,6 @@ export function useHeroPlayback(
     video?.addEventListener("error", onVideoError)
     observer.observe(root)
     document.addEventListener("visibilitychange", update)
-    window.addEventListener("focus", focus)
-    window.addEventListener("blur", blur)
     query.addEventListener("change", update)
     update()
     return () => {
@@ -140,8 +129,6 @@ export function useHeroPlayback(
       video?.removeEventListener("error", onVideoError)
       observer.disconnect()
       document.removeEventListener("visibilitychange", update)
-      window.removeEventListener("focus", focus)
-      window.removeEventListener("blur", blur)
       query.removeEventListener("change", update)
     }
   }, [ref])

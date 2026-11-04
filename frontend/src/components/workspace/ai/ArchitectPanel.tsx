@@ -142,7 +142,7 @@ function SuggestionCard({ suggestion, status, onApply, streaming }: {
         {status === "applied" ? (
           <span className="ax-ai-applied">Applied · undo with Ctrl/Cmd+Z</span>
         ) : (
-          <button type="button" className="ax-ai-apply" onClick={onApply} disabled={streaming}>
+          <button type="button" className="ax-ai-apply ax-panel-action" data-variant="secondary" onClick={onApply} disabled={streaming}>
             Apply
           </button>
         )}
@@ -318,9 +318,9 @@ export default function ArchitectPanel({
       }
       focus={<>
         {focus.length === 0 && (
-          <span className="ax-ai-focus-hint">
+          <span className="ax-ai-focus-hint" title="Drag a box on empty canvas to ask about just that part">
             <BoxSelect size={13} aria-hidden="true" />
-            Drag a box on empty canvas to ask about just that part
+            Whole design · drag to focus
           </span>
         )}
         {focus.length > 0 && (
@@ -366,11 +366,11 @@ export default function ArchitectPanel({
               )}
             </span>
             {busy ? (
-              <button type="button" className="ax-ai-send" onClick={() => abort.current?.abort()}>
+              <button type="button" className="ax-ai-send ax-panel-action" data-variant="secondary" onClick={() => abort.current?.abort()}>
                 <Square size={11} aria-hidden="true" /> Stop
               </button>
             ) : (
-              <button type="submit" className="ax-ai-send" disabled={!draft.trim()}>
+              <button type="submit" className="ax-ai-send ax-panel-action" data-variant="primary" disabled={!draft.trim()}>
                 <Send size={12} aria-hidden="true" /> Send
               </button>
             )}
@@ -380,13 +380,15 @@ export default function ArchitectPanel({
     >
       {turns.length === 0 && (
         <div className="ax-ai-empty">
-          <p className="ax-learn-speech ax-ai-intro">
-            {focus.length > 0
-              ? focus.length === 1
-                ? "Ask how this component works, connects, or affects your system."
-                : "Ask how these components work, connect, or affect your system."
-              : "Ask about traffic, reliability, or cost. Preview changes before applying them."}
-          </p>
+          <ArchieMessage role="assistant">
+            <p className="ax-ai-answer">
+              {focus.length > 0
+                ? focus.length === 1
+                  ? "Ask how this component works, connects, or affects your system."
+                  : "Ask how these components work, connect, or affect your system."
+                : "Ask about traffic, reliability, or cost. Preview changes before applying them."}
+            </p>
+          </ArchieMessage>
           <ArchieStarters questions={focus.length > 0 ? FOCUS_STARTERS : STARTERS} onAsk={question => void ask(question)} />
         </div>
       )}

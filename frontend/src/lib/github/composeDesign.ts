@@ -6,7 +6,7 @@ import { guessActsAs, isOperationsTool, type ActsAsType } from "../architecture/
 import type { ArchitectureNodeType, NodeProperties } from "../architecture/types.ts";
 import type { CustomTechnology } from "../projects/customTechnologies.ts";
 import { GRAPH_SCHEMA_VERSION, type GraphDocument } from "../projects/projectPayload.ts";
-import { COLUMN_OF, COLUMN_WIDTH, ROW_HEIGHT } from "./buildDesign.ts";
+import { COLUMN_OF, COLUMN_WIDTH, ROW_HEIGHT, compactColumnPositions } from "./buildDesign.ts";
 import { resolveImplementation } from "../architecture/componentLibrary.ts";
 import { BUILD_IMAGES, COMPOSE_NAME, KNOWN_NAMES, detectStack, detectUnmodeled, isRelational, relationalRank, modeledImage, slug, squash, titleCase, type DetectedComponent } from "./detectStack.ts";
 
@@ -598,10 +598,11 @@ export function composeDesign(
     columns.set(column, [...(columns.get(column) ?? []), item]);
   }
   const tallest = Math.max(1, ...[...columns.values()].map((members) => members.length));
+  const columnPositions = compactColumnPositions(columns.keys());
   const position = new Map<string, { x: number; y: number }>([["client", { x: 0, y: ((tallest - 1) * ROW_HEIGHT) / 2 }]]);
   for (const [column, members] of columns) {
     const offset = ((tallest - members.length) * ROW_HEIGHT) / 2;
-    members.forEach((member, row) => position.set(member.id, { x: column * COLUMN_WIDTH, y: offset + row * ROW_HEIGHT }));
+    members.forEach((member, row) => position.set(member.id, { x: columnPositions.get(column)!, y: offset + row * ROW_HEIGHT }));
   }
   ops.forEach((item, index) => position.set(item.id, { x: (1 + index) * COLUMN_WIDTH * 0.8, y: tallest * ROW_HEIGHT + ROW_HEIGHT }));
 

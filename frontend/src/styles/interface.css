@@ -5451,8 +5451,7 @@ body,
   overflow-x: clip;
   background: var(--auth-surface);
   color: var(--auth-ink);
-  /* system-ui first so the 600 heading weight renders as a true semibold (Arial has none) */
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, var(--font-sans);
+  font-family: var(--font-sans);
 }
 
 /* base h1/button/input rules pin --font-sans; let them follow the auth stack */
@@ -5582,11 +5581,12 @@ body,
   line-height: 1.5;
 }
 
-/* Social providers: three equal icon-only buttons */
+/* Social providers: two centered icon-only buttons */
 .auth-social-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 160px));
   gap: 10px;
+  justify-content: center;
 }
 
 .auth-social-button {
@@ -5900,7 +5900,7 @@ body,
   overflow-x: clip;
   background: var(--onb-surface);
   color: var(--onb-ink);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, var(--font-sans);
+  font-family: var(--font-sans);
 }
 
 /* base h1/button/input rules pin --font-sans; follow the onboarding stack */
@@ -6429,7 +6429,7 @@ body,
   border-radius: var(--radius-action);
   background: var(--dashboard-action, rgb(21 93 252));
   color: var(--neutral-0);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.2;
 }
@@ -6532,11 +6532,12 @@ body,
   border-radius: var(--radius-action);
   color: var(--neutral-0);
   font-size: 14px;
+  font-weight: 500;
 }
 
 .ax-dashboard-section-title {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
   font-size: 32px;
   font-weight: 600;
   line-height: 1.2;
@@ -6545,7 +6546,7 @@ body,
 
 .ax-dashboard-section-title {
   font-size: 34px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* The project pane keeps two visible rows on desktop. */
@@ -6661,20 +6662,13 @@ body,
 .ax-dashboard-tutorial-heading { margin-bottom: 12px; }
 .ax-dashboard-learning-content { display: grid; gap: 16px; }
 
-/* Breakdowns use the same preview/metadata boundary as saved projects. */
-.ax-breakdown-catalog { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
-.ax-breakdown-catalog-link { display: flex; height: 100%; flex-direction: column; color: inherit; text-decoration: none; }
-.ax-breakdown-catalog-preview { flex: 1; min-height: 92px; padding: 12px; }
-.ax-breakdown-catalog-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 500; }
-.ax-breakdown-catalog .ax-dashboard-project-metadata p { margin: 5px 0 0; color: var(--color-muted); font-size: 10px; line-height: 1.4; }
-.ax-breakdown-catalog-logo { width: 90px; height: 42px; object-fit: contain; filter: grayscale(1); opacity: 0.55; }
-.ax-breakdown-catalog-unavailable .ax-breakdown-catalog-title > span:last-child { color: var(--color-muted); font-size: 9px; font-weight: 400; }
-.ax-breakdown-catalog-unavailable:hover { border-color: var(--color-line); }
-.ax-breakdown-catalog-link:focus-visible { outline: 2px solid var(--canvas-accent); outline-offset: 3px; }
+/* Examples use the project tile and spacing; only the number of available items differs. */
+.ax-breakdown-catalog { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 160px; max-height: none; align-content: start; }
+.ax-breakdown-catalog-logo { width: 90px; height: 42px; object-fit: contain; filter: grayscale(1); opacity: .55; }
+.ax-dashboard-project-card.is-unavailable:hover { border-color: var(--color-line); }
 
 @media (max-width: 639px) {
   .ax-breakdown-catalog { grid-template-columns: minmax(0, 1fr); }
-  .ax-breakdown-catalog-preview { height: 100px; flex: none; }
 }
 
 .ax-dashboard-learning-content .ax-daily-challenge {
@@ -6772,6 +6766,12 @@ body,
   padding-bottom: 0;
 }
 
+.ax-dashboard-shell { background: #ffffff; }
+
+.ax-dashboard-shell .page-header {
+  background: transparent;
+}
+
 .ax-daily-challenge-banner {
   position: relative;
   display: grid;
@@ -6802,7 +6802,7 @@ body,
 .ax-daily-challenge-kicker {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   gap: 3px;
   min-width: max-content;
@@ -6813,20 +6813,19 @@ body,
 
 .ax-daily-challenge-kicker span {
   color: var(--color-ink);
-  font-variant-caps: small-caps;
-  font-size: clamp(18px, 2vw, 22px);
-  font-weight: 700;
-  line-height: 1.05;
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.025em;
 }
-
-.ax-daily-challenge-kicker span::first-letter { font-size: 1.2em; }
 
 .ax-daily-challenge-title {
   margin: 0;
   color: var(--neutral-950);
   font-family: var(--font-sans);
-  font-size: clamp(18px, 2vw, 22px);
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 400;
   line-height: 1;
   overflow-wrap: anywhere;
 }
@@ -6838,7 +6837,7 @@ body,
   padding: 0 10px;
   border-radius: var(--radius-action);
   color: var(--neutral-0);
-  font-size: 14px;
+  font-size: 15px;
   white-space: nowrap;
 }
 
@@ -6910,11 +6909,10 @@ body,
   .ax-daily-challenge-banner { grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 8px 12px; margin-right: 0; }
   .ax-daily-challenge-kicker { min-width: max-content; min-height: 26px; padding-right: 8px; }
   .ax-daily-challenge-kicker span { font-size: 16px; }
-  .ax-daily-challenge-kicker span::first-letter { font-size: 1.15em; }
-  .ax-daily-challenge-title { font-size: clamp(16px, 3.4vw, 20px); }
+  .ax-daily-challenge-title { font-size: 16px; }
   .ax-daily-challenge-details { grid-column: 1 / -1; grid-template-columns: 120px max-content; justify-content: end; gap: 6px; padding: 4px 0 0; border-top: 1px solid var(--color-line); }
   .ax-daily-challenge-banner .ax-dashboard-challenge-start,
   .ax-daily-challenge-actions { width: 120px; }
-  .ax-daily-challenge-banner .ax-dashboard-challenge-start { min-width: 120px; min-height: 36px; height: 36px; font-size: 12px; }
+  .ax-daily-challenge-banner .ax-dashboard-challenge-start { min-width: 120px; min-height: 36px; height: 36px; font-size: 14px; }
   .ax-daily-challenge-metrics { column-gap: 6px; padding-left: 4px; }
 }
