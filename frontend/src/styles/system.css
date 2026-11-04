@@ -936,51 +936,10 @@ pre { font-family: var(--font-mono); }
   color: #ffffff;
 }
 
-.ax-light-app .ax-dashboard-project-grid > .ax-dashboard-project-card,
-.ax-light-app .ax-breakdown-catalog > .ax-dashboard-project-card {
-  overflow: hidden;
-  border: 1px solid rgb(15 23 42 / 4%);
-  border-radius: 13px;
-  background: #ffffff;
-  box-shadow: 0 6px 20px rgb(15 23 42 / 7%), 0 2px 6px rgb(15 23 42 / 3%);
-  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
-}
-
-.ax-light-app :is(
-  .ax-dashboard-project-grid > .ax-dashboard-project-card:hover,
-  .ax-dashboard-project-grid > .ax-dashboard-project-card:focus-within,
-  .ax-breakdown-catalog > .ax-dashboard-project-card:hover,
-  .ax-breakdown-catalog > .ax-dashboard-project-card:focus-within
-) {
-  transform: translateY(-2px);
-  border-color: rgb(15 23 42 / 7%);
-  box-shadow: 0 10px 26px rgb(15 23 42 / 10%), 0 3px 8px rgb(15 23 42 / 5%);
-}
-
-.ax-light-app .ax-dashboard-project-grid .ax-dashboard-project-preview,
-.ax-light-app .ax-breakdown-catalog .ax-dashboard-project-preview {
-  border-radius: 12px 12px 0 0;
-}
-
-.ax-light-app .ax-dashboard-project-grid .ax-dashboard-project-metadata,
-.ax-light-app .ax-breakdown-catalog .ax-dashboard-project-metadata {
-  border-radius: 0 0 12px 12px;
-  background: #ffffff;
-}
-
-.ax-light-app .ax-dashboard-project-grid > .ax-dashboard-project-card:nth-child(5n + 1) .ax-dashboard-project-preview { background: #edf4ff; }
-.ax-light-app .ax-dashboard-project-grid > .ax-dashboard-project-card:nth-child(5n + 2) .ax-dashboard-project-preview { background: #fff5eb; }
-.ax-light-app .ax-dashboard-project-grid > .ax-dashboard-project-card:nth-child(5n + 3) .ax-dashboard-project-preview { background: #f3f0ff; }
-.ax-light-app .ax-dashboard-project-grid > .ax-dashboard-project-card:nth-child(5n + 4) .ax-dashboard-project-preview { background: #edf8f2; }
-.ax-light-app .ax-dashboard-project-grid > .ax-dashboard-project-card:nth-child(5n) .ax-dashboard-project-preview { background: #fff0f3; }
-
-/* Same language as the canvas panels: black fill, hairline border, no lift or shadow. */
+/* Same language as the canvas panels: black fill and hairline border. */
 .ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card {
-  overflow: hidden;
-  border: 1px solid var(--ax-dark-line);
-  border-radius: 13px;
+  border-color: var(--ax-dark-line);
   background: var(--ax-dark-panel);
-  transition: border-color 200ms ease;
 }
 
 .ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card:is(:hover, :focus-within) {
@@ -992,12 +951,6 @@ pre { font-family: var(--font-mono); }
 }
 
 .ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card .ax-dashboard-project-preview {
-  border-radius: 12px 12px 0 0;
-  background: var(--ax-dark-panel);
-}
-
-.ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card .ax-dashboard-project-metadata {
-  border-radius: 0 0 12px 12px;
   background: var(--ax-dark-panel);
 }
 
@@ -1013,9 +966,3 @@ pre { font-family: var(--font-mono); }
   box-shadow: none;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ax-light-app :is(.ax-dashboard-project-grid > .ax-dashboard-project-card, .ax-breakdown-catalog > .ax-dashboard-project-card),
-  .ax-dark-app :is(.ax-dashboard-project-grid > .ax-dashboard-project-card, .ax-breakdown-catalog > .ax-dashboard-project-card) {
-    transition: none;
-  }
-}
