@@ -115,25 +115,20 @@ export default function DailyChallenge({
 }: DailyChallengeProps) {
   if (compact) {
     return (
-      <aside className="ax-daily-challenge-banner" aria-label="Daily challenge">
-        <div className="ax-daily-challenge-kicker" aria-label="Daily challenge">
-          <span>Daily</span>
-          <span>challenge</span>
-        </div>
-        <h2 className="ax-daily-challenge-title">{title}</h2>
-        <div className="ax-daily-challenge-details" aria-label="Challenge details">
-          <div className="ax-daily-challenge-actions">
-            <StartChallengeButton title={title} label="Start challenge" />
-          </div>
-          <div className="ax-daily-challenge-metrics">
-            <div className="ax-daily-challenge-detail">
-              <div className="ax-daily-challenge-detail-heading">
+      <aside className="ax-daily-challenge-banner" aria-labelledby="daily-challenge-title">
+        <p className="ax-daily-challenge-label" aria-hidden="true">Today&apos;s challenge: {title}</p>
+        <div className="ax-daily-challenge-reveal">
+          <div className="ax-daily-challenge-bar">
+            <div className="ax-daily-challenge-copy">
+              <h2 id="daily-challenge-title" className="ax-daily-challenge-title">{title}</h2>
+              <span className="ax-daily-challenge-difficulty">
                 <BarChart3 aria-hidden="true" />
-                <div className="ax-daily-challenge-detail-copy">
-                  <span>Difficulty</span>
-                  <strong>{difficulty}</strong>
-                </div>
-              </div>
+                <span className="sr-only">Difficulty: </span>
+                {difficulty}
+              </span>
+            </div>
+            <div className="ax-daily-challenge-actions">
+              <StartChallengeButton title={title} label="Start" />
             </div>
           </div>
         </div>

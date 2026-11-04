@@ -946,16 +946,10 @@ pre { font-family: var(--font-mono); }
   border-color: var(--ax-dark-line-strong);
 }
 
-.ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card .ax-dashboard-project-preview {
-  background: var(--ax-dark-panel);
-}
-
 
 .ax-dark-app .ax-dashboard-section-title { color: #ffffff; }
 
 .ax-dark-app .ax-daily-challenge-banner {
-  --canvas-accent: var(--ax-dark-accent);
   border-color: var(--ax-dark-line);
   background: var(--ax-dark-panel);
-  box-shadow: none;
 }

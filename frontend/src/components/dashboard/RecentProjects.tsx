@@ -132,6 +132,8 @@ const STORAGE_ISSUE_MESSAGES = {
   unavailable: "Browser storage is blocked, so projects can't be saved.",
   unreadable: "Saved projects couldn't be read. They haven't been changed.",
 } as const;
+const countLabel = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`;
+
 export default function RecentProjects() {
   const startProject = useStartProject();
   const projects = useProjectList();
@@ -230,13 +232,14 @@ export default function RecentProjects() {
           >
             {project.title}
           </Link>)}
-          <span className="shrink-0 text-[13px] text-neutral-500">
-            {formatRelativeTime(project.updatedAt, nowMs)}
+          {/* The time at rest; the design's size on hover or focus, in the same spot. */}
+          <span className="ax-project-tile-info shrink-0 text-[13px] text-neutral-500">
+            <span className="ax-project-tile-time">{formatRelativeTime(project.updatedAt, nowMs)}</span>
+            <span className="ax-project-tile-size">
+              {countLabel(project.nodes.length, "node")} &middot; {countLabel(project.edges.length, "connection")}
+            </span>
           </span>
           </div>
-          <p className="mt-1 text-[13px] text-neutral-500">
-            {project.nodes.length} nodes &middot; {project.edges.length} connections
-          </p>
       </ArchitectureTile>))}
     </ul>)}
   </section>);

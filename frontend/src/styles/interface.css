@@ -6550,8 +6550,9 @@ body,
   display: flex;
   flex-direction: column;
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-panel);
+  border-radius: 20px;
   background: var(--color-surface);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
   transition: border-color 140ms ease;
 }
 
@@ -6566,7 +6567,8 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  overflow: hidden;
+  border-radius: 19px 19px 0 0;
   --tile: var(--canvas-surface-soft);
   background: var(--tile);
 }
@@ -6587,6 +6589,7 @@ body,
   flex-shrink: 0;
   padding: 12px 16px 14px;
   border-top: 1px solid var(--color-line);
+  border-radius: 0 0 19px 19px;
 }
 
 .ax-dashboard-tutorials {
@@ -6604,23 +6607,41 @@ body,
 
 .ax-workspace.ax-breakdown-catalog > .ax-dashboard-project-card {
   border: 1px solid var(--ax-line-strong);
-  border-radius: 20px;
   background: var(--ax-surface);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
 }
 
 .ax-workspace.ax-breakdown-catalog > .ax-dashboard-project-card:is(:hover, :focus-within) { border-color: var(--breakdown-accent); }
 
-.ax-workspace.ax-breakdown-catalog > .ax-dashboard-project-card .ax-dashboard-project-preview {
-  position: relative;
-  overflow: hidden;
-  border-radius: 19px 19px 0 0;
+/* Tiles use the canvas paper and dot grid, in the canvas's colors for the theme. */
+.ax-dashboard-project-grid > .ax-dashboard-project-card .ax-workspace.ax-dashboard-project-preview {
+  background: var(--ax-canvas-paper);
+}
+
+.ax-breakdown-catalog > .ax-dashboard-project-card .ax-workspace.ax-dashboard-project-preview,
+.ax-dashboard-projects .ax-dashboard-project-preview::before {
   background: radial-gradient(circle, var(--ax-canvas-dot) 0.8px, transparent 0.9px) 10px 10px / 20px 20px, var(--ax-canvas-paper);
+}
+
+/* Project dots sit on their own layer, so they can fade in with the hover. */
+.ax-dashboard-projects .ax-dashboard-project-preview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+
+.ax-dashboard-projects .ax-dashboard-project-preview > * { position: relative; }
+.ax-dashboard-projects .ax-dashboard-project-card:is(:hover, :focus-within) .ax-dashboard-project-preview::before { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-dashboard-projects .ax-dashboard-project-preview::before { transition: none; }
 }
 
 .ax-workspace.ax-breakdown-catalog > .ax-dashboard-project-card .ax-dashboard-project-metadata {
   border-top-color: var(--ax-line);
-  border-radius: 0 0 19px 19px;
   background: var(--ax-surface);
 }
 
@@ -6632,7 +6653,7 @@ body,
 .ax-breakdown-brand {
   display: grid;
   place-items: center;
-  background: var(--breakdown-surface);
+  background: var(--neutral-0);
   transition: opacity 240ms ease;
 }
 
@@ -6640,7 +6661,6 @@ body,
   width: 188px;
   height: 100px;
   object-fit: contain;
-  filter: var(--breakdown-logo-filter, none);
   transition: transform 320ms var(--ax-ease);
 }
 
@@ -6669,6 +6689,34 @@ body,
   .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-topology-preview rect { opacity: 1; transform: none; }
 }
 
+/* Both lines share one grid cell, so swapping them never moves the tile's name. */
+.ax-project-tile-info { display: inline-grid; justify-items: end; }
+.ax-project-tile-info > span { grid-area: 1 / 1; white-space: nowrap; transition: opacity 160ms ease; }
+.ax-project-tile-size { opacity: 0; }
+.ax-dashboard-project-card:is(:hover, :focus-within) .ax-project-tile-size { opacity: 1; }
+.ax-dashboard-project-card:is(:hover, :focus-within) .ax-project-tile-time { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-project-tile-info > span { transition: none; }
+}
+
+/* Project nodes stay visible; hovering runs one soft pulse through them, in the same stagger. */
+@keyframes ax-preview-node-pulse {
+  50% { transform: scale(1.16); }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-preview rect {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: ax-preview-node-pulse 420ms ease-in-out;
+  }
+
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-preview rect:nth-of-type(3n + 1) { animation-delay: 0ms; }
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-preview rect:nth-of-type(3n + 2) { animation-delay: 80ms; }
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-preview rect:nth-of-type(3n) { animation-delay: 160ms; }
+}
+
 /* Keyboard users get the same reveal; touch devices keep the logo. */
 .ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-breakdown-brand { opacity: 0; }
 .ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-topology-preview line { opacity: 1; }
@@ -6687,7 +6735,9 @@ body,
 
   /* Projects shows two rows and scrolls past that, so breakdowns stay in reach. */
   .ax-dashboard-project-grid:not(.ax-breakdown-catalog) {
-    max-height: calc(2 * 260px + 16px + 8px);
+    max-height: calc(2 * 260px + 16px + 22px);
+    margin: -6px -10px -8px;
+    padding: 10px 10px 12px;
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: thin;
@@ -6732,127 +6782,195 @@ body,
 .ax-new-project-dialog .ax-challenge-intro-start:hover:not(:disabled) { background: var(--neutral-800); }
 .ax-new-project-dialog .ax-challenge-intro-start:active:not(:disabled) { background: var(--neutral-700); }
 
-.ax-dashboard-challenge-region {
-  flex-shrink: 0;
-  padding-top: 18px;
-  padding-bottom: 0;
-}
-
 .ax-dashboard-shell { background: var(--neutral-0); }
 
 .ax-dashboard-shell .page-header {
   background: transparent;
 }
 
+/* The challenge fills the header's empty middle: equal side columns keep it truly centered.
+   Below 840px it does not fit between them, so it takes a row of its own. */
+.ax-dashboard-shell .ax-dashboard-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: var(--page-header-height) auto;
+  grid-template-areas: "logo actions" "challenge challenge";
+  align-items: center;
+  column-gap: 16px;
+  height: auto;
+}
+
+.ax-dashboard-header > a { grid-area: logo; justify-self: start; }
+.ax-dashboard-header > nav { grid-area: actions; justify-self: end; }
+
+.ax-dashboard-challenge-region {
+  grid-area: challenge;
+  justify-self: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (min-width: 840px) {
+  .ax-dashboard-shell .ax-dashboard-header {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: var(--page-header-height);
+    grid-template-areas: "logo challenge actions";
+  }
+}
+
+/* The challenge in one line, with Start beside it. */
 .ax-daily-challenge-banner {
   position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 18px 14px 22px;
-  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  width: max-content;
+  max-width: 100%;
+  min-height: 44px;
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-panel);
+  border-radius: var(--radius-action);
   background: var(--color-surface);
   color: var(--color-ink);
 }
 
-.ax-daily-challenge-banner::before {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 3px;
-  background: var(--canvas-accent);
-  content: "";
+.ax-daily-challenge-label { display: none; }
+
+.ax-daily-challenge-reveal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
 }
 
-.ax-daily-challenge-kicker {
+.ax-daily-challenge-bar {
   display: flex;
-  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 3px;
-  min-width: max-content;
-  min-height: 28px;
-  padding-right: 16px;
-  border-right: 1px solid var(--color-line);
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 4px 4px 14px;
 }
 
-.ax-daily-challenge-kicker span {
-  color: var(--color-muted);
-  font-family: var(--font-sans);
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1;
+.ax-daily-challenge-copy {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  min-width: 0;
 }
 
 .ax-daily-challenge-title {
   margin: 0;
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: 22px;
+  font-size: 15px;
   font-weight: 600;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
+  line-height: 20px;
+  letter-spacing: -0.01em;
+}
+
+.ax-daily-challenge-difficulty {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.ax-daily-challenge-difficulty > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  stroke-width: 1.8;
+}
+
+.ax-daily-challenge-actions { flex: none; }
+
+.ax-daily-challenge-actions [role="alert"] {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-action);
+  background: var(--color-surface);
+  text-align: center;
 }
 
 .ax-daily-challenge-banner .ax-dashboard-challenge-start {
-  width: 172px;
-  min-height: 40px;
-  height: 40px;
+  height: 34px;
   padding: 0 14px;
   border-radius: var(--radius-action);
   color: var(--neutral-0);
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
-.ax-daily-challenge-banner .ax-dashboard-challenge-start > span {
-  width: 100%;
-  flex-wrap: nowrap;
-  justify-content: space-between;
-  white-space: nowrap;
+.ax-daily-challenge-banner .ax-dashboard-challenge-start > span { flex-wrap: nowrap; gap: 8px; white-space: nowrap; }
+
+/* In the header it rests as a label and opens outward from the center. The row keeps its final
+   size and is only unmasked, so Start never moves under a click. A failed Start holds it
+   open, so the error stays readable. */
+@media (hover: hover) and (min-width: 840px) {
+  .ax-daily-challenge-banner {
+    display: grid;
+    align-items: center;
+    justify-items: center;
+  }
+
+  .ax-daily-challenge-label,
+  .ax-daily-challenge-reveal { grid-area: 1 / 1; }
+
+  .ax-daily-challenge-label {
+    display: block;
+    margin: 0;
+    padding: 0 16px;
+    color: var(--color-ink);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 20px;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+
+  .ax-daily-challenge-reveal {
+    grid-template-columns: minmax(0, 0fr);
+    justify-content: center;
+    justify-items: center;
+    transition: grid-template-columns 200ms ease;
+  }
+
+  .ax-daily-challenge-bar {
+    width: max-content;
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+
+  .ax-daily-challenge-copy { flex: none; flex-wrap: nowrap; }
+  .ax-daily-challenge-title { white-space: nowrap; }
+
+  .ax-daily-challenge-banner:is(:hover, :focus-within, :has([role="alert"])) .ax-daily-challenge-label { opacity: 0; }
+  .ax-daily-challenge-banner:is(:hover, :focus-within, :has([role="alert"])) .ax-daily-challenge-reveal { grid-template-columns: minmax(0, 1fr); }
+  .ax-daily-challenge-banner:is(:hover, :focus-within, :has([role="alert"])) .ax-daily-challenge-bar { opacity: 1; }
 }
 
-.ax-daily-challenge-details {
-  display: grid;
-  grid-template-columns: max-content 172px;
-  min-width: 0;
-  align-items: center;
-  justify-content: end;
-  gap: 16px;
+@media (prefers-reduced-motion: reduce) {
+  .ax-daily-challenge-label,
+  .ax-daily-challenge-reveal,
+  .ax-daily-challenge-bar { transition: none; }
 }
 
-.ax-daily-challenge-actions {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 3px;
+/* Own row under the header, always open. */
+@media (max-width: 839px) {
+  .ax-dashboard-challenge-region { justify-self: stretch; }
+  .ax-daily-challenge-banner { width: 100%; }
 }
-
-.ax-daily-challenge-actions { grid-column: 2; grid-row: 1; }
-.ax-daily-challenge-actions > div,
-.ax-daily-challenge-actions > div > button { width: 100%; }
-
-.ax-daily-challenge-metrics {
-  display: grid;
-  grid-column: 1;
-  grid-row: 1;
-  align-items: center;
-  justify-content: start;
-}
-
-.ax-daily-challenge-detail { min-width: 0; }
-.ax-daily-challenge-detail-heading { display: flex; min-width: 0; align-items: center; gap: 5px; }
-.ax-daily-challenge-detail-heading > svg { width: 22px; height: 22px; flex: 0 0 22px; color: var(--color-muted); stroke-width: 1.8; }
-.ax-daily-challenge-detail-copy { display: grid; min-width: 0; gap: 1px; }
-.ax-daily-challenge-detail-heading > .ax-daily-challenge-detail-copy { flex: 1; }
-.ax-daily-challenge-detail span { color: var(--color-muted); font-size: 12px; }
-.ax-daily-challenge-detail strong { color: var(--color-ink); font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
 
 .ax-challenge-intro {
   width: min(460px, calc(100vw - 32px));
@@ -6871,10 +6989,3 @@ body,
 .ax-challenge-intro ul { display: grid; gap: 10px; margin: 0 0 24px; padding-left: 20px; color: var(--challenge-intro-ink); font-size: 14px; line-height: 1.5; }
 .ax-challenge-intro-start { min-height: 48px; border: 1px solid var(--challenge-intro-ink); border-radius: 8px; background: var(--challenge-intro-ink); color: var(--neutral-0); font-size: 14px; font-weight: 600; }
 .ax-challenge-intro .ax-challenge-intro-start:hover:not(:disabled) { border-color: var(--challenge-intro-hover); background: var(--challenge-intro-hover); }
-
-@media (max-width: 700px) {
-  .ax-daily-challenge-banner { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px 12px 10px 14px; }
-  .ax-daily-challenge-kicker { min-height: 0; padding-right: 0; border-right: 0; justify-content: flex-start; }
-  .ax-daily-challenge-title { font-size: 20px; }
-  .ax-daily-challenge-details { grid-template-columns: minmax(0, 1fr) 172px; justify-content: stretch; }
-}
