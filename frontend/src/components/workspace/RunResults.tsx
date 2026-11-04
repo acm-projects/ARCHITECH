@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 import type { Direction, EvaluationComparison, MetricDelta } from "../../lib/architecture/evaluation/comparison";
 import { demandVsCapacity, type ResultsSummary, type ResultsView } from "../../lib/architecture/evaluation/resultsView";
 import type { TrafficProfile } from "../../lib/architecture/evaluation/traffic";
@@ -18,14 +20,13 @@ type MetricDefinition = {
   key: keyof EvaluationComparison["metrics"];
   label: string;
   format: (value: number) => string;
-  primary?: boolean;
 };
 
 const METRIC_ROWS: readonly MetricDefinition[] = [
   { key: "effectiveRps", label: "Served", format: rps },
-  { key: "capacityRps", label: "Capacity", format: rps, primary: true },
-  { key: "p95LatencyMs", label: "p95 latency", format: (value) => `${Math.round(value)} ms`, primary: true },
-  { key: "estimatedMonthlyCost", label: "Monthly cost", format: (value) => `$${value.toLocaleString("en-US")}`, primary: true },
+  { key: "capacityRps", label: "Capacity", format: rps },
+  { key: "p95LatencyMs", label: "p95 latency", format: (value) => `${Math.round(value)} ms` },
+  { key: "estimatedMonthlyCost", label: "Monthly cost", format: (value) => `$${value.toLocaleString("en-US")}` },
   { key: "availability", label: "Availability", format: (value) => `${value}%` },
 ];
 
@@ -61,56 +62,66 @@ export function RunNotices({ view, onRun, liveTraffic }: { view: ResultsView; on
   );
 }
 
+// One section of the Simulation panel: a head (title, optional meta) and its body. Every
+// part of a run (traffic, last run, findings, scores, comparison) uses it, so they read alike.
+export function ReviewSection({ title, meta, className = "", children }: {
+  title: string;
+  meta?: ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className={`ax-review-section ${className}`.trim()} aria-label={title}>
+      <div className="ax-review-section-head">
+        <h3>{title}</h3>
+        {meta !== undefined && <span>{meta}</span>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+// Every metric of the run in one list; the head carries the tested traffic and health.
 export function RunSummary({ result }: { result: ResultsSummary }) {
   const verdict = demandVsCapacity(result.metrics);
   return (
-    <div className="ax-review-content ax-review-summary">
-      <div className="ax-review-context" data-demand={verdict.state}>
-        <span>Tested at {rps(result.metrics.requestedRps)}</span>
-        <strong title="System health">{result.health.status}</strong>
-      </div>
-      <dl className="ax-review-metrics">
-        {METRIC_ROWS.filter((metric) => metric.primary).map(({ key, label, format }) => (
+    <ReviewSection
+      title="Last run"
+      meta={<>{rps(result.metrics.requestedRps)} · <span className="ax-review-health" data-demand={verdict.state}>{result.health.status}</span></>}
+    >
+      <dl className="ax-panel-metrics">
+        {METRIC_ROWS.map(({ key, label, format }) => (
           <div key={key}><dt>{label}</dt><dd>{formatValue(result.metrics[key], format)}</dd></div>
         ))}
       </dl>
       {verdict.state === "exceeds" && (
-        <p role="status" className="ax-card-label">
+        <p role="status" className="ax-review-note">
           Demand exceeds capacity
           {verdict.utilization !== null ? ` (${Math.round(verdict.utilization * 100)}% of capacity)` : ""}.
         </p>
       )}
-    </div>
+    </ReviewSection>
   );
 }
 
 export function RunMetrics({ result }: { result: ResultsSummary }) {
   return (
-    <div className="ax-review-content">
-      <h3>System metrics</h3>
-      <dl className="ax-review-metrics ax-review-metrics-full">
-        <div><dt>Tested traffic</dt><dd>{rps(result.metrics.requestedRps)}</dd></div>
-        {METRIC_ROWS.map(({ key, label, format }) => (
-          <div key={key}><dt>{label}</dt><dd>{formatValue(result.metrics[key], format)}</dd></div>
-        ))}
-      </dl>
-      <h3 className="ax-review-group-title">Scores</h3>
-      <dl className="ax-review-score-grid">
-        <div><dt>Overall score</dt><dd>{result.overallScore}</dd></div>
+    <ReviewSection title="Scores">
+      <dl className="ax-panel-metrics ax-review-scores">
+        <div><dt>Overall</dt><dd>{result.overallScore}</dd></div>
         {SCORE_ROWS.map(({ key, label }) => (
           <div key={key}><dt>{label}</dt><dd>{result.scores[key]}</dd></div>
         ))}
       </dl>
-    </div>
+    </ReviewSection>
   );
 }
 
 export function RunFindings({ result, componentName }: { result: ResultsSummary; componentName: (id: string) => string }) {
   return (
-    <div className="ax-review-content ax-review-issues">
-      <div className="ax-review-findings-heading"><h3>Findings</h3><span>{result.topFindings.length}</span></div>
+    <ReviewSection title="Findings" meta={String(result.topFindings.length)} className="ax-review-issues">
       {result.topBottleneck && (
-        <p className="ax-card-label">
+        <p className="ax-review-note">
           Bottleneck: {componentName(result.topBottleneck.nodeId)} at{" "}
           {Math.round(result.topBottleneck.utilization * 100)}% of capacity
         </p>
@@ -119,20 +130,23 @@ export function RunFindings({ result, componentName }: { result: ResultsSummary;
         <ul className="ax-inspector-findings">
           {result.topFindings.map((finding, index) => (
             <li key={finding.id}>
-              <div className="ax-review-finding-title">
-                <p>{finding.title}</p>
-                <span>{finding.severity}</span>
-              </div>
-              <p className="ax-card-label">{result.recommendations[index]?.text ?? finding.recommendation}</p>
+              <details className="ax-review-finding">
+                <summary className="ax-review-finding-title">
+                  <span className="ax-review-finding-name">{finding.title}</span>
+                  <span className="ax-review-severity">{finding.severity}</span>
+                  <ChevronDown size={13} aria-hidden="true" />
+                </summary>
+                <p className="ax-card-label">{result.recommendations[index]?.text ?? finding.recommendation}</p>
+              </details>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="ax-card-label">
+        <p className="ax-review-note">
           {result.ready ? "No findings in this run." : "No findings available for this run."}
         </p>
       )}
-    </div>
+    </ReviewSection>
   );
 }
 
@@ -154,11 +168,8 @@ function ComparisonRow({ label, delta, format = formatNumber }: {
 
 export function RunComparison({ comparison }: { comparison: EvaluationComparison }) {
   return (
-    <div className="ax-review-comparison-block">
-      <div className="ax-review-comparison-heading">
-        <h3>Changes since last run</h3><span>Previous → Latest</span>
-      </div>
-      <dl className="ax-review-rows ax-review-comparison">
+    <ReviewSection title="Compare runs" meta="Previous → Latest">
+      <dl className="ax-panel-metrics ax-review-comparison">
         <ComparisonRow label="Overall score" delta={comparison.overallScore} />
         <div>
           <dt>Health</dt>
@@ -174,7 +185,6 @@ export function RunComparison({ comparison }: { comparison: EvaluationComparison
           <ComparisonRow key={key} label={label} delta={comparison.scores[key]} />
         ))}
       </dl>
-    </div>
+    </ReviewSection>
   );
 }
-

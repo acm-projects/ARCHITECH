@@ -28,8 +28,15 @@ export const COLUMN_OF: Record<ArchitectureNodeType, number> = {
   worker: 6,
   custom: 4,
 };
-export const COLUMN_WIDTH = 240;
-export const ROW_HEIGHT = 110;
+export const COLUMN_WIDTH = 160;
+export const ROW_HEIGHT = 80;
+
+// Keep request-order tiers, but do not reserve space for absent component types.
+// Column zero is always the client, including Compose imports where it is added separately.
+export function compactColumnPositions(columns: Iterable<number>): Map<number, number> {
+  const occupied = [...new Set([0, ...columns])].sort((a, b) => a - b);
+  return new Map(occupied.map((column, index) => [column, index * COLUMN_WIDTH]));
+}
 
 export function buildDesign(detected: readonly DetectedComponent[]): GraphDocument {
   const items = [{ type: "client" as const, label: "Users", evidence: [] as string[] }, ...detected];
@@ -49,10 +56,11 @@ export function buildDesign(detected: readonly DetectedComponent[]): GraphDocume
     columns.set(column, [...(columns.get(column) ?? []), item]);
   }
   const tallest = Math.max(...[...columns.values()].map((column) => column.length));
+  const columnPositions = compactColumnPositions(columns.keys());
   const position = new Map<string, { x: number; y: number }>();
   for (const [column, members] of columns) {
     const offset = ((tallest - members.length) * ROW_HEIGHT) / 2;
-    members.forEach((member, row) => position.set(member.id, { x: column * COLUMN_WIDTH, y: offset + row * ROW_HEIGHT }));
+    members.forEach((member, row) => position.set(member.id, { x: columnPositions.get(column)!, y: offset + row * ROW_HEIGHT }));
   }
 
   const ids = (...types: ArchitectureNodeType[]) => placed.filter((item) => types.includes(item.type)).map((item) => item.id);

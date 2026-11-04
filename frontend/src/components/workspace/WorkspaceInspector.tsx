@@ -1,29 +1,17 @@
-import { useContext, useId, type ComponentProps, type ReactNode } from "react";
-import { Activity, ChevronDown, Play, X } from "lucide-react";
+import { useId, useRef, type ComponentProps, type ReactNode } from "react";
+import { ChevronDown, LoaderCircle, Play, X } from "lucide-react";
 
 import type { CustomTechnology } from "../../lib/projects/customTechnologies";
 import ArchitectPanel from "./ai/ArchitectPanel";
-import { ArchiePortrait } from "./ai/ArchiePanel";
-import { ArchieEnabledContext } from "./ArchieContext";
 import ComponentGlyph from "./ComponentGlyph";
 import ComponentInspector from "./ComponentInspector";
 import { COMPONENT_CATALOG, FAMILY_LABELS } from "./componentCatalog";
-import MetricsPanel from "./MetricsPanel";
 import RunPanel from "./RunPanel";
 import HistoryPanel from "./history/HistoryPanel";
-import type { InspectorSectionId } from "./inspectorState";
 import type { WorkspaceInspectorController } from "./useWorkspaceInspector";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 import type { useRunSession } from "./useRunSession";
 import "./workspace-inspector.css";
-
-const REVIEW_STATUS_LABELS = {
-  idle: "Not run",
-  analyzing: "Running…",
-  ready: "Ready",
-  stale: "Out of date",
-  error: "Failed",
-};
 
 type WorkspaceInspectorProps = {
   projectId: string;
@@ -37,53 +25,58 @@ type WorkspaceInspectorProps = {
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate">;
 };
 
-function InspectorSection({ id, title, meta, icon, expanded, disabled, onToggle, children }: {
-  id?: string;
-  title: string;
-  meta?: string;
-  icon?: ReactNode;
+export function SimulationControl({ expanded, onToggle, runs, componentName, onShowResults }: {
   expanded: boolean;
-  disabled?: boolean;
   onToggle: () => void;
-  children: ReactNode;
+  runs: WorkspaceInspectorProps["runs"];
+  componentName: (id: string) => string;
+  onShowResults: (action: () => void) => void;
 }) {
-  const contentId = useId();
-  return (
-    <section id={id} className="ax-inspector-section" aria-label={title} data-expanded={expanded}>
-      <div className="ax-inspector-section-header">
-        <h2>
-          <button type="button" className="ax-inspector-section-toggle" aria-expanded={expanded} aria-controls={contentId} onClick={onToggle} disabled={disabled}>
-            {icon}
-            <span>{title}</span>
-            <span className="ax-inspector-status">
-              {meta && <small>{meta}</small>}
-              <ChevronDown size={13} aria-hidden="true" />
-            </span>
-          </button>
-        </h2>
+  const anchor = useRef<HTMLDivElement>(null);
+  return <div className="ax-simulation-anchor" ref={anchor} onKeyDown={(event) => {
+    if (event.key === "Escape" && expanded) {
+      event.stopPropagation();
+      onToggle();
+      anchor.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    }
+  }}>
+    <button type="button" className="ax-run-button" aria-label="Run simulation"
+      aria-controls="ax-run-panel" aria-expanded={expanded} aria-busy={runs.view.isRunning}
+      disabled={runs.view.isRunning} onClick={() => onShowResults(runs.run)}>
+      {runs.view.isRunning ? <LoaderCircle size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
+      Run
+    </button>
+    <section id="ax-run-panel" className="ax-inspector ax-simulation-panel" aria-label="Simulation" hidden={!expanded}>
+      <div className="ax-inspector-frame">
+        <div className="ax-panel-heading">
+          <h2>Simulation</h2>
+          <button type="button" className="ax-icon-btn" aria-label="Close simulation" onClick={() => {
+            onToggle();
+            anchor.current?.querySelector<HTMLButtonElement>("button")?.focus();
+          }}><X size={14} aria-hidden="true" /></button>
+        </div>
+        <RunPanel view={runs.view} completedRun={runs.state.current} traffic={runs.traffic}
+          onRateChange={runs.setRequestRate} onRun={() => onShowResults(runs.run)}
+          onRunAtRate={(rate) => onShowResults(() => runs.runAtRate(rate))}
+          componentName={componentName} />
       </div>
-      <div id={contentId} className="ax-inspector-section-content" hidden={!expanded}>{children}</div>
     </section>
-  );
+  </div>;
 }
 
 export default function WorkspaceInspector({
   projectId,
   nodes, controller, onClearSelection, onApply, customTechnologies,
-  guidance, testingEnabled, runs,
+  guidance,
 }: WorkspaceInspectorProps) {
-  const { archieOpen, historyOpen, configuring, section: activeSection, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory, openSection, toggleSection, showResults } = controller;
-  const archieEnabled = useContext(ArchieEnabledContext);
+  const { archieOpen, historyOpen, configuring, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory } = controller;
+  const archieContentId = useId();
   const selected = nodes.filter((node) => node.selected);
   const component = selected.length === 1 ? selected[0] : null;
   const selectionKey = selected.map((node) => node.id).join("\0");
   const title = component?.data.label ?? (selected.length ? `${selected.length} components` : "System");
-  const componentName = (id: string) => nodes.find((node) => node.id === id)?.data.label ?? id;
 
-  const expanded = (section: InspectorSectionId) => !archieOpen && !historyOpen && selected.length === 0 && activeSection === section;
-  const panelExpanded = archieOpen || historyOpen || configuring || selected.length > 1 || Boolean(guidance)
-    || (testingEnabled && selected.length === 0 && activeSection !== null);
-  const reviewStatus = REVIEW_STATUS_LABELS[runs.view.runButtonState];
+  const panelExpanded = archieOpen || historyOpen || configuring || selected.length > 1 || Boolean(guidance);
   const selectionHeader = (
     <summary className="ax-inspector-header" onClick={(event) => {
       if (component) {
@@ -111,15 +104,21 @@ export default function WorkspaceInspector({
       }}>
         <X size={14} aria-hidden="true" />
       </button>
-      <ChevronDown size={13} aria-hidden="true" />
+      {!configuring && <ChevronDown size={13} aria-hidden="true" />}
     </summary>
   );
+
+  // The canvas tools live on the bottom bar; this left panel appears only when it has
+  // something to show (a selection, Archie, history or challenge guidance).
+  if (!component && selected.length < 2 && !guidance && !archieOpen && !historyOpen) return null;
 
   return (
     <aside
       className="ax-canvas-panel ax-inspector"
       data-side="right"
       data-expanded={panelExpanded}
+      data-selection={selected.length > 0}
+      data-archie={archieOpen || undefined}
       aria-label="Architecture inspector"
     >
       <div className="ax-inspector-frame">
@@ -142,40 +141,24 @@ export default function WorkspaceInspector({
           </details>
         )}
         {guidance && <section className="ax-inspector-section ax-inspector-guidance" aria-label="Challenge">{guidance}</section>}
-        {/* Keep every pill header visible; only its contents collapse. */}
-        {testingEnabled && (
-          <>
-            <InspectorSection title="Metrics" icon={<Activity size={15} aria-hidden="true" />} meta={reviewStatus} expanded={expanded("metrics")}
-              onToggle={() => toggleSection("metrics")}>
-              <MetricsPanel view={runs.view} liveTraffic={runs.traffic}
-                onRun={() => showResults(runs.run)} onOpenRun={() => openSection("run")} />
-            </InspectorSection>
-            <InspectorSection id="ax-run-panel" title="Run" icon={<Play size={15} aria-hidden="true" />} meta={reviewStatus} expanded={expanded("run")}
-              onToggle={() => toggleSection("run")}>
-              <RunPanel view={runs.view} completedRun={runs.state.current} traffic={runs.traffic}
-                onRateChange={runs.setRequestRate}
-                onRun={() => showResults(runs.run)}
-                onRunAtRate={(rate) => showResults(() => runs.runAtRate(rate))}
-                onViewMetrics={() => openSection("metrics")}
-                componentName={componentName} />
-            </InspectorSection>
-          </>
-        )}
-        <InspectorSection title="Ask Archie" icon={<ArchiePortrait />} expanded={archieOpen} disabled={!archieEnabled}
-          onToggle={archieOpen ? closeArchie : askArchie}>
+        <section
+          id={archieContentId}
+          className="ax-inspector-section"
+          aria-label="Ask Archie"
+          hidden={!archieOpen}
+        >
           {archieOpen && (
             <div className="ax-inspector-archie" data-architect>
               <ArchitectPanel
                 key={projectId}
                 projectId={projectId}
-                embedded
                 onClose={closeArchie}
                 onApply={onApply}
                 customTechnologies={customTechnologies}
               />
             </div>
           )}
-        </InspectorSection>
+        </section>
         {historyOpen && (
           <section className="ax-inspector-section" aria-label="History">
             <div className="ax-inspector-archie">

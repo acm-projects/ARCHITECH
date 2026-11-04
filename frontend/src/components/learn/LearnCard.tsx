@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Minus } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { FREE_PLAY_BODY, FREE_PLAY_TITLE, type ConnectionFeedback, type Lesson } from "./lessons";
@@ -21,6 +22,7 @@ type LearnCardProps = {
   onDismissFeedback?: () => void;
   verticalOffset: number;
   onVerticalOffsetChange: (offset: number) => void;
+  onCollapse?: () => void;
 };
 
 function DialogueText({ text }: { text: string }) {
@@ -87,6 +89,7 @@ export default function LearnCard({
   onDismissFeedback,
   verticalOffset,
   onVerticalOffsetChange,
+  onCollapse,
 }: LearnCardProps) {
   const dragStart = useRef<{
     pointerY: number;
@@ -156,10 +159,14 @@ export default function LearnCard({
         onPointerCancel={() => { dragStart.current = null; }}
         onKeyDown={handleKeyDown}
       >
-        <p className="ax-card-title">{heading}</p>
+        <p className="ax-card-title">{!freePlay && !feedback && `${String(stepIndex + 1).padStart(2, "0")}. `}{heading}</p>
         <span key={`${step.id}-${status}`} className="ax-learn-portrait" aria-hidden="true">
           <Image src="/archie.svg" alt="" width={518} height={400} />
         </span>
+        {onCollapse && <button type="button" className="ax-archie-collapse" aria-label="Collapse lesson guidance" title="Collapse lesson guidance"
+          onPointerDown={event => event.stopPropagation()}
+          onKeyDown={event => event.stopPropagation()}
+          onClick={onCollapse}><Minus size={18} aria-hidden="true" /></button>}
       </div>
 
       {freePlay ? (
@@ -197,7 +204,7 @@ export default function LearnCard({
               Open{" "}<span className="ax-learn-category">
                 <CategoryIcon size={16} color={FAMILY_COLORS[category]} aria-hidden="true" />
                 <span>{FAMILY_LABELS[category]}</span>
-              </span>{" "}in the left toolbar.
+              </span>{" "}in the bottom toolbar.
             </p>}
             <p>{step.instruction}</p>
           </div>

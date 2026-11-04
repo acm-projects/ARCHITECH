@@ -142,6 +142,7 @@ test("the zip opens with standard tools", () => {
   const zip = createZip([{ path: "app/README.md", content: "# hi\n" }, { path: "app/a/b.txt", content: "ünïcode" }], new Date(2026, 9, 22, 12, 0, 0));
   const dir = mkdtempSync(path.join(tmpdir(), "zip-"));
   writeFileSync(path.join(dir, "app.zip"), zip);
-  const listing = execFileSync("python3", ["-c", "import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; print('|'.join(n + '=' + z.read(n).decode() for n in z.namelist()))", path.join(dir, "app.zip")]).toString().trim();
-  assert.equal(listing, "app/README.md=# hi\n|app/a/b.txt=ünïcode");
+  // ASCII JSON avoids the terminal's encoding and newline conversions on Windows.
+  const listing = execFileSync("python3", ["-c", "import json, sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; print(json.dumps({n: z.read(n).decode('utf-8') for n in z.namelist()}))", path.join(dir, "app.zip")]).toString();
+  assert.deepEqual(JSON.parse(listing), { "app/README.md": "# hi\n", "app/a/b.txt": "ünïcode" });
 });

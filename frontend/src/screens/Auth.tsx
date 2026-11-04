@@ -1,7 +1,8 @@
 //Connects to authentication backend
 import { signIn, useSession } from "next-auth/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import Image from "next/image";
+import AuthIntroduction from "../components/auth/AuthIntroduction";
+import "../components/auth/auth-introduction.css";
 
 import { Icon, Logo, StatusMessage } from "../components/ui";
 import { OnboardingArchie, useArchieEyes } from "../components/auth/OnboardingArchie";
@@ -11,14 +12,6 @@ import { isValidAuthEmail, normalizeAuthEmail } from "../lib/authEmail";
 import type { ExperienceLevel } from "../types";
 
 // Provider marks for the icon-only social buttons (aria-hidden; the button carries the label)
-function AppleMark() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M16.37 12.73c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.28-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.99.72 1.23-.02 2.01-1.12 2.77-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.66l.03-.03ZM14.1 5.98c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.1 1.75-.96 2.79 1.01.08 2.05-.52 2.68-1.27Z" />
-    </svg>
-  );
-}
-
 function GitHubMark() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -39,14 +32,10 @@ function GoogleMark() {
 }
 
 const SOCIAL_PROVIDERS = [
-  { name: "Apple", Mark: AppleMark },
   { name: "GitHub", Mark: GitHubMark },
   { name: "Google", Mark: GoogleMark },
 ] as const;
 
-const SYSTEM_BRANDS = [
-  "YouTube", "Netflix", "Spotify", "Uber", "Airbnb", "Instagram", "Dropbox", "Discord",
-] as const;
 /*App.tsx -> sends information/functions -> AuthPage
   AuthPage receives four props:
   1. kind: "signin" | "signup" - tells this component which version it should display
@@ -73,7 +62,6 @@ export function AuthPage({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false); // to make password hidden by default
   const [remember, setRemember] = useState(false); // for backend, not functioning yet
-  const [orbitPaused, setOrbitPaused] = useState(false);
   // Some messages include a logo, so they aren't all strings.
   const [message, setMessage] = useState<ReactNode>("");
 
@@ -134,57 +122,11 @@ export function AuthPage({
     }
   };
 
-  // handles Apple, Git, Google -> to sign in
-  // Apple remains a placeholder until its OAuth provider is configured.
-  const socialClick = (provider: string) => {
-    setMessage(
-      `${provider} authentication will be connected when OAuth is added.`,
-    );
-  };
-
   return (
     <main className="auth-page">
-      <header className="page-header auth-header">
-      {/* logo works as back button to return to the home page */}
-      <Logo
-        variant="with-archie"
-        className="auth-brand"
-        onClick={back}
-        aria-label="Back to ARCHITECH home"
-      />
-
-      </header>
-
-      {/* authentication form section */}
-      <section className="auth-shell">
-        {/* Counter-rotation keeps the logos upright as the circle turns. */}
-        <div className="auth-orbit" data-paused={orbitPaused}>
-          <div className="auth-orbit-ring" aria-hidden="true">
-            {SYSTEM_BRANDS.map((brand, index) => (
-              <span
-                key={brand}
-                className="auth-orbit-slot"
-                style={{ transform: `rotate(${index * 45}deg) translateY(calc(-1 * var(--orbit-radius))) rotate(${-index * 45}deg)` }}
-              >
-                <Image
-                  className="auth-orbit-logo"
-                  src={`/auth-logos/${brand.toLowerCase()}.svg`}
-                  alt=""
-                  width={48}
-                  height={48}
-                />
-              </span>
-            ))}
-          </div>
-          <button
-            type="button"
-            className="auth-orbit-toggle auth-text-button"
-            aria-pressed={orbitPaused}
-            onClick={() => setOrbitPaused((paused) => !paused)}
-          >
-            {orbitPaused ? "Resume rotation" : "Pause rotation"}
-          </button>
-        </div>
+      <section className="auth-shell auth-split-shell">
+        <AuthIntroduction onBack={back} />
+        <div className="auth-form-region">
         <form className="auth-form" onSubmit={submit}>
           {/* Heading */}
           <div className="auth-heading">
@@ -206,9 +148,7 @@ export function AuthPage({
                 onClick={() =>
                   name === "GitHub"
                     ? signIn("github", { callbackUrl: "/dashboard" })
-                    : name === "Google"
-                      ? signIn("google", { callbackUrl: "/" })
-                      : socialClick(name)
+                    : signIn("google", { callbackUrl: "/" })
                 }
                 aria-label={`Continue with ${name}`}
                 title={`Continue with ${name}`}
@@ -358,6 +298,7 @@ export function AuthPage({
             </button>
           </p>
         </form>
+        </div>
       </section>
     </main>
   );

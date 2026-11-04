@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useId, useRef, useState, type ReactNode } from "react";
 import { BookOpen, Check, ChevronDown, Moon, Pencil, RotateCcw, Sun, Trophy } from "lucide-react";
-import { Logo } from "../ui";
+import WorkspaceHeaderShell from "./WorkspaceHeaderShell";
 import { useAppTheme } from "../AppThemeBoundary";
 
-import { HOME_ROUTE } from "../../lib/routes";
 import type { ProjectMode } from "../projects/projectStore";
 
 type WorkspaceHeaderProps = {
@@ -69,12 +67,8 @@ export default function WorkspaceHeader({
   };
 
   return (
-    <header className="page-header ax-header">
-      <div className="ax-header-project">
-        <Link href={HOME_ROUTE} className="ax-brand focus-visible:outline-2 focus-visible:outline-offset-4" aria-label="ARCHITECH dashboard">
-          <Logo variant="by-level" />
-        </Link>
-
+    <WorkspaceHeaderShell
+      project={<>
         {isEditing ? (
           <input
             autoFocus
@@ -109,9 +103,8 @@ export default function WorkspaceHeader({
                 : "Saved"}
           </span>
         )}
-      </div>
-
-      <div className="ax-header-actions">
+      </>}
+      actions={<>
         <button
           type="button"
           aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
@@ -179,7 +172,7 @@ export default function WorkspaceHeader({
           </div>
         </div>
         {runControl}
-      </div>
-    </header>
+      </>}
+    />
   );
 }

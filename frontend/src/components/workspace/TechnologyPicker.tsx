@@ -5,6 +5,7 @@ import { useContext, useMemo, useState, type CSSProperties } from "react";
 import type { Edge } from "@xyflow/react";
 import { useReactFlow } from "@xyflow/react";
 import { useSession } from "next-auth/react";
+import { Search } from "lucide-react";
 
 import type { ExperienceLevel } from "../../types";
 import { roleOf } from "../../lib/architecture/analysis";
@@ -168,6 +169,7 @@ export function TechnologyChooser({
   // With dozens of technologies for a type: a search, and a short list until "Show all".
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Measured in the design as it is now. The card is open only while this component is
   // selected and re-renders when its data changes, so this is the graph on screen. A few
@@ -216,12 +218,20 @@ export function TechnologyChooser({
 
   return (
     <div className="ax-card-section ax-configure-technology">
-      <p className="ax-card-label">Technology</p>
-      <p className="ax-tech-basis">{basis}</p>
-      {many && (
-        <div className="ax-tech-search">
+      <div className="ax-tech-label-row">
+        <p className="ax-card-label">Technology</p>
+        {many && <button type="button" className="ax-icon-btn" aria-label="Search technologies"
+          aria-expanded={searchOpen} aria-controls={`technology-search-${nodeId}`}
+          onClick={() => { setSearchOpen(!searchOpen); setQuery(""); }}>
+          <Search size={14} aria-hidden="true" />
+        </button>}
+      </div>
+      {level === "Beginner" && <p className="ax-tech-basis">{basis}</p>}
+      {many && searchOpen && (
+        <div className="ax-tech-search" id={`technology-search-${nodeId}`}>
           <input
             type="search"
+            autoFocus
             className="ax-field"
             aria-label="Search technologies"
             placeholder={`Search ${comparison.options.length} technologies`}
@@ -283,9 +293,9 @@ export function TechnologyChooser({
             {many ? (
               <>
                 <optgroup label="Common">
-                  {comparison.options.filter((estimate) => CORE_IMPLEMENTATION_IDS.has(estimate.implementation.id)).map((estimate) => (
+                  {comparison.options.filter((estimate) => CORE_IMPLEMENTATION_IDS.has(estimate.implementation.id) && (!needle || matches(estimate) || estimate.implementation.id === current)).map((estimate) => (
                     <option key={estimate.implementation.id} value={estimate.implementation.id}>
-                      {estimate.implementation.name} — {sizedLine(type, estimate)}
+                      {estimate.implementation.name}
                     </option>
                   ))}
                 </optgroup>
@@ -294,7 +304,7 @@ export function TechnologyChooser({
                     .filter((estimate) => !CORE_IMPLEMENTATION_IDS.has(estimate.implementation.id) && (!needle || matches(estimate) || estimate.implementation.id === current))
                     .map((estimate) => (
                       <option key={estimate.implementation.id} value={estimate.implementation.id}>
-                        {estimate.implementation.name} — {sizedLine(type, estimate)}
+                        {estimate.implementation.name}
                       </option>
                     ))}
                 </optgroup>
@@ -302,17 +312,27 @@ export function TechnologyChooser({
             ) : (
               comparison.options.map((estimate) => (
                 <option key={estimate.implementation.id} value={estimate.implementation.id}>
-                  {estimate.implementation.name} — {sizedLine(type, estimate)}
+                  {estimate.implementation.name}
                 </option>
               ))
             )}
           </select>
-          <p className="ax-tech-meta mt-1" title={tradeoffs(selected)}>
-            {perInstanceLine(type, selected)}
-          </p>
+          {!selected.enough && <p className="ax-tech-meta ax-tech-sized" data-short>{sizedLine(type, selected)}</p>}
         </>
       )}
-      {shownWhatIf && <DesignComparisonTable whatIf={shownWhatIf} onChoose={choose} />}
+      {shownWhatIf && <DesignComparisonTable whatIf={shownWhatIf} onChoose={choose} context={
+        <div className="ax-tech-comparison-context">
+          <p className="ax-tech-basis">{basis}</p>
+          <p className="ax-tech-meta">{sizedLine(type, selected)}</p>
+          <p className="ax-tech-meta" title={tradeoffs(selected)}>{perInstanceLine(type, selected)}</p>
+        </div>
+      } />}
+      {level !== "Beginner" && (!shownWhatIf?.ready || shownWhatIf.options.length < 2) && (
+        <div className="ax-tech-meta mt-1" title={tradeoffs(selected)}>
+          <p>{sizedLine(type, selected)}</p>
+          <p>{perInstanceLine(type, selected)}</p>
+        </div>
+      )}
       {many && needle && listed.length <= 1 && <p className="ax-tech-meta mt-1">No other technology matches “{query.trim()}”.</p>}
       {error && (
         <p role="alert" className="ax-card-label mt-1">

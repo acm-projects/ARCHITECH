@@ -1,10 +1,12 @@
+import { ArchiePortrait } from "./ArchiePanel";
 import { ArrowUpRight } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
-export function ArchieMessage({ role, children, focusLabel }: {
+export function ArchieMessage({ role, children, focusLabel, showSpeaker = true }: {
   role: "user" | "assistant";
   children: ReactNode;
   focusLabel?: string;
+  showSpeaker?: boolean;
 }) {
   return role === "user" ? (
     <div className="ax-ai-user">
@@ -13,8 +15,11 @@ export function ArchieMessage({ role, children, focusLabel }: {
     </div>
   ) : (
     <div className="ax-ai-assistant">
-      <span className="ax-ai-speaker">Archie</span>
-      {children}
+      <ArchiePortrait />
+      <div className="ax-ai-assistant-content">
+        {showSpeaker && <span className="ax-ai-speaker">Archie</span>}
+        <div className="ax-ai-message-box">{children}</div>
+      </div>
     </div>
   );
 }

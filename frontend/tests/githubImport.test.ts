@@ -240,3 +240,25 @@ test("compose variants at the root are read too", async () => {
   assert.deepEqual(composeVariants(entries), ["compose-prod.yaml", "docker-compose.override.yml", "docker-compose.postgres.yml"]);
   assert.match(foldersQuery([], ["docker-compose.postgres.yml"]), /f0: object\(expression: "HEAD:docker-compose\.postgres\.yml"\)/);
 });
+
+test("sparse detected stacks use compact columns without empty infrastructure tiers", () => {
+  const graph = buildDesign([
+    { type: "server", label: "Backend", evidence: [] },
+    { type: "cache", label: "Redis", evidence: [] },
+    { type: "database", label: "PostgreSQL", evidence: [] },
+  ]);
+  const xs = [...new Set(graph.nodes.map(node => node.position.x))].sort((a, b) => a - b);
+  assert.equal(xs[0], 0);
+  for (let i = 1; i < xs.length; i++) {
+    assert.ok(xs[i]! - xs[i - 1]! <= 160, "adjacent tiers should not have oversized connecting gaps");
+    assert.ok(xs[i]! - xs[i - 1]! >= 120, "leave clearance around the nodes and ports");
+  }
+});
+
+test("compose repository imports also remove empty layout columns", async () => {
+  const repo = fakeGitHub({ entries: [], files: { "docker-compose.yml": "services:\n  backend:\n    image: node:22\n    depends_on: [db, redis]\n  db:\n    image: postgres:16\n  redis:\n    image: redis:7\n" } });
+  const result = await importRepository(repo.graphql, { owner: "a", repo: "b" });
+  const xs = [...new Set(result.graph.nodes.map(node => node.position.x))].sort((a, b) => a - b);
+  for (let i = 1; i < xs.length; i++) assert.ok(xs[i]! - xs[i - 1]! <= 160);
+  assert.ok(result.graph.edges.length > 0);
+});

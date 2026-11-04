@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { COMPONENT_TYPES, implementationById, implementationsFor } from "../src/lib/architecture/componentLibrary.ts";
 import { ASSUMPTIONS, configureNode } from "../src/lib/architecture/evaluation/capabilities.ts";
-import { simulate } from "../src/lib/architecture/evaluation/simulation.ts";
+import { simulate, type NodeSimulation } from "../src/lib/architecture/evaluation/simulation.ts";
 import { setNodeImplementation } from "../src/lib/architecture/implementationEditing.ts";
 import {
   compareTechnologiesForNode,
@@ -146,6 +146,34 @@ test("more load or more data costs more", () => {
   assert.ok(cost(5_000, 2_000).monthlyCost > cost(5_000, 50).monthlyCost);
   assert.ok(cost(5_000, 2_000).instancesNeeded! > cost(5_000, 50).instancesNeeded!);
   assert.equal(cost(5_000, 2_000).storageCost, 2_000 * ASSUMPTIONS.databaseCostPerGb);
+});
+
+test("non-database sizing matches the engine at the replica boundary for every technology", () => {
+  for (const { name } of COMPONENT_TYPES) {
+    if (name === "database") continue;
+    const graph = {
+      nodes: [node("c", "client"), node("subject", name)],
+      edges: [{ source: "c", target: "subject" }],
+    };
+    for (const load of [traffic(2_000), { ...traffic(200_000), concurrentUsers: 1_000_000 }]) {
+      const comparison = compareTechnologiesForNode(graph, load, "subject")!;
+      for (const option of comparison.options) {
+        if (option.replicasNeeded === null) continue;
+        const at = (replicas: number): NodeSimulation => simulate({
+          ...graph,
+          nodes: [graph.nodes[0], node("subject", name, option.implementation.id, { replicas })],
+        }, load).nodes.find((entry) => entry.id === "subject")!;
+        const result = at(option.replicasNeeded);
+        const label: string = `${name}: ${option.implementation.id} at ${load.requestsPerSecond} req/s`;
+        assert.equal(option.enough, result.utilization <= ASSUMPTIONS.nearCapacityUtilization, label);
+        assert.equal(option.monthlyCost, result.config.monthlyCost, label);
+        assert.equal(option.latencyMs, result.latencyMs, label);
+        if (option.enough && option.replicasNeeded > 1) {
+          assert.ok(at(option.replicasNeeded - 1).utilization > ASSUMPTIONS.nearCapacityUtilization, label);
+        }
+      }
+    }
+  }
 });
 
 test("technologies compare on their own numbers, and the node's settings are ignored for sizing", () => {

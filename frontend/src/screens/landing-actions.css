@@ -1,0 +1,28 @@
+/* Shared by the landing hero and navigation; no application-wide button overrides. */
+.landing-v2 .btn.landing-start-action,
+.landing-v2 .btn.landing-explore-action {
+  border-radius: 8px;
+}
+
+.landing-v2 .btn.landing-explore-action {
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 4px 12px rgb(17 24 39 / 12%);
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.landing-v2 .btn.landing-explore-action:hover:not(:disabled),
+.landing-v2 .btn.landing-explore-action:focus-visible {
+  background: #109bfd;
+  color: #fff;
+  box-shadow: 0 6px 18px rgb(16 155 253 / 28%);
+}
+
+.landing-v2 .btn.landing-explore-action:focus-visible {
+  outline: 2px solid #087fd5;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-v2 .btn.landing-explore-action { transition: none; }
+}
