@@ -1,9 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
-type Theme = "dark" | "light";
+import { applyThemeClass, themeClass, THEME_STORAGE_KEY, type Theme } from "../lib/theme";
 
 type ThemeContextValue = {
   theme: Theme;
@@ -11,14 +11,14 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
-const THEME_STORAGE_KEY = "architech-theme";
 
 export default function AppThemeBoundary({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isLanding = pathname === "/";
   const [theme, setTheme] = useState<Theme>("light");
 
-  useEffect(() => {
+  // Layout effects run before paint, so the saved theme replaces the server's default unseen.
+  useLayoutEffect(() => {
     try {
       const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
       if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
@@ -26,6 +26,11 @@ export default function AppThemeBoundary({ children }: { children: ReactNode }) 
       console.error("Could not read the appearance preference.", error);
     }
   }, []);
+
+  // The theme lives on <html> so the first paint and top-layer dialogs both see it.
+  useLayoutEffect(() => {
+    applyThemeClass(document.documentElement.classList, themeClass(pathname, theme));
+  }, [pathname, theme]);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -40,7 +45,7 @@ export default function AppThemeBoundary({ children }: { children: ReactNode }) 
   const effectiveTheme = isLanding ? "light" : theme;
   return (
     <ThemeContext.Provider value={{ theme: effectiveTheme, toggleTheme }}>
-      <div className={isLanding ? undefined : `ax-${theme}-app`}>{children}</div>
+      {children}
     </ThemeContext.Provider>
   );
 }

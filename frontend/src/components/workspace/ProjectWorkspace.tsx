@@ -19,7 +19,7 @@ const ERROR_MESSAGES = {
 // Reusable fallback screen when a project can't be opened.
 function Message({ title, detail }: { title: string; detail: string }) {
   return (
-    <main className="flex h-screen flex-col items-center justify-center gap-3 bg-white text-[#0A0A0A]">
+    <main className="ax-status-page flex h-screen flex-col items-center justify-center gap-3 bg-white text-[#0A0A0A]">
       <h1 className="text-lg font-medium">{title}</h1>
       <p className="text-sm text-neutral-500">{detail}</p>
 
@@ -70,7 +70,7 @@ export default function ProjectWorkspace({ projectId }: { projectId: string }) {
     case "ready":
       // Keep the page blank while the browser is still resolving the project.
       // This avoids flashing the wrong UI before the editor is ready.
-      return <div className="h-screen bg-white" />;
+      return <div className="ax-status-page h-screen bg-white" />;
 
     case "not-found":
       return (

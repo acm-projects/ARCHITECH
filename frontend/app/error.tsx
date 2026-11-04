@@ -18,7 +18,7 @@ export default function RouteError({
   }, [error]);
 
   return (
-    <main className="flex h-screen flex-col items-center justify-center gap-3 bg-white text-[#0A0A0A]">
+    <main className="ax-status-page flex h-screen flex-col items-center justify-center gap-3 bg-white text-[#0A0A0A]">
       <h1 className="text-lg font-medium">Something went wrong</h1>
       <p className="text-sm text-neutral-500">This page could not be shown.</p>
       <div className="mt-2 flex items-center gap-6 text-sm">
