@@ -84,6 +84,14 @@ export function LiveMetricsBar({
   );
 }
 
+const HEALTH_LABEL = { incomplete: "Incomplete", healthy: "Healthy", warning: "Warning", critical: "Critical" } as const;
+
+// The colored dot also names the state, for hover and screen readers.
+function HealthDot({ status }: { status: keyof typeof HEALTH_LABEL | undefined }) {
+  const label = `Health: ${HEALTH_LABEL[status ?? "incomplete"]}`;
+  return <span className="ax-live-dot" role="img" aria-label={label} title={label} />;
+}
+
 // The bottom bar's Live estimates panel: the shared tool header (traffic and health as its
 // state, the estimate's basis on hover) above the metrics, matching Design check.
 export function LiveEstimatesPanel({
@@ -105,7 +113,7 @@ export function LiveEstimatesPanel({
         toolKey="live"
         icon={<Gauge size={16} aria-hidden="true" />}
         title="Live estimates"
-        meta={<><span className="ax-live-dot" aria-hidden="true" />{formatRate(requestsPerSecond)} req/s</>}
+        meta={<><HealthDot status={result?.summary.health} />{formatRate(requestsPerSecond)} req/s</>}
         metaTitle={EXPLANATION}
         onClose={onClose}
       />

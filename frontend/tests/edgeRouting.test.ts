@@ -1,0 +1,86 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+import { Position } from "@xyflow/react";
+
+import { arrowHeadPath, EDGE_STUB, getOrthogonalEdgePath } from "../src/lib/architecture/edgeRouting.ts";
+
+// Architecture nodes are 82×27 with the input handle on the left edge and the output on the
+// right edge, both at mid-height.
+const W = 82;
+const H = 27;
+type Box = { x: number; y: number };
+const out = (box: Box) => ({ x: box.x + W, y: box.y + H / 2 });
+const inp = (box: Box) => ({ x: box.x, y: box.y + H / 2 });
+
+// The corner points of an SVG path made of M/L/H/V commands. React Flow writes square
+// corners as zero-radius Q curves, whose end point is the corner. Repeated points are dropped.
+function points(path: string): { x: number; y: number }[] {
+  const result: { x: number; y: number }[] = [];
+  let x = 0;
+  let y = 0;
+  for (const [, command, args] of path.matchAll(/([MLHVQ])([^MLHVQ]*)/g)) {
+    const numbers = args.trim().split(/[\s,]+/).filter(Boolean).map(Number);
+    if (command === "H") x = numbers[0];
+    else if (command === "V") y = numbers[0];
+    else [x, y] = numbers.slice(-2);
+    const previous = result[result.length - 1];
+    if (!previous || previous.x !== x || previous.y !== y) result.push({ x, y });
+  }
+  return result;
+}
+
+const route = (from: Box, to: Box) => {
+  const s = out(from);
+  const t = inp(to);
+  const [path] = getOrthogonalEdgePath({
+    sourceX: s.x, sourceY: s.y, sourcePosition: Position.Right,
+    targetX: t.x, targetY: t.y, targetPosition: Position.Left,
+  });
+  return points(path);
+};
+
+// True when an axis-aligned segment passes through the inside of a node box.
+function crosses(a: Box, b: Box, node: Box): boolean {
+  const left = node.x + 1, right = node.x + W - 1, top = node.y + 1, bottom = node.y + H - 1;
+  if (a.y === b.y) return a.y > top && a.y < bottom && Math.max(a.x, b.x) > left && Math.min(a.x, b.x) < right;
+  if (a.x === b.x) return a.x > left && a.x < right && Math.max(a.y, b.y) > top && Math.min(a.y, b.y) < bottom;
+  return true;
+}
+
+function assertReadable(from: Box, to: Box) {
+  const p = route(from, to);
+  // Leaves the output handle to the right and enters the input handle from the left.
+  assert.ok(p[1].x > p[0].x && p[1].y === p[0].y, "first segment heads right out of the source");
+  const last = p[p.length - 1];
+  const beforeLast = p[p.length - 2];
+  assert.ok(last.x > beforeLast.x && last.y === beforeLast.y, "last segment heads right into the target");
+  assert.deepEqual(last, inp(to));
+  for (let i = 1; i < p.length; i++) {
+    for (const node of [from, to]) assert.equal(crosses(p[i - 1], p[i], node), false, `segment ${i} crosses a component`);
+  }
+}
+
+test("a forward connection runs right, then into the target from its left", () => {
+  assertReadable({ x: 0, y: 0 }, { x: 220, y: 0 });
+  assertReadable({ x: 0, y: 0 }, { x: 220, y: 140 });
+});
+
+test("a target directly below the source still reads source → target", () => {
+  assertReadable({ x: 220, y: 0 }, { x: 220, y: 140 });
+  assertReadable({ x: 220, y: 140 }, { x: 220, y: 0 });
+});
+
+test("a back-edge goes around both components instead of through them", () => {
+  // Same row: the detour runs below both.
+  assertReadable({ x: 220, y: 0 }, { x: 0, y: 0 });
+  // Different rows: the detour crosses in the gap between them.
+  assertReadable({ x: 220, y: 140 }, { x: 0, y: 0 });
+  const p = route({ x: 220, y: 0 }, { x: 0, y: 0 });
+  assert.equal(p[1].x - p[0].x, EDGE_STUB, "leaves by one stub before turning");
+});
+
+test("the arrowhead's tip sits on the target handle and points into it", () => {
+  assert.equal(arrowHeadPath(10, 20, Position.Left), "M10 20L4 17L4 23Z");
+  assert.equal(arrowHeadPath(10, 20, Position.Top), "M10 20L7 14L13 14Z");
+});

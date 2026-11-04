@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
@@ -22,8 +21,8 @@ import "@xyflow/react/dist/style.css";
 import "../workspace/architecture-workspace.css";
 import "./breakdowns.css";
 
-import { Logo } from "../ui";
-import { HOME_ROUTE } from "../../lib/routes";
+import WorkspaceHeaderShell from "../workspace/WorkspaceHeaderShell";
+import ThemeToggle from "../workspace/ThemeToggle";
 import ArchitectureNode, { type ArchitectureFlowNode } from "../workspace/nodes/ArchitectureNode";
 import {
   NETFLIX_COMPONENTS,
@@ -155,13 +154,13 @@ function NetflixWalkthrough() {
 
   return (
     <main className="ax-workspace ax-breakdown" style={{ "--ax-breakdown-node-width": `${NETFLIX_NODE_SIZE.width}px`, "--ax-breakdown-node-height": `${NETFLIX_NODE_SIZE.height}px` } as CSSProperties}>
-      <header className="page-header ax-breakdown-header">
-        <div className="ax-breakdown-heading">
-          <Link href={HOME_ROUTE} className="ax-brand" aria-label="ARCHITECH dashboard"><Logo variant="by-level" /></Link>
-          <h1>Netflix <span>System breakdown</span></h1>
-        </div>
-        <button type="button" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>
-      </header>
+      <WorkspaceHeaderShell
+        project={<h1 className="ax-title"><span>Netflix</span><small>System breakdown</small></h1>}
+        actions={<>
+          <ThemeToggle />
+          <button className="ax-header-menu-trigger" type="button" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>
+        </>}
+      />
 
       <div className="ax-breakdown-body">
         <section className="ax-breakdown-diagram" aria-label="Netflix example architecture">

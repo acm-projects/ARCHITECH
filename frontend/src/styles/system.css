@@ -807,6 +807,35 @@ pre { font-family: var(--font-mono); }
   border-color: #454545;
 }
 
+/* Dialogs keep their light surface in dark mode, so they also keep the light palette;
+   otherwise their text, hover, border and focus colors flip to near-white on white. */
+.ax-dark-app .ax-new-project-dialog {
+  color-scheme: light;
+  --neutral-950: #111111;
+  --neutral-900: #222222;
+  --neutral-800: #3d3d3d;
+  --neutral-700: #555555;
+  --neutral-600: #666666;
+  --neutral-500: #8a8a84;
+  --neutral-400: #a9a9a4;
+  --neutral-300: #d0d0cc;
+  --neutral-250: #d8d8d4;
+  --neutral-200: #ededeb;
+  --neutral-100: #f3f3f0;
+  --neutral-50: #f7f7f4;
+  --color-ink: var(--neutral-950);
+  --color-muted: var(--neutral-600);
+  --color-subtle: var(--neutral-500);
+  --color-line: var(--neutral-250);
+  --color-line-strong: var(--neutral-400);
+  --color-surface: var(--neutral-0);
+  --color-surface-2: var(--neutral-100);
+  --color-canvas: var(--neutral-50);
+  --color-focus: var(--neutral-950);
+  --color-ink-deep: #0a0a0a;
+  color: var(--color-ink);
+}
+
 .ax-dark-app .ax-workspace {
   --ax-canvas: #141414;
   --ax-surface: #000000;
@@ -818,6 +847,11 @@ pre { font-family: var(--font-mono); }
   --ax-line-strong: #454545;
   --ax-accent: #75beff;
   --ax-brand: #9cdcfe;
+  /* Lines and handles lighten on hover against the dark canvas instead of dimming. */
+  --ax-edge: #6b6b6b;
+  --ax-edge-hover: #a3a3a3;
+  --ax-handle: #6b6b6b;
+  --ax-danger: #ff8a8a;
 }
 
 .ax-dark-app .ax-workspace .ax-canvas-panel {
@@ -949,7 +983,7 @@ pre { font-family: var(--font-mono); }
 .ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card:nth-child(5n + 4) { --preview-outline: #82c99a; }
 .ax-dark-app :is(.ax-dashboard-project-grid, .ax-breakdown-catalog) > .ax-dashboard-project-card:nth-child(5n) { --preview-outline: #f29aad; }
 .ax-dark-app .ax-dashboard-section-title { color: #ffffff; }
-.ax-dark-app .ax-daily-challenge-banner { border-color: #454545; background: #000000; box-shadow: 0 4px 16px rgb(0 0 0 / 24%); }
+.ax-dark-app .ax-daily-challenge-banner { border-color: #454545; background: #000000; }
 
 @media (prefers-reduced-motion: reduce) {
   .ax-light-app :is(.ax-dashboard-project-grid > .ax-dashboard-project-card, .ax-breakdown-catalog > .ax-dashboard-project-card),

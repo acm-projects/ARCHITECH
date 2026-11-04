@@ -1,24 +1,25 @@
-import { BaseEdge, type EdgeProps } from "@xyflow/react";
+import { BaseEdge, Position, type EdgeProps } from "@xyflow/react";
 
-export function getOrthogonalEdgePath({
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-}: EdgeProps): [string, number, number, number, number] {
-  const middleX = sourceX + (targetX - sourceX) / 2;
-  const middleY = sourceY + (targetY - sourceY) / 2;
-  const path = `M ${sourceX} ${sourceY} H ${middleX} V ${targetY} H ${targetX}`;
-  return [
-    path,
-    middleX,
-    middleY,
-    Math.abs(middleX - sourceX),
-    Math.abs(middleY - sourceY),
-  ];
-}
+import { arrowHeadPath, getOrthogonalEdgePath } from "../../lib/architecture/edgeRouting";
+
+// The breakdown shares this route.
+export { getOrthogonalEdgePath };
 
 export default function OrthogonalEdge(props: EdgeProps) {
-  const [path] = getOrthogonalEdgePath(props);
-  return <BaseEdge id={props.id} path={path} markerEnd={props.markerEnd} style={props.style} />;
+  const [path, labelX, labelY] = getOrthogonalEdgePath(props);
+  const targetSide = props.targetPosition ?? Position.Left;
+  return (
+    <>
+      <BaseEdge
+        id={props.id}
+        path={path}
+        style={props.style}
+        label={props.label}
+        labelX={labelX}
+        labelY={labelY}
+        interactionWidth={props.interactionWidth}
+      />
+      <path className="ax-edge-arrow" d={arrowHeadPath(props.targetX, props.targetY, targetSide)} />
+    </>
+  );
 }

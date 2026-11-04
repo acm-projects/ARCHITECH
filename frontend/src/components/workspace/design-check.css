@@ -139,7 +139,8 @@
   box-shadow: none;
 }
 .ax-workspace .ax-check-badge::after { content: ""; position: absolute; inset: -5px; }
-.ax-workspace .ax-check-badge[data-severity="high"] { background: var(--ax-danger); }
+/* Severity is carried by shape as well as color: medium is round, high is square. */
+.ax-workspace .ax-check-badge[data-severity="high"] { border-radius: var(--ax-radius-xs); background: var(--ax-danger); color: var(--ax-surface); }
 .ax-workspace .ax-check-badge:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 2px; }
 .ax-workspace .ax-check-outline {
   position: absolute;
@@ -147,7 +148,7 @@
   top: 0;
   left: 0;
   border: 2px dashed #d97706;
-  border-radius: 14px;
+  border-radius: var(--ax-radius-sm);
   pointer-events: none;
 }
 .ax-workspace .ax-check-outline[data-severity="high"] { border-color: var(--ax-danger); }

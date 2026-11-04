@@ -1,16 +1,18 @@
 "use client";
 
-import { useCallback, useMemo, useState, type CSSProperties, type DragEvent } from "react";
+import { useCallback, useEffect, useState, type CSSProperties, type DragEvent } from "react";
 import { Gauge, ShieldCheck } from "lucide-react";
 import {
+  ConnectionLineType,
   Controls,
-  MarkerType,
   ReactFlow,
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
   useReactFlow,
+  SelectionMode,
   type Connection,
+  type FinalConnectionState,
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -70,20 +72,15 @@ const FIT_VIEW_OPTIONS = {
   padding: 0.4,
 };
 
+// Every edge draws as a right-angle route with its own arrowhead, including saved edges
+// without a type ("default") and those saved as "orthogonal".
 const edgeTypes = {
+  default: OrthogonalEdge,
   orthogonal: OrthogonalEdge,
 };
 
-// React Flow creates arrowheads from edge options rather than stylesheet rules.
-const defaultEdgeOptions = {
-  type: "orthogonal" as const,
-  markerEnd: {
-    type: MarkerType.ArrowClosed,
-    color: "#b4b4af",
-    width: 6,
-    height: 6,
-  },
-};
+// A refused connection explains itself for this long, then clears.
+const CONNECTION_NOTICE_MS = 4000;
 
 const NODE_WIDTH = 82;
 const NODE_HEIGHT = 27;
@@ -107,10 +104,6 @@ function Workspace({ project }: { project: Project }) {
   const [nodes, setNodes, onNodesChange] =
     useNodesState<ArchitectureFlowNode>(project.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(project.edges);
-  const visibleEdges = useMemo(
-    () => edges.map((edge) => edge.type === "orthogonal" ? edge : { ...edge, type: "orthogonal" }),
-    [edges],
-  );
 
   const {
     screenToFlowPosition,
@@ -126,6 +119,12 @@ function Workspace({ project }: { project: Project }) {
   );
 
   const [title, setTitle] = useState(project.title);
+  const [connectionNotice, setConnectionNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (!connectionNotice) return;
+    const timer = window.setTimeout(() => setConnectionNotice(null), CONNECTION_NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [connectionNotice]);
   const [learnPanelOffset, setLearnPanelOffset] = useState(0);
   const learnPanelStyle = { "--ax-learn-offset": `${learnPanelOffset}px` } as CSSProperties;
   // Clear node/edge selection without changing the architecture itself.
@@ -260,14 +259,38 @@ function Workspace({ project }: { project: Project }) {
         mode,
       );
 
-      if (!result.ok) return;
+      if (!result.ok) {
+        setConnectionNotice(result.message);
+        return;
+      }
 
+      setConnectionNotice(null);
       setEdges(result.edges);
 
       // Learn uses this to react to what the student connected during the tutorial.
       reportConnection(connection);
     },
     [getNodes, getEdges, mode, setEdges, reportConnection],
+  );
+
+  // React Flow skips onConnect when the drop target fails isValidConnection, so explain the
+  // refusal here: the same rule that blocked the drop supplies the message.
+  const handleConnectEnd = useCallback(
+    (_event: MouseEvent | TouchEvent, state: FinalConnectionState) => {
+      if (state.isValid !== false || !state.fromNode || !state.toNode) return;
+      const verdict = validateConnection(
+        { nodes: getNodes(), edges: getEdges() },
+        {
+          source: state.fromNode.id,
+          target: state.toNode.id,
+          sourceHandle: state.fromHandle?.id ?? null,
+          targetHandle: state.toHandle?.id ?? null,
+        },
+        mode,
+      );
+      if (!verdict.ok) setConnectionNotice(verdict.message);
+    },
+    [getNodes, getEdges, mode],
   );
 
   // This is the one place new canvas nodes are created.
@@ -570,26 +593,30 @@ function Workspace({ project }: { project: Project }) {
               <InspectorContext.Provider value={showInspector ? inspector.nodeActions : null}>
                 <ReactFlow
                   nodes={nodes}
-                  edges={visibleEdges}
+                  edges={edges}
                   nodeTypes={nodeTypes}
                   edgeTypes={edgeTypes}
                   onNodesChange={onNodesChange}
                   onEdgesChange={onEdgesChange}
                   onConnect={handleConnect}
+                  onConnectEnd={handleConnectEnd}
                   isValidConnection={isValidConnection}
+                  connectionLineType={ConnectionLineType.Step}
                   // Delete and Backspace are handled by useWorkspaceKeyboard so all
                   // keyboard behavior goes through the same history-aware path.
                   deleteKeyCode={null}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  defaultEdgeOptions={defaultEdgeOptions}
                   fitView
                   fitViewOptions={FIT_VIEW_OPTIONS}
                   // Drag empty canvas to pan; dragging a component still moves it.
+                  // Shift+drag draws a selection box that picks every component it touches.
                   panOnDrag
                   panOnScroll
+                  selectionMode={SelectionMode.Partial}
+                  elevateEdgesOnSelect
                 >
-                  <Controls showInteractive={false} />
+                  <Controls showInteractive={false} fitViewOptions={FIT_VIEW_OPTIONS} />
                   {canRunDesign && <DesignCheckBadges result={live.result} nodes={nodes} check={designCheck} />}
                 </ReactFlow>
               </InspectorContext.Provider>
@@ -597,6 +624,9 @@ function Workspace({ project }: { project: Project }) {
 
             {/* Keep floating tools below the header while the graph extends behind it. */}
             <div className="ax-canvas-overlays">
+              {connectionNotice && (
+                <p role="status" className="ax-connection-notice">{connectionNotice}</p>
+              )}
 
 
               {/* If saving the selected mode fails, show the error without breaking the editor. */}

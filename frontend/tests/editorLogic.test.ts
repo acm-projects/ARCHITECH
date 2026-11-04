@@ -9,7 +9,7 @@ import {
   validateConnection,
   type ConnectionRule,
 } from "../src/lib/architecture/connections.ts";
-import { isTypingTarget, resolveShortcut } from "../src/lib/architecture/keyboard.ts";
+import { isControlTarget, isTypingTarget, resolveShortcut } from "../src/lib/architecture/keyboard.ts";
 import {
   addNode,
   moveNode,
@@ -607,10 +607,24 @@ test("nothing fires while typing in a field", () => {
   }
 });
 
-test("shortcuts still work when focus is on the canvas or a button", () => {
-  for (const target of [{ tagName: "DIV" }, { tagName: "BUTTON" }, { tagName: "BODY" }, null, undefined]) {
+test("shortcuts still work when focus is on the canvas or a button on it", () => {
+  for (const target of [{ tagName: "DIV" }, { tagName: "BUTTON", closest: (selector: string) => (selector === ".react-flow" ? {} : null) }, { tagName: "BODY" }, null, undefined]) {
     assert.equal(isTypingTarget(target), false);
     assert.equal(key("Delete", { target }), "delete-selection");
+  }
+});
+
+test("Delete and Backspace on a panel button leave the canvas selection alone", () => {
+  for (const target of [
+    { tagName: "BUTTON", closest: () => null },
+    { tagName: "A" },
+    { tagName: "summary", closest: () => null },
+  ]) {
+    assert.equal(isControlTarget(target), true);
+    assert.equal(key("Delete", { target }), null);
+    assert.equal(key("Backspace", { target }), null);
+    // Other shortcuts still work from panel controls.
+    assert.equal(key("z", { ctrlKey: true, target }), "undo");
   }
 });
 
