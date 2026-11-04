@@ -36,7 +36,20 @@ export function isTypingTarget(target: unknown): boolean {
   return typeof tagName === "string" && TYPING_TAGS.has(tagName.toUpperCase());
 }
 
-// Delete and Backspace delete the selection, Escape clears it, and with Ctrl or Cmd:
+const CONTROL_TAGS = new Set(["BUTTON", "A", "SUMMARY"]);
+
+// True when focus is on a control outside the canvas (a panel button, link or disclosure).
+// Delete and Backspace there must not remove what is selected on the canvas; controls on the
+// canvas itself (a selected component's action bar) still pass the keys through.
+export function isControlTarget(target: unknown): boolean {
+  if (typeof target !== "object" || target === null) return false;
+  const { tagName, closest } = target as { tagName?: unknown; closest?: unknown };
+  if (typeof tagName !== "string" || !CONTROL_TAGS.has(tagName.toUpperCase())) return false;
+  const onCanvas = typeof closest === "function" && (closest as (selector: string) => unknown).call(target, ".react-flow");
+  return !onCanvas;
+}
+
+// Delete and Backspace delete the selection (unless a panel control has focus), Escape clears it, and with Ctrl or Cmd:
 // S saves now, Z undoes, Shift+Z or Y redoes, C copies, V pastes and D duplicates.
 // Nothing fires while typing, during IME composition, with a modifier that makes it a
 // different shortcut, or after something else already handled the event.
@@ -47,7 +60,9 @@ export function resolveShortcut(event: ShortcutEvent): ShortcutIntent | null {
   const plain = !command && !event.altKey && !event.shiftKey;
 
   if (event.key === "Escape" && plain) return "clear-selection";
-  if ((event.key === "Delete" || event.key === "Backspace") && plain) return "delete-selection";
+  if ((event.key === "Delete" || event.key === "Backspace") && plain) {
+    return isControlTarget(event.target) ? null : "delete-selection";
+  }
 
   if (!command || event.altKey) return null;
   const letter = event.key.toLowerCase();

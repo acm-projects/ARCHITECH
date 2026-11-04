@@ -28,6 +28,7 @@ export default async function DashboardPage() {
           title={urlShortenerChallenge.title}
           difficulty={urlShortenerChallenge.difficulty}
           requirement={urlShortenerChallenge.summary[0]}
+          targets={urlShortenerChallenge.summary}
         />
       </div>
 

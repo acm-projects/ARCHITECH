@@ -30,7 +30,7 @@ import { ArchieMessage, ArchieStarters } from "./ArchieConversation";
 // each suggested change with its before/after numbers and an Apply button. Applying uses the
 // same function the server previewed with, as one undo step.
 //
-// Focus: whatever is selected on the canvas (drag a box on empty canvas) is
+// Focus: whatever is selected on the canvas (Shift+drag a box, or Ctrl/Cmd-click components) is
 // sent as the focus, and the answer is about that part only: its components, how they connect,
 // and what goes in and out of it.
 
@@ -318,9 +318,9 @@ export default function ArchitectPanel({
       }
       focus={<>
         {focus.length === 0 && (
-          <span className="ax-ai-focus-hint" title="Drag a box on empty canvas to ask about just that part">
+          <span className="ax-ai-focus-hint" title="Shift+drag a box on the canvas, or Ctrl/Cmd-click components, to ask about just that part">
             <BoxSelect size={13} aria-hidden="true" />
-            Whole design · drag to focus
+            Whole design · Shift+drag to focus
           </span>
         )}
         {focus.length > 0 && (

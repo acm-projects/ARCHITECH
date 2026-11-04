@@ -140,8 +140,9 @@ export function DesignCheckBadges({ result, nodes, check }: { result: LiveResult
   const box = (node: ArchitectureFlowNode) => ({
     x: node.position.x,
     y: node.position.y,
-    width: node.measured?.width ?? node.width ?? 160,
-    height: node.measured?.height ?? node.height ?? 56,
+    // Before React Flow measures a node, fall back to the architecture node's own size.
+    width: node.measured?.width ?? node.width ?? 82,
+    height: node.measured?.height ?? node.height ?? 27,
   });
 
   return (
@@ -175,7 +176,7 @@ export function DesignCheckBadges({ result, nodes, check }: { result: LiveResult
             data-severity={worst.severity}
             style={{ transform: `translate(${x + width - 8}px, ${y - 8}px)` }}
             title={titles}
-            aria-label={`${list.length} problem${list.length === 1 ? "" : "s"} with ${node.data.label}: ${titles}`}
+            aria-label={`${worst.severity === "high" ? "High" : "Medium"} severity: ${list.length} problem${list.length === 1 ? "" : "s"} with ${node.data.label}: ${titles}`}
             onClick={() => {
               check.setOpen(true);
               check.setFocus(worst.id);

@@ -109,7 +109,7 @@ test("onboarding keeps its two questions and its experience levels", () => {
   const auth = read("src/screens/Auth.tsx");
   assert.match(auth, /Step \$\{step\} of 2/);
   for (const level of ["Beginner", "Intermediate", "Advanced"]) assert.match(auth, new RegExp(level));
-  assert.match(auth, /Skip for now/);
+  assert.match(auth, /Start from scratch/);
   assert.match(auth, /Connect GitHub/);
   assert.match(auth, /onClick=\{continueToGitHub\}/);
   assert.match(auth, /fetch\("\/api\/users\/me"/);

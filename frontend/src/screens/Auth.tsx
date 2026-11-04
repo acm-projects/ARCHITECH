@@ -374,6 +374,18 @@ const EXPERIENCE_OPTIONS: ReadonlyArray<{
   { level: "Advanced", image: "/onboarding/advanced.svg", description: "I'm comfortable with system design and want more challenging scenarios." },
 ];
 
+// Step 2 offers the same kind of choice as step 1: where the first design comes from.
+type StartingPoint = "github" | "scratch";
+const STARTING_POINTS: Array<{
+  value: StartingPoint;
+  title: string;
+  image: string;
+  description: string;
+}> = [
+  { value: "github", title: "Import from GitHub", image: "/onboarding/github.svg", description: "Pick a repository and map its services and dependencies onto the canvas." },
+  { value: "scratch", title: "Start from scratch", image: "/onboarding/scratch.svg", description: "Begin with an empty canvas and add each component yourself." },
+];
+
 /* BACKEND INTEGRATION:
    The selected experience level is saved to the authenticated user's profile
    before the optional GitHub connection step.
@@ -398,6 +410,9 @@ export function Onboarding({
 }) {
   const optionsRef = useRef<HTMLFieldSetElement>(null);
   useArchieEyes(optionsRef, step === 1);
+  const startingPointsRef = useRef<HTMLFieldSetElement>(null);
+  useArchieEyes(startingPointsRef, step === 2);
+  const [startingPoint, setStartingPoint] = useState<StartingPoint>("github");
 
   const { update } = useSession();
   const [onboardingError, setOnboardingError] = useState("");
@@ -557,57 +572,62 @@ export function Onboarding({
             </>
           )}
 
-          {/* STEP 2 — GITHUB CONNECTION */}
+          {/* STEP 2 — STARTING POINT (GitHub import or an empty canvas) */}
           {step === 2 && (
-            <div className="onboarding-github">
-              <span className="onboarding-github-icon">
-                <GitHubMark />
-              </span>
-
+            <>
               <div className="onboarding-heading">
                 <h1 ref={headingRef} tabIndex={-1}>
-                  Bring your work with you.
+                  How do you want to start?
                 </h1>
-
-                <p>
-                  Connect GitHub to link your development workflow with
-                  {" "}<Logo variant="archie-without-props" size="inline" />.
-                </p>
               </div>
 
-              <ul className="onboarding-benefits">
-                <li>
-                  <Icon name="check" size={14} />
-                  Connect your repositories
-                </li>
-                <li>
-                  <Icon name="check" size={14} />
-                  Bring project context into <Logo variant="archie-without-props" size="inline" />
-                </li>
-                <li>
-                  <Icon name="check" size={14} />
-                  Keep your development workflow connected
-                </li>
-              </ul>
+              <fieldset ref={startingPointsRef} className="onboarding-options" data-count="2">
+                <legend className="onboarding-sr-only">Starting point</legend>
 
-              <button
-                type="button"
-                className="onboarding-primary"
-                onClick={connectGitHub}
-              >
-                <GitHubMark />
-                Connect GitHub
-                <Icon name="arrow" size={16} />
-              </button>
+                {STARTING_POINTS.map((option) => {
+                  const selected = startingPoint === option.value;
 
-              <button
-                type="button"
-                className="onboarding-text-button"
-                onClick={skipGitHub}
-                disabled={isSaving}
-              >
-                Skip for now
-              </button>
+                  return (
+                    <label
+                      key={option.value}
+                      className={`onboarding-option ${selected ? "is-selected" : ""}`}
+                    >
+                      <input
+                        type="radio"
+                        name="starting-point"
+                        className="onboarding-option-input"
+                        value={option.value}
+                        checked={selected}
+                        onChange={() => setStartingPoint(option.value)}
+                      />
+
+                      <OnboardingArchie src={option.image} />
+
+                      <span className="onboarding-option-copy">
+                        <span className="onboarding-option-title">{option.title}</span>
+                        <span className="onboarding-option-description">
+                          {option.description}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </fieldset>
+
+              {startingPoint === "github" ? (
+                <button type="button" className="onboarding-primary" onClick={connectGitHub}>
+                  <GitHubMark />
+                  Connect GitHub
+                  <Icon name="arrow" size={16} />
+                </button>
+              ) : (
+                <button type="button" className="onboarding-primary" onClick={skipGitHub} disabled={isSaving}>
+                  Continue
+                  <Icon name="arrow" size={16} />
+                </button>
+              )}
+
+              <p className="onboarding-note">You can import a repository later from New project.</p>
 
               <button
                 type="button"
@@ -623,7 +643,7 @@ export function Onboarding({
                   {onboardingError}
                 </StatusMessage>
               )}
-            </div>
+            </>
           )}
         </div>
       </section>

@@ -1,15 +1,24 @@
 "use client";
 
-import { BarChart3, Hourglass } from "lucide-react";
-
 import type { ChallengeDifficulty } from "../challenge/challenges";
+import { OnboardingArchie } from "../auth/OnboardingArchie";
 import StartChallengeButton from "./StartChallengeButton";
 
 type DailyChallengeProps = {
   title: string;
   difficulty: ChallengeDifficulty;
   requirement: string;
+  // The load the challenge is judged at, e.g. "100M redirects / day".
+  targets?: readonly string[];
   compact?: boolean;
+};
+
+// The same Archie as the matching experience level in onboarding, so the hat means the
+// same thing everywhere: propeller cap for Beginner, none for Intermediate, mortarboard for Advanced.
+const ARCHIE_BY_DIFFICULTY: Record<ChallengeDifficulty, string> = {
+  Beginner: "/onboarding/beginner.svg",
+  Intermediate: "/onboarding/intermediate.svg",
+  Advanced: "/onboarding/advanced.svg",
 };
 
 // Request path drawn in the hero: Client -> Load Balancer -> API Servers -> Cache / DB.
@@ -111,41 +120,24 @@ export default function DailyChallenge({
   title,
   difficulty,
   requirement,
+  targets = [],
   compact = false,
 }: DailyChallengeProps) {
   if (compact) {
     return (
-      <aside className="ax-daily-challenge-banner" aria-label="Daily challenge">
-        <div className="ax-daily-challenge-kicker" aria-label="Daily challenge">
-          <span>Daily</span>
-          <span>challenge</span>
+      <aside className="ax-daily-challenge-banner" aria-labelledby="daily-challenge-title">
+        <span className="ax-daily-challenge-archie">
+          <OnboardingArchie src={ARCHIE_BY_DIFFICULTY[difficulty]} />
+        </span>
+        <div className="ax-daily-challenge-copy">
+          <h2 id="daily-challenge-title" className="ax-daily-challenge-title">{title}</h2>
+          <p className="ax-daily-challenge-meta">
+            <span>Daily challenge</span>
+            <span>{difficulty}</span>
+            {targets.map((target) => <span key={target}>{target}</span>)}
+          </p>
         </div>
-        <h2 className="ax-daily-challenge-title">{title}</h2>
-        <div className="ax-daily-challenge-details" aria-label="Challenge details">
-          <div className="ax-daily-challenge-actions">
-            <StartChallengeButton title={title} label="Start challenge" />
-          </div>
-          <div className="ax-daily-challenge-metrics">
-            <div className="ax-daily-challenge-detail">
-              <div className="ax-daily-challenge-detail-heading">
-                <BarChart3 aria-hidden="true" />
-                <div className="ax-daily-challenge-detail-copy">
-                  <span>Difficulty</span>
-                  <strong>{difficulty}</strong>
-                </div>
-              </div>
-            </div>
-            <div className="ax-daily-challenge-detail">
-              <div className="ax-daily-challenge-detail-heading">
-                <Hourglass aria-hidden="true" />
-                <div className="ax-daily-challenge-detail-copy">
-                  <span>Est. time</span>
-                  <strong>Not specified</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <StartChallengeButton title={title} label="Start challenge" variant="banner" />
       </aside>
     );
   }

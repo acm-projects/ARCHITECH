@@ -6015,6 +6015,13 @@ body,
   border: 0;
 }
 
+/* Step 2 has two choices; keep each tile the size of a step-1 tile. */
+.onboarding-options[data-count="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-self: center;
+  width: min(100%, 656px);
+}
+
 .onboarding-sr-only {
   position: absolute;
   width: 1px;
@@ -6108,7 +6115,8 @@ body,
 }
 
 @media (max-width: 700px) {
-  .onboarding-options {
+  .onboarding-options,
+  .onboarding-options[data-count="2"] {
     grid-template-columns: 1fr;
     gap: 12px;
   }
@@ -6174,51 +6182,6 @@ body,
   text-align: center;
 }
 
-/* Step 2: GitHub */
-.onboarding-github {
-  width: min(100%, 420px);
-  align-self: center;
-  display: flex;
-  flex-direction: column;
-}
-
-.onboarding-github-icon {
-  width: 36px;
-  height: 36px;
-  margin: 0 auto 20px;
-  color: var(--onb-ink);
-}
-
-.onboarding-github-icon svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.onboarding-benefits {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0;
-  padding: 18px 0 0;
-  border-top: 1px solid var(--neutral-200);
-  list-style: none;
-  color: var(--onb-muted);
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.onboarding-benefits li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.onboarding-benefits svg {
-  flex: 0 0 auto;
-  color: var(--onb-ink);
-}
-
 .onboarding-message {
   margin: 20px 0 0;
   border-radius: var(--onb-radius);
@@ -6226,30 +6189,19 @@ body,
   line-height: 1.45;
 }
 
-.onboarding-text-button,
 .onboarding-back {
   align-self: center;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-height: 36px;
+  margin-top: 20px;
   padding: 0 8px;
   border: 0;
   border-radius: 6px;
   background: transparent;
-  font: inherit;
-}
-
-.onboarding-text-button {
-  margin-top: 10px;
-  color: var(--onb-ink);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.onboarding-back {
-  margin-top: 20px;
   color: var(--onb-subtle);
+  font: inherit;
   font-size: 13px;
 }
 
@@ -6257,7 +6209,6 @@ body,
   transform: scaleX(-1);
 }
 
-.onboarding-text-button:hover,
 .onboarding-back:hover {
   color: var(--onb-ink);
   text-decoration: underline;
@@ -6423,24 +6374,25 @@ body,
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 36px;
+  min-height: 34px;
   padding: 0 14px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-action);
-  background: var(--dashboard-action, rgb(21 93 252));
-  color: var(--neutral-0);
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-panel);
+  background: var(--color-ink);
+  color: var(--color-surface);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.2;
 }
 
-.ax-dashboard-project-create:hover {
-  background: rgb(20 71 230);
+/* The dashboard's primary actions (New project, Start challenge) share one style. */
+.ax-dashboard-project-create:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-ink) 82%, var(--color-surface));
 }
 
 .ax-dashboard-project-create:focus-visible {
-  outline: 2px solid var(--dashboard-action, rgb(21 93 252));
-  outline-offset: 3px;
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .ax-new-project-dialog {
@@ -6752,8 +6704,6 @@ body,
 .ax-challenge-intro-symbol { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 20px; border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--color-surface-2); }
 .ax-challenge-intro-label { margin: 0 0 8px; color: var(--color-muted); font-size: 11px; }
 .ax-challenge-intro h2 { margin-bottom: 12px; font-size: 21px; }
-.ax-challenge-intro > p:not(.ax-challenge-intro-label) { margin: 0; color: var(--color-muted); font-size: 12px; line-height: 1.6; }
-.ax-challenge-intro > .ax-challenge-intro-name { margin-top: 20px; color: var(--color-ink); font-weight: 500; }
 .ax-challenge-intro ul { display: grid; gap: 10px; margin: 14px 0 24px; padding-left: 16px; list-style: disc; color: var(--color-muted); font-size: 12px; line-height: 1.5; }
 .ax-challenge-intro-start { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 38px; padding: 10px 14px; border: 1px solid var(--neutral-950); border-radius: var(--radius-action); background: var(--neutral-950); color: var(--neutral-0); font-size: 12px; font-weight: 500; }
 .ax-new-project-dialog .ax-challenge-intro-start:hover:not(:disabled) { background: var(--neutral-800); }
@@ -6765,121 +6715,112 @@ body,
   padding-bottom: 0;
 }
 
+/* Daily challenge: one bordered row in the same flat language as the workspace panels and
+   onboarding tiles. Archie wears the hat of the challenge's difficulty. */
 .ax-daily-challenge-banner {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(370px, 46%);
+  display: flex;
   align-items: center;
-  gap: 12px;
-  margin-right: 19px;
-  padding: 12px 14px;
-  overflow: hidden;
+  gap: 14px;
+  min-height: 64px;
+  padding: 8px 12px 8px 10px;
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   color: var(--color-ink);
-  box-shadow: 0 6px 20px rgb(15 23 42 / 8%), 0 2px 6px rgb(15 23 42 / 4%);
 }
 
-.ax-daily-challenge-banner::before {
+.ax-daily-challenge-archie {
+  position: relative;
+  flex: none;
+  width: 44px;
+  aspect-ratio: 1000 / 1020;
+}
+
+.ax-daily-challenge-archie > .onboarding-option-media {
   position: absolute;
-  top: 7px;
-  bottom: 7px;
-  left: 0;
-  width: 5px;
-  border-radius: 4px;
-  background: var(--canvas-accent);
-  content: "";
+  inset: 0;
 }
 
-.ax-daily-challenge-kicker {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 3px;
-  min-width: max-content;
-  min-height: 30px;
-  padding-right: 12px;
-  border-right: 1px solid var(--color-line);
+.ax-daily-challenge-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
 }
-
-.ax-daily-challenge-kicker span {
-  color: var(--color-ink);
-  font-variant-caps: small-caps;
-  font-size: clamp(18px, 2vw, 22px);
-  font-weight: 700;
-  line-height: 1.05;
-}
-
-.ax-daily-challenge-kicker span::first-letter { font-size: 1.2em; }
 
 .ax-daily-challenge-title {
   margin: 0;
-  color: var(--neutral-950);
+  color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: clamp(18px, 2vw, 22px);
+  font-size: 18px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
-.ax-daily-challenge-banner .ax-dashboard-challenge-start {
-  width: 156px;
-  min-height: 30px;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: var(--radius-action);
-  color: var(--neutral-0);
-  font-size: 14px;
-  white-space: nowrap;
-}
-
-.ax-daily-challenge-banner .ax-dashboard-challenge-start > span {
-  width: 100%;
-  flex-wrap: nowrap;
-  justify-content: space-between;
-  white-space: nowrap;
-}
-
-.ax-daily-challenge-details {
-  display: grid;
-  grid-template-columns: 156px max-content;
-  min-width: 0;
-  align-items: stretch;
-  justify-content: end;
-  gap: 8px;
-}
-
-.ax-daily-challenge-actions {
+.ax-daily-challenge-meta {
   display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 3px;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
-.ax-daily-challenge-actions > div,
-.ax-daily-challenge-actions > div > button { width: 100%; }
+/* The separator ends each item, so a wrapped line never starts with a dot. */
+.ax-daily-challenge-meta > span:not(:last-child)::after {
+  content: "·";
+  margin-left: 6px;
+}
 
-.ax-daily-challenge-metrics {
+.ax-daily-challenge-action {
   display: grid;
-  grid-template-columns: max-content max-content;
-  align-items: center;
-  justify-content: start;
-  column-gap: 8px;
-  border-left: 1px solid var(--color-line);
-  padding-left: 6px;
+  flex: none;
+  justify-items: end;
+  gap: 4px;
 }
 
-.ax-daily-challenge-detail { min-width: 0; }
-.ax-daily-challenge-detail-heading { display: flex; min-width: 0; align-items: center; gap: 5px; }
-.ax-daily-challenge-detail-heading > svg { width: 18px; height: 18px; flex: 0 0 18px; color: var(--canvas-accent); stroke-width: 1.8; }
-.ax-daily-challenge-detail-copy { display: grid; min-width: 0; gap: 1px; }
-.ax-daily-challenge-detail-heading > .ax-daily-challenge-detail-copy { flex: 1; }
-.ax-daily-challenge-detail span { color: var(--color-muted); font-size: 10px; }
-.ax-daily-challenge-detail strong { color: var(--color-ink); font-size: 12px; font-weight: 650; overflow-wrap: anywhere; }
+/* Same primary action as onboarding and the Challenge mode dialog. */
+.ax-daily-challenge-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-panel);
+  background: var(--color-ink);
+  color: var(--color-surface);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.ax-daily-challenge-start:hover {
+  background: color-mix(in srgb, var(--color-ink) 82%, var(--color-surface));
+}
+
+.ax-daily-challenge-start:active {
+  background: color-mix(in srgb, var(--color-ink) 70%, var(--color-surface));
+}
+
+.ax-daily-challenge-start:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.ax-daily-challenge-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-daily-challenge-start { transition: none; }
+}
 
 .ax-challenge-intro {
   width: min(460px, calc(100vw - 32px));
@@ -6900,14 +6841,9 @@ body,
 .ax-challenge-intro .ax-challenge-intro-start:hover:not(:disabled) { border-color: var(--challenge-intro-hover); background: var(--challenge-intro-hover); }
 
 @media (max-width: 700px) {
-  .ax-daily-challenge-banner { grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 8px 12px; margin-right: 0; }
-  .ax-daily-challenge-kicker { min-width: max-content; min-height: 26px; padding-right: 8px; }
-  .ax-daily-challenge-kicker span { font-size: 16px; }
-  .ax-daily-challenge-kicker span::first-letter { font-size: 1.15em; }
-  .ax-daily-challenge-title { font-size: clamp(16px, 3.4vw, 20px); }
-  .ax-daily-challenge-details { grid-column: 1 / -1; grid-template-columns: 120px max-content; justify-content: end; gap: 6px; padding: 4px 0 0; border-top: 1px solid var(--color-line); }
-  .ax-daily-challenge-banner .ax-dashboard-challenge-start,
-  .ax-daily-challenge-actions { width: 120px; }
-  .ax-daily-challenge-banner .ax-dashboard-challenge-start { min-width: 120px; min-height: 36px; height: 36px; font-size: 12px; }
-  .ax-daily-challenge-metrics { column-gap: 6px; padding-left: 4px; }
+  /* Archie and the title stay on the first line; the action drops under the title. */
+  .ax-daily-challenge-banner { flex-wrap: wrap; row-gap: 8px; }
+  .ax-daily-challenge-copy { flex-basis: calc(100% - 58px); }
+  .ax-daily-challenge-action { margin-left: 58px; justify-items: start; }
+  .ax-daily-challenge-title { font-size: 16px; }
 }

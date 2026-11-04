@@ -1,9 +1,9 @@
 "use client";
 
 import { useId, useRef, useState, type ReactNode } from "react";
-import { BookOpen, Check, ChevronDown, Moon, Pencil, RotateCcw, Sun, Trophy } from "lucide-react";
+import { BookOpen, Check, ChevronDown, Pencil, RotateCcw, Trophy } from "lucide-react";
 import WorkspaceHeaderShell from "./WorkspaceHeaderShell";
-import { useAppTheme } from "../AppThemeBoundary";
+import ThemeToggle from "./ThemeToggle";
 
 import type { ProjectMode } from "../projects/projectStore";
 
@@ -40,7 +40,6 @@ export default function WorkspaceHeader({
   runControl,
   projectActions,
 }: WorkspaceHeaderProps) {
-  const { theme, toggleTheme } = useAppTheme();
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -105,15 +104,7 @@ export default function WorkspaceHeader({
         )}
       </>}
       actions={<>
-        <button
-          type="button"
-          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-          onClick={toggleTheme}
-          className="ax-theme-toggle flex h-9 w-9 items-center justify-center"
-        >
-          {theme === "dark" ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
-        </button>
+        <ThemeToggle />
         <button
           type="button"
           popoverTarget={menuId}
