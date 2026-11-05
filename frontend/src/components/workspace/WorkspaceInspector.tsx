@@ -1,4 +1,5 @@
-import { useId, useRef, type ComponentProps, type ReactNode } from "react";
+import { useRef, type ComponentProps, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, LoaderCircle, Play, X } from "lucide-react";
 
 import type { CustomTechnology } from "../../lib/projects/customTechnologies";
@@ -21,11 +22,12 @@ type WorkspaceInspectorProps = {
   onApply: ComponentProps<typeof ArchitectPanel>["onApply"];
   customTechnologies?: readonly CustomTechnology[];
   guidance: ReactNode;
-  testingEnabled: boolean;
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate">;
 };
 
-export function SimulationControl({ expanded, onToggle, runs, componentName, onShowResults }: {
+export function SimulationControl({ panelHost, expanded, onToggle, runs, componentName, onShowResults }: {
+  // The Run button stays in the header; its panel joins the right panels.
+  panelHost: HTMLElement | null;
   expanded: boolean;
   onToggle: () => void;
   runs: WorkspaceInspectorProps["runs"];
@@ -46,7 +48,8 @@ export function SimulationControl({ expanded, onToggle, runs, componentName, onS
       {runs.view.isRunning ? <LoaderCircle size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
       Run
     </button>
-    <section id="ax-run-panel" className="ax-inspector ax-simulation-panel" aria-label="Simulation" hidden={!expanded}>
+    {panelHost && createPortal(
+    <section id="ax-run-panel" className="ax-canvas-panel ax-inspector ax-simulation-panel ax-widget" aria-label="Simulation" hidden={!expanded}>
       <div className="ax-inspector-frame">
         <div className="ax-panel-heading">
           <h2>Simulation</h2>
@@ -60,7 +63,9 @@ export function SimulationControl({ expanded, onToggle, runs, componentName, onS
           onRunAtRate={(rate) => onShowResults(() => runs.runAtRate(rate))}
           componentName={componentName} />
       </div>
-    </section>
+    </section>,
+      panelHost,
+    )}
   </div>;
 }
 
@@ -68,24 +73,20 @@ export default function WorkspaceInspector({
   projectId,
   nodes, controller, onClearSelection, onApply, customTechnologies,
   guidance,
-}: WorkspaceInspectorProps) {
+}: Omit<WorkspaceInspectorProps, "runs">) {
   const { archieOpen, historyOpen, configuring, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory } = controller;
-  const archieContentId = useId();
   const selected = nodes.filter((node) => node.selected);
   const component = selected.length === 1 ? selected[0] : null;
   const selectionKey = selected.map((node) => node.id).join("\0");
   const title = component?.data.label ?? (selected.length ? `${selected.length} components` : "System");
 
-  const panelExpanded = archieOpen || historyOpen || configuring || selected.length > 1 || Boolean(guidance);
+  const panelExpanded = historyOpen || configuring || selected.length > 1 || Boolean(guidance);
   const selectionHeader = (
     <summary className="ax-inspector-header" onClick={(event) => {
       if (component) {
         event.preventDefault();
         if (configuring) closeConfiguration();
         else inspectComponent();
-      } else if (archieOpen) {
-        event.preventDefault();
-        closeArchie();
       }
     }}>
       <div className="ax-inspector-heading">
@@ -108,66 +109,68 @@ export default function WorkspaceInspector({
     </summary>
   );
 
-  // The canvas tools live on the bottom bar; this left panel appears only when it has
-  // something to show (a selection, Archie, history or challenge guidance).
-  if (!component && selected.length < 2 && !guidance && !archieOpen && !historyOpen) return null;
+  // The component panel appears only when it has something to show. Archie is its own panel.
+  const hasContext = Boolean(component) || selected.length > 1 || Boolean(guidance) || historyOpen;
 
   return (
-    <aside
-      className="ax-canvas-panel ax-inspector"
-      data-side="right"
-      data-expanded={panelExpanded}
-      data-selection={selected.length > 0}
-      data-archie={archieOpen || undefined}
-      data-detail={configuring || historyOpen || undefined}
-      aria-label="Architecture inspector"
-    >
-      <div className="ax-inspector-frame">
-        {component ? (
-          <details key={selectionKey} className="ax-inspector-section ax-inspector-component" aria-label="Component" data-archie-open={archieOpen} open={configuring}>
-            {selectionHeader}
-            <ComponentInspector key={component.id} node={component} onAskArchie={askArchie} hidden={!configuring || archieOpen || historyOpen} />
-          </details>
-        ) : selected.length > 1 && (
-          <details key={selectionKey} className="ax-inspector-section" aria-label="Selected components" open>
-            {selectionHeader}
-            <ul className="ax-inspector-selection">
-              {selected.map((node) => (
-                <li key={node.id}>
-                  <ComponentGlyph type={node.data.type} />
-                  <span>{node.data.label}<small>{COMPONENT_CATALOG[node.data.type].label}</small></span>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-        {guidance && <section className="ax-inspector-section ax-inspector-guidance" aria-label="Challenge">{guidance}</section>}
-        <section
-          id={archieContentId}
-          className="ax-inspector-section"
-          aria-label="Ask Archie"
-          hidden={!archieOpen}
+    <>
+      {hasContext && (
+        <aside
+          className="ax-canvas-panel ax-inspector ax-widget"
+          data-side="right"
+          data-expanded={panelExpanded}
+          data-selection={selected.length > 0}
+          data-detail={configuring || historyOpen || undefined}
+          data-transient={!panelExpanded || undefined}
+          aria-label="Architecture inspector"
         >
-          {archieOpen && (
-            <div className="ax-inspector-archie" data-architect>
-              <ArchitectPanel
-                key={projectId}
-                projectId={projectId}
-                onClose={closeArchie}
-                onApply={onApply}
-                customTechnologies={customTechnologies}
-              />
-            </div>
-          )}
-        </section>
-        {historyOpen && (
-          <section className="ax-inspector-section" aria-label="History">
-            <div className="ax-inspector-archie">
-              <HistoryPanel projectId={projectId} onClose={closeHistory} onRestore={onApply} />
-            </div>
-          </section>
-        )}
-      </div>
-    </aside>
+          <div className="ax-inspector-frame">
+            {component ? (
+              <details key={selectionKey} className="ax-inspector-section ax-inspector-component" aria-label="Component" open={configuring}>
+                {selectionHeader}
+                <ComponentInspector key={component.id} node={component} onAskArchie={askArchie} hidden={!configuring} />
+              </details>
+            ) : selected.length > 1 && (
+              <details key={selectionKey} className="ax-inspector-section" aria-label="Selected components" open>
+                {selectionHeader}
+                <ul className="ax-inspector-selection">
+                  {selected.map((node) => (
+                    <li key={node.id}>
+                      <ComponentGlyph type={node.data.type} />
+                      <span>{node.data.label}<small>{COMPONENT_CATALOG[node.data.type].label}</small></span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {guidance && <section className="ax-inspector-section ax-inspector-guidance" aria-label="Challenge">{guidance}</section>}
+            {historyOpen && (
+              <section className="ax-inspector-section" aria-label="History">
+                <div className="ax-inspector-archie">
+                  <HistoryPanel projectId={projectId} onClose={closeHistory} onRestore={onApply} />
+                </div>
+              </section>
+            )}
+          </div>
+        </aside>
+      )}
+      {archieOpen && (
+        <aside className="ax-canvas-panel ax-inspector ax-widget" data-side="right" data-archie aria-label="Ask Archie">
+          <div className="ax-inspector-frame">
+            <section className="ax-inspector-section">
+              <div className="ax-inspector-archie" data-architect>
+                <ArchitectPanel
+                  key={projectId}
+                  projectId={projectId}
+                  onClose={closeArchie}
+                  onApply={onApply}
+                  customTechnologies={customTechnologies}
+                />
+              </div>
+            </section>
+          </div>
+        </aside>
+      )}
+    </>
   );
 }

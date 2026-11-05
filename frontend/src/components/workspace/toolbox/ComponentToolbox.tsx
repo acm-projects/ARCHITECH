@@ -99,7 +99,7 @@ function CustomTechnologyRow({ technology }: { technology: CustomTechnology }) {
 const CATEGORIES = componentGroups("");
 
 // A canvas tool that shares the bar with the library (Ask Archie, Live estimates, Design check).
-// It either opens its content in the bar's flyout (`toolContent`) or opens a panel elsewhere.
+// Each toggles its own right panel, independent of the library and of the other tools.
 export type ToolboxTool = {
   key: string;
   label: string;
@@ -114,18 +114,11 @@ export type ToolboxTool = {
 
 export default function ComponentToolbox({
   customTechnologies = [],
-  active = true,
-  onActivate,
   tools = [],
-  toolContent = null,
 }: {
   // Technologies from the project's imported repository; shown under "From your repo".
   customTechnologies?: readonly CustomTechnology[];
-  active?: boolean;
-  onActivate?: () => void;
   tools?: readonly ToolboxTool[];
-  // What the open tool shows in the flyout; null when the open tool uses its own panel.
-  toolContent?: ReactNode;
 }) {
   // null closes the flyout; a family opens only its components; "all" is the More library;
   // "repo" is the imported repository's own technologies.
@@ -142,29 +135,21 @@ export default function ComponentToolbox({
       : (CATEGORIES.find((group) => group.family === category)?.label ?? "Components");
   // Clear the old search when switching categories.
   const selectCategory = (next: ComponentFamily | "all" | "repo" | null) => {
-    if (active && next === category) return;
+    if (next === category) return;
     setCategory(next);
-    if (next !== null) onActivate?.();
     setQuery("");
     setTechnologiesOf(null);
   };
-
-  const libraryOpen = active && category !== null;
-  const flyoutTool = toolContent ? tools.find((tool) => tool.open) : undefined;
 
   return (
     <CanvasPanel
       side="left"
       hoverFlyout
       label="Components"
-      wide={category === "all" && !flyoutTool}
+      wide={category === "all"}
       icon={<Layers size={16} aria-hidden="true" />}
-      expanded={libraryOpen || Boolean(flyoutTool)}
-      onExpandedChange={(open) => {
-        if (open) return;
-        if (flyoutTool) flyoutTool.onToggle();
-        else selectCategory(null);
-      }}
+      expanded={category !== null}
+      onExpandedChange={(open) => { if (!open) selectCategory(null); }}
       rail={
         <ul aria-label="Component categories">
           {[...CATEGORIES.map(({ family, label }) => ({ key: family, label, Icon: CATEGORY_ICONS[family] })),
@@ -173,7 +158,7 @@ export default function ComponentToolbox({
             <li key={key} className={key === "all" ? "ax-library-divider" : undefined}>
               <button type="button" className="ax-panel-handle" aria-label={label}
                 style={{ "--ax-family": key === "all" || key === "repo" ? "var(--ax-ink-soft)" : FAMILY_COLORS[key] } as CSSProperties}
-                aria-expanded={active && category === key}
+                aria-expanded={category === key}
                 onPointerEnter={event => { if (event.pointerType === "mouse") selectCategory(key); }}
                 onFocus={() => selectCategory(key)}
                 onClick={() => selectCategory(key)}>
@@ -187,8 +172,8 @@ export default function ComponentToolbox({
             <li key={tool.key}>
               <button type="button" className="ax-panel-handle" data-tool={tool.key}
                 aria-label={tool.badge ? `${tool.label}, ${tool.badge}` : tool.label}
-                aria-expanded={tool.open} disabled={tool.disabled} title={tool.disabled ? tool.title : undefined}
-                onClick={tool.onToggle}>
+                aria-expanded={tool.open} disabled={tool.disabled} title={tool.disabled ? tool.title : tool.label}
+                onClick={() => { selectCategory(null); tool.onToggle(); }}>
                 {tool.icon}
                 {tool.badge && <span className="ax-rail-badge" aria-hidden="true">{tool.badge}</span>}
                 <span className="ax-rail-name" aria-hidden="true">{tool.label}</span>
@@ -198,9 +183,7 @@ export default function ComponentToolbox({
         </ul>
       }
     >
-      {flyoutTool && <div className="ax-inspector ax-tool-flyout">{toolContent}</div>}
-      {/* Stays mounted while a tool uses the flyout, so the search survives switching back. */}
-      <div className={`ax-component-menu ${flyoutTool ? "hidden" : "flex"} min-h-0 flex-col p-3`} data-folder={flyoutTool ? undefined : ""}>
+      <div className="ax-component-menu flex min-h-0 flex-col p-3">
         {/* The folder tab: More's holds its search, a category's holds its name. */}
         <div className="ax-component-menu-header flex shrink-0 items-center justify-between gap-2 pb-2">
           {category === "all" ? <div className="ax-search min-w-0 flex-1">

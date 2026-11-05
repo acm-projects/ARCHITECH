@@ -685,7 +685,8 @@
 /* ---- React Flow: canvas, controls, attribution ---- */
 
 /* One background layer per canvas, shared by every workspace mode and breakdown. */
-.ax-workspace .react-flow {
+.ax-workspace .react-flow,
+.ax-workspace .ax-workspace-canvas {
   background-image:
     radial-gradient(circle, var(--ax-canvas-dot) 0.8px, transparent 0.9px),
     radial-gradient(ellipse at 100% 0%, var(--ax-canvas-tint), transparent 72%),
@@ -693,7 +694,8 @@
   background-size: 20px 20px, 100% 100%, 100% 100%;
   background-position: 10px 10px, 0 0, 0 0;
 }
-.ax-workspace .ax-workspace-canvas { background-image: none; }
+/* The paper belongs to the workspace, so it carries on under the right panels. */
+.ax-workspace .ax-workspace-canvas .react-flow { background: transparent; }
 
 
 .ax-workspace .react-flow,
@@ -1996,34 +1998,17 @@
   pointer-events: none;
 }
 
-/* Live estimates and Design check open in the bar's flyout, sized to their content. */
-.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-tool-flyout) {
-  width: min(340px, calc(100vw - 24px)); max-height: min(420px, calc(100dvh - 150px));
-}
-.ax-workspace .ax-tool-flyout { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
-.ax-workspace .ax-tool-flyout .ax-live {
+/* Live estimates and Design check, sized to their content. */
+.ax-workspace .ax-tool-widget { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+.ax-workspace .ax-tool-widget .ax-live {
   position: static; max-width: none; padding: 10px var(--ax-panel-inset) 12px;
   border: 0; border-radius: 0; background: transparent;
 }
-.ax-workspace .ax-tool-flyout .ax-check.ax-check-panel {
+.ax-workspace .ax-tool-widget .ax-check.ax-check-panel {
   position: static; width: auto; max-height: none; min-height: 0;
   border: 0; border-radius: 0;
 }
-.ax-workspace .ax-tool-flyout .ax-check-panel > .ax-check-head { box-shadow: none; }
-
-/* Archie's conversation fills the side panel; workspace-panels.css sizes and places the panel. */
-@media (min-width: 768px) {
-  .ax-workspace .ax-canvas-panel.ax-inspector[data-archie] .ax-inspector-frame { overflow: hidden; }
-  .ax-workspace .ax-inspector[data-archie] .ax-inspector-section:has(> .ax-inspector-archie) {
-    flex: 1 1 auto; min-height: 0; border-top: 0;
-  }
-  .ax-workspace .ax-inspector[data-archie] .ax-inspector-archie { height: 100%; }
-}
-
-/* Simulation fills its side panel too; the two never show together. */
-@media (min-width: 768px) {
-  .ax-workspace .ax-simulation-panel .ax-inspector-frame { width: 100%; height: 100%; max-height: none; }
-}
+.ax-workspace .ax-tool-widget .ax-check-panel > .ax-check-head { box-shadow: none; }
 
 /* ---- Simulation: one stack of identical sections ----
    Traffic, Last run, Findings, Scores and Compare share one anatomy: a head (title left,
@@ -2085,12 +2070,12 @@
 /* ---- Bottom-bar tool panels: Live estimates and Design check read alike ----
    Same header (icon, title, state on the right, controls, close), same body inset,
    same row rhythm, same disclosure at the end. */
-.ax-workspace .ax-tool-flyout .ax-tool-head { justify-content: flex-start; gap: 8px; padding: 6px 6px 6px var(--ax-panel-inset); }
+.ax-workspace .ax-tool-widget .ax-tool-head { justify-content: flex-start; gap: 8px; padding: 6px 6px 6px var(--ax-panel-inset); }
 .ax-workspace .ax-tool-head-icon {
   display: inline-grid; place-items: center; width: 16px; height: 16px; flex-shrink: 0; color: var(--ax-ink-soft);
 }
-.ax-workspace .ax-tool-flyout .ax-tool-head h2 { flex: 0 1 auto; min-width: 0; white-space: nowrap; }
-.ax-workspace .ax-tool-flyout .ax-tool-head h2:focus { outline: none; }
+.ax-workspace .ax-tool-widget .ax-tool-head h2 { flex: 0 1 auto; min-width: 0; white-space: nowrap; }
+.ax-workspace .ax-tool-widget .ax-tool-head h2:focus { outline: none; }
 .ax-workspace .ax-tool-head-meta {
   display: inline-flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0;
   color: var(--ax-muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap;
@@ -2103,25 +2088,25 @@
 .ax-workspace .ax-tool-head .ax-live-dot { width: 6px; height: 6px; }
 
 /* One body inset for both panels. */
-.ax-workspace .ax-tool-flyout .ax-live,
-.ax-workspace .ax-tool-flyout .ax-check-body { padding: 4px var(--ax-panel-inset) 8px; }
-.ax-workspace .ax-tool-flyout .ax-live-row { margin-top: 0; }
-.ax-workspace .ax-tool-flyout .ax-check-applied { margin: 8px var(--ax-panel-inset) 0; }
+.ax-workspace .ax-tool-widget .ax-live,
+.ax-workspace .ax-tool-widget .ax-check-body { padding: 4px var(--ax-panel-inset) 8px; }
+.ax-workspace .ax-tool-widget .ax-live-row { margin-top: 0; }
+.ax-workspace .ax-tool-widget .ax-check-applied { margin: 8px var(--ax-panel-inset) 0; }
 
 /* Rows: metric rows and finding rows share one height and hairline. */
-.ax-workspace .ax-tool-flyout .ax-panel-metrics > div { min-height: 36px; align-items: center; padding: 6px 0; }
-.ax-workspace .ax-tool-flyout .ax-check-title { min-height: 36px; padding-block: 6px; }
-.ax-workspace .ax-tool-flyout .ax-check-list li:first-child { border-top: 0; }
-.ax-workspace .ax-tool-flyout :is(.ax-check-note, .ax-live-note) { margin: 8px 0 4px; color: var(--ax-muted); font-size: 11px; line-height: 1.5; }
+.ax-workspace .ax-tool-widget .ax-panel-metrics > div { min-height: 36px; align-items: center; padding: 6px 0; }
+.ax-workspace .ax-tool-widget .ax-check-title { min-height: 36px; padding-block: 6px; }
+.ax-workspace .ax-tool-widget .ax-check-list li:first-child { border-top: 0; }
+.ax-workspace .ax-tool-widget :is(.ax-check-note, .ax-live-note) { margin: 8px 0 4px; color: var(--ax-muted); font-size: 11px; line-height: 1.5; }
 
 /* The closing disclosure (More metrics / Availability calculation) looks the same in both. */
-.ax-workspace .ax-tool-flyout :is(.ax-live-details, .ax-check-uptime) { margin-top: 0; border-top: 1px solid var(--ax-line); }
-.ax-workspace .ax-tool-flyout :is(.ax-live-details, .ax-check-uptime) > summary {
+.ax-workspace .ax-tool-widget :is(.ax-live-details, .ax-check-uptime) { margin-top: 0; border-top: 1px solid var(--ax-line); }
+.ax-workspace .ax-tool-widget :is(.ax-live-details, .ax-check-uptime) > summary {
   display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 0;
   color: var(--ax-ink-soft); font-size: 12px; font-weight: 500;
 }
-.ax-workspace .ax-tool-flyout .ax-live-details > summary > svg { margin-left: auto; }
-.ax-workspace .ax-tool-flyout .ax-check-uptime > summary > strong { margin-left: auto; }
+.ax-workspace .ax-tool-widget .ax-live-details > summary > svg { margin-left: auto; }
+.ax-workspace .ax-tool-widget .ax-check-uptime > summary > strong { margin-left: auto; }
 
 /* Phones: the bottom bar (library plus tools) spans the width, so the zoom controls sit above it. */
 @media (max-width: 600px) {

@@ -583,7 +583,7 @@ test("Run owns traffic, metrics and reviews after Continue exploring", () => {
   const inspector = read("src/components/workspace/WorkspaceInspector.tsx");
   const control = read("src/components/workspace/StressTestPanel.tsx");
   const runPanel = read("src/components/workspace/RunPanel.tsx");
-  assert.match(workspace, /testingEnabled=\{canRunDesign\}/);
+  assert.match(workspace, /canRunDesign && liveOpen/);
   assert.match(workspace, /const showInspector = mode === "challenge" \|\| learn\.exploring/);
   assert.match(workspace, /runControl=\{canRunDesign && <SimulationControl/);
   assert.match(inspector, /runs\.runAtRate\(rate\)/);
@@ -628,64 +628,42 @@ test("selecting a component never opens Configure; switching or clearing selecti
   assert.equal(inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-configure" }).configuring, false);
 });
 
-test("Configure opens explicitly and closes when another inspector tool is opened", () => {
+test("Configure opens explicitly and stays open beside the other panels", () => {
   const selected = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "selection-changed", selectionKey: "api" });
   const configured = inspectorReducer(selected, { type: "open-configure" });
   assert.equal(inspectorReducer(configured, { type: "close-configure" }).configuring, false);
   for (const type of ["open-archie", "open-history"] as const) {
-    const other = inspectorReducer(configured, { type });
-    assert.equal(other.configuring, false);
-    const reopened = inspectorReducer(other, { type: "open-configure" });
-    assert.equal(reopened.configuring, true);
-    assert.equal(reopened.archieOpen, false);
-    assert.equal(reopened.historyOpen, false);
+    assert.equal(inspectorReducer(configured, { type }).configuring, true);
   }
 });
 
-test("the inspector starts closed and can open, collapse or switch tools", () => {
+test("the inspector starts closed and Run toggles without touching the other panels", () => {
   assert.equal(INITIAL_INSPECTOR_STATE.section, null);
-  const opened = inspectorReducer({ ...INITIAL_INSPECTOR_STATE, section: null }, { type: "toggle-section", section: "run", hasSelection: false });
+  const opened = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "toggle-section", section: "run" });
   assert.equal(opened.section, "run");
-  const collapsed = inspectorReducer(opened, { type: "toggle-section", section: "run", hasSelection: false });
-  assert.equal(collapsed.section, null);
-  const archie = inspectorReducer(collapsed, { type: "open-archie" });
-  const run = inspectorReducer(archie, { type: "toggle-section", section: "run", hasSelection: false });
-  assert.deepEqual(run, { ...INITIAL_INSPECTOR_STATE, section: "run" });
-  assert.deepEqual(inspectorReducer(run, { type: "toggle-section", section: "run", hasSelection: true }), run);
-  const review = inspectorReducer(archie, { type: "open-section", section: "run" });
-  assert.deepEqual(review, { ...INITIAL_INSPECTOR_STATE, section: "run" });
-  assert.equal(inspectorReducer(archie, { type: "close-archie" }).archieOpen, false);
-  assert.deepEqual(inspectorReducer(archie, { type: "reset" }), INITIAL_INSPECTOR_STATE);
-});
-
-test("Run closes other inspector tools without changing their results", () => {
-  const configured = inspectorReducer(
-    inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "selection-changed", selectionKey: "api" }),
-    { type: "open-configure" },
-  );
-  for (const previous of [configured,
-    inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-archie" }),
-    inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-history" })]) {
-    const run = inspectorReducer(previous, { type: "open-section", section: "run" });
-    assert.equal(run.section, "run");
-    assert.equal(run.archieOpen, false);
-    assert.equal(run.historyOpen, false);
-    assert.equal(run.configuring, false);
-    assert.equal(inspectorReducer(run, { type: "open-section", section: "run" }).section, "run");
-  }
-  const run = inspectorReducer({ ...INITIAL_INSPECTOR_STATE, section: null }, { type: "toggle-section", section: "run", hasSelection: false });
-  assert.equal(run.section, "run");
-  assert.equal(inspectorReducer(run, { type: "toggle-section", section: "run", hasSelection: false }).section, null);
+  assert.equal(inspectorReducer(opened, { type: "toggle-section", section: "run" }).section, null);
+  assert.equal(inspectorReducer(opened, { type: "open-section", section: "run" }).section, "run");
   assert.match(read("src/components/workspace/useWorkspaceInspector.ts"), /openSection\("run"\)/);
 });
 
-test("history, Archie and Run share the inspector and retain the current project", () => {
-  const history = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "open-history" });
-  assert.equal(history.historyOpen, true);
-  const archie = inspectorReducer(history, { type: "open-archie" });
-  assert.equal(archie.historyOpen, false);
-  assert.equal(archie.archieOpen, true);
-  assert.deepEqual(inspectorReducer(history, { type: "toggle-section", section: "run", hasSelection: false }), { ...INITIAL_INSPECTOR_STATE, section: "run" });
+test("Run, Archie, History and Configure can all be open at once", () => {
+  const selected = inspectorReducer(INITIAL_INSPECTOR_STATE, { type: "selection-changed", selectionKey: "api" });
+  const all = (["open-archie", "open-history", "open-configure"] as const).reduce(
+    (state, type) => inspectorReducer(state, { type }),
+    inspectorReducer(selected, { type: "open-section", section: "run" }),
+  );
+  assert.deepEqual(
+    { section: all.section, archieOpen: all.archieOpen, historyOpen: all.historyOpen, configuring: all.configuring },
+    { section: "run", archieOpen: true, historyOpen: true, configuring: true },
+  );
+  const withoutArchie = inspectorReducer(all, { type: "close-archie" });
+  assert.equal(withoutArchie.archieOpen, false);
+  assert.equal(withoutArchie.section, "run", "closing one panel leaves the rest");
+  assert.equal(withoutArchie.historyOpen, true);
+  assert.deepEqual(inspectorReducer(all, { type: "reset" }), INITIAL_INSPECTOR_STATE);
+});
+
+test("the inspector keeps the current project for Archie and History", () => {
   const inspector = read("src/components/workspace/WorkspaceInspector.tsx");
   assert.match(inspector, /<ArchitectPanel\s+key=\{projectId\}\s+projectId=\{projectId\}/);
   assert.match(inspector, /<HistoryPanel projectId=\{projectId\}/);
