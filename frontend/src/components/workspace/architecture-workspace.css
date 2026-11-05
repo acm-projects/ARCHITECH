@@ -703,9 +703,9 @@
   --xy-background-color: var(--ax-canvas);
   --xy-edge-stroke: var(--ax-edge);
   --xy-edge-stroke-selected: var(--ax-accent);
-  --xy-edge-stroke-width: 1.2;
+  --xy-edge-stroke-width: 1.6;
   --xy-connectionline-stroke: var(--ax-accent);
-  --xy-connectionline-stroke-width: 1.25;
+  --xy-connectionline-stroke-width: 1.6;
   --xy-controls-button-background-color: transparent;
   --xy-controls-button-background-color-hover: rgba(17, 17, 17, 0.05);
   --xy-controls-button-color: var(--ax-muted);
@@ -763,9 +763,9 @@
 .ax-workspace .react-flow__edge:hover .ax-edge-arrow { fill: var(--ax-edge-hover); }
 .ax-workspace .react-flow__edge .react-flow__edge-path.is-active {
   stroke: var(--ax-accent);
-  stroke-width: 1.8;
+  stroke-width: 2.2;
 }
-.ax-workspace .react-flow__edge .react-flow__edge-path.is-lit { stroke-width: 2.8; }
+.ax-workspace .react-flow__edge .react-flow__edge-path.is-lit { stroke-width: 3.2; }
 .ax-workspace .react-flow__edge .ax-edge-arrow.is-active { fill: var(--ax-accent); }
 .ax-workspace .ax-connection-preview .ax-edge-arrow { fill: var(--ax-accent); }
 .ax-workspace .ax-connection-preview.is-invalid .react-flow__connection-path { stroke: var(--ax-danger); }
@@ -773,10 +773,10 @@
 .ax-workspace .react-flow__edge.selected .react-flow__edge-path,
 .ax-workspace .react-flow__edge.selected:hover .react-flow__edge-path {
   stroke: var(--ax-accent);
-  stroke-width: 2;
+  stroke-width: 2.6;
 }
 .ax-workspace .react-flow__edge.selected .ax-edge-arrow { fill: var(--ax-accent); }
-.ax-workspace .ax-edge-label { position: absolute; padding: 2px 4px; background: var(--ax-canvas); color: var(--ax-ink-soft); font-size: 8px; white-space: nowrap; }
+.ax-workspace .ax-edge-label { position: absolute; padding: 2px 4px; background: var(--ax-canvas); color: var(--ax-ink-soft); font-size: 11px; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) {
   .ax-workspace :is(.react-flow__edge-path, .ax-edge-arrow) { transition: none; }
 }
@@ -805,15 +805,15 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 3px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--ax-family, var(--ax-muted)) 12%, transparent);
   color: var(--ax-family, var(--ax-muted));
 }
 .ax-workspace .ax-node .ax-node-glyph {
-  width: 14px;
-  height: 14px;
+  width: 19px;
+  height: 19px;
 }
 .ax-workspace .ax-node .ax-node-text {
   min-width: 0;
@@ -827,14 +827,14 @@
   white-space: nowrap;
 }
 .ax-workspace .ax-node .ax-node-name {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.3;
   color: var(--ax-ink);
 }
 .ax-workspace .ax-node .ax-node-meta {
-  margin-top: 3px;
-  font-size: 9px;
+  margin-top: 2px;
+  font-size: 11px;
   line-height: 1.3;
   color: var(--ax-muted);
 }
@@ -862,8 +862,8 @@
  * while connecting. An invisible pad around each keeps them easy to grab.
  */
 .ax-workspace .react-flow__handle.ax-handle {
-  width: 2px;
-  height: 2px;
+  width: 3px;
+  height: 3px;
   min-width: 0;
   min-height: 0;
   border: 0;
@@ -883,8 +883,8 @@
 }
 /* A handle with a line attached stays visible as a plug where the line joins the node. */
 .ax-workspace .react-flow__handle.ax-handle.is-linked {
-  width: 5px;
-  height: 5px;
+  width: 7px;
+  height: 7px;
   background: var(--ax-ink-soft);
 }
 .ax-workspace .react-flow__handle.ax-handle::before {
@@ -962,7 +962,7 @@
   border-radius: var(--ax-radius-xs);
   background: var(--ax-ink);
   color: var(--ax-surface);
-  font-size: var(--ax-t-micro);
+  font-size: 12px;
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
@@ -1867,7 +1867,6 @@
 .ax-workspace .ax-inspector .ax-configure .ax-card-section { margin-top: 16px; padding-top: 12px; }
 .ax-workspace .ax-inspector .ax-configure-properties { gap: 12px 16px; }
 .ax-workspace .ax-inspector .ax-configure-type-value { border: 0; background: transparent; padding-left: 0; }
-.ax-workspace .ax-library-detail .ax-tech-head { flex-wrap: wrap; }
 .ax-workspace .ax-library-detail .ax-tech-name { font-size: 12px; color: var(--ax-ink); }
 .ax-workspace .ax-library-detail .ax-tech-meta { font-size: 11px; line-height: 1.5; }
 .ax-workspace .ax-library-detail .ax-tech-option { gap: 3px; }
@@ -1973,7 +1972,7 @@
 .ax-workspace .ax-panel-content .ax-component-menu .ax-item { min-height: 30px; padding: 4px 6px 4px 8px; gap: 8px; font-size: 12px; }
 .ax-workspace .ax-panel-content .ax-component-menu .ax-tech-toggle { width: 22px; height: 22px; }
 .ax-workspace .ax-panel-content .ax-component-menu .ax-section-label { padding: 8px 8px 4px; }
-.ax-workspace .ax-panel-content .ax-component-menu .ax-library-group[data-detail] { grid-template-columns: 144px minmax(0, 1fr); gap: 0 10px; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-library-group[data-detail] { grid-template-columns: 176px minmax(0, 1fr); gap: 0 10px; }
 .ax-workspace .ax-panel-content .ax-library-detail { padding: 4px 0 4px 10px; }
 .ax-workspace .ax-panel-content .ax-library-detail h3 { padding: 0 8px; line-height: 24px; }
 .ax-workspace .ax-panel-content .ax-component-menu .ax-tech-list { margin: 0; padding: 4px 0 0; }
@@ -2186,6 +2185,8 @@
 .ax-workspace.ax-breakdown .ax-breakdown-canvas .react-flow__controls {
   top:12px; left:12px; right:auto; bottom:auto; margin:0; visibility:visible;
 }
+/* The project canvas runs behind the top bar, so its controls start below it. */
+.ax-workspace .ax-workspace-canvas .ax-diagram-viewport .react-flow__controls { top:calc(var(--ax-header-clearance) + 12px); }
 
 /* ---- Scale ----
    The bottom bar is the reference size for the workspace: the top bar matches its height, and
@@ -2214,9 +2215,15 @@
   .ax-workspace .ax-theme-toggle svg { width: 20px; height: 20px; }
   .ax-workspace .ax-header .ax-run-button { min-height: 44px; padding: 10px 24px; border-radius: 14px; font-size: 15px; }
   .ax-workspace .ax-header .ax-run-button svg { width: 18px; height: 18px; }
-  .ax-workspace .react-flow__controls { padding: 4px; }
-  .ax-workspace .react-flow__controls-button { width: 40px; height: 40px; }
+  .ax-workspace .react-flow__controls {
+    padding: 4px;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
+  }
+  .ax-workspace .react-flow__controls-button { width: 40px; height: 40px; border-radius: 10px; }
   .ax-workspace .react-flow__controls-button svg { width: 16px; height: 16px; }
   .ax-workspace .ax-rail-name { padding: 6px 10px; font-size: 14px; }
   .ax-workspace .ax-connection-notice { font-size: 14px; }
+  .ax-workspace .ax-learn-instruction { font-size: 14px; }
+  .ax-workspace .ax-learn-speech .ax-card-body { font-size: 15px; }
 }

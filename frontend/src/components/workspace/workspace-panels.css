@@ -155,6 +155,14 @@
 .ax-workspace .ax-widget-stack .ax-tool-widget .ax-tool-panel { display: flex; flex-direction: column; min-height: 0; }
 .ax-workspace .ax-widget-stack .ax-tool-widget .ax-check-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
+/* A popup keeps clear of the column: it fits the space beside it and slides left of the bar's
+   center just far enough. The bar itself stays put, so nothing moves under the pointer. */
+.ax-workspace:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) {
+  --ax-popup-width: min(var(--ax-panel-bar-width, 640px), calc(100vw - var(--ax-panel-side-width) - 4 * var(--ax-panel-margin)));
+  width: var(--ax-popup-width);
+  transform: translateX(calc(-50% - max(0px, var(--ax-popup-width) / 2 + var(--ax-panel-side-width) + 3 * var(--ax-panel-margin) - 50vw)));
+}
+
 /* Live estimates reads as a widget: the headline numbers side by side. */
 .ax-workspace .ax-widget-stack .ax-live .ax-live-row.ax-panel-metrics {
   display: grid;
