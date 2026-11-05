@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Flag, GitBranch, Plus, X } from "lucide-react";
+import { FolderGit2, GraduationCap, Target, Workflow, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
@@ -72,7 +72,7 @@ export default function NewProjectDialog({
   };
 
   const title = step.kind === "git" ? "Choose a repository"
-    : step.kind === "mode" ? "Choose a mode" : "How would you like to start?";
+    : step.kind === "mode" ? "Choose a mode" : "New project";
 
   return (
     <dialog
@@ -91,12 +91,11 @@ export default function NewProjectDialog({
       }}
     >
       <div className="ax-new-project-heading">
-        <span>{step.kind === "git" ? "New project · Connect with Git" : "New project"}</span>
+        <h2 ref={headingRef} tabIndex={-1} id="new-project-title">{title}</h2>
         <button type="button" aria-label="Close new project" onClick={onDismiss} disabled={busy}>
           <X size={16} aria-hidden="true" />
         </button>
       </div>
-      <h2 ref={headingRef} tabIndex={-1} id="new-project-title">{title}</h2>
       {step.kind === "git" && (
         <GitRepositoryPicker
           onBack={() => setStep({ kind: "start" })}
@@ -107,11 +106,11 @@ export default function NewProjectDialog({
       {step.kind === "start" && (
         <div className="ax-new-project-options">
           <button type="button" onClick={() => setStep({ kind: "git" })} disabled={busy}>
-            <span className="ax-new-project-icon"><GitBranch size={18} aria-hidden="true" /></span>
+            <span className="ax-new-project-icon"><FolderGit2 size={18} aria-hidden="true" /></span>
             Connect with Git
           </button>
           <button type="button" onClick={() => setStep({ kind: "mode", project: null })} disabled={busy}>
-            <span className="ax-new-project-icon"><Plus size={18} aria-hidden="true" /></span>
+            <span className="ax-new-project-icon"><Workflow size={18} aria-hidden="true" /></span>
             Start new space
           </button>
         </div>
@@ -121,12 +120,12 @@ export default function NewProjectDialog({
           {step.project && <p className="mb-3 break-words text-xs text-neutral-500">{step.project.title}</p>}
           <div className="ax-new-project-options" aria-busy={busy}>
             <button type="button" onClick={() => chooseMode("learn")} disabled={busy}>
-              <span className="ax-new-project-icon"><BookOpen size={18} aria-hidden="true" /></span>
-              Learn mode
+              <span className="ax-new-project-icon"><GraduationCap size={18} aria-hidden="true" /></span>
+              Learn
             </button>
             <button type="button" onClick={() => chooseMode("challenge")} disabled={busy}>
-              <span className="ax-new-project-icon"><Flag size={18} aria-hidden="true" /></span>
-              Challenge mode
+              <span className="ax-new-project-icon"><Target size={18} aria-hidden="true" /></span>
+              Challenge
             </button>
           </div>
           {busy && <p role="status" className="mt-3 text-xs text-neutral-500">Opening workspace…</p>}

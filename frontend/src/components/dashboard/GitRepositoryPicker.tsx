@@ -1,6 +1,6 @@
 "use client";
 
-import { GitBranch } from "lucide-react";
+import { FolderGit2, Plug } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { parseRepositoryUrl, readRepositories, type Repository } from "../../lib/github/repositoryPicker";
@@ -141,16 +141,19 @@ export default function GitRepositoryPicker({ onBack, onBusyChange, onImported }
       <div className="ax-repository-list" aria-label="Your GitHub repositories">
         {repos.map(repo => (
           <button type="button" key={repo.id} disabled={busy} onClick={() => void importRepo(repo)}>
-            <GitBranch size={14} aria-hidden="true" />
+            <FolderGit2 size={16} aria-hidden="true" />
             <span>{repo.fullName}</span>
             {repo.private && <small>Private</small>}
           </button>
         ))}
         {loading && <p role="status">Loading repositories…</p>}
         {!loading && !listError && repos.length === 0 && <p>No repositories found for this account.</p>}
-        {listError && <p role="alert">{listError}</p>}
+        {listError && !needsConnection && <p role="alert">{listError}</p>}
         {needsConnection ? (
-          <button type="button" disabled={busy} onClick={() => void connect()}>Connect GitHub account</button>
+          <button type="button" disabled={busy} onClick={() => void connect()}>
+            <span className="ax-new-project-icon"><Plug size={18} aria-hidden="true" /></span>
+            Connect GitHub
+          </button>
         ) : listError ? (
           <button type="button" disabled={busy || loading} onClick={() => { setListError(null); setLoading(true); setAttempt(value => value + 1); }}>Retry</button>
         ) : hasMore && (
@@ -163,9 +166,9 @@ export default function GitRepositoryPicker({ onBack, onBusyChange, onImported }
         if (!parsed) { setError("Enter a GitHub repository URL, such as https://github.com/owner/repo."); return; }
         void importRepo(parsed);
       }}>
-        <label htmlFor="repository-url">Or paste a repository URL</label>
-        <input id="repository-url" type="url" required maxLength={250} placeholder="https://github.com/username/repo" value={url} onChange={event => setUrl(event.target.value)} disabled={busy} autoComplete="off" />
-        <button type="submit" className="ax-repository-import" disabled={busy || !url.trim()}>Import repository</button>
+        <label htmlFor="repository-url">Or paste a URL</label>
+        <input id="repository-url" type="url" required maxLength={250} placeholder="https://github.com/owner/repo" value={url} onChange={event => setUrl(event.target.value)} disabled={busy} autoComplete="off" />
+        <button type="submit" className="ax-repository-import" aria-label="Import repository" disabled={busy || !url.trim()}>Import</button>
       </form>
       {importing && <p role="status">Importing {importing}…</p>}
       {error && <p role="alert" className="ax-repository-error">{error}</p>}

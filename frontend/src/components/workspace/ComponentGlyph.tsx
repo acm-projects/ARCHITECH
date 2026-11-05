@@ -114,6 +114,14 @@ const GLYPH_PATHS: Record<ArchitectureNodeType, ReactNode> = {
   ),
 };
 
+const GLYPH_STROKE = {
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.1,
+  strokeLinejoin: "round",
+  strokeLinecap: "round",
+} as const;
+
 export default function ComponentGlyph({
   type,
   className,
@@ -128,16 +136,27 @@ export default function ComponentGlyph({
       viewBox="0 0 16 16"
       width="18"
       height="18"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.1"
-      strokeLinejoin="round"
-      strokeLinecap="round"
       aria-hidden="true"
       className={className}
       style={style}
+      {...GLYPH_STROKE}
     >
       {GLYPH_PATHS[type]}
     </svg>
+  );
+}
+
+// The same glyph as a group, for drawing inside another SVG at that SVG's scale.
+export function ComponentGlyphGroup({ type, className, x, y, size }: {
+  type: ArchitectureNodeType;
+  className?: string;
+  x: number;
+  y: number;
+  size: number;
+}) {
+  return (
+    <g className={className} transform={`translate(${x} ${y}) scale(${size / 16})`} {...GLYPH_STROKE}>
+      {GLYPH_PATHS[type]}
+    </g>
   );
 }

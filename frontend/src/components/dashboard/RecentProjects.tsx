@@ -7,6 +7,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { formatRelativeTime } from "../projects/preview";
+import { filterProjects } from "../projects/projectSearch";
 import TopologyPreview from "../projects/TopologyPreview";
 import ArchitectureTile from "../projects/ArchitectureTile";
 import { projectActions, type ActionResult } from "../projects/projectActions";
@@ -15,6 +16,7 @@ import { useProjectList, useProjectStorageIssue } from "../projects/useProjects"
 import { useStartProject } from "../projects/useStartProject";
 import { projectRoute } from "../../lib/routes";
 import NewProjectDialog from "./NewProjectDialog";
+import ProjectSearch from "./ProjectSearch";
 
 type ProjectMenuProps = {
   project: Project;
@@ -142,6 +144,7 @@ export default function RecentProjects() {
   const [error, setError] = useState<string | null>(null);
   const [showNewProject, setShowNewProject] = useState(false);
   const [resumeGit, setResumeGit] = useState(false);
+  const [search, setSearch] = useState("");
   useEffect(() => {
     const url = new URL(window.location.href);
     if (url.searchParams.get("newProject") !== "git") return;
@@ -159,6 +162,9 @@ export default function RecentProjects() {
   // Storage publishes creation immediately; keep that new record out of the
   // dashboard while Next.js is transitioning to its workspace.
   const displayedProjects = isOpening ? openingProjects : projects;
+  const hasProjects = displayedProjects !== null && displayedProjects.length > 0;
+  const matchingProjects = hasProjects ? filterProjects(displayedProjects, search) : [];
+  const searching = search.trim().length > 0;
   const createProject = (mode: ProjectMode) => {
     if (isOpening) return;
     setOpeningProjects(projects ?? []);
@@ -172,26 +178,27 @@ export default function RecentProjects() {
     const result = projectActions.rename(project.id, title);
     setError(result.ok ? null : result.message);
   };
-  return (<section className="ax-dashboard-projects px-4 md:px-6 py-5">
-    <div className="ax-dashboard-project-heading mb-3">
-      <div>
-        <h2 className="ax-dashboard-section-title ax-dashboard-project-title">Projects</h2>
+  return (<section className="ax-dashboard-projects px-5 py-8 sm:px-8 lg:px-14">
+    <div className="ax-dashboard-project-heading mb-5">
+      <h2 className="ax-dashboard-section-title ax-dashboard-project-title">Projects</h2>
+      <div className="ax-dashboard-project-actions">
+        {hasProjects && <ProjectSearch value={search} onChange={setSearch} />}
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setResumeGit(false);
+            setShowNewProject(true);
+          }}
+          aria-haspopup="dialog"
+          disabled={isOpening}
+          aria-busy={isOpening}
+          className="ax-dashboard-project-create"
+        >
+          <span aria-hidden="true">+</span>
+          New project
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={() => {
-          setError(null);
-          setResumeGit(false);
-          setShowNewProject(true);
-        }}
-        aria-haspopup="dialog"
-        disabled={isOpening}
-        aria-busy={isOpening}
-        className="ax-dashboard-project-create"
-      >
-        <span aria-hidden="true">+</span>
-        New project
-      </button>
     </div>
     {showNewProject && (
       <NewProjectDialog
@@ -210,13 +217,17 @@ export default function RecentProjects() {
     {displayedProjects?.length === 0 && (
       <p className="text-base text-[#737373]">No architectures yet.</p>
     )}
+    <p role="status" className="sr-only">{searching ? countLabel(matchingProjects.length, "project") : ""}</p>
+    {hasProjects && matchingProjects.length === 0 && (
+      <p className="text-base text-[#737373]">No projects match &ldquo;{search.trim()}&rdquo;.</p>
+    )}
 
-    {displayedProjects !== null && displayedProjects.length > 0 && (<ul
+    {matchingProjects.length > 0 && (<ul
       className="ax-dashboard-project-grid"
       aria-label="Projects"
       tabIndex={0}
     >
-      {displayedProjects.map((project) => (<ArchitectureTile
+      {matchingProjects.map((project) => (<ArchitectureTile
         key={project.id}
         href={projectRoute(project.id)}
         label={`Open ${project.title}`}
@@ -228,12 +239,12 @@ export default function RecentProjects() {
           <div className="flex items-baseline justify-between gap-3">
           {renamingId === project.id ? (<RenameField title={project.title} onCommit={(title) => commitRename(project, title)} />) : (<Link
             href={projectRoute(project.id)}
-            className="min-w-0 truncate text-[17px] font-semibold tracking-tight focus-visible:underline focus-visible:outline-none"
+            className="min-w-0 truncate text-[15px] font-semibold tracking-tight focus-visible:underline focus-visible:outline-none"
           >
             {project.title}
           </Link>)}
           {/* The time at rest; the design's size on hover or focus, in the same spot. */}
-          <span className="ax-project-tile-info shrink-0 text-[13px] text-neutral-500">
+          <span className="ax-project-tile-info shrink-0 text-xs text-neutral-500">
             <span className="ax-project-tile-time">{formatRelativeTime(project.updatedAt, nowMs)}</span>
             <span className="ax-project-tile-size">
               {countLabel(project.nodes.length, "node")} &middot; {countLabel(project.edges.length, "connection")}

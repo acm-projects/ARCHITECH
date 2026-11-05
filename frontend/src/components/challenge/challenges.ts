@@ -18,6 +18,8 @@ export type Challenge = {
   title: string;
   difficulty: ChallengeDifficulty;
   description: string;
+  // One line stating the task and its scale, for the dashboard announcement.
+  announcement: string;
   requirements: string[];
   // Short lines for the floating challenge card.
   summary: string[];
@@ -107,6 +109,7 @@ export const urlShortenerChallenge: Challenge = {
   title: urlShortenerDefinition.title,
   difficulty: urlShortenerDefinition.difficulty,
   description: urlShortenerDefinition.description,
+  announcement: "Design a URL shortener for 100M redirects a day",
   requirements: [
     "100M redirects per day",
     "10M new short URLs per day",

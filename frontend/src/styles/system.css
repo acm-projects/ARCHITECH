@@ -772,6 +772,9 @@ pre { font-family: var(--font-mono); }
 }
 
 .ax-dark-app .ax-dashboard-shell {
+  --ax-dashboard-scrollbar-rest: var(--ax-dark-line-strong);
+  --ax-dashboard-scrollbar-hover: var(--ax-dark-muted);
+  --ax-dashboard-scrollbar-active: var(--ax-dark-text);
   --color-muted: var(--ax-dark-muted);
   --color-subtle: var(--ax-dark-muted);
   --color-line: var(--ax-dark-line);
@@ -861,6 +864,9 @@ pre { font-family: var(--font-mono); }
   --color-ink-deep: #ffffff;
   --challenge-intro-ink: var(--neutral-950);
   --challenge-intro-hover: var(--neutral-800);
+  --ax-dialog-tint: rgb(21 93 252 / 24%);
+  --ax-dialog-tint-ink: #93c5fd;
+  --ax-dialog-row-hover: rgb(21 93 252 / 12%);
   color: var(--color-ink);
 }
 
@@ -906,7 +912,7 @@ pre { font-family: var(--font-mono); }
   color: var(--ax-bright-family);
 }
 
-.ax-dark-app .ax-topology-preview-node { filter: brightness(1.35) saturate(0.82); }
+.ax-dark-app .ax-topology-glyph { color: color-mix(in srgb, var(--ax-family) 58%, white); }
 .ax-dark-app .ax-dashboard-avatar { background-color: #ffffff; color: #1e1e1e; }
 
 .ax-theme-toggle {
@@ -949,7 +955,8 @@ pre { font-family: var(--font-mono); }
 
 .ax-dark-app .ax-dashboard-section-title { color: #ffffff; }
 
-.ax-dark-app .ax-daily-challenge-banner {
-  border-color: var(--ax-dark-line);
-  background: var(--ax-dark-panel);
-}
+.ax-dark-app .ax-dashboard-project-search { border-color: var(--ax-dark-line); background: var(--ax-dark-panel); }
+.ax-dark-app .ax-dashboard-project-search:hover { border-color: var(--ax-dark-line-strong); }
+.ax-dark-app .ax-dashboard-project-search:focus-within { border-color: var(--ax-dark-text); box-shadow: inset 0 0 0 1px var(--ax-dark-text); }
+.ax-dark-app .ax-dashboard-project-search input { color: #ffffff; }
+.ax-dark-app .ax-dashboard-project-search button:hover { background: var(--ax-dark-line); color: #ffffff; }

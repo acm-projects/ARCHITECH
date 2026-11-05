@@ -222,7 +222,7 @@ test("storage failures surface as errors", () => {
   assert.throws(() => store.createProject(), /quota/);
 });
 
-test("preview scales the graph into the box and skips dangling edges", () => {
+test("preview places the graph left to right and skips dangling edges", () => {
   const preview = computePreview(
     [
       { id: "a", data: { type: "client" }, position: { x: 0, y: 0 } },
@@ -234,12 +234,12 @@ test("preview scales the graph into the box and skips dangling edges", () => {
     ],
   );
   assert.equal(preview.nodes.length, 2);
-  assert.equal(preview.lines.length, 1);
+  assert.equal(preview.links.length, 1);
   for (const node of preview.nodes) {
-    assert.ok(node.x >= 0 && node.x <= 200 && node.y >= 0 && node.y <= 64);
+    assert.ok(node.x >= 0 && node.x <= preview.width && node.y >= 0 && node.y <= preview.height);
   }
   assert.ok(preview.nodes[1].x > preview.nodes[0].x);
-  assert.deepEqual(computePreview([], []), { nodes: [], lines: [] });
+  assert.deepEqual(computePreview([], []).nodes, []);
 });
 
 test("relative time formatting", () => {

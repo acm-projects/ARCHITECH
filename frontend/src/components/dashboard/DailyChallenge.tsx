@@ -1,7 +1,5 @@
 "use client";
 
-import { BarChart3 } from "lucide-react";
-
 import type { ChallengeDifficulty } from "../challenge/challenges";
 import StartChallengeButton from "./StartChallengeButton";
 
@@ -9,7 +7,6 @@ type DailyChallengeProps = {
   title: string;
   difficulty: ChallengeDifficulty;
   requirement: string;
-  compact?: boolean;
 };
 
 // Request path drawn in the hero: Client -> Load Balancer -> API Servers -> Cache / DB.
@@ -111,30 +108,7 @@ export default function DailyChallenge({
   title,
   difficulty,
   requirement,
-  compact = false,
 }: DailyChallengeProps) {
-  if (compact) {
-    return (
-      <aside className="ax-daily-challenge-banner" aria-labelledby="daily-challenge-title">
-        <p className="ax-daily-challenge-label" aria-hidden="true">Today&apos;s challenge: {title}</p>
-        <div className="ax-daily-challenge-reveal">
-          <div className="ax-daily-challenge-bar">
-            <div className="ax-daily-challenge-copy">
-              <h2 id="daily-challenge-title" className="ax-daily-challenge-title">{title}</h2>
-              <span className="ax-daily-challenge-difficulty">
-                <BarChart3 aria-hidden="true" />
-                <span className="sr-only">Difficulty: </span>
-                {difficulty}
-              </span>
-            </div>
-            <div className="ax-daily-challenge-actions">
-              <StartChallengeButton title={title} label="Start" />
-            </div>
-          </div>
-        </div>
-      </aside>
-    );
-  }
   // Two lines of display type; each line is revealed from behind a mask.
   const words = title.split(" ");
   const split = Math.ceil(words.length / 2);
