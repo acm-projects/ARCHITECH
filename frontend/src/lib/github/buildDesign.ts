@@ -28,8 +28,8 @@ export const COLUMN_OF: Record<ArchitectureNodeType, number> = {
   worker: 6,
   custom: 4,
 };
-export const COLUMN_WIDTH = 160;
-export const ROW_HEIGHT = 80;
+export const COLUMN_WIDTH = 240;
+export const ROW_HEIGHT = 110;
 
 // Keep request-order tiers, but do not reserve space for absent component types.
 // Column zero is always the client, including Compose imports where it is added separately.

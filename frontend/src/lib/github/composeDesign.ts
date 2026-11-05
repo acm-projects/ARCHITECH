@@ -604,7 +604,7 @@ export function composeDesign(
     const offset = ((tallest - members.length) * ROW_HEIGHT) / 2;
     members.forEach((member, row) => position.set(member.id, { x: columnPositions.get(column)!, y: offset + row * ROW_HEIGHT }));
   }
-  ops.forEach((item, index) => position.set(item.id, { x: (1 + index) * COLUMN_WIDTH * 0.8, y: tallest * ROW_HEIGHT + ROW_HEIGHT }));
+  ops.forEach((item, index) => position.set(item.id, { x: (1 + index) * COLUMN_WIDTH, y: tallest * ROW_HEIGHT + ROW_HEIGHT }));
 
   const graph: GraphDocument = {
     schemaVersion: GRAPH_SCHEMA_VERSION,

@@ -13,16 +13,11 @@
 .ax-breakdown-body { position: relative; flex: 1; min-height: 0; }
 .ax-breakdown-diagram, .ax-breakdown-canvas { width: 100%; height: 100%; }
 
-/* A little larger than editable nodes so the component names stay readable. */
-.ax-workspace.ax-breakdown .ax-node { width: var(--ax-breakdown-node-width); height: var(--ax-breakdown-node-height); gap: 8px; padding: 8px; background: var(--ax-surface); }
-.ax-workspace.ax-breakdown .ax-node .ax-node-icon { width: 24px; height: 24px; }
-.ax-workspace.ax-breakdown .ax-node .ax-node-glyph { width: 14px; height: 14px; }
-.ax-workspace.ax-breakdown .ax-node .ax-node-name { font-size: 11px; line-height: 1.3; }
-.ax-workspace.ax-breakdown .ax-node .ax-node-meta { margin-top: 3px; color: var(--ax-muted); font-size: 9px; line-height: 1.3; }
 .ax-breakdown .react-flow__node { cursor: pointer; }
-.ax-breakdown .react-flow__node:focus-visible .ax-node { outline: 2px solid var(--ax-accent); outline-offset: 3px; }
+/* Component widths follow their text, so vertical links anchor to half the minimum width, not the centre: stacked components stay in line. */
+.ax-workspace.ax-breakdown .react-flow__handle-top.ax-handle,
+.ax-workspace.ax-breakdown .react-flow__handle-bottom.ax-handle { left: 66px; }
 .ax-workspace.ax-breakdown .react-flow__handle.ax-handle::after { content: none; }
-.ax-breakdown-edge-label { position: absolute; padding: 2px 4px; background: var(--ax-canvas); color: var(--ax-ink-soft); font-size: 8px; white-space: nowrap; }
 
 /* The guide and its live preview share one column; short screens take the room from the guide. */
 .ax-breakdown-rail { position: absolute; top: calc(50% + var(--ax-header-clearance) / 2); right: 16px; z-index: 10; display: flex; flex-direction: column; justify-content: center; gap: 8px; width: 340px; height: min(766px, calc(100% - var(--ax-header-clearance) - 32px)); pointer-events: none; transform: translateY(-50%); }
@@ -120,11 +115,8 @@
   to { opacity: 1; }
 }
 
-.ax-breakdown .react-flow__edge-path { transition: stroke 160ms ease, stroke-width 160ms ease; }
-
 @media (prefers-reduced-motion: reduce) {
   .ax-breakdown .ax-node,
-  .ax-breakdown .react-flow__edge-path,
   .ax-preview-route,
   .ax-preview-ruled-out,
   .ax-preview-move,
@@ -136,4 +128,3 @@
 
 /* The shared project header floats over the workspace; reserve its clearance. */
 .ax-breakdown-body { margin-top:var(--ax-header-clearance); }
-.ax-workspace.ax-breakdown .ax-node .ax-node-name { font-size:12px; font-weight:700; }

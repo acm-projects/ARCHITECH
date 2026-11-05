@@ -3,12 +3,12 @@ import { test } from "node:test";
 
 import { Position } from "@xyflow/react";
 
-import { arrowHeadPath, EDGE_STUB, getOrthogonalEdgePath } from "../src/lib/architecture/edgeRouting.ts";
+import { arrowHeadPath, connectionEnd, EDGE_STUB, EDGE_TARGET_LANE, getOrthogonalEdgePath } from "../src/lib/architecture/edgeRouting.ts";
+import { ARCHITECTURE_NODE_SIZE } from "../src/lib/architecture/nodeLayout.ts";
 
-// Architecture nodes are 82×27 with the input handle on the left edge and the output on the
+// Architecture nodes are 192×56 with the input handle on the left edge and the output on the
 // right edge, both at mid-height.
-const W = 82;
-const H = 27;
+const { width: W, height: H } = ARCHITECTURE_NODE_SIZE;
 type Box = { x: number; y: number };
 const out = (box: Box) => ({ x: box.x + W, y: box.y + H / 2 });
 const inp = (box: Box) => ({ x: box.x, y: box.y + H / 2 });
@@ -84,4 +84,23 @@ test("a back-edge goes around both components instead of through them", () => {
 test("the arrowhead's tip sits on the target handle and points into it", () => {
   assert.equal(arrowHeadPath(10, 20, Position.Left), "M10 20L4 17L4 23Z");
   assert.equal(arrowHeadPath(10, 20, Position.Top), "M10 20L7 14L13 14Z");
+  assert.equal(arrowHeadPath(10, 20, Position.Left, true), "M10 20L4 15L4 25Z");
+});
+
+test("connections from different sources enter a component through one lane", () => {
+  const target = { x: 480, y: 100 };
+  const turnX = (from: Box) => route(from, target).at(-3)!.x;
+  assert.equal(turnX({ x: 0, y: 0 }), turnX({ x: 100, y: 300 }));
+  assert.equal(turnX({ x: 0, y: 0 }), target.x - EDGE_TARGET_LANE);
+});
+
+test("a short forward link still leaves its source before turning", () => {
+  const [path] = getOrthogonalEdgePath({ sourceX: 100, sourceY: 0, sourcePosition: Position.Right, targetX: 128, targetY: 80, targetPosition: Position.Left });
+  assert.match(path, /^M ?100[ ,]0/);
+  assert.ok(!path.includes("L 99"));
+});
+
+test("a connection stops short of the handle and its line stops under the arrow", () => {
+  assert.deepEqual(connectionEnd(100, 50, Position.Left), { tipX: 99, tipY: 50, lineX: 94, lineY: 50 });
+  assert.deepEqual(connectionEnd(100, 50, Position.Bottom), { tipX: 100, tipY: 51, lineX: 100, lineY: 56 });
 });
