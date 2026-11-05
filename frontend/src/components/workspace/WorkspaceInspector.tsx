@@ -1,6 +1,6 @@
 import { useRef, type ComponentProps, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, LoaderCircle, Play, X } from "lucide-react";
+import { ChevronDown, LoaderCircle, Play, Target, X } from "lucide-react";
 
 import type { CustomTechnology } from "../../lib/projects/customTechnologies";
 import ArchitectPanel from "./ai/ArchitectPanel";
@@ -51,7 +51,8 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, compone
     {panelHost && createPortal(
     <section id="ax-run-panel" className="ax-canvas-panel ax-inspector ax-simulation-panel ax-widget" aria-label="Simulation" hidden={!expanded}>
       <div className="ax-inspector-frame">
-        <div className="ax-panel-heading">
+        <div className="ax-panel-heading ax-tool-head">
+          <span className="ax-tool-head-icon"><Play size={16} aria-hidden="true" /></span>
           <h2>Simulation</h2>
           <button type="button" className="ax-icon-btn" aria-label="Close simulation" onClick={() => {
             onToggle();
@@ -143,7 +144,15 @@ export default function WorkspaceInspector({
                 </ul>
               </details>
             )}
-            {guidance && <section className="ax-inspector-section ax-inspector-guidance" aria-label="Challenge">{guidance}</section>}
+            {guidance && (
+              <section className="ax-inspector-section ax-inspector-guidance" aria-label="Challenge">
+                <div className="ax-panel-heading ax-tool-head">
+                  <span className="ax-tool-head-icon"><Target size={16} aria-hidden="true" /></span>
+                  <h2>Challenge</h2>
+                </div>
+                {guidance}
+              </section>
+            )}
             {historyOpen && (
               <section className="ax-inspector-section" aria-label="History">
                 <div className="ax-inspector-archie">

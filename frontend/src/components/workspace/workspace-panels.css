@@ -1,4 +1,10 @@
-.ax-workspace { --ax-panel-margin: 12px; --ax-panel-side-width: 420px; }
+.ax-workspace {
+  --ax-panel-margin: 12px;
+  --ax-panel-side-width: 420px;
+  --ax-control-radius: 8px;
+  --ax-primary: #155dfc;
+  --ax-primary-hover: #1447e6;
+}
 
 /* ---- Panel system ----
    Everything that opens over the canvas is one surface at one scale, sized to read beside the
@@ -80,7 +86,7 @@
 
 /* ---- Right panels ----
    Widgets in one column: each is its own rounded surface and any combination can be open.
-   Tools take the height of their content, Archie and Simulation share what is left, and the
+   Each takes the height of its content, Archie's conversation takes what is left, and the
    column scrolls when more is open than fits. Nothing is squeezed past being readable. */
 .ax-workspace .ax-widget-stack {
   position: absolute;
@@ -122,10 +128,11 @@
   transform: none;
 }
 .ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-widget[hidden] { display: none; }
-.ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-widget:is([data-archie], .ax-simulation-panel) {
+.ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-widget[data-archie] {
   flex: 1 0 340px;
   min-height: 340px;
 }
+.ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-simulation-panel { flex: none; }
 .ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-tool-widget { flex: none; }
 .ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-tool-widget:has(.ax-check-panel) {
   flex: 0 1 auto;
@@ -163,25 +170,28 @@
   transform: translateX(calc(-50% - max(0px, var(--ax-popup-width) / 2 + var(--ax-panel-side-width) + 3 * var(--ax-panel-margin) - 50vw)));
 }
 
-/* Live estimates reads as a widget: the headline numbers side by side. */
-.ax-workspace .ax-widget-stack .ax-live .ax-live-row.ax-panel-metrics {
+/* Metrics read the same in every panel: label over value, side by side. A comparison keeps its
+   rows, because "before → after" needs the width. */
+.ax-workspace .ax-widget-stack .ax-panel-metrics:not(.ax-review-comparison) {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   margin: 0;
 }
-.ax-workspace .ax-widget-stack .ax-live .ax-panel-metrics > .ax-live-metric {
+.ax-workspace .ax-widget-stack .ax-inspector .ax-panel-metrics:not(.ax-review-comparison) > div,
+.ax-workspace .ax-widget-stack .ax-inspector.ax-tool-widget .ax-panel-metrics > div + div {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
+  min-width: 0;
   min-height: 0;
   padding: 8px 10px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--ax-control-radius);
   background: var(--ax-canvas);
 }
-.ax-workspace .ax-widget-stack .ax-live .ax-live-value { font-size: 13px; font-weight: 600; }
+.ax-workspace .ax-widget-stack .ax-inspector .ax-panel-metrics:not(.ax-review-comparison) :is(dd, .ax-live-value) { margin: 0; font-size: 13px; font-weight: 600; }
 .ax-workspace .ax-widget-stack .ax-live .ax-live-details { margin-top: 8px; }
 
 /* Archie heads its own panel and closes one way, from the bar or its header. */
@@ -267,3 +277,65 @@
 
 /* The bar's popup is centered with a transform, which the side panels' entrance would replace. */
 .ax-workspace .ax-canvas-panel[data-side="left"][data-hover-flyout] .ax-panel-content:not([hidden]) { animation: none; }
+
+/* ---- Inside every panel ----
+   One radius for controls, one primary action and one row, whichever panel they sit in. */
+.ax-workspace :is(.ax-inspector, .ax-panel-content, .ax-new-project-dialog) :is(
+  .ax-field, .ax-panel-action, .ax-action, .ax-ai-send, .ax-ai-input, .ax-ai-starter, .ax-icon-btn,
+  .ax-item, .ax-tech-option, .ax-check-undo, .ax-challenge-intro-start, .ax-archie-collapse,
+  select, textarea, input:not([type="checkbox"], [type="radio"], [type="range"], [type="search"]),
+  .ax-stress-rate > span:last-child
+) { border-radius: var(--ax-control-radius); }
+
+.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-action[data-variant="primary"], .ax-ai-composer .ax-ai-send) {
+  border-color: var(--ax-primary);
+  background: var(--ax-primary);
+  color: #fff;
+}
+.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-action[data-variant="primary"], .ax-ai-composer .ax-ai-send):hover:not(:disabled) {
+  border-color: var(--ax-primary-hover);
+  background: var(--ax-primary-hover);
+}
+.ax-workspace :is(.ax-inspector, .ax-panel-content) .ax-panel-action:is(:disabled, [aria-disabled="true"]) { opacity: .45; cursor: default; }
+.ax-workspace .ax-inspector .ax-panel-action[data-variant="primary"]:not(.ax-ai-send):not(.ax-stress-run) { width: 100%; }
+.ax-workspace .ax-learn .ax-panel-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--ax-panel-control);
+  margin-top: 8px;
+  border: 1px solid transparent;
+  font: 500 13px/20px var(--font-sans);
+  cursor: pointer;
+}
+.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-run { border-radius: var(--ax-control-radius); }
+.ax-workspace .ax-new-project-dialog .ax-challenge-intro-start { min-height: 44px; font-size: 15px; }
+
+/* The Challenge header stands in for the card's own title. */
+.ax-workspace .ax-inspector .ax-inspector-guidance .ax-card { padding-top: 0; margin-top: var(--ax-panel-inset); }
+.ax-workspace .ax-inspector .ax-inspector-guidance .ax-card > :first-child { margin-top: 0; }
+.ax-workspace .ax-inspector .ax-inspector-guidance .ax-card > .ax-panel-action[data-variant="primary"] { margin-top: var(--ax-panel-inset); }
+.ax-workspace .ax-inspector .ax-inspector-guidance .flex > .ax-panel-action[data-variant="primary"] { width: auto; }
+
+/* Finding rows are the same row in Design check and Simulation. */
+.ax-workspace .ax-inspector .ax-review-finding-title {
+  align-items: center;
+  min-height: 36px;
+  padding-block: 6px;
+  font-weight: 500;
+}
+
+/* Panel titles carry an icon at one size; Archie's portrait stands in for his. */
+.ax-workspace .ax-ai-title { display: inline-flex; align-items: center; gap: 8px; }
+.ax-workspace .ax-ai-title .ax-ai-portrait { width: 18px; height: 18px; border-width: 1px; }
+
+/* The lesson card collapses with the same plain control that closes other panels. */
+.ax-workspace .ax-learn .ax-archie-collapse {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ax-workspace .ax-learn .ax-archie-collapse:hover { background: var(--ax-canvas); }

@@ -63,8 +63,6 @@ export default function ChallengeCard({
 }: ChallengeCardProps) {
   return (
     <div className="ax-card ax-learn" aria-live="polite">
-      <span className="ax-panel-title">Challenge</span>
-
       {running && <p className="ax-card-label mt-3">Checking your design…</p>}
       {error && (
         <p role="alert" className="ax-card-label mt-3">
@@ -117,8 +115,8 @@ export default function ChallengeCard({
             <button type="button" onClick={onBack} className="ax-more">
               Back to requirements
             </button>
-            <button type="button" onClick={onRun} className="ax-card-link mt-0!">
-              Submit again →
+            <button type="button" onClick={onRun} className="ax-panel-action" data-variant="primary">
+              Submit again
             </button>
           </div>
         </>
@@ -138,8 +136,8 @@ export default function ChallengeCard({
             ))}
           </ul>
 
-          <button type="button" onClick={onRun} className="ax-card-link">
-            Submit design →
+          <button type="button" onClick={onRun} className="ax-panel-action" data-variant="primary">
+            Submit design
           </button>
         </>
       )}

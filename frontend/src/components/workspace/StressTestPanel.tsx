@@ -120,10 +120,10 @@ export default function StressTestPanel({
         onClick={() => {
           if (!running) onRun();
         }}
-        className="ax-card-link ax-stress-run ax-panel-action"
+        className="ax-stress-run ax-panel-action"
         data-variant="primary"
       >
-        {runLabel ?? `Run at ${format(rate)} req/s →`}
+        {runLabel ?? `Run at ${format(rate)} req/s`}
       </button>
     </section>
   );
