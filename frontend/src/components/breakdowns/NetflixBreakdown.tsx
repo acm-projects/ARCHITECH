@@ -4,7 +4,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   BaseEdge,
-  Controls,
   EdgeLabelRenderer,
   Handle,
   MarkerType,
@@ -34,6 +33,9 @@ import {
   type NetflixNavigation,
 } from "./netflix";
 import NetflixGuide from "./NetflixGuide";
+import LivePreviewToggle from "./LivePreviewToggle";
+import NetflixPreview from "./NetflixPreview";
+import { useLivePreviewSetting } from "./useLivePreviewSetting";
 import { getOrthogonalEdgePath } from "../workspace/OrthogonalEdge";
 
 function BreakdownNode(props: NodeProps<ArchitectureFlowNode>) {
@@ -82,6 +84,7 @@ const EDGE_TYPES = { breakdown: BreakdownEdge };
 // Include the outer return paths as well as the floating guide when fitting nodes.
 const FIT_OPTIONS = { padding: { left: "70px", right: "420px", top: "90px", bottom: "110px" }, maxZoom: 1.1 } as const;
 const MOBILE_FIT_OPTIONS = { padding: 0.15, maxZoom: 1.1 };
+const NO_CONNECTIONS: readonly string[] = [];
 
 function NetflixWalkthrough() {
   const pathname = usePathname();
@@ -94,6 +97,9 @@ function NetflixWalkthrough() {
   const nodesReady = useNodesInitialized();
   const framedCount = useRef(0);
   const [guideSession, setGuideSession] = useState(0);
+  // The live preview names the connections it is using, so they light up on the diagram too.
+  const [litConnections, setLitConnections] = useState(NO_CONNECTIONS);
+  const livePreview = useLivePreviewSetting();
   const navigate = (action: NetflixNavigation) => {
     if (action === "restart" || (action === "next" && stepIndex === NETFLIX_COMPONENTS.length)) {
       setGuideSession(session => session + 1);
@@ -109,18 +115,21 @@ function NetflixWalkthrough() {
   })), [scene, component?.id]);
   const edges: Edge[] = useMemo(() => scene.connections.map(connection => {
     const active = component && (connection.source === component.id || connection.target === component.id);
-    const color = active ? "var(--ax-accent)" : "var(--ax-subtle)";
+    const lit = litConnections.includes(connection.id);
+    const color = active || lit ? "var(--ax-accent)" : "var(--ax-subtle)";
     return {
       ...connection,
+      // A connection names itself only while one of its components is in focus.
+      label: active ? connection.label : undefined,
       type: "breakdown",
       sourceHandle: connection.id === "control-steering" ? "state-out" : connection.id === "cdn-viewer" ? "video-out" : undefined,
       targetHandle: connection.id === "control-steering" ? "state-in" : undefined,
       selectable: false,
       focusable: false,
       markerEnd: { type: MarkerType.ArrowClosed, color, width: 12, height: 12 },
-      style: { stroke: color, strokeWidth: active ? 1.8 : 1.2, strokeDasharray: connection.kind === "video" ? "6 4" : undefined },
+      style: { stroke: color, strokeWidth: lit ? 2.8 : active ? 1.8 : 1.2 },
     };
-  }), [scene, component]);
+  }), [scene, component, litConnections]);
   // React Flow owns measurement and selection; the lesson supplies a read-only
   // graph whenever its visible components or focused step change.
   useEffect(() => {
@@ -157,6 +166,7 @@ function NetflixWalkthrough() {
       <WorkspaceHeaderShell
         project={<h1 className="ax-title"><span>Netflix System breakdown</span></h1>}
         actions={<>
+          <LivePreviewToggle />
           <ThemeToggle />
           <button type="button" className="ax-action" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>
         </>}
@@ -187,16 +197,14 @@ function NetflixWalkthrough() {
               maxZoom={2}
               fitView
               fitViewOptions={FIT_OPTIONS}
-            >
-              <Controls showInteractive={false} onFitView={() => void fitView(window.matchMedia("(max-width: 900px)").matches ? MOBILE_FIT_OPTIONS : FIT_OPTIONS)} />
-            </ReactFlow>
-          </div>
-          <div className="ax-breakdown-legend" aria-label="Connection types">
-            <span><i />API &amp; control</span><span><i className="is-video" />Video files</span>
+            />
           </div>
         </section>
 
-        <NetflixGuide key={guideSession} progress={progress} connections={scene.connections} onNavigate={navigate} />
+        <div className="ax-breakdown-rail">
+          {livePreview.enabled && <NetflixPreview key={component?.id ?? "review"} step={component?.id ?? "review"} onFrame={setLitConnections} />}
+          <NetflixGuide key={guideSession} progress={progress} connections={scene.connections} onNavigate={navigate} />
+        </div>
       </div>
     </main>
   );
