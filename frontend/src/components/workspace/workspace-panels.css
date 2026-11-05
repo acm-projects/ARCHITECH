@@ -1,0 +1,123 @@
+/* ---- Panel system ----
+   Everything that opens over the canvas is one surface at one scale, sized to read beside the
+   bottom bar: component popups, Live estimates, Design check, Simulation, Configure, Archie,
+   History and the project menu. Loaded after the other workspace styles.
+
+   Panel contents keep their own rules and are zoomed as a whole, so their proportions hold and
+   nothing inside falls behind. Lengths set on a zoomed element are divided by the zoom. */
+@media (min-width: 768px) {
+  .ax-workspace {
+    --ax-panel-zoom: 1.25;
+    --ax-panel-radius: 20px;
+    --ax-panel-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+    --ax-panel-margin: 12px;
+    --ax-panel-side-width: 420px;
+    --ax-panel-bar-width: 640px;
+  }
+
+  /* The frame. */
+  .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:is(:has(.ax-component-menu), :has(.ax-tool-flyout)) {
+    width: min(var(--ax-panel-bar-width), calc(100vw - 2 * var(--ax-panel-margin)));
+    max-height: min(480px, calc(100dvh - 164px));
+    border: 1px solid var(--ax-line-strong);
+    border-radius: var(--ax-panel-radius);
+    box-shadow: var(--ax-panel-shadow);
+  }
+
+  .ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame,
+  .ax-workspace .ax-canvas-panel.ax-inspector[data-expanded="true"] .ax-inspector-frame,
+  .ax-workspace .ax-canvas-panel.ax-inspector[data-archie] .ax-inspector-frame,
+  .ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame:has(.ax-live-dock[open], .ax-check-panel),
+  .ax-workspace .ax-simulation-panel .ax-inspector-frame {
+    border: 1px solid var(--ax-line-strong);
+    border-radius: calc(var(--ax-panel-radius) / var(--ax-panel-zoom));
+    box-shadow: 0 6.4px 19.2px rgb(0 0 0 / 18%);
+    zoom: var(--ax-panel-zoom);
+  }
+
+  /* The scale. */
+  .ax-workspace .ax-panel-content :is(.ax-component-menu, .ax-tool-flyout) { zoom: var(--ax-panel-zoom); }
+  .ax-workspace .ax-panel-content .ax-component-menu .ax-panel-title,
+  .ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-heading h2, .ax-panel-title, .ax-inspector-title, .ax-check-head h2, .ax-ai-title) {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .ax-workspace .ax-panel-content .ax-component-menu .ax-icon-btn { width: 28px; height: 28px; }
+  .ax-workspace .ax-panel-content .ax-component-menu .ax-item { min-height: 40px; }
+  .ax-workspace .ax-panel-content .ax-component-menu .ax-item .ax-item-glyph { width: 18px; height: 18px; }
+
+  /* The header: one height and inset, whichever panel it belongs to. */
+  .ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-heading, .ax-inspector-header, .ax-check-head, .ax-ai-header),
+  .ax-workspace .ax-panel-content .ax-component-menu .ax-component-menu-header {
+    min-height: 44px;
+    padding-block: 6px;
+    padding-inline: var(--ax-panel-inset) 8px;
+  }
+
+  /* Side panels share one edge and one width. Simulation and Archie never show together. */
+  .ax-workspace .ax-workspace-canvas .ax-canvas-overlays > .ax-inspector[data-side="right"],
+  .ax-workspace .ax-workspace-canvas .ax-canvas-overlays > .ax-inspector[data-archie] {
+    inset: var(--ax-panel-margin) var(--ax-panel-margin) var(--ax-panel-margin) auto;
+    width: auto;
+    height: auto;
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+  .ax-workspace .ax-simulation-panel {
+    position: fixed;
+    top: calc(var(--ax-header-clearance) + var(--ax-panel-margin));
+    right: var(--ax-panel-margin);
+    bottom: var(--ax-panel-margin);
+    width: var(--ax-panel-side-width);
+  }
+  .ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame,
+  .ax-workspace .ax-canvas-panel.ax-inspector[data-expanded="true"] .ax-inspector-frame,
+  .ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame:has(.ax-live-dock[open], .ax-check-panel) {
+    width: calc(var(--ax-panel-side-width) / var(--ax-panel-zoom));
+    max-width: calc((100vw - 2 * var(--ax-panel-margin)) / var(--ax-panel-zoom));
+    max-height: 100%;
+  }
+  .ax-workspace .ax-canvas-panel.ax-inspector[data-archie] .ax-inspector-frame {
+    width: calc(var(--ax-panel-side-width) / var(--ax-panel-zoom));
+    height: 100%;
+    max-height: 100%;
+  }
+  .ax-workspace .ax-simulation-panel .ax-inspector-frame { overflow: hidden; }
+
+  /* Archie heads its own panel: no component header above it, and one way to close it. */
+  .ax-workspace .ax-inspector[data-archie] .ax-inspector-component { display: none; }
+  .ax-workspace .ax-inspector .ax-archie-collapse { display: none; }
+
+  /* These can fill the column and cover the launcher's corner. Closing them brings it back. */
+  .ax-workspace:has(.ax-simulation-panel:not([hidden]), .ax-canvas-overlays > .ax-inspector[data-detail]) .ax-archie-launcher { display: none; }
+
+  /* The project menu is anchored to its trigger, so it is sized directly rather than zoomed. */
+  .ax-workspace .ax-project-menu {
+    --ax-menu-width: 320px;
+    padding: 8px;
+    border-radius: var(--ax-panel-radius);
+    box-shadow: var(--ax-panel-shadow);
+  }
+  .ax-workspace .ax-project-menu-label { padding: 6px 12px; font-size: 13px; }
+  .ax-workspace .ax-project-menu-item,
+  .ax-workspace .ax-project-menu .ax-ai-toggle {
+    min-height: 44px;
+    padding: 8px 12px;
+    gap: 12px;
+    border-radius: 10px;
+    font-size: 15px;
+  }
+  .ax-workspace .ax-project-menu-item small { font-size: 13px; }
+  .ax-workspace .ax-project-menu :is(.ax-project-menu-item, .ax-ai-toggle) svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* The bar on a selected component is the way into these panels, so it reads at their size. */
+  .ax-workspace .ax-nodebar { height: 40px; padding: 4px; border-color: var(--ax-line-strong); border-radius: 12px; box-shadow: 0 4px 14px rgb(0 0 0 / 12%); }
+  .ax-workspace .ax-nodebar button { height: 30px; padding: 0 12px; border-radius: 8px; font-size: 14px; }
+}
+
+/* Below 1200px the bottom bar reaches under the side panels, so they stop above it. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .ax-workspace .ax-workspace-canvas .ax-canvas-overlays > .ax-inspector[data-side="right"],
+  .ax-workspace .ax-workspace-canvas .ax-canvas-overlays > .ax-inspector[data-archie] { bottom: 96px; }
+  .ax-workspace .ax-simulation-panel { bottom: 96px; }
+}

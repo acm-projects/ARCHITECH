@@ -871,7 +871,7 @@ pre { font-family: var(--font-mono); }
   --ax-canvas: #141414;
   --ax-canvas-paper: #141414;
   --ax-canvas-dot: #31465a;
-  --ax-canvas-tint: #172d40;
+  --ax-canvas-tint: transparent;
   --ax-surface: #000000;
   --ax-ink: var(--ax-dark-text);
   --ax-ink-soft: var(--ax-dark-text);

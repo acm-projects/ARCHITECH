@@ -1993,39 +1993,18 @@
 }
 .ax-workspace .ax-tool-flyout .ax-check-panel > .ax-check-head { box-shadow: none; }
 
-/* Archie docks to the right edge as a slim, full-height side panel (below the header) instead
-   of a floating card, so a conversation has room while the canvas stays visible beside it. */
+/* Archie's conversation fills the side panel; workspace-panels.css sizes and places the panel. */
 @media (min-width: 768px) {
-  .ax-workspace .ax-workspace-canvas .ax-canvas-overlays > .ax-inspector[data-archie] {
-    inset: 0 0 0 auto; height: 100%; align-items: stretch;
-  }
-  .ax-workspace .ax-canvas-panel.ax-inspector[data-archie] .ax-inspector-frame {
-    width: 320px; height: 100%; max-height: none;
-    border: 0; border-left: 1px solid var(--ax-line-strong); border-radius: 0;
-    overflow: hidden;
-  }
+  .ax-workspace .ax-canvas-panel.ax-inspector[data-archie] .ax-inspector-frame { overflow: hidden; }
   .ax-workspace .ax-inspector[data-archie] .ax-inspector-section:has(> .ax-inspector-archie) {
     flex: 1 1 auto; min-height: 0; border-top: 0;
   }
-  .ax-workspace .ax-inspector[data-archie] .ax-inspector-component + .ax-inspector-section:has(> .ax-inspector-archie) {
-    border-top: 1px solid var(--ax-line);
-  }
   .ax-workspace .ax-inspector[data-archie] .ax-inspector-archie { height: 100%; }
-  /* Keep the zoom controls clear of the docked panel. */
-  .ax-workspace .ax-workspace-canvas:has(.ax-inspector[data-archie]) .react-flow__controls { right: 332px; }
 }
 
-/* Simulation docks to the right edge with the same size as Archie's panel: 320px wide,
-   full height below the header. The two never show together (opening one closes the other). */
+/* Simulation fills its side panel too; the two never show together. */
 @media (min-width: 768px) {
-  .ax-workspace .ax-simulation-panel {
-    position: fixed; top: var(--ax-header-clearance); right: 0; bottom: 0; width: 320px;
-  }
-  .ax-workspace .ax-simulation-panel .ax-inspector-frame {
-    width: 100%; height: 100%; max-height: none;
-    border: 0; border-left: 1px solid var(--ax-line-strong); border-radius: 0;
-  }
-  .ax-workspace:has(.ax-simulation-panel:not([hidden])) .ax-workspace-canvas .react-flow__controls { right: 332px; }
+  .ax-workspace .ax-simulation-panel .ax-inspector-frame { width: 100%; height: 100%; max-height: none; }
 }
 
 /* ---- Simulation: one stack of identical sections ----
