@@ -6,6 +6,8 @@ import {
   useConnection,
   useNodeConnections,
   useReactFlow,
+  useStore,
+  type ReactFlowState,
   type Edge,
   type Node,
   type NodeProps,
@@ -15,6 +17,7 @@ import type {
   ArchitectureNodeType,
   NodeProperties,
 } from "../../../lib/architecture/types";
+import { facingSides } from "../../../lib/architecture/edgeRouting";
 import { removeFromGraph } from "../../../lib/architecture/nodeOperations";
 import ComponentGlyph from "../ComponentGlyph";
 import { InspectorContext } from "../InspectorContext";
@@ -25,6 +28,7 @@ import {
   FAMILY_COLORS,
 } from "../componentCatalog";
 import { ExplainCard, NodeActionBar, type NodePanel } from "../NodeContextUi";
+import { nodeBox } from "../OrthogonalEdge";
 
 // Defined in lib/architecture so the analysis and the saved-project validator share it.
 export type { ArchitectureNodeType };
@@ -102,13 +106,26 @@ export default function ArchitectureNode({
   const connectingFrom = useConnection((c) =>
     c.inProgress ? c.fromNode.id : null,
   );
+  // Which end this node could be for the connection in progress.
+  const connectingEnd = useConnection((c) =>
+    c.inProgress ? (c.fromHandle.type === "source" ? "in" : "out") : null,
+  );
   // A handle with a line attached stays visible, so the line visibly plugs into the node.
-  const hasIncoming = useNodeConnections({ handleType: "target" }).length > 0;
-  const hasOutgoing = useNodeConnections({ handleType: "source" }).length > 0;
+  // A line that has moved to another side (see OrthogonalEdge) brings its own plug.
+  const incoming = useNodeConnections({ handleType: "target" });
+  const outgoing = useNodeConnections({ handleType: "source" });
+  const runsForward = (connection: { source: string; target: string }, lookup: ReactFlowState["nodeLookup"]) => {
+    const from = lookup.get(connection.source);
+    const to = lookup.get(connection.target);
+    return readOnly || !from || !to || facingSides(nodeBox(from), nodeBox(to)).sourcePosition === Position.Right;
+  };
+  const hasIncoming = useStore((state) => incoming.some((connection) => runsForward(connection, state.nodeLookup)));
+  const hasOutgoing = useStore((state) => outgoing.some((connection) => runsForward(connection, state.nodeLookup)));
   const stateClass = [
     selected ? "is-selected" : "",
     connectingFrom !== null ? "is-connecting" : "",
     connectingFrom === id ? "is-connect-source" : "",
+    connectingFrom !== null && connectingFrom !== id ? `accepts-${connectingEnd}` : "",
   ]
     .filter(Boolean)
     .join(" ");

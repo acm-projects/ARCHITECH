@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties, type DragEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
 import { Gauge, ShieldCheck } from "lucide-react";
 import {
   Controls,
@@ -10,9 +10,11 @@ import {
   useNodesState,
   useReactFlow,
   SelectionMode,
+  ViewportPortal,
   type Connection,
   type FinalConnectionState,
   type Edge,
+  type NodeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./architecture-workspace.css";
@@ -25,6 +27,7 @@ import {
 } from "../../lib/architecture/nodeOperations";
 import { applyReset, planReset } from "../../lib/architecture/reset";
 import { ARCHITECTURE_NODE_SIZE, spreadOverlappingNodes } from "../../lib/architecture/nodeLayout";
+import { snapNode, type SnapGuide } from "../../lib/architecture/nodeSnap";
 import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
 import { ChallengeLeaderboard } from "../challenge/ChallengeLeaderboard";
@@ -67,6 +70,8 @@ import ArchitectureNode, {
 import "./workspace-panels.css";
 
 const MIN_ZOOM = 0.25;
+// How close a dragged component gets, on screen, before it lines up with another.
+const SNAP_REACH_PX = 8;
 
 // Keep this outside the component so React Flow gets the same node type reference
 // instead of creating a new one every time the workspace rerenders.
@@ -128,7 +133,42 @@ function Workspace({ project }: { project: Project }) {
     fitView,
     getNodes,
     getEdges,
+    getZoom,
   } = useReactFlow<ArchitectureFlowNode, Edge>();
+
+  // One component dragged alone lines up with the others; a group keeps its own arrangement.
+  const [snapGuides, setSnapGuides] = useState<readonly SnapGuide[]>([]);
+  // React Flow tracks the drag from the pointer, and its last event carries that raw position.
+  const lastSnap = useRef<{ id: string; x: number; y: number } | null>(null);
+  const handleNodesChange = useCallback((changes: NodeChange<ArchitectureFlowNode>[]) => {
+    const moves = changes.filter((change) => change.type === "position");
+    const move = moves.length === 1 ? moves[0] : undefined;
+    const moving = move?.dragging && move.position ? getNodes().find((node) => node.id === move.id) : undefined;
+    if (!move?.position || !moving) {
+      const landed = lastSnap.current;
+      lastSnap.current = null;
+      if (moves.length > 0) setSnapGuides((guides) => (guides.length > 0 ? [] : guides));
+      const land = move?.position && move.id === landed?.id ? { ...move, position: { x: landed.x, y: landed.y } } : undefined;
+      onNodesChange(land ? changes.map((change) => (change === move ? land : change)) : changes);
+      return;
+    }
+    const boxOf = (node: ArchitectureFlowNode) => ({
+      x: node.position.x,
+      y: node.position.y,
+      width: node.measured?.width ?? ARCHITECTURE_NODE_SIZE.width,
+      height: node.measured?.height ?? ARCHITECTURE_NODE_SIZE.height,
+    });
+    const connected = new Set(getEdges().flatMap((edge) =>
+      edge.source === move.id ? [edge.target] : edge.target === move.id ? [edge.source] : []));
+    const snapped = snapNode(
+      { ...boxOf(moving), ...move.position },
+      getNodes().filter((node) => node.id !== move.id).map((node) => ({ box: boxOf(node), connected: connected.has(node.id) })),
+      SNAP_REACH_PX / getZoom(),
+    );
+    lastSnap.current = { id: move.id, x: snapped.x, y: snapped.y };
+    setSnapGuides(snapped.guides);
+    onNodesChange(changes.map((change) => (change === move ? { ...move, position: { x: snapped.x, y: snapped.y } } : change)));
+  }, [getNodes, getEdges, getZoom, onNodesChange]);
 
   // Give every new node a unique ID for this editing session.
   // Deleted IDs are not reused, which keeps history and connections predictable.
@@ -581,7 +621,7 @@ function Workspace({ project }: { project: Project }) {
                   edges={edges}
                   nodeTypes={nodeTypes}
                   edgeTypes={edgeTypes}
-                  onNodesChange={onNodesChange}
+                  onNodesChange={handleNodesChange}
                   onEdgesChange={onEdgesChange}
                   onConnect={handleConnect}
                   onConnectEnd={handleConnectEnd}
@@ -606,6 +646,13 @@ function Workspace({ project }: { project: Project }) {
                 >
                   <Controls showInteractive={false} fitViewOptions={fitViewOptions} />
                   {canRunDesign && <DesignCheckBadges result={live.result} nodes={nodes} check={designCheck} />}
+                  <ViewportPortal>
+                    {snapGuides.map((guide) => (
+                      <div key={guide.axis} className="ax-snap-guide" data-axis={guide.axis} aria-hidden="true" style={guide.axis === "x"
+                        ? { transform: `translate(${guide.at}px, ${guide.from}px)`, height: guide.to - guide.from }
+                        : { transform: `translate(${guide.from}px, ${guide.at}px)`, width: guide.to - guide.from }} />
+                    ))}
+                  </ViewportPortal>
                 </ReactFlow>
               </InspectorContext.Provider>
             </div>

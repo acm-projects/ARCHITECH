@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { Position } from "@xyflow/react";
 
-import { arrowHeadPath, connectionEnd, EDGE_STUB, EDGE_TARGET_LANE, getOrthogonalEdgePath } from "../src/lib/architecture/edgeRouting.ts";
+import { arrowHeadPath, connectionEnd, EDGE_STUB, EDGE_TARGET_LANE, facingSides, getOrthogonalEdgePath, sideAnchor } from "../src/lib/architecture/edgeRouting.ts";
 import { ARCHITECTURE_NODE_SIZE } from "../src/lib/architecture/nodeLayout.ts";
 
 // Architecture nodes are 192×56 with the input handle on the left edge and the output on the
@@ -103,4 +103,30 @@ test("a short forward link still leaves its source before turning", () => {
 test("a connection stops short of the handle and its line stops under the arrow", () => {
   assert.deepEqual(connectionEnd(100, 50, Position.Left), { tipX: 99, tipY: 50, lineX: 92, lineY: 50 });
   assert.deepEqual(connectionEnd(100, 50, Position.Bottom), { tipX: 100, tipY: 51, lineX: 100, lineY: 58 });
+});
+
+const boxAt = (x: number, y: number) => ({ x, y, width: 160, height: 56 });
+
+test("traffic left to right keeps the usual route", () => {
+  assert.deepEqual(facingSides(boxAt(0, 0), boxAt(300, 0)), { sourcePosition: Position.Right, targetPosition: Position.Left });
+  assert.deepEqual(facingSides(boxAt(0, 0), boxAt(300, 400)), { sourcePosition: Position.Right, targetPosition: Position.Left });
+});
+
+test("a component above or below is reached through the sides that face it", () => {
+  assert.deepEqual(facingSides(boxAt(0, 0), boxAt(0, 200)), { sourcePosition: Position.Bottom, targetPosition: Position.Top });
+  assert.deepEqual(facingSides(boxAt(0, 200), boxAt(0, 0)), { sourcePosition: Position.Top, targetPosition: Position.Bottom });
+});
+
+test("a component behind is reached backwards, with no detour", () => {
+  assert.deepEqual(facingSides(boxAt(300, 0), boxAt(0, 0)), { sourcePosition: Position.Left, targetPosition: Position.Right });
+});
+
+test("components too close to clear each other stay on the usual route", () => {
+  assert.deepEqual(facingSides(boxAt(0, 0), boxAt(170, 20)), { sourcePosition: Position.Right, targetPosition: Position.Left });
+});
+
+test("an anchor sits in the middle of its side", () => {
+  const box = boxAt(100, 200);
+  assert.deepEqual(sideAnchor(box, Position.Bottom), { x: 180, y: 256 });
+  assert.deepEqual(sideAnchor(box, Position.Left), { x: 100, y: 228 });
 });
