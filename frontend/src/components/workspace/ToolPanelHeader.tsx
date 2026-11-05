@@ -3,8 +3,31 @@
 import type { ReactNode, Ref } from "react";
 import { X } from "lucide-react";
 
-// The header every bottom-bar tool panel uses (Live estimates, Design check), so they read
-// and behave alike: icon, title, short state on the right, optional controls, close.
+// Gives focus back to the tool's bottom-bar button, which stays mounted when its panel closes.
+function focusToolButton(toolKey: string) {
+  document.querySelector<HTMLButtonElement>(`.ax-panel-rail [data-tool="${toolKey}"]`)?.focus();
+}
+
+// The surface of a tool opened from the bottom bar (Live estimates, Design check).
+export function ToolWidget({ toolKey, onClose, children }: {
+  toolKey: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="ax-canvas-panel ax-inspector ax-tool-widget ax-widget" onKeyDown={(event) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      focusToolButton(toolKey);
+      onClose();
+    }}>
+      {children}
+    </div>
+  );
+}
+
+// The header every tool panel uses, so they read and behave alike: icon, title, short state
+// on the right, optional controls, close.
 export default function ToolPanelHeader({
   toolKey,
   icon,
@@ -35,11 +58,8 @@ export default function ToolPanelHeader({
         type="button"
         className="ax-icon-btn"
         aria-label={`Close ${title.toLowerCase()}`}
-        onClick={(event) => {
-          event.currentTarget
-            .closest(".ax-canvas-panel")
-            ?.querySelector<HTMLButtonElement>(`.ax-panel-rail [data-tool="${toolKey}"]`)
-            ?.focus();
+        onClick={() => {
+          focusToolButton(toolKey);
           onClose();
         }}
       >

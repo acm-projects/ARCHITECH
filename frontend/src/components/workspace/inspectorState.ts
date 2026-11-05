@@ -1,6 +1,7 @@
 import type { RunResult } from "../../lib/architecture/evaluation/runSession.ts";
 
 export type InspectorSectionId = "run";
+// Each right panel opens and closes on its own, so any combination can show at once.
 export type InspectorState = {
   section: InspectorSectionId | null;
   archieOpen: boolean;
@@ -19,7 +20,7 @@ export const INITIAL_INSPECTOR_STATE: InspectorState = {
 
 type InspectorAction =
   | { type: "open-section"; section: InspectorSectionId | null }
-  | { type: "toggle-section"; section: InspectorSectionId; hasSelection: boolean }
+  | { type: "toggle-section"; section: InspectorSectionId }
   | { type: "open-archie" }
   | { type: "close-archie" }
   | { type: "open-history" }
@@ -32,21 +33,15 @@ type InspectorAction =
 export function inspectorReducer(state: InspectorState, action: InspectorAction): InspectorState {
   switch (action.type) {
     case "open-section":
-      return { ...state, section: action.section, archieOpen: false, historyOpen: false, configuring: false };
+      return { ...state, section: action.section };
     case "toggle-section":
-      return {
-        ...state,
-        section: !state.archieOpen && !state.historyOpen && !action.hasSelection && state.section === action.section ? null : action.section,
-        archieOpen: false,
-        historyOpen: false,
-        configuring: false,
-      };
+      return { ...state, section: state.section === action.section ? null : action.section };
     case "open-archie":
-      return { ...state, archieOpen: true, historyOpen: false, configuring: false };
+      return { ...state, archieOpen: true };
     case "close-archie":
       return { ...state, archieOpen: false };
     case "open-history":
-      return { ...state, archieOpen: false, historyOpen: true, configuring: false };
+      return { ...state, historyOpen: true };
     case "close-history":
       return { ...state, historyOpen: false };
     case "selection-changed":
@@ -54,7 +49,7 @@ export function inspectorReducer(state: InspectorState, action: InspectorAction)
       return { ...state, selectionKey: action.selectionKey, configuring: false };
     case "open-configure":
       if (!state.selectionKey) return state;
-      return { ...state, configuring: true, archieOpen: false, historyOpen: false };
+      return { ...state, configuring: true };
     case "close-configure":
       return state.configuring ? { ...state, configuring: false } : state;
     case "reset":

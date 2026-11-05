@@ -274,7 +274,7 @@ export function DesignCheckPanel({
 
   const uptime = checked?.uptime;
   return (
-    // Escape is handled by the bottom bar's flyout, the same way as Live estimates.
+    // Escape is handled by ToolWidget, the same way as Live estimates.
     <section className="ax-check ax-check-panel ax-tool-panel" aria-label="Design check">
       <ToolPanelHeader
         toolKey="check"

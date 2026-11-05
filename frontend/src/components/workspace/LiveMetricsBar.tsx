@@ -92,7 +92,7 @@ function HealthDot({ status }: { status: keyof typeof HEALTH_LABEL | undefined }
   return <span className="ax-live-dot" role="img" aria-label={label} title={label} />;
 }
 
-// The bottom bar's Live estimates panel: the shared tool header (traffic and health as its
+// The Live estimates panel: the shared tool header (traffic and health as its
 // state, the estimate's basis on hover) above the metrics, matching Design check.
 export function LiveEstimatesPanel({
   result,
