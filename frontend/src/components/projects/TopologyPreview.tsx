@@ -1,46 +1,59 @@
 import type { CSSProperties } from "react";
 
-import { computePreview, selectPreviewAccent } from "./preview";
+import { ComponentGlyphGroup } from "../workspace/ComponentGlyph";
+import { PREVIEW_BOX, computePreview, selectPreviewAccent } from "./preview";
 import { previewNodeColor } from "./previewColors";
 import type { Project } from "./projectStore";
 
+const GLYPH_SIZE = 12;
+const COUNT_WIDTH = 13;
+const COUNT_HEIGHT = 9;
+
 export default function TopologyPreview({ nodes, edges }: Pick<Project, "nodes" | "edges">) {
   const preview = computePreview(nodes, edges);
-  const accentId = selectPreviewAccent(preview.nodes, edges);
-  const nodeTypes = new Map(nodes.map(node => [node.id, node.data.type]));
+  const accentId = selectPreviewAccent(preview.nodes, preview.links);
 
   return (
-    <svg viewBox="0 0 200 64" className="ax-topology-preview h-full w-full" aria-hidden="true">
-      {preview.lines.map((line, index) => (
-        <line
-          key={index}
-          x1={line.x1}
-          y1={line.y1}
-          x2={line.x2}
-          y2={line.y2}
-          stroke="var(--canvas-line-strong)"
-          strokeWidth="0.75"
-        />
+    <svg viewBox={`0 0 ${preview.width} ${preview.height}`} className="ax-topology-preview h-full w-full" aria-hidden="true">
+      {preview.links.map(link => (
+        <path key={`${link.source}-${link.target}`} className="ax-topology-link" d={link.path} />
       ))}
       {preview.nodes.map(node => {
-        const color = previewNodeColor(nodeTypes.get(node.id) ?? "");
+        const left = node.x - PREVIEW_BOX / 2;
+        const top = node.y - PREVIEW_BOX / 2;
         return (
-          <rect
-            key={node.id}
-            className={node.id === accentId ? "ax-preview-accent-node" : undefined}
-            style={{ "--preview-accent": color } as CSSProperties}
-            x={node.x - 6}
-            y={node.y - 4.5}
-            width="12"
-            height="9"
-            rx="1.5"
-            fill={color}
-            stroke={color}
-            strokeWidth="0.75"
-          />
+          <g key={node.id} className="ax-topology-node" style={{ "--ax-family": previewNodeColor(node.type) } as CSSProperties}>
+            <rect
+              className={node.id === accentId ? "ax-topology-box ax-preview-accent-node" : "ax-topology-box"}
+              x={left}
+              y={top}
+              width={PREVIEW_BOX}
+              height={PREVIEW_BOX}
+              rx="3"
+            />
+            <ComponentGlyphGroup
+              type={node.type}
+              className="ax-topology-glyph"
+              x={node.x - GLYPH_SIZE / 2}
+              y={node.y - GLYPH_SIZE / 2}
+              size={GLYPH_SIZE}
+            />
+            {node.count > 1 && (
+              <>
+                <rect
+                  className="ax-topology-count-box"
+                  x={left + PREVIEW_BOX - COUNT_WIDTH / 2}
+                  y={top - COUNT_HEIGHT / 2}
+                  width={COUNT_WIDTH}
+                  height={COUNT_HEIGHT}
+                  rx="2"
+                />
+                <text className="ax-topology-count" x={left + PREVIEW_BOX} y={top}>×{node.count}</text>
+              </>
+            )}
+          </g>
         );
       })}
     </svg>
   );
 }
-

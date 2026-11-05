@@ -41,7 +41,7 @@ function BreakdownFace({ logo, children }: { logo: string; children: ReactNode }
 
 export default function SystemTutorials() {
   return (
-    <section className="ax-dashboard-tutorials px-4 md:px-6">
+    <section className="ax-dashboard-tutorials px-5 sm:px-8 lg:px-14">
       <div className="ax-dashboard-tutorial-heading">
         <h2 className="ax-dashboard-section-title">System breakdowns</h2>
       </div>
@@ -53,7 +53,7 @@ export default function SystemTutorials() {
             style={NETFLIX_BRAND}
             preview={<BreakdownFace logo="/tutorial-logos/netflix.svg"><TopologyPreview nodes={NETFLIX_NODES} edges={[...NETFLIX_CONNECTIONS]} /></BreakdownFace>}
           >
-            <Link href={NETFLIX_BREAKDOWN_ROUTE} className="block truncate text-[17px] font-semibold tracking-tight focus-visible:underline">Netflix</Link>
+            <Link href={NETFLIX_BREAKDOWN_ROUTE} className="block truncate text-[15px] font-semibold tracking-tight focus-visible:underline">Netflix</Link>
           </ArchitectureTile>
           {UPCOMING.map(item => (
             <ArchitectureTile
@@ -61,7 +61,7 @@ export default function SystemTutorials() {
               style={item.brand}
               preview={<BreakdownFace logo={item.logo}><TopologyPreview nodes={item.graph.nodes} edges={item.graph.edges} /></BreakdownFace>}
             >
-              <span className="block text-[17px] font-semibold tracking-tight">{item.company}</span>
+              <span className="block text-[15px] font-semibold tracking-tight">{item.company}</span>
             </ArchitectureTile>
           ))}
         </ul>

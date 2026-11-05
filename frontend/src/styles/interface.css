@@ -6374,8 +6374,8 @@ body,
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 0 16px;
+  min-height: 36px;
+  padding: 0 14px;
   border: 1px solid transparent;
   border-radius: var(--radius-action);
   background: var(--dashboard-action, rgb(21 93 252));
@@ -6395,6 +6395,13 @@ body,
 }
 
 .ax-new-project-dialog {
+  --ax-dialog-accent: var(--dashboard-action, rgb(21 93 252));
+  --ax-dialog-accent-hover: rgb(20 71 230);
+  --ax-dialog-accent-active: rgb(18 60 200);
+  --ax-dialog-accent-ink: rgb(255 255 255);
+  --ax-dialog-tint: rgb(219 234 254);
+  --ax-dialog-tint-ink: rgb(21 93 252);
+  --ax-dialog-row-hover: rgb(239 246 255);
   position: fixed;
   inset: 0;
   width: min(400px, calc(100vw - 32px));
@@ -6402,15 +6409,23 @@ body,
   margin: auto;
   padding: 24px;
   overflow-y: auto;
-  border: 1px solid var(--neutral-300);
-  border-radius: var(--radius-panel);
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
   background: var(--neutral-0);
   color: var(--neutral-950);
   font-family: inherit;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
 }
 
 .ax-new-project-dialog::backdrop {
   background: rgb(0 0 0 / 40%);
+}
+
+/* Theme changes crossfade. Reduced motion skips the transition in changeThemeWithTransition. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 240ms;
+  animation-timing-function: ease;
 }
 
 .ax-new-project-heading {
@@ -6418,9 +6433,7 @@ body,
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 12px;
-  color: var(--neutral-500);
-  font-size: 11px;
+  margin-bottom: 16px;
 }
 
 .ax-new-project-heading button {
@@ -6429,17 +6442,17 @@ body,
   width: 28px;
   height: 28px;
   border: 1px solid transparent;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-action);
   background: transparent;
   color: var(--neutral-600);
 }
 
 .ax-new-project-dialog h2 {
-  margin: 0 0 24px;
-  font-size: 20px;
-  font-weight: 500;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
   line-height: 1.3;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.015em;
 }
 
 .ax-new-project-options {
@@ -6452,30 +6465,35 @@ body,
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 64px;
-  padding: 12px;
-  border: 1px solid var(--neutral-300);
-  border-radius: var(--radius-panel);
-  background: var(--neutral-50);
+  min-height: 60px;
+  padding: 11px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--neutral-0);
   color: var(--neutral-950);
   text-align: left;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .ax-new-project-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 32px;
-  height: 32px;
-  border: 1px solid var(--neutral-200);
-  border-radius: var(--radius-control);
-  background: var(--neutral-0);
+  flex: 0 0 36px;
+  height: 36px;
+  border-radius: var(--radius-action);
+  background: var(--ax-dialog-tint);
+  color: var(--ax-dialog-tint-ink);
 }
 
 .ax-new-project-dialog button { cursor: pointer; }
-.ax-new-project-dialog button:hover:not(:disabled) { background: var(--neutral-100); border-color: var(--neutral-400); }
+.ax-new-project-dialog button:hover:not(:disabled) { background: var(--neutral-50); border-color: var(--neutral-400); }
 .ax-new-project-dialog button:active:not(:disabled) { background: var(--neutral-200); }
+
+.ax-new-project-dialog :is(.ax-new-project-options, .ax-repository-list) > button:hover:not(:disabled) {
+  border-color: var(--ax-dialog-accent);
+  background: var(--ax-dialog-row-hover);
+}
 .ax-new-project-dialog button:focus-visible { outline: 2px solid var(--neutral-950); outline-offset: 3px; }
 .ax-new-project-dialog button:disabled { cursor: wait; opacity: 0.5; }
 
@@ -6489,9 +6507,9 @@ body,
 .ax-dashboard-section-title {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.5;
   letter-spacing: -0.015em;
 }
 
@@ -6499,8 +6517,8 @@ body,
 .ax-dashboard-project-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-auto-rows: 260px;
-  gap: 16px;
+  grid-auto-rows: 160px;
+  gap: 20px;
   margin: 0 -4px;
   padding: 4px;
   list-style: none;
@@ -6522,8 +6540,84 @@ body,
   gap: 12px;
 }
 
-.ax-dashboard-project-heading .ax-dashboard-project-create {
+.ax-dashboard-project-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
   margin-left: auto;
+}
+
+.ax-dashboard-project-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 272px;
+  height: 36px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-action);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  transition: border-color 140ms ease;
+}
+
+.ax-dashboard-project-search:hover { border-color: var(--color-line-strong); }
+
+/* A second line of border shows focus without relying on the color change alone. */
+.ax-dashboard-project-search:focus-within {
+  border-color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-ink);
+}
+
+.ax-dashboard-project-search > svg {
+  position: absolute;
+  left: 10px;
+  width: 15px;
+  height: 15px;
+  pointer-events: none;
+}
+
+.ax-dashboard-project-search input {
+  width: 100%;
+  height: 100%;
+  padding: 0 32px;
+  border: 0;
+  border-radius: inherit;
+  outline: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.ax-dashboard-project-search input::placeholder { color: var(--color-muted); opacity: 1; }
+.ax-dashboard-project-search input::-webkit-search-cancel-button { appearance: none; }
+
+.ax-dashboard-project-search button {
+  position: absolute;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.ax-dashboard-project-search button:hover { background: var(--color-surface-2); color: var(--color-ink); }
+.ax-dashboard-project-search button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 1px; }
+.ax-dashboard-project-search button svg { width: 14px; height: 14px; }
+
+/* On phones New project stays beside the title and search takes the next row. */
+@media (max-width: 639px) {
+  .ax-dashboard-project-actions { display: contents; }
+  .ax-dashboard-project-create { margin-left: auto; }
+  .ax-dashboard-project-search { flex: 1 1 100%; order: 1; width: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-dashboard-project-search { transition: none; }
 }
 
 .ax-dashboard-project-create:disabled {
@@ -6536,6 +6630,14 @@ body,
   flex: 1;
   min-height: 0;
   flex-direction: column;
+}
+
+/* The banner and both sections share one centered column: 1080px plus the 56px side padding. */
+.ax-dashboard-content > * {
+  flex: none;
+  width: 100%;
+  max-width: 1192px;
+  margin-inline: auto;
 }
 
 .ax-dashboard-projects {
@@ -6573,27 +6675,53 @@ body,
   background: var(--tile);
 }
 
-.ax-preview-accent-node {
-  fill: var(--preview-accent);
-  stroke: var(--preview-accent);
-  paint-order: stroke fill;
+/* Tile previews draw the canvas in miniature: neutral boxes, with family color on the icon alone. */
+.ax-topology-link {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ax-ink) 55%, transparent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
 }
+
+.ax-topology-box {
+  fill: var(--ax-surface);
+  stroke: color-mix(in srgb, var(--ax-ink) 40%, transparent);
+  stroke-width: 1.25px;
+  vector-effect: non-scaling-stroke;
+}
+
+.ax-topology-glyph { color: var(--ax-family); stroke-width: 1.6; }
+
+.ax-topology-count-box { fill: var(--ax-ink); }
+
+.ax-topology-count {
+  fill: var(--ax-surface);
+  dominant-baseline: central;
+  font-size: 7px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.ax-preview-accent-node { paint-order: stroke fill; }
 
 .ax-dashboard-project-card:hover .ax-preview-accent-node,
 .ax-dashboard-project-card:focus-within .ax-preview-accent-node {
-  stroke: color-mix(in srgb, var(--preview-accent) 30%, transparent);
+  stroke: color-mix(in srgb, var(--ax-family) 30%, transparent);
   stroke-width: 2.5px;
 }
 
 .ax-dashboard-project-metadata {
   flex-shrink: 0;
-  padding: 12px 16px 14px;
+  padding: 8px 12px 10px;
   border-top: 1px solid var(--color-line);
   border-radius: 0 0 19px 19px;
 }
 
 .ax-dashboard-tutorials {
-  padding-bottom: 24px;
+  padding-bottom: 16px;
 }
 
 .ax-dashboard-tutorial-heading { margin-bottom: 12px; }
@@ -6648,28 +6776,30 @@ body,
 /* Each breakdown wears its brand; hovering lifts the logo away to show the system behind it. */
 .ax-breakdown-topology,
 .ax-breakdown-brand { position: absolute; inset: 0; }
-.ax-breakdown-topology { padding: 16px; }
+.ax-breakdown-topology { padding: 10px; }
 
 .ax-breakdown-brand {
   display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   background: var(--neutral-0);
   transition: opacity 240ms ease;
 }
 
+/* Sized from the tile, so the logo keeps its margins at every tile height. */
 .ax-breakdown-catalog-logo {
-  width: 188px;
-  height: 100px;
+  width: 44%;
+  height: 52%;
   object-fit: contain;
   transition: transform 320ms var(--ax-ease);
 }
 
-.ax-breakdown-topology .ax-topology-preview line {
+.ax-breakdown-topology .ax-topology-link {
   opacity: 0;
   transition: opacity 200ms ease 120ms;
 }
 
-.ax-breakdown-topology .ax-topology-preview rect {
+.ax-breakdown-topology .ax-topology-node {
   opacity: 0;
   transform: scale(0.4);
   transform-box: fill-box;
@@ -6678,15 +6808,15 @@ body,
 }
 
 /* A short stagger, so nodes arrive in groups rather than all at once. */
-.ax-breakdown-topology .ax-topology-preview rect:nth-of-type(3n + 1) { transition-delay: 60ms; }
-.ax-breakdown-topology .ax-topology-preview rect:nth-of-type(3n + 2) { transition-delay: 120ms; }
-.ax-breakdown-topology .ax-topology-preview rect:nth-of-type(3n) { transition-delay: 180ms; }
+.ax-breakdown-topology .ax-topology-node:nth-of-type(3n + 1) { transition-delay: 60ms; }
+.ax-breakdown-topology .ax-topology-node:nth-of-type(3n + 2) { transition-delay: 120ms; }
+.ax-breakdown-topology .ax-topology-node:nth-of-type(3n) { transition-delay: 180ms; }
 
 @media (hover: hover) {
   .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-breakdown-brand { opacity: 0; }
   .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-breakdown-catalog-logo { transform: scale(1.14); }
-  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-topology-preview line { opacity: 1; }
-  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-topology-preview rect { opacity: 1; transform: none; }
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-topology-link { opacity: 1; }
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-topology-node { opacity: 1; transform: none; }
 }
 
 /* Both lines share one grid cell, so swapping them never moves the tile's name. */
@@ -6706,41 +6836,88 @@ body,
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-preview rect {
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-node {
     transform-box: fill-box;
     transform-origin: center;
     animation: ax-preview-node-pulse 420ms ease-in-out;
   }
 
-  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-preview rect:nth-of-type(3n + 1) { animation-delay: 0ms; }
-  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-preview rect:nth-of-type(3n + 2) { animation-delay: 80ms; }
-  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-preview rect:nth-of-type(3n) { animation-delay: 160ms; }
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-node:nth-of-type(3n + 1) { animation-delay: 0ms; }
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-node:nth-of-type(3n + 2) { animation-delay: 80ms; }
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-node:nth-of-type(3n) { animation-delay: 160ms; }
 }
 
 /* Keyboard users get the same reveal; touch devices keep the logo. */
 .ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-breakdown-brand { opacity: 0; }
-.ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-topology-preview line { opacity: 1; }
-.ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-topology-preview rect { opacity: 1; transform: none; }
+.ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-topology-link { opacity: 1; }
+.ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-topology-node { opacity: 1; transform: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .ax-breakdown-brand,
   .ax-breakdown-catalog-logo,
-  .ax-breakdown-topology .ax-topology-preview line,
-  .ax-breakdown-topology .ax-topology-preview rect { transition: none; }
+  .ax-breakdown-topology .ax-topology-link,
+  .ax-breakdown-topology .ax-topology-node { transition: none; }
   .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-breakdown-catalog-logo { transform: none; }
 }
 
 @media (min-width: 1024px) {
-  .ax-dashboard-content { overflow-y: auto; }
+  /* Reserved on both sides, so the column stays centered under the header. */
+  .ax-dashboard-content {
+    overflow-y: auto;
+    scrollbar-gutter: stable both-edges;
+  }
 
   /* Projects shows two rows and scrolls past that, so breakdowns stay in reach. */
   .ax-dashboard-project-grid:not(.ax-breakdown-catalog) {
-    max-height: calc(2 * 260px + 16px + 22px);
-    margin: -6px -10px -8px;
-    padding: 10px 10px 12px;
+    max-height: calc(2 * 160px + 20px + 22px);
+    margin: -6px -16px -8px -10px;
+    padding: 10px 4px 12px 10px;
     overflow-x: hidden;
     overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+}
+
+/* A wide target that draws thin: the scrollbar is 12px and transparent borders leave a 4px pill.
+   Setting scrollbar-width turns these rules off in Chrome, so the standard properties are only for
+   browsers without them. */
+.ax-dashboard-content::-webkit-scrollbar,
+.ax-dashboard-project-grid::-webkit-scrollbar { width: 12px; }
+
+.ax-dashboard-content::-webkit-scrollbar-button,
+.ax-dashboard-project-grid::-webkit-scrollbar-button { display: none; }
+
+.ax-dashboard-content::-webkit-scrollbar-track,
+.ax-dashboard-project-grid::-webkit-scrollbar-track { background: transparent; }
+
+/* The thumb runs the height of the tiles, not the pane's padding. */
+.ax-dashboard-project-grid::-webkit-scrollbar-track { margin-block: 10px 12px; }
+
+.ax-dashboard-content::-webkit-scrollbar-thumb,
+.ax-dashboard-project-grid::-webkit-scrollbar-thumb {
+  min-height: 48px;
+  border: 4px solid transparent;
+  border-radius: var(--radius-action);
+  background: var(--ax-dashboard-scrollbar-rest) padding-box;
+}
+
+.ax-dashboard-content:hover::-webkit-scrollbar-thumb,
+.ax-dashboard-project-grid:hover::-webkit-scrollbar-thumb {
+  background-color: var(--ax-dashboard-scrollbar-hover);
+}
+
+.ax-dashboard-content::-webkit-scrollbar-thumb:hover,
+.ax-dashboard-content::-webkit-scrollbar-thumb:active,
+.ax-dashboard-project-grid::-webkit-scrollbar-thumb:hover,
+.ax-dashboard-project-grid::-webkit-scrollbar-thumb:active {
+  background-color: var(--ax-dashboard-scrollbar-active);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .ax-dashboard-content,
+  .ax-dashboard-project-grid {
     scrollbar-width: thin;
+    scrollbar-color: var(--ax-dashboard-scrollbar-rest) transparent;
   }
 }
 
@@ -6750,19 +6927,19 @@ body,
 }
 
 
-.ax-repository-picker { display: grid; gap: 14px; font-size: 12px; }
+.ax-repository-picker { display: grid; gap: 14px; font-size: 14px; }
 .ax-repository-list { display: grid; gap: 6px; max-height: min(240px, 35dvh); overflow-y: auto; padding: 3px; margin: -3px; }
-.ax-repository-list > button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); background: var(--neutral-0); text-align: left; }
+.ax-repository-list > button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--neutral-0); font-weight: 600; text-align: left; }
 .ax-repository-list > button > span { overflow-wrap: anywhere; min-width: 0; }
-.ax-repository-list svg { flex-shrink: 0; }
-.ax-repository-list small { margin-left: auto; color: var(--color-muted); font-size: 10px; }
+.ax-repository-list svg { flex-shrink: 0; color: var(--ax-dialog-tint-ink); }
+.ax-repository-list small { margin-left: auto; color: var(--color-muted); font-size: 12px; font-weight: 400; }
 .ax-repository-picker p { margin: 0; color: var(--color-muted); line-height: 1.5; }
-.ax-repository-picker form { display: grid; gap: 8px; }
-.ax-repository-picker label { color: var(--color-muted); font-size: 11px; }
-.ax-repository-picker input { min-width: 0; width: 100%; padding: 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); background: var(--neutral-50); font-size: 12px; }
+.ax-repository-picker form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; }
+.ax-repository-picker label { grid-column: 1 / -1; color: var(--color-muted); font-size: 13px; }
+.ax-repository-picker input { min-width: 0; width: 100%; height: 36px; padding: 0 12px; border: 1px solid var(--color-line); border-radius: var(--radius-action); background: var(--neutral-0); font-size: 14px; }
 .ax-repository-picker input:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
-.ax-repository-import { justify-self: end; padding: 8px 12px; border: 1px solid var(--neutral-950); border-radius: var(--radius-control); background: var(--neutral-950); color: var(--neutral-0); }
-.ax-new-project-dialog .ax-repository-import:hover:not(:disabled) { background: var(--neutral-800); }
+.ax-repository-import { min-height: 36px; padding: 0 14px; border: 1px solid var(--ax-dialog-accent); border-radius: var(--radius-action); background: var(--ax-dialog-accent); color: var(--ax-dialog-accent-ink); font-size: 14px; font-weight: 600; }
+.ax-new-project-dialog .ax-repository-import:hover:not(:disabled) { border-color: var(--ax-dialog-accent-hover); background: var(--ax-dialog-accent-hover); }
 .ax-repository-back { justify-self: start; padding: 4px 0; border: 1px solid transparent; background: transparent; color: var(--color-muted); }
 .ax-repository-picker .ax-repository-error { color: var(--color-danger); }
 .ax-import-yaml { width: 100%; min-height: 260px; max-height: 45dvh; padding: 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); background: var(--neutral-50); color: var(--color-ink); font: 11px/1.5 var(--font-mono); white-space: pre; overflow: auto; resize: vertical; tab-size: 2; }
@@ -6779,213 +6956,184 @@ body,
 .ax-challenge-intro h2 { margin-bottom: 12px; font-size: 21px; }
 .ax-challenge-intro ul { display: grid; gap: 10px; margin: 14px 0 24px; padding-left: 16px; list-style: disc; color: var(--color-muted); font-size: 12px; line-height: 1.5; }
 .ax-challenge-intro-start { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 38px; padding: 10px 14px; border: 1px solid var(--neutral-950); border-radius: var(--radius-action); background: var(--neutral-950); color: var(--neutral-0); font-size: 12px; font-weight: 500; }
-.ax-new-project-dialog .ax-challenge-intro-start:hover:not(:disabled) { background: var(--neutral-800); }
-.ax-new-project-dialog .ax-challenge-intro-start:active:not(:disabled) { background: var(--neutral-700); }
+.ax-new-project-dialog .ax-challenge-intro-start:active:not(:disabled) { background: var(--ax-dialog-accent-active); }
 
-.ax-dashboard-shell { background: var(--neutral-0); }
+.ax-dashboard-shell {
+  --ax-dashboard-scrollbar-rest: var(--color-line-strong);
+  --ax-dashboard-scrollbar-hover: var(--neutral-500);
+  --ax-dashboard-scrollbar-active: var(--color-ink);
+  background: var(--neutral-0);
+}
 
 .ax-dashboard-shell .page-header {
+  border-bottom: 1px solid var(--color-line);
   background: transparent;
 }
 
-/* The challenge fills the header's empty middle: equal side columns keep it truly centered.
-   Below 840px it does not fit between them, so it takes a row of its own. */
-.ax-dashboard-shell .ax-dashboard-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: var(--page-header-height) auto;
-  grid-template-areas: "logo actions" "challenge challenge";
-  align-items: center;
-  column-gap: 16px;
-  height: auto;
-}
-
-.ax-dashboard-header > a { grid-area: logo; justify-self: start; }
-.ax-dashboard-header > nav { grid-area: actions; justify-self: end; }
-
-.ax-dashboard-challenge-region {
-  grid-area: challenge;
-  justify-self: center;
-  min-width: 0;
-  max-width: 100%;
-}
-
-@media (min-width: 840px) {
-  .ax-dashboard-shell .ax-dashboard-header {
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    grid-template-rows: var(--page-header-height);
-    grid-template-areas: "logo challenge actions";
+/* Zoom also multiplies viewport units, so the height is divided back to fill the window exactly. */
+@media (min-width: 1024px) {
+  .ax-dashboard-shell {
+    --ax-dashboard-scale: 1.05;
+    height: calc(100dvh / var(--ax-dashboard-scale));
+    zoom: var(--ax-dashboard-scale);
   }
-}
-
-/* The challenge in one line, with Start beside it. */
-.ax-daily-challenge-banner {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  width: max-content;
-  max-width: 100%;
-  min-height: 44px;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-action);
-  background: var(--color-surface);
-  color: var(--color-ink);
-}
-
-.ax-daily-challenge-label { display: none; }
-
-.ax-daily-challenge-reveal {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  width: 100%;
-  min-width: 0;
-  overflow-x: clip;
-}
-
-.ax-daily-challenge-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  padding: 4px 4px 4px 14px;
-}
-
-.ax-daily-challenge-copy {
-  display: flex;
-  flex: 1;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 2px 12px;
-  min-width: 0;
-}
-
-.ax-daily-challenge-title {
-  margin: 0;
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 20px;
-  letter-spacing: -0.01em;
-}
-
-.ax-daily-challenge-difficulty {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--color-muted);
-  font-size: 13px;
-  line-height: 18px;
-  white-space: nowrap;
-}
-
-.ax-daily-challenge-difficulty > svg {
-  width: 16px;
-  height: 16px;
-  flex: none;
-  stroke-width: 1.8;
-}
-
-.ax-daily-challenge-actions { flex: none; }
-
-.ax-daily-challenge-actions [role="alert"] {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  left: 0;
-  z-index: 1;
-  padding: 6px 10px;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-action);
-  background: var(--color-surface);
-  text-align: center;
-}
-
-.ax-daily-challenge-banner .ax-dashboard-challenge-start {
-  height: 34px;
-  padding: 0 14px;
-  border-radius: var(--radius-action);
-  color: var(--neutral-0);
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.ax-daily-challenge-banner .ax-dashboard-challenge-start > span { flex-wrap: nowrap; gap: 8px; white-space: nowrap; }
-
-/* In the header it rests as a label and opens outward from the center. The row keeps its final
-   size and is only unmasked, so Start never moves under a click. A failed Start holds it
-   open, so the error stays readable. */
-@media (hover: hover) and (min-width: 840px) {
-  .ax-daily-challenge-banner {
-    display: grid;
-    align-items: center;
-    justify-items: center;
-  }
-
-  .ax-daily-challenge-label,
-  .ax-daily-challenge-reveal { grid-area: 1 / 1; }
-
-  .ax-daily-challenge-label {
-    display: block;
-    margin: 0;
-    padding: 0 16px;
-    color: var(--color-ink);
-    font-size: 15px;
-    font-weight: 500;
-    line-height: 20px;
-    white-space: nowrap;
-    pointer-events: none;
-    transition: opacity 120ms ease;
-  }
-
-  .ax-daily-challenge-reveal {
-    grid-template-columns: minmax(0, 0fr);
-    justify-content: center;
-    justify-items: center;
-    transition: grid-template-columns 200ms ease;
-  }
-
-  .ax-daily-challenge-bar {
-    width: max-content;
-    opacity: 0;
-    transition: opacity 120ms ease;
-  }
-
-  .ax-daily-challenge-copy { flex: none; flex-wrap: nowrap; }
-  .ax-daily-challenge-title { white-space: nowrap; }
-
-  .ax-daily-challenge-banner:is(:hover, :focus-within, :has([role="alert"])) .ax-daily-challenge-label { opacity: 0; }
-  .ax-daily-challenge-banner:is(:hover, :focus-within, :has([role="alert"])) .ax-daily-challenge-reveal { grid-template-columns: minmax(0, 1fr); }
-  .ax-daily-challenge-banner:is(:hover, :focus-within, :has([role="alert"])) .ax-daily-challenge-bar { opacity: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ax-daily-challenge-label,
-  .ax-daily-challenge-reveal,
-  .ax-daily-challenge-bar { transition: none; }
-}
-
-/* Own row under the header, always open. */
-@media (max-width: 839px) {
-  .ax-dashboard-challenge-region { justify-self: stretch; }
-  .ax-daily-challenge-banner { width: 100%; }
 }
 
 .ax-challenge-intro {
   width: min(460px, calc(100vw - 32px));
   padding: 28px;
-  border-radius: 8px;
+  border-radius: 20px;
   background: var(--neutral-0);
   color: var(--challenge-intro-ink);
   box-shadow: 0 14px 40px rgb(0 0 0 / 24%);
 }
 
 .ax-challenge-intro-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-.ax-challenge-intro-symbol { display: grid; place-items: center; width: 38px; height: 38px; flex: none; margin: 0; border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--neutral-0); color: var(--canvas-accent); }
+.ax-challenge-intro-symbol { display: grid; place-items: center; width: 38px; height: 38px; flex: none; margin: 0; border: 0; border-radius: var(--radius-action); background: var(--ax-dialog-tint); color: var(--ax-dialog-tint-ink); }
 .ax-challenge-intro-label { margin: 0; color: var(--challenge-intro-ink); font-size: 18px; font-weight: 700; }
 .ax-challenge-intro h2 { margin: 0 0 12px; font-size: 21px; }
 .ax-challenge-intro > .ax-challenge-intro-name { margin: 0 0 14px; color: var(--challenge-intro-ink); font-size: 20px; font-weight: 700; line-height: 1.25; }
 .ax-challenge-intro ul { display: grid; gap: 10px; margin: 0 0 24px; padding-left: 20px; color: var(--challenge-intro-ink); font-size: 14px; line-height: 1.5; }
-.ax-challenge-intro-start { min-height: 48px; border: 1px solid var(--challenge-intro-ink); border-radius: 8px; background: var(--challenge-intro-ink); color: var(--neutral-0); font-size: 14px; font-weight: 600; }
-.ax-challenge-intro .ax-challenge-intro-start:hover:not(:disabled) { border-color: var(--challenge-intro-hover); background: var(--challenge-intro-hover); }
+.ax-challenge-intro-start { min-height: 48px; border: 1px solid var(--ax-dialog-accent); border-radius: 8px; background: var(--ax-dialog-accent); color: var(--ax-dialog-accent-ink); font-size: 14px; font-weight: 600; }
+.ax-challenge-intro .ax-challenge-intro-start:hover:not(:disabled) { border-color: var(--ax-dialog-accent-hover); background: var(--ax-dialog-accent-hover); }
+
+/* One line across the page, with its content on the same column as the dashboard below it.
+   Light blue with navy reads the same in both themes, so these values are not remapped for dark. */
+.ax-challenge-announcement {
+  --ax-announcement-surface: rgb(147 197 253);
+  --ax-announcement-ink: rgb(11 37 89);
+  --ax-announcement-muted: rgb(23 56 120);
+  --ax-announcement-action-ink: rgb(255 255 255);
+  --ax-announcement-action-hover: rgb(30 64 140);
+  --ax-announcement-dismiss-hover: rgb(120 176 250);
+  display: flex;
+  flex: none;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 20px;
+  background: var(--ax-announcement-surface);
+  color: var(--ax-announcement-ink);
+}
+
+.ax-challenge-announcement-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 1080px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.ax-challenge-announcement-label,
+.ax-challenge-announcement-level {
+  flex: none;
+  margin: 0;
+  color: var(--ax-announcement-ink);
+}
+
+/* The label and task read as one sentence, so one space follows the colon, not the row's gap. */
+.ax-challenge-announcement-label { margin-right: -8px; }
+
+.ax-challenge-announcement-level {
+  padding: 1px 8px;
+  border-radius: 6px;
+  background: rgb(255 255 255);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.ax-challenge-announcement-title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: inherit;
+  font-family: var(--font-sans);
+  font-size: inherit;
+  font-weight: 600;
+  line-height: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ax-challenge-announcement-action { flex: none; margin-left: auto; }
+
+/* A failed start reads beside the button, so the strip never changes height. */
+.ax-challenge-announcement-action > div { flex-direction: row-reverse; align-items: center; gap: 12px; }
+.ax-challenge-announcement-action [role="alert"] { color: var(--ax-announcement-ink); }
+
+.ax-challenge-announcement .ax-dashboard-challenge-start {
+  min-height: 28px;
+  height: 28px;
+  padding: 0 12px;
+  background: var(--ax-announcement-ink);
+  color: var(--ax-announcement-action-ink);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ax-challenge-announcement .ax-dashboard-challenge-start:hover { background: var(--ax-announcement-action-hover); }
+
+.ax-challenge-announcement .ax-dashboard-challenge-start:focus-visible,
+.ax-challenge-announcement-dismiss:focus-visible {
+  outline: 2px solid var(--ax-announcement-ink);
+  outline-offset: 2px;
+}
+
+.ax-challenge-announcement-dismiss {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--ax-announcement-muted);
+}
+
+.ax-challenge-announcement-dismiss:hover {
+  background: var(--ax-announcement-dismiss-hover);
+  color: var(--ax-announcement-ink);
+}
+
+.ax-challenge-announcement-dismiss svg { width: 14px; height: 14px; }
+
+@media (min-width: 640px) {
+  .ax-challenge-announcement { padding: 0 32px; }
+}
+
+/* The page's 56px inset plus its 12px scrollbar gutter. */
+@media (min-width: 1024px) {
+  .ax-challenge-announcement { padding: 0 68px; }
+}
+
+/* Below this the line no longer fits, so it stacks: details, the task, then the action. */
+@media (max-width: 799px) {
+  .ax-challenge-announcement { padding-top: 8px; padding-bottom: 12px; }
+
+  .ax-challenge-announcement-row {
+    display: grid;
+    grid-template-areas:
+      "label level dismiss"
+      "title title title"
+      "action action action";
+    grid-template-columns: auto 1fr auto;
+    gap: 2px 8px;
+  }
+
+  .ax-challenge-announcement-label { grid-area: label; margin-right: 0; }
+  .ax-challenge-announcement-level { grid-area: level; justify-self: start; }
+  .ax-challenge-announcement-title { grid-area: title; white-space: normal; }
+  .ax-challenge-announcement-dismiss { grid-area: dismiss; margin-right: -6px; }
+  .ax-challenge-announcement-action { grid-area: action; margin: 8px 0 0; }
+  .ax-challenge-announcement-action > div { flex-direction: column; align-items: stretch; gap: 6px; }
+
+  .ax-challenge-announcement .ax-dashboard-challenge-start {
+    width: 100%;
+    min-height: 32px;
+    height: 32px;
+  }
+}
