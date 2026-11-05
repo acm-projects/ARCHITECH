@@ -70,9 +70,11 @@ const nodeTypes = {
   architecture: ArchitectureNode,
 };
 
+// Components open at the scale of the bottom bar, whether the view is fitted or starts empty.
+const WORKSPACE_ZOOM = 1.4;
 const DESKTOP_FIT_VIEW_OPTIONS = {
-  padding: 0.4,
-  maxZoom: 1.1,
+  padding: 0.2,
+  maxZoom: WORKSPACE_ZOOM,
 };
 // The same fit the breakdown uses on small screens, so labels stay readable.
 const MOBILE_FIT_VIEW_OPTIONS = {
@@ -621,6 +623,7 @@ function Workspace({ project }: { project: Project }) {
                   onDrop={handleDrop}
                   fitView
                   fitViewOptions={fitViewOptions}
+                  defaultViewport={{ x: 0, y: 0, zoom: WORKSPACE_ZOOM }}
                   minZoom={0.25}
                   maxZoom={2}
                   // Drag empty canvas to pan; dragging a component still moves it.
