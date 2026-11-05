@@ -2227,3 +2227,52 @@
   .ax-workspace .ax-learn-instruction { font-size: 14px; }
   .ax-workspace .ax-learn-speech .ax-card-body { font-size: 15px; }
 }
+
+/* ---- Connections ----
+   While a connection is being dragged, the end a component can take covers the whole component
+   and a margin around it, so the line snaps as soon as the pointer is near. Its position for
+   routing was measured earlier, so the line still lands on the handle's real spot. */
+.ax-workspace .ax-node.is-connecting.accepts-in .react-flow__handle.ax-handle.ax-handle-in,
+.ax-workspace .ax-node.is-connecting.accepts-in .react-flow__handle.ax-handle.ax-handle-in.connectingto,
+.ax-workspace .ax-node.is-connecting.accepts-out .react-flow__handle.ax-handle.ax-handle-out,
+.ax-workspace .ax-node.is-connecting.accepts-out .react-flow__handle.ax-handle.ax-handle-out.connectingto {
+  inset: -24px;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  transition: none;
+}
+.ax-workspace .ax-node.accepts-in .react-flow__handle.ax-handle-in::before,
+.ax-workspace .ax-node.accepts-out .react-flow__handle.ax-handle-out::before { inset: 0; }
+/* The other end cannot take this connection, so it must not catch the pointer. */
+.ax-workspace .ax-node.accepts-in .react-flow__handle.ax-handle-out,
+.ax-workspace .ax-node.accepts-out .react-flow__handle.ax-handle-in { pointer-events: none; }
+.ax-workspace .ax-node.accepts-in .react-flow__handle.ax-handle-in::after,
+.ax-workspace .ax-node.accepts-out .react-flow__handle.ax-handle-out::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--ax-accent);
+  opacity: 1;
+  pointer-events: none;
+}
+.ax-workspace .ax-node.accepts-in .react-flow__handle.ax-handle-in::after { left: 24px; transform: translate(-50%, -50%); }
+.ax-workspace .ax-node.accepts-out .react-flow__handle.ax-handle-out::after { right: 24px; left: auto; transform: translate(50%, -50%); }
+.ax-workspace .ax-node:has(.react-flow__handle.connectingto.valid) { outline: 2px solid var(--ax-accent); outline-offset: 2px; }
+.ax-workspace .ax-node:has(.react-flow__handle.connectingto:not(.valid)) { outline: 2px solid var(--ax-danger); outline-offset: 2px; }
+.ax-workspace .ax-edge-plug { fill: var(--ax-ink-soft); pointer-events: none; }
+.ax-workspace .ax-snap-guide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.ax-workspace .ax-snap-guide[data-axis="x"] { border-left: 1px dashed var(--ax-accent); }
+.ax-workspace .ax-snap-guide[data-axis="y"] { border-top: 1px dashed var(--ax-accent); }

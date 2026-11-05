@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-import { BaseEdge, EdgeLabelRenderer, Position, useStore, type ConnectionLineComponentProps, type EdgeProps } from "@xyflow/react";
+import { BaseEdge, EdgeLabelRenderer, Position, useInternalNode, useStore, type ConnectionLineComponentProps, type EdgeProps, type InternalNode } from "@xyflow/react";
 
-import { arrowHeadPath, connectionEnd, getOrthogonalEdgePath } from "../../lib/architecture/edgeRouting";
+import { arrowHeadPath, connectionEnd, facingSides, getOrthogonalEdgePath, sideAnchor, type EdgeBox } from "../../lib/architecture/edgeRouting";
+import { ARCHITECTURE_NODE_SIZE } from "../../lib/architecture/nodeLayout";
 
 function EdgeLabel({ x, y, children }: { x: number; y: number; children: ReactNode }) {
   return (
@@ -37,8 +38,38 @@ export function ArchitectureEdge({ route = getOrthogonalEdgePath, lit = false, .
   );
 }
 
+// A component's box on the canvas, sized as measured once React Flow has rendered it.
+export function nodeBox(node: InternalNode): EdgeBox {
+  return {
+    ...node.internals.positionAbsolute,
+    width: node.measured.width ?? ARCHITECTURE_NODE_SIZE.width,
+    height: node.measured.height ?? ARCHITECTURE_NODE_SIZE.height,
+  };
+}
+
+// A connection on the project canvas: anchored to whichever sides of its components face each
+// other. A saved edge keeps its handles, so this changes the drawing and never the design.
 export default function OrthogonalEdge(props: EdgeProps) {
-  return <ArchitectureEdge {...props} />;
+  const source = useInternalNode(props.source);
+  const target = useInternalNode(props.target);
+  if (!source || !target) return <ArchitectureEdge {...props} />;
+
+  const from = nodeBox(source);
+  const to = nodeBox(target);
+  const { sourcePosition, targetPosition } = facingSides(from, to);
+  // Left to right runs handle to handle, exactly where the preview line ended.
+  if (sourcePosition === Position.Right && targetPosition === Position.Left) return <ArchitectureEdge {...props} />;
+
+  const start = sideAnchor(from, sourcePosition);
+  const end = sideAnchor(to, targetPosition);
+  return (
+    <>
+      <ArchitectureEdge {...props} sourceX={start.x} sourceY={start.y} sourcePosition={sourcePosition}
+        targetX={end.x} targetY={end.y} targetPosition={targetPosition} />
+      <circle className="ax-edge-plug" cx={start.x} cy={start.y} r={3.5} />
+      <circle className="ax-edge-plug" cx={end.x} cy={end.y} r={3.5} />
+    </>
+  );
 }
 
 // The line under the cursor while connecting takes the route and arrow the finished edge

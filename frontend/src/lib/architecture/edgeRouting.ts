@@ -14,6 +14,46 @@ export const EDGE_DETOUR = ARCHITECTURE_NODE_SIZE.height / 2 + EDGE_STUB;
 // a fixed lane lets everything entering a component run together into one arrow.
 export const EDGE_TARGET_LANE = 24;
 
+// Room a connection needs between two components to run straight from one side to the other:
+// a stub out, a turn, and the arrow.
+export const EDGE_MIN_GAP = 40;
+
+export type EdgeBox = { x: number; y: number; width: number; height: number };
+export type EdgeSides = { sourcePosition: Position; targetPosition: Position };
+
+const FORWARD: EdgeSides = { sourcePosition: Position.Right, targetPosition: Position.Left };
+
+// The sides of two components that face each other, so a connection takes the short way round
+// wherever they are moved. Traffic left to right keeps its usual route; anything else leaves
+// from the side nearest the target. Boxes too close to clear each other stay on the usual
+// route, which detours around them.
+export function facingSides(source: EdgeBox, target: EdgeBox): EdgeSides {
+  const gapRight = target.x - (source.x + source.width);
+  const gapLeft = source.x - (target.x + target.width);
+  const gapBelow = target.y - (source.y + source.height);
+  const gapAbove = source.y - (target.y + target.height);
+  if (gapRight >= EDGE_MIN_GAP) return FORWARD;
+
+  const gapVertical = Math.max(gapBelow, gapAbove);
+  if (gapVertical >= EDGE_MIN_GAP && gapVertical >= gapLeft) {
+    return gapBelow >= gapAbove
+      ? { sourcePosition: Position.Bottom, targetPosition: Position.Top }
+      : { sourcePosition: Position.Top, targetPosition: Position.Bottom };
+  }
+  if (gapLeft >= EDGE_MIN_GAP) return { sourcePosition: Position.Left, targetPosition: Position.Right };
+  return FORWARD;
+}
+
+// The middle of one side of a component.
+export function sideAnchor(box: EdgeBox, side: Position): { x: number; y: number } {
+  switch (side) {
+    case Position.Left: return { x: box.x, y: box.y + box.height / 2 };
+    case Position.Right: return { x: box.x + box.width, y: box.y + box.height / 2 };
+    case Position.Top: return { x: box.x + box.width / 2, y: box.y };
+    case Position.Bottom: return { x: box.x + box.width / 2, y: box.y + box.height };
+  }
+}
+
 type RouteProps = Pick<EdgeProps, "sourceX" | "sourceY" | "targetX" | "targetY" | "sourcePosition" | "targetPosition">;
 
 export function getOrthogonalEdgePath({
