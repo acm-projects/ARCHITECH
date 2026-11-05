@@ -1768,7 +1768,6 @@
 .ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] .ax-tool-chevron { transform: rotate(180deg); }
 .ax-workspace .ax-inspector .ax-check-head { gap: 8px; }
 .ax-workspace .ax-inspector .ax-inspector-frame { scrollbar-width: thin; scrollbar-color: var(--ax-line-strong) transparent; }
-.ax-workspace .ax-inspector .ax-ai-focus-bar { background: var(--ax-canvas); }
 
 /* Expanded surfaces: navigation at the edge, one readable content region. */
 .ax-workspace .ax-inspector .ax-review-view { padding: 0 12px; gap: 16px; }
@@ -2069,14 +2068,14 @@
 /* ---- Bottom-bar tool panels: Live estimates and Design check read alike ----
    Same header (icon, title, state on the right, controls, close), same body inset,
    same row rhythm, same disclosure at the end. */
-.ax-workspace .ax-tool-widget .ax-tool-head { justify-content: flex-start; gap: 8px; padding: 6px 6px 6px var(--ax-panel-inset); }
+.ax-workspace .ax-tool-head { justify-content: flex-start; gap: 8px; padding: 6px 6px 6px var(--ax-panel-inset); }
 .ax-workspace .ax-tool-head-icon {
   display: inline-grid; place-items: center; width: 16px; height: 16px; flex-shrink: 0; color: var(--ax-ink-soft);
 }
-.ax-workspace .ax-tool-widget .ax-tool-head h2 { flex: 0 1 auto; min-width: 0; white-space: nowrap; }
+.ax-workspace .ax-tool-head h2 { flex: 1 1 auto; min-width: 0; white-space: nowrap; }
 .ax-workspace .ax-tool-widget .ax-tool-head h2:focus { outline: none; }
 .ax-workspace .ax-tool-head-meta {
-  display: inline-flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
   color: var(--ax-muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .ax-workspace .ax-tool-head-meta[title] { cursor: help; }
@@ -2154,11 +2153,11 @@
 .ax-workspace .ax-canvas-panel[data-learn-movable] .ax-panel-content {
   width:min(380px, calc(100vw - 32px));
   max-height:100%;
-  border-radius:24px;
+  border-radius:var(--ax-panel-radius, 20px);
 }
-.ax-workspace .ax-panel-content .ax-card.ax-learn { border-radius:24px; }
+.ax-workspace .ax-panel-content .ax-card.ax-learn { border-radius:var(--ax-panel-radius, 20px); }
 .ax-workspace .ax-learn-header { grid-template-columns:minmax(0,1fr) 40px 30px; }
-.ax-workspace .ax-learn-header .ax-card-title { font-size:calc(var(--ax-t-md) * 2); line-height:1.25; color:var(--ax-ink); }
+.ax-workspace .ax-learn-header .ax-card-title { font-size:16.25px; font-weight:600; line-height:1.25; color:var(--ax-ink); }
 .ax-workspace .ax-learn .ax-learn-speech { background:#fff; border-color:#109bfd; color:#000; border-radius:12px; }
 .ax-workspace .ax-learn .ax-learn-speech::before { background:#fff; border-color:#109bfd; }
 .ax-workspace .ax-learn .ax-learn-speech .ax-card-body { color:#000; }

@@ -191,9 +191,10 @@ export default function LearnCard({
           <button
             type="button"
             onClick={onDismissFeedback}
-            className="ax-card-link"
+            className="ax-panel-action"
+            data-variant="primary"
           >
-            Try again →
+            Try again
           </button>
         </div>
       ) : (
