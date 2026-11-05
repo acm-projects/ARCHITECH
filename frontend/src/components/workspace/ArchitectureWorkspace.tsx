@@ -61,6 +61,8 @@ import ArchitectureNode, {
   type ArchitectureFlowNode,
   type ArchitectureNodeData,
 } from "./nodes/ArchitectureNode";
+// After every component's own styles: this is the shared panel system they all sit in.
+import "./workspace-panels.css";
 
 // Keep this outside the component so React Flow gets the same node type reference
 // instead of creating a new one every time the workspace rerenders.

@@ -119,6 +119,7 @@ export default function WorkspaceInspector({
       data-expanded={panelExpanded}
       data-selection={selected.length > 0}
       data-archie={archieOpen || undefined}
+      data-detail={configuring || historyOpen || undefined}
       aria-label="Architecture inspector"
     >
       <div className="ax-inspector-frame">
