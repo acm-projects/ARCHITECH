@@ -6993,7 +6993,7 @@ body,
 .ax-challenge-intro-label { margin: 0; color: var(--challenge-intro-ink); font-size: 18px; font-weight: 700; }
 .ax-challenge-intro h2 { margin: 0 0 12px; font-size: 21px; }
 .ax-challenge-intro > .ax-challenge-intro-name { margin: 0 0 14px; color: var(--challenge-intro-ink); font-size: 20px; font-weight: 700; line-height: 1.25; }
-.ax-challenge-intro ul { display: grid; gap: 10px; margin: 0 0 24px; padding-left: 20px; color: var(--challenge-intro-ink); font-size: 14px; line-height: 1.5; }
+.ax-challenge-intro ul { display: grid; gap: 10px; margin: 0 0 24px; padding-left: 20px; color: var(--challenge-intro-ink); font-size: 15px; line-height: 1.5; }
 .ax-challenge-intro-start { min-height: 48px; border: 1px solid var(--ax-dialog-accent); border-radius: 8px; background: var(--ax-dialog-accent); color: var(--ax-dialog-accent-ink); font-size: 14px; font-weight: 600; }
 .ax-challenge-intro .ax-challenge-intro-start:hover:not(:disabled) { border-color: var(--ax-dialog-accent-hover); background: var(--ax-dialog-accent-hover); }
 

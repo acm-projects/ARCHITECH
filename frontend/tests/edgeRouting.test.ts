@@ -82,9 +82,9 @@ test("a back-edge goes around both components instead of through them", () => {
 });
 
 test("the arrowhead's tip sits on the target handle and points into it", () => {
-  assert.equal(arrowHeadPath(10, 20, Position.Left), "M10 20L4 17L4 23Z");
-  assert.equal(arrowHeadPath(10, 20, Position.Top), "M10 20L7 14L13 14Z");
-  assert.equal(arrowHeadPath(10, 20, Position.Left, true), "M10 20L4 15L4 25Z");
+  assert.equal(arrowHeadPath(10, 20, Position.Left), "M10 20L2 16L2 24Z");
+  assert.equal(arrowHeadPath(10, 20, Position.Top), "M10 20L6 12L14 12Z");
+  assert.equal(arrowHeadPath(10, 20, Position.Left, true), "M10 20L2 14L2 26Z");
 });
 
 test("connections from different sources enter a component through one lane", () => {
@@ -101,6 +101,6 @@ test("a short forward link still leaves its source before turning", () => {
 });
 
 test("a connection stops short of the handle and its line stops under the arrow", () => {
-  assert.deepEqual(connectionEnd(100, 50, Position.Left), { tipX: 99, tipY: 50, lineX: 94, lineY: 50 });
-  assert.deepEqual(connectionEnd(100, 50, Position.Bottom), { tipX: 100, tipY: 51, lineX: 100, lineY: 56 });
+  assert.deepEqual(connectionEnd(100, 50, Position.Left), { tipX: 99, tipY: 50, lineX: 92, lineY: 50 });
+  assert.deepEqual(connectionEnd(100, 50, Position.Bottom), { tipX: 100, tipY: 51, lineX: 100, lineY: 58 });
 });

@@ -53,7 +53,7 @@ export function getOrthogonalEdgePath({
 
 // The arrow points into the target along the side it enters.
 // A focused connection carries a heavier line, so its arrow grows with it.
-const ARROW = { idle: { length: 6, halfWidth: 3 }, active: { length: 6, halfWidth: 5 } } as const;
+const ARROW = { idle: { length: 8, halfWidth: 4 }, active: { length: 8, halfWidth: 6 } } as const;
 // The tip stops just short of the handle so the arrow and the dot stay two separate shapes.
 const ARROW_HANDLE_GAP = 1;
 // The line runs slightly under the arrow so no seam shows at its base.

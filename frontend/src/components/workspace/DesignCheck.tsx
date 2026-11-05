@@ -175,7 +175,7 @@ export function DesignCheckBadges({ result, nodes, check }: { result: LiveResult
             type="button"
             className="ax-check-badge nodrag nopan"
             data-severity={worst.severity}
-            style={{ transform: `translate(${x + width - 8}px, ${y - 8}px)` }}
+            style={{ transform: `translate(${x + width - 10}px, ${y - 10}px)` }}
             title={titles}
             aria-label={`${worst.severity === "high" ? "High" : "Medium"} severity: ${list.length} problem${list.length === 1 ? "" : "s"} with ${node.data.label}: ${titles}`}
             onClick={() => {
