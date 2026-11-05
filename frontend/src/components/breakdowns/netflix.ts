@@ -1,4 +1,5 @@
 import type { ArchitectureNodeType } from "../../lib/architecture/types.ts";
+import { ARCHITECTURE_NODE_SIZE } from "../../lib/architecture/nodeLayout.ts";
 import type { ArchitectureFlowNode } from "../workspace/nodes/ArchitectureNode";
 
 export const NETFLIX_SOURCES = {
@@ -35,7 +36,7 @@ export const NETFLIX_SOURCES = {
 type SourceId = keyof typeof NETFLIX_SOURCES;
 export const NETFLIX_CHAPTERS = ["Browsing", "Playback", "Video preparation"] as const;
 
-export const NETFLIX_NODE_SIZE = { width: 192, height: 56 } as const;
+export const NETFLIX_NODE_SIZE = ARCHITECTURE_NODE_SIZE;
 
 type NetflixComponent = {
   id: string;

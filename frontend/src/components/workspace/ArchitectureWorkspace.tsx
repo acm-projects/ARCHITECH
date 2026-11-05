@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState, type CSSProperties, type DragEvent } from "react";
 import { Gauge, ShieldCheck } from "lucide-react";
 import {
-  ConnectionLineType,
   Controls,
   ReactFlow,
   ReactFlowProvider,
@@ -25,6 +24,7 @@ import {
   removeSelected,
 } from "../../lib/architecture/nodeOperations";
 import { applyReset, planReset } from "../../lib/architecture/reset";
+import { ARCHITECTURE_NODE_SIZE, spreadOverlappingNodes } from "../../lib/architecture/nodeLayout";
 import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
 import { ChallengeLeaderboard } from "../challenge/ChallengeLeaderboard";
@@ -56,7 +56,7 @@ import { LiveEstimatesPanel } from "./LiveMetricsBar";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
-import OrthogonalEdge from "./OrthogonalEdge";
+import OrthogonalEdge, { ConnectionPreview } from "./OrthogonalEdge";
 import ArchitectureNode, {
   type ArchitectureFlowNode,
   type ArchitectureNodeData,
@@ -70,9 +70,17 @@ const nodeTypes = {
   architecture: ArchitectureNode,
 };
 
-const FIT_VIEW_OPTIONS = {
+const DESKTOP_FIT_VIEW_OPTIONS = {
   padding: 0.4,
+  maxZoom: 1.1,
 };
+// The same fit the breakdown uses on small screens, so labels stay readable.
+const MOBILE_FIT_VIEW_OPTIONS = {
+  padding: 0.15,
+  maxZoom: 1.1,
+};
+const fitViewOptionsForScreen = () =>
+  window.matchMedia("(max-width: 900px)").matches ? MOBILE_FIT_VIEW_OPTIONS : DESKTOP_FIT_VIEW_OPTIONS;
 
 // Every edge draws as a right-angle route with its own arrowhead, including saved edges
 // without a type ("default") and those saved as "orthogonal".
@@ -83,9 +91,6 @@ const edgeTypes = {
 
 // A refused connection explains itself for this long, then clears.
 const CONNECTION_NOTICE_MS = 4000;
-
-const NODE_WIDTH = 82;
-const NODE_HEIGHT = 27;
 
 // Learn and Challenge both reset to an empty architecture so the user builds it themselves.
 const emptyGraph = (): {
@@ -103,8 +108,12 @@ const emptyGraph = (): {
 // Each mode only adds its own lesson/evaluation state around that same canvas.
 function Workspace({ project }: { project: Project }) {
   // React Flow owns the live node/edge state while this project is open.
+  // Spread once here rather than in the store: the saved layout only changes with the
+  // user's next edit, so opening a project does not count as editing it.
+  const [initialNodes] = useState(() => spreadOverlappingNodes(project.nodes));
+  const [fitViewOptions] = useState(fitViewOptionsForScreen);
   const [nodes, setNodes, onNodesChange] =
-    useNodesState<ArchitectureFlowNode>(project.nodes);
+    useNodesState<ArchitectureFlowNode>(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(project.edges);
 
   const {
@@ -312,8 +321,8 @@ function Workspace({ project }: { project: Project }) {
           id,
           type: "architecture",
           position: {
-            x: center.x - NODE_WIDTH / 2,
-            y: center.y - NODE_HEIGHT / 2,
+            x: center.x - ARCHITECTURE_NODE_SIZE.width / 2,
+            y: center.y - ARCHITECTURE_NODE_SIZE.height / 2,
           },
           data: component,
         }),
@@ -381,7 +390,7 @@ function Workspace({ project }: { project: Project }) {
 
         // Wait until React Flow renders the reset graph before adjusting the viewport.
         requestAnimationFrame(() => {
-          fitView(FIT_VIEW_OPTIONS);
+          fitView(fitViewOptions);
         });
       },
 
@@ -407,6 +416,7 @@ function Workspace({ project }: { project: Project }) {
     edges,
     replaceGraph,
     fitView,
+    fitViewOptions,
     clearCanvasSelection,
     learn,
     challenge,
@@ -603,14 +613,16 @@ function Workspace({ project }: { project: Project }) {
                   onConnect={handleConnect}
                   onConnectEnd={handleConnectEnd}
                   isValidConnection={isValidConnection}
-                  connectionLineType={ConnectionLineType.SmoothStep}
+                  connectionLineComponent={ConnectionPreview}
                   // Delete and Backspace are handled by useWorkspaceKeyboard so all
                   // keyboard behavior goes through the same history-aware path.
                   deleteKeyCode={null}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                   fitView
-                  fitViewOptions={FIT_VIEW_OPTIONS}
+                  fitViewOptions={fitViewOptions}
+                  minZoom={0.25}
+                  maxZoom={2}
                   // Drag empty canvas to pan; dragging a component still moves it.
                   // Shift+drag draws a selection box that picks every component it touches.
                   panOnDrag
@@ -618,7 +630,7 @@ function Workspace({ project }: { project: Project }) {
                   selectionMode={SelectionMode.Partial}
                   elevateEdgesOnSelect
                 >
-                  <Controls showInteractive={false} fitViewOptions={FIT_VIEW_OPTIONS} />
+                  <Controls showInteractive={false} fitViewOptions={fitViewOptions} />
                   {canRunDesign && <DesignCheckBadges result={live.result} nodes={nodes} check={designCheck} />}
                 </ReactFlow>
               </InspectorContext.Provider>

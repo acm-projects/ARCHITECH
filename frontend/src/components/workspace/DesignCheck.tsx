@@ -18,6 +18,7 @@ import type { LiveResult, LiveSummary } from "../../lib/architecture/evaluation/
 import type { TrafficProfile } from "../../lib/architecture/evaluation/traffic";
 import { formatLatency, formatMonthlyCost, formatRate } from "../../lib/architecture/implementationStats";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
+import { ARCHITECTURE_NODE_SIZE } from "../../lib/architecture/nodeLayout";
 import ToolPanelHeader from "./ToolPanelHeader";
 import "./design-check.css";
 
@@ -141,8 +142,8 @@ export function DesignCheckBadges({ result, nodes, check }: { result: LiveResult
     x: node.position.x,
     y: node.position.y,
     // Before React Flow measures a node, fall back to the architecture node's own size.
-    width: node.measured?.width ?? node.width ?? 82,
-    height: node.measured?.height ?? node.height ?? 27,
+    width: node.measured?.width ?? node.width ?? ARCHITECTURE_NODE_SIZE.width,
+    height: node.measured?.height ?? node.height ?? ARCHITECTURE_NODE_SIZE.height,
   });
 
   return (

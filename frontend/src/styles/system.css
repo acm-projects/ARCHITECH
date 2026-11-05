@@ -888,8 +888,7 @@ pre { font-family: var(--font-mono); }
   --ax-accent: #75beff;
   --ax-brand: #9cdcfe;
   /* Lines and handles lighten on hover against the dark canvas instead of dimming. */
-  --ax-edge: #6b6b6b;
-  --ax-edge-hover: #a3a3a3;
+  --ax-edge-hover: #ffffff;
   --ax-handle: #6b6b6b;
   --ax-danger: #ff8a8a;
 }

@@ -10,6 +10,7 @@ import { sanitizeEdges, sanitizeNodes } from "../../projects/projectStore";
 import { sharedEvaluationCache } from "../../../lib/architecture/evaluation/liveMetrics";
 import { DEFAULT_TRAFFIC } from "../../../lib/architecture/evaluation/traffic";
 import { formatLatency, formatMonthlyCost } from "../../../lib/architecture/implementationStats";
+import { spreadOverlappingNodes } from "../../../lib/architecture/nodeLayout";
 import {
   listVersions,
   loadVersionGraph,
@@ -93,7 +94,7 @@ export default function HistoryPanel({
     const graph = saved ? await loadVersionGraph(projectId, version.id) : null;
     setBusy(false);
     if (!graph) return setMessage("Could not restore that version. Nothing was changed.");
-    const nodes = sanitizeNodes(graph.nodes);
+    const nodes = spreadOverlappingNodes(sanitizeNodes(graph.nodes));
     onRestore({ nodes, edges: sanitizeEdges(graph.edges, nodes) });
     setMessage("Restored. Undo with Ctrl/Cmd+Z, or restore the “Before restoring” version.");
     await refresh();

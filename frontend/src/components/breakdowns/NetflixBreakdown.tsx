@@ -1,12 +1,9 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BaseEdge,
-  EdgeLabelRenderer,
   Handle,
-  MarkerType,
   Position,
   ReactFlow,
   ReactFlowProvider,
@@ -36,7 +33,8 @@ import NetflixGuide from "./NetflixGuide";
 import LivePreviewToggle from "./LivePreviewToggle";
 import NetflixPreview from "./NetflixPreview";
 import { useLivePreviewSetting } from "./useLivePreviewSetting";
-import { getOrthogonalEdgePath } from "../workspace/OrthogonalEdge";
+import { ArchitectureEdge, type EdgeRoute } from "../workspace/OrthogonalEdge";
+import { getOrthogonalEdgePath } from "../../lib/architecture/edgeRouting";
 
 function BreakdownNode(props: NodeProps<ArchitectureFlowNode>) {
   const component = NETFLIX_COMPONENTS.find(item => item.id === props.id);
@@ -59,24 +57,18 @@ function videoReturnPath({ sourceX, sourceY, targetX, targetY }: Pick<EdgeProps,
   return `M ${sourceX} ${sourceY} V ${laneY} H ${returnX} V ${targetY} H ${targetX}`;
 }
 
+const breakdownRoute: EdgeRoute = (props) => {
+  if (props.id === "cdn-viewer") return [videoReturnPath(props), VIDEO_RETURN_ROUTE.labelX, VIDEO_RETURN_ROUTE.laneY];
+  const [path, labelX, labelY] = getOrthogonalEdgePath(props);
+  // Short links leave too little room between ports for a label. Put it below
+  // the preparation row instead of covering either component's text.
+  const belowRow = props.id === "encoding-assets" || props.id === "assets-cdn";
+  return [path, labelX, belowRow ? labelY + NETFLIX_NODE_SIZE.height / 2 + PREPARATION_LABEL_GAP : labelY];
+};
+
+// Everything visual comes from the canvas edge; a breakdown only adds its lanes.
 function BreakdownEdge(props: EdgeProps) {
-  const { id, label, markerEnd, style } = props;
-  let [path, labelX, labelY] = getOrthogonalEdgePath(props);
-  if (id === "cdn-viewer") {
-    path = videoReturnPath(props);
-    labelX = VIDEO_RETURN_ROUTE.labelX;
-    labelY = VIDEO_RETURN_ROUTE.laneY;
-  } else if (id === "encoding-assets" || id === "assets-cdn") {
-    // Short links leave too little room between ports for a label. Put it below
-    // the preparation row instead of covering either component's text.
-    labelY += NETFLIX_NODE_SIZE.height / 2 + PREPARATION_LABEL_GAP;
-  }
-  return <>
-    <BaseEdge id={id} path={path} markerEnd={markerEnd} style={style} />
-    {label && <EdgeLabelRenderer>
-      <span className="ax-breakdown-edge-label" style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}>{label}</span>
-    </EdgeLabelRenderer>}
-  </>;
+  return <ArchitectureEdge {...props} route={breakdownRoute} lit={Boolean(props.data?.lit)} />;
 }
 
 const NODE_TYPES = { architecture: BreakdownNode };
@@ -114,22 +106,16 @@ function NetflixWalkthrough() {
     ariaLabel: `${node.data.label}: explain this component`,
   })), [scene, component?.id]);
   const edges: Edge[] = useMemo(() => scene.connections.map(connection => {
-    const active = component && (connection.source === component.id || connection.target === component.id);
-    const lit = litConnections.includes(connection.id);
-    const color = active || lit ? "var(--ax-accent)" : "var(--ax-subtle)";
     return {
       ...connection,
-      // A connection names itself only while one of its components is in focus.
-      label: active ? connection.label : undefined,
+      data: { lit: litConnections.includes(connection.id) },
       type: "breakdown",
       sourceHandle: connection.id === "control-steering" ? "state-out" : connection.id === "cdn-viewer" ? "video-out" : undefined,
       targetHandle: connection.id === "control-steering" ? "state-in" : undefined,
       selectable: false,
       focusable: false,
-      markerEnd: { type: MarkerType.ArrowClosed, color, width: 12, height: 12 },
-      style: { stroke: color, strokeWidth: lit ? 2.8 : active ? 1.8 : 1.2 },
     };
-  }), [scene, component, litConnections]);
+  }), [scene, litConnections]);
   // React Flow owns measurement and selection; the lesson supplies a read-only
   // graph whenever its visible components or focused step change.
   useEffect(() => {
@@ -162,7 +148,7 @@ function NetflixWalkthrough() {
   }, [component, revealedCount, nodesReady, fitView, setCenter]);
 
   return (
-    <main className="ax-workspace ax-breakdown" style={{ "--ax-breakdown-node-width": `${NETFLIX_NODE_SIZE.width}px`, "--ax-breakdown-node-height": `${NETFLIX_NODE_SIZE.height}px` } as CSSProperties}>
+    <main className="ax-workspace ax-breakdown">
       <WorkspaceHeaderShell
         project={<h1 className="ax-title"><span>Netflix System breakdown</span></h1>}
         actions={<>

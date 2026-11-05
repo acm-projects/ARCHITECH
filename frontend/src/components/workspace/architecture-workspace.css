@@ -30,7 +30,7 @@
   --ax-brand: #1446a0;
   --ax-danger: #b4343f;
   /* Connections: idle line and arrow, hover, and idle handle dots. */
-  --ax-edge: #b4b4af;
+  --ax-edge: var(--ax-subtle);
   --ax-edge-hover: #77776f;
   --ax-handle: #b4b4af;
 
@@ -701,7 +701,7 @@
   --xy-background-color: var(--ax-canvas);
   --xy-edge-stroke: var(--ax-edge);
   --xy-edge-stroke-selected: var(--ax-accent);
-  --xy-edge-stroke-width: 1;
+  --xy-edge-stroke-width: 1.2;
   --xy-connectionline-stroke: var(--ax-accent);
   --xy-connectionline-stroke-width: 1.25;
   --xy-controls-button-background-color: transparent;
@@ -751,30 +751,47 @@
 }
 
 /* Edges read as technical drawing lines. The arrowhead is part of the edge, so it follows
-   hover, selection and theme with the line. Selection is twice as thick as idle, not only
-   recoloured. */
-.ax-workspace .ax-edge-arrow { fill: var(--ax-edge); }
+   hover, selection and theme with the line. Connections of the selected component, and a
+   selected connection itself, thicken as well as recolour. */
+.ax-workspace .react-flow__edge-path { transition: stroke 160ms ease, stroke-width 160ms ease; }
+.ax-workspace .ax-edge-arrow { fill: var(--ax-edge); transition: fill 160ms ease; }
 .ax-workspace .react-flow__edge:hover .react-flow__edge-path {
   stroke: var(--ax-edge-hover);
 }
 .ax-workspace .react-flow__edge:hover .ax-edge-arrow { fill: var(--ax-edge-hover); }
+.ax-workspace .react-flow__edge .react-flow__edge-path.is-active {
+  stroke: var(--ax-accent);
+  stroke-width: 1.8;
+}
+.ax-workspace .react-flow__edge .react-flow__edge-path.is-lit { stroke-width: 2.8; }
+.ax-workspace .react-flow__edge .ax-edge-arrow.is-active { fill: var(--ax-accent); }
+.ax-workspace .ax-connection-preview .ax-edge-arrow { fill: var(--ax-accent); }
+.ax-workspace .ax-connection-preview.is-invalid .react-flow__connection-path { stroke: var(--ax-danger); }
+.ax-workspace .ax-connection-preview.is-invalid .ax-edge-arrow { fill: var(--ax-danger); }
 .ax-workspace .react-flow__edge.selected .react-flow__edge-path,
 .ax-workspace .react-flow__edge.selected:hover .react-flow__edge-path {
   stroke: var(--ax-accent);
   stroke-width: 2;
 }
 .ax-workspace .react-flow__edge.selected .ax-edge-arrow { fill: var(--ax-accent); }
+.ax-workspace .ax-edge-label { position: absolute; padding: 2px 4px; background: var(--ax-canvas); color: var(--ax-ink-soft); font-size: 8px; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .ax-workspace :is(.react-flow__edge-path, .ax-edge-arrow) { transition: none; }
+}
 
-/* ---- Architecture node: a small diagram object on a large canvas ---- */
+/* ---- Architecture node: one size on the canvas and in breakdowns ---- */
 
 .ax-workspace .ax-node {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
-  width: 82px;
-  height: 27px;
-  padding: 0 5px;
+  gap: 8px;
+  /* As wide as its text. max-width and height are ARCHITECTURE_NODE_SIZE in lib/architecture/nodeLayout.ts */
+  width: max-content;
+  min-width: 132px;
+  max-width: 192px;
+  height: 56px;
+  padding: 8px;
   border: 1px solid var(--ax-line-strong);
   border-radius: 12px;
   background: var(--ax-surface);
@@ -786,15 +803,15 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 15px;
-  height: 15px;
+  width: 24px;
+  height: 24px;
   border-radius: 3px;
   background: color-mix(in srgb, var(--ax-family, var(--ax-muted)) 12%, transparent);
   color: var(--ax-family, var(--ax-muted));
 }
 .ax-workspace .ax-node .ax-node-glyph {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 .ax-workspace .ax-node .ax-node-text {
   min-width: 0;
@@ -808,16 +825,16 @@
   white-space: nowrap;
 }
 .ax-workspace .ax-node .ax-node-name {
-  font-size: 7.5px;
-  font-weight: 500;
-  line-height: 1.1;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
   color: var(--ax-ink);
 }
 .ax-workspace .ax-node .ax-node-meta {
-  margin-top: 1px;
-  font-size: 6px;
-  line-height: 1.1;
-  color: var(--ax-subtle);
+  margin-top: 3px;
+  font-size: 9px;
+  line-height: 1.3;
+  color: var(--ax-muted);
 }
 .ax-workspace .ax-node:hover {
   border-color: var(--ax-subtle);
@@ -829,6 +846,7 @@
   outline: 1px solid var(--ax-ink);
   outline-offset: 2px;
 }
+.ax-workspace .react-flow__node:focus-visible .ax-node { outline: 2px solid var(--ax-accent); outline-offset: 3px; }
 .ax-workspace .react-flow__node.dragging .ax-node {
   box-shadow: 0 2px 6px rgba(17, 17, 17, 0.08);
 }
@@ -2120,7 +2138,6 @@
 .ax-workspace .ax-panel-rail { box-shadow: 0 4px 14px rgb(0 0 0 / 12%); }
 .ax-workspace .ax-panel-content { box-shadow: 0 8px 24px rgb(0 0 0 / 18%); }
 .ax-workspace .ax-node { box-shadow: 0 2px 8px rgb(0 0 0 / 14%); }
-.ax-workspace .ax-node .ax-node-name { font-size: 12px; font-weight: 700; }
 .ax-workspace .ax-learn { box-shadow: 0 8px 24px rgb(0 0 0 / 20%); }
 .ax-workspace .ax-canvas-panel[data-learn-movable] {
   top: calc(50% + var(--ax-learn-offset, 0px));
