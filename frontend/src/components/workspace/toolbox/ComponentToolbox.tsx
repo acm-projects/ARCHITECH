@@ -200,8 +200,8 @@ export default function ComponentToolbox({
     >
       {flyoutTool && <div className="ax-inspector ax-tool-flyout">{toolContent}</div>}
       {/* Stays mounted while a tool uses the flyout, so the search survives switching back. */}
-      <div className={`ax-component-menu ${flyoutTool ? "hidden" : "flex"} min-h-0 flex-col p-3`}>
-        {/* More uses search as its header; categories retain their title. */}
+      <div className={`ax-component-menu ${flyoutTool ? "hidden" : "flex"} min-h-0 flex-col p-3`} data-folder={flyoutTool ? undefined : ""}>
+        {/* The folder tab: More's holds its search, a category's holds its name. */}
         <div className="ax-component-menu-header flex shrink-0 items-center justify-between gap-2 pb-2">
           {category === "all" ? <div className="ax-search min-w-0 flex-1">
             <ComponentGlyph type="search" className="ax-search-glyph" />

@@ -2201,3 +2201,37 @@
 .ax-workspace.ax-breakdown .ax-breakdown-canvas .react-flow__controls {
   top:12px; left:12px; right:auto; bottom:auto; margin:0; visibility:visible;
 }
+
+/* ---- Scale ----
+   The bottom bar is the reference size for the workspace: the top bar matches its height, and
+   the controls around the canvas are sized to read at the same scale as its icons. */
+@media (min-width: 1000px) {
+  .ax-workspace { --ax-bar-height: 68px; --ax-header-clearance: var(--ax-bar-height); }
+  .ax-workspace .ax-header {
+    --ax-header-control-height: 44px;
+    height: var(--ax-bar-height);
+    min-height: var(--ax-bar-height);
+    gap: 20px;
+    padding: 0 12px 0 20px;
+  }
+  .ax-workspace .ax-header-project { gap: 22px; }
+  .ax-workspace .ax-header .brand-wordmark-header { width: 176px; height: 42px; }
+  .ax-workspace .ax-header-actions { gap: 10px; }
+  .ax-workspace .ax-title { gap: 10px; padding-left: 22px; }
+  .ax-workspace .ax-title,
+  .ax-workspace .ax-header-title-input { font-size: 22px; }
+  .ax-workspace .ax-title > svg { width: 15px; height: 15px; }
+  .ax-workspace .ax-title small { font-size: 12px; }
+  .ax-workspace .ax-header .ax-save { font-size: 14px; }
+  .ax-workspace .ax-header-menu-trigger { padding-inline: 16px; font-size: 15px; }
+  .ax-workspace .ax-header-menu-trigger svg { width: 15px; height: 15px; }
+  .ax-workspace .ax-theme-toggle { width: 44px; height: 44px; }
+  .ax-workspace .ax-theme-toggle svg { width: 20px; height: 20px; }
+  .ax-workspace .ax-header .ax-run-button { min-height: 44px; padding: 10px 24px; border-radius: 14px; font-size: 15px; }
+  .ax-workspace .ax-header .ax-run-button svg { width: 18px; height: 18px; }
+  .ax-workspace .react-flow__controls { padding: 4px; }
+  .ax-workspace .react-flow__controls-button { width: 40px; height: 40px; }
+  .ax-workspace .react-flow__controls-button svg { width: 16px; height: 16px; }
+  .ax-workspace .ax-rail-name { padding: 6px 10px; font-size: 14px; }
+  .ax-workspace .ax-connection-notice { font-size: 14px; }
+}

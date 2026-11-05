@@ -121,3 +121,76 @@
   .ax-workspace .ax-workspace-canvas .ax-canvas-overlays > .ax-inspector[data-archie] { bottom: 96px; }
   .ax-workspace .ax-simulation-panel { bottom: 96px; }
 }
+
+/* ---- Component folders ----
+   A category popup is a file folder: a tab at the left holds the name and close control where
+   the full-width header was. The frame moves from the popup to the list, so the tab and list
+   read as one outline. The space beside the tab is not part of the folder and leaves the
+   canvas reachable. */
+.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu[data-folder]) {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+.ax-workspace .ax-panel-content .ax-component-menu[data-folder] {
+  overflow: visible;
+  padding: 0;
+  filter: drop-shadow(0 6.4px 9.6px rgb(0 0 0 / 18%));
+}
+.ax-workspace .ax-panel-content .ax-component-menu[data-folder] .ax-component-menu-header {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  width: max-content;
+  max-width: 100%;
+  min-height: 32px;
+  margin: 0 0 -1px;
+  padding: 0 4px 0 12px;
+  gap: 4px;
+  border: 1px solid var(--ax-line-strong);
+  border-bottom-color: var(--ax-surface);
+  border-radius: 12px 12px 0 0;
+  background: var(--ax-surface);
+  pointer-events: auto;
+}
+.ax-workspace .ax-panel-content .ax-component-menu[data-folder] .ax-panel-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ax-workspace .ax-panel-content .ax-component-menu[data-folder] .ax-component-list {
+  padding: 6px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 0 calc(var(--ax-panel-radius, 20px) / var(--ax-panel-zoom, 1)) calc(var(--ax-panel-radius, 20px) / var(--ax-panel-zoom, 1));
+  background: var(--ax-surface);
+  pointer-events: auto;
+}
+
+/* More's folder tab holds a compact search in place of a name. */
+.ax-workspace .ax-panel-content .ax-component-menu[data-folder] .ax-search {
+  flex: none;
+  width: 168px;
+  margin: 0;
+}
+.ax-workspace .ax-panel-content .ax-component-menu[data-folder] .ax-search-input {
+  height: 30px;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+}
+.ax-workspace .ax-panel-content .ax-component-menu[data-folder] .ax-search-input:is(:hover, :focus, :focus-visible) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ax-workspace .ax-panel-content .ax-component-menu[data-folder] .ax-component-menu-header:has(.ax-search-input:focus-visible) {
+  border-color: var(--ax-ink);
+  border-bottom-color: var(--ax-surface);
+}
+
+/* The bar's popup is centered with a transform, which the side panels' entrance would replace. */
+.ax-workspace .ax-canvas-panel[data-side="left"][data-hover-flyout] .ax-panel-content:not([hidden]) { animation: none; }
