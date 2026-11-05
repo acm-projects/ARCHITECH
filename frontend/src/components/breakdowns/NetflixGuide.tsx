@@ -128,7 +128,7 @@ export default function NetflixGuide({ progress, connections, onNavigate }: Netf
         {component && <p className="ax-ai-answer">{component.why}</p>}
         <details className="ax-breakdown-sources">
           <summary>Sources &amp; simplifications <ChevronDown size={11} aria-hidden="true" /></summary>
-          <p>This is an on-demand streaming example, not Netflix&apos;s live production map. Application services and data stores are grouped. DRM, monitoring and regional failover are not drawn in full.</p>
+          <p>This is an on-demand streaming example, not Netflix&apos;s live production map. Application services and data stores are grouped. DRM, monitoring and regional failover are not drawn in full. Live previews are simulations, not Netflix data.</p>
           <ul>{sources.map(source => <li key={source.href}><a href={source.href} target="_blank" rel="noreferrer">{source.title} {"\u2197"}</a></li>)}</ul>
           <p>The API and storage articles describe earlier Netflix designs. Cache placement and the shared API edge are teaching choices.</p>
         </details>

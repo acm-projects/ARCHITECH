@@ -12,10 +12,6 @@
 
 .ax-breakdown-body { position: relative; flex: 1; min-height: 0; }
 .ax-breakdown-diagram, .ax-breakdown-canvas { width: 100%; height: 100%; }
-.ax-breakdown-legend { position: absolute; top: 12px; left: 12px; z-index: 5; display: flex; gap: 14px; padding: 4px; background: var(--ax-canvas); color: var(--ax-muted); font-size: 9px; pointer-events: none; }
-.ax-breakdown-legend span { display: flex; align-items: center; gap: 6px; }
-.ax-breakdown-legend i { width: 16px; border-top: 1px solid var(--ax-muted); }
-.ax-breakdown-legend i.is-video { border-top-style: dashed; }
 
 /* A little larger than editable nodes so the component names stay readable. */
 .ax-workspace.ax-breakdown .ax-node { width: var(--ax-breakdown-node-width); height: var(--ax-breakdown-node-height); gap: 8px; padding: 8px; background: var(--ax-surface); }
@@ -28,7 +24,10 @@
 .ax-workspace.ax-breakdown .react-flow__handle.ax-handle::after { content: none; }
 .ax-breakdown-edge-label { position: absolute; padding: 2px 4px; background: var(--ax-canvas); color: var(--ax-ink-soft); font-size: 8px; white-space: nowrap; }
 
-.ax-workspace.ax-breakdown .ax-breakdown-guide { position: absolute; top: calc(50% + var(--ax-header-clearance) / 2); right: 16px; z-index: 10; width: 340px; height: min(560px, calc(100% - var(--ax-header-clearance) - 32px)); max-height: calc(100% - var(--ax-header-clearance) - 32px); overflow: hidden; transform: translateY(-50%); border: 1px solid var(--ax-line-strong); border-radius: 16px; }
+/* The guide and its live preview share one column; short screens take the room from the guide. */
+.ax-breakdown-rail { position: absolute; top: calc(50% + var(--ax-header-clearance) / 2); right: 16px; z-index: 10; display: flex; flex-direction: column; justify-content: center; gap: 8px; width: 340px; height: min(766px, calc(100% - var(--ax-header-clearance) - 32px)); pointer-events: none; transform: translateY(-50%); }
+.ax-breakdown-rail > * { pointer-events: auto; }
+.ax-workspace.ax-breakdown .ax-breakdown-guide { position: relative; top: auto; right: auto; flex: 0 1 560px; width: 100%; height: auto; min-height: 0; max-height: none; overflow: hidden; transform: none; border: 1px solid var(--ax-line-strong); border-radius: 16px; }
 .ax-breakdown-guide .ax-ai-hint { color: var(--ax-muted); }
 .ax-breakdown-guide .ax-ai-answer { margin: 0; }
 .ax-breakdown-exchange { display: grid; min-width: 0; gap: 12px; }
@@ -59,15 +58,80 @@
   .ax-workspace.ax-breakdown { --ax-breakdown-canvas-height: clamp(240px, 34dvh, 360px); height: auto; min-height: 100dvh; }
   .ax-breakdown-body { display: flex; flex-direction: column; }
   .ax-breakdown-diagram { height: calc(var(--ax-breakdown-canvas-height) + var(--ax-header-clearance)); }
-  .ax-workspace.ax-breakdown .ax-breakdown-guide { position: relative; top: auto; right: auto; width: auto; height: clamp(400px, calc(100dvh - var(--ax-breakdown-canvas-height) - 68px), 560px); max-height: none; margin: 0 12px 12px; transform: none; }
+  .ax-breakdown-rail { display: contents; }
+  .ax-live-preview,
+  .ax-workspace .ax-live-preview-toggle { display: none; }
+  .ax-workspace.ax-breakdown .ax-breakdown-guide { flex: none; width: auto; height: clamp(400px, calc(100dvh - var(--ax-breakdown-canvas-height) - 68px), 560px); max-height: none; margin: 0 12px 12px; transform: none; }
 }
 
 @media (max-width: 360px) {
   .ax-breakdown-back span { display: none; }
 }
 
+/* Live preview: red marks the active item only, and a ruled-out server keeps its ✕ and label. */
+.ax-live-preview { --ax-preview-active: #e50914; display: grid; flex: none; gap: 8px; margin: 0; padding: 10px 14px 12px; border: 1px solid var(--ax-line-strong); border-radius: 16px; background: var(--ax-surface); }
+.ax-live-preview-header { display: flex; align-items: center; justify-content: space-between; min-height: 30px; }
+.ax-live-preview-title { margin: 0; color: var(--ax-ink); font-size: 15px; font-weight: 500; }
+.ax-live-preview-scene > svg { display: block; width: 100%; height: auto; overflow: visible; }
+.ax-live-preview-scene svg svg { overflow: hidden; }
+.ax-live-preview figcaption { color: var(--ax-muted); font-size: 12px; line-height: 14px; text-align: center; }
+.ax-workspace .ax-live-preview-replay { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--ax-line); border-radius: 8px; background: transparent; color: var(--ax-ink-soft); cursor: pointer; }
+.ax-workspace .ax-live-preview-replay:hover { background: var(--ax-canvas); color: var(--ax-ink); }
+
+/* Short laptops keep Archie's text readable. */
+@media (max-height: 820px) {
+  .ax-live-preview-scene > svg { width: 230px; margin-inline: auto; }
+}
+
+.ax-preview-text { fill: var(--ax-muted); font-size: 6px; }
+.ax-preview-text.is-chosen { fill: var(--neutral-0); font-weight: 600; }
+.ax-preview-text.is-strong { fill: var(--ax-ink); font-weight: 600; }
+.ax-preview-outline { fill: none; stroke: var(--ax-line-strong); vector-effect: non-scaling-stroke; }
+.ax-preview-solid { fill: var(--ax-ink); }
+.ax-preview-route { stroke: var(--ax-line-strong); vector-effect: non-scaling-stroke; transition: stroke 200ms ease, stroke-width 200ms ease; }
+.ax-preview-route.is-chosen { stroke: var(--ax-preview-active); stroke-width: 2; }
+.ax-preview-chosen { fill: var(--ax-preview-active); }
+.ax-preview-on-active { fill: var(--neutral-0); }
+.ax-preview-stop { fill: var(--ax-surface); stroke: var(--ax-line-strong); }
+.ax-preview-selected { fill: none; stroke: var(--ax-preview-active); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.ax-preview-ruled-out { opacity: 0.55; transition: opacity 200ms ease; }
+.ax-preview-poster-art { fill: var(--ax-surface); }
+.ax-preview-picture { transition: filter 420ms ease, opacity 320ms ease; }
+.ax-preview-sky { fill: var(--ax-line); }
+.ax-preview-hill { fill: var(--ax-muted); }
+.ax-preview-tile { fill: var(--ax-subtle); }
+.ax-preview-hidden { fill: none; }
+.ax-preview-signpost { fill: none; stroke: var(--neutral-0); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 320ms ease; }
+.ax-preview-wait { fill: var(--ax-muted); animation: ax-preview-wait 720ms ease-in-out var(--ax-preview-delay) infinite alternate; }
+.ax-preview-move { transition: transform 420ms ease; }
+.ax-preview-fade { transition: opacity 320ms ease; }
+.ax-preview-track { fill: var(--ax-line); }
+.ax-preview-buffer { fill: var(--ax-preview-active); transform-box: fill-box; transform-origin: left; transition: transform 520ms ease; }
+.ax-preview-segment { fill: var(--ax-ink); animation: ax-preview-segment 480ms linear var(--ax-preview-delay) infinite; }
+.ax-preview-segment.is-slow { animation-duration: 1100ms; }
+
+@keyframes ax-preview-segment {
+  from { transform: translateX(0); }
+  to { transform: translateX(53px); }
+}
+
+@keyframes ax-preview-wait {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
+}
+
+.ax-breakdown .react-flow__edge-path { transition: stroke 160ms ease, stroke-width 160ms ease; }
+
 @media (prefers-reduced-motion: reduce) {
-  .ax-breakdown .ax-node { transition: none; }
+  .ax-breakdown .ax-node,
+  .ax-breakdown .react-flow__edge-path,
+  .ax-preview-route,
+  .ax-preview-ruled-out,
+  .ax-preview-move,
+  .ax-preview-fade,
+  .ax-preview-picture,
+  .ax-preview-signpost,
+  .ax-preview-buffer { transition: none; }
 }
 
 /* The shared project header floats over the workspace; reserve its clearance. */
