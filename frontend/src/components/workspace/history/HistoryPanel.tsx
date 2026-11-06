@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { Edge } from "@xyflow/react";
 import { useReactFlow } from "@xyflow/react";
-import { History, RotateCcw, X } from "lucide-react";
+import { History } from "lucide-react";
 
+import Panel, { PanelAction, PanelActions, PanelDelta, PanelDetail, PanelGroup, PanelLink, PanelRow, PanelText } from "../panel/Panel";
 import { sanitizeEdges, sanitizeNodes } from "../../projects/projectStore";
 import { sharedEvaluationCache } from "../../../lib/architecture/evaluation/liveMetrics";
 import { DEFAULT_TRAFFIC } from "../../../lib/architecture/evaluation/traffic";
@@ -20,11 +21,11 @@ import {
   type VersionItem,
 } from "../../../lib/projects/historyClient";
 import type { ArchitectureFlowNode } from "../nodes/ArchitectureNode";
-import "./history-panel.css";
 
 // Version history, docked beside the canvas like the AI Architect. Versions are recorded by the
 // server when the design changes (at most every 10 minutes) and with "Save version". Each shows
-// the score, cost and p95 it had (at the default traffic) and how that compares with now.
+// the score, cost and p95 it had (at the default traffic) and how that compares with now, one
+// version at a time.
 // Restoring saves the current design as a version first, then loads the old one as one undo step.
 
 export function HistoryToggle({ open, onToggle, popoverTarget }: { open: boolean; onToggle: () => void; popoverTarget?: string }) {
@@ -37,15 +38,13 @@ export function HistoryToggle({ open, onToggle, popoverTarget }: { open: boolean
   );
 }
 
-function Delta({ then, now, higherIsBetter, format }: { then: number; now: number; higherIsBetter: boolean; format: (n: number) => string }) {
-  if (Math.abs(then - now) < 1e-9) return null;
+// The latest versions, and the rest behind a row.
+const SHORT_LIST = 6;
+
+function Compared({ then, now, higherIsBetter, format }: { then: number; now: number | null; higherIsBetter: boolean; format: (n: number) => string }) {
+  if (now === null || Math.abs(then - now) < 1e-9) return <>{format(then)}</>;
   const better = (now > then) === higherIsBetter;
-  return (
-    <span className="ax-history-delta" data-tone={better ? "better" : "worse"} title="How it compares with your design now">
-      {" → "}
-      {format(now)}
-    </span>
-  );
+  return <>{format(then)}<PanelDelta better={better} title="How it compares with your design now"> → {format(now)}</PanelDelta></>;
 }
 
 export default function HistoryPanel({
@@ -62,7 +61,9 @@ export default function HistoryPanel({
   const [versions, setVersions] = useState<VersionItem[] | null | undefined>(undefined);
   const [label, setLabel] = useState("");
   const [busy, setBusy] = useState(false);
-  const [confirming, setConfirming] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const refresh = useCallback(async () => setVersions(await listVersions(projectId)), [projectId]);
@@ -89,95 +90,94 @@ export default function HistoryPanel({
 
   const restore = async (version: VersionItem) => {
     setBusy(true);
-    setConfirming(null);
+    setConfirming(false);
     const saved = await saveVersion(projectId, { kind: "before-restore", label: `Before restoring ${versionName(version).toLowerCase()} (${relativeTime(version.createdAt)})` });
     const graph = saved ? await loadVersionGraph(projectId, version.id) : null;
     setBusy(false);
     if (!graph) return setMessage("Could not restore that version. Nothing was changed.");
     const nodes = spreadOverlappingNodes(sanitizeNodes(graph.nodes));
     onRestore({ nodes, edges: sanitizeEdges(graph.edges, nodes) });
+    setOpenId(null);
     setMessage("Restored. Undo with Ctrl/Cmd+Z, or restore the “Before restoring” version.");
     await refresh();
   };
 
+  const back = () => {
+    setOpenId(null);
+    setConfirming(false);
+  };
+  const opened = versions?.find((version) => version.id === openId);
+  const shown = showAll ? versions : versions?.slice(0, SHORT_LIST);
   return (
-    <aside className="ax-ai-panel" aria-label="Version history">
-      <div className="ax-ai-header">
-        <p className="ax-ai-title">
-          <History size={15} aria-hidden="true" />
-          History
-        </p>
-        <button type="button" className="ax-icon-btn" aria-label="Close the version history" onClick={onClose}>
-          <X size={14} aria-hidden="true" />
-        </button>
-      </div>
-
-      <form
-        className="ax-history-save"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void save();
-        }}
-      >
-        <input
-          className="ax-field"
-          value={label}
-          maxLength={80}
-          placeholder="Name this version (optional)"
-          aria-label="Version name"
-          onChange={(event) => setLabel(event.target.value)}
-        />
-        <button type="submit" className="ax-ai-send ax-panel-action" data-variant="primary" disabled={busy}>
-          Save version
-        </button>
-      </form>
-      {message && <p className="ax-history-message" role="status">{message}</p>}
-
-      <div className="ax-ai-messages">
-        {versions === undefined && <p className="ax-ai-thinking">Loading history…</p>}
-        {versions === null && <p className="ax-ai-empty">History appears once this project is saved to your account.</p>}
-        {versions?.length === 0 && <p className="ax-ai-empty">No versions yet. They are saved automatically as your design changes, or with Save version.</p>}
-        <ol className="ax-history-list">
-          {versions?.map((version) => (
-            <li key={version.id} className="ax-history-item" data-kind={version.kind}>
-              <div className="ax-history-row">
-                <span className="ax-history-name">{versionName(version)}</span>
-                <span className="ax-history-time" title={new Date(version.createdAt).toLocaleString()}>
-                  {relativeTime(version.createdAt)}
-                </span>
-              </div>
-              {version.summary.ready ? (
-                <p className="ax-history-metrics">
-                  Score {version.summary.score}
-                  {current.ready && <Delta then={version.summary.score} now={current.score} higherIsBetter format={String} />}
-                  {" · "}
-                  {formatMonthlyCost(version.summary.monthlyCost)}
-                  {current.ready && <Delta then={version.summary.monthlyCost} now={current.monthlyCost} higherIsBetter={false} format={formatMonthlyCost} />}
-                  {" · p95 "}
-                  {formatLatency(version.summary.p95LatencyMs)}
-                </p>
-              ) : (
-                <p className="ax-history-metrics">{version.summary.components} components · not connected yet</p>
-              )}
-              {confirming === version.id ? (
-                <div className="ax-history-confirm">
-                  <span>Your current design is saved first.</span>
-                  <button type="button" className="ax-ai-apply ax-panel-action" data-variant="primary" disabled={busy} onClick={() => void restore(version)}>
-                    Restore
-                  </button>
-                  <button type="button" className="ax-history-cancel ax-panel-action" data-variant="secondary" onClick={() => setConfirming(null)}>
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <button type="button" className="ax-history-restore ax-panel-action" data-variant="secondary" disabled={busy} onClick={() => setConfirming(version.id)}>
-                  <RotateCcw size={12} aria-hidden="true" /> Restore
-                </button>
-              )}
-            </li>
+    <Panel label="Version history" icon={<History size={17} aria-hidden="true" />} title="History" closeLabel="Close the version history" onClose={onClose}>
+      <div hidden={Boolean(opened)}>
+        <form
+          className="axp-compose"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void save();
+          }}
+        >
+          <input
+            className="axp-input axp-input-box"
+            value={label}
+            maxLength={80}
+            placeholder="Name this version"
+            aria-label="Version name"
+            onChange={(event) => setLabel(event.target.value)}
+          />
+          <PanelAction type="submit" variant="primary" disabled={busy}>Save</PanelAction>
+        </form>
+        {message && <PanelText role="status">{message}</PanelText>}
+        <PanelGroup>
+          {versions === undefined && <PanelText>Loading history…</PanelText>}
+          {versions === null && <PanelText>History appears once this project is saved to your account.</PanelText>}
+          {versions?.length === 0 && <PanelText>No versions yet. They are saved automatically as your design changes.</PanelText>}
+          {shown?.map((version) => (
+            <PanelLink
+              key={version.id}
+              item
+              label={versionName(version)}
+              value={relativeTime(version.createdAt)}
+              title={new Date(version.createdAt).toLocaleString()}
+              onClick={() => setOpenId(version.id)}
+            />
           ))}
-        </ol>
+          {versions && versions.length > SHORT_LIST && (
+            <PanelLink label={showAll ? "Show fewer" : `Show all ${versions.length}`} onClick={() => setShowAll((value) => !value)} />
+          )}
+        </PanelGroup>
       </div>
-    </aside>
+
+      {opened && (
+        <PanelDetail key={opened.id} title={versionName(opened)} onBack={back}>
+          <PanelGroup>
+            <PanelRow label="Saved" value={relativeTime(opened.createdAt)} title={new Date(opened.createdAt).toLocaleString()} />
+            {opened.summary.ready ? (
+              <>
+                <PanelRow label="Score" value={<Compared then={opened.summary.score} now={current.ready ? current.score : null} higherIsBetter format={String} />} />
+                <PanelRow label="Monthly cost" value={<Compared then={opened.summary.monthlyCost} now={current.ready ? current.monthlyCost : null} higherIsBetter={false} format={formatMonthlyCost} />} />
+                <PanelRow label="p95 latency" value={formatLatency(opened.summary.p95LatencyMs)} />
+              </>
+            ) : (
+              <PanelRow label="Components" value={`${opened.summary.components} · not connected yet`} />
+            )}
+          </PanelGroup>
+          {confirming ? (
+            <>
+              <PanelText>Your current design is saved first.</PanelText>
+              <PanelActions>
+                <PanelAction onClick={() => setConfirming(false)}>Cancel</PanelAction>
+                <PanelAction variant="primary" disabled={busy} onClick={() => void restore(opened)}>Restore</PanelAction>
+              </PanelActions>
+            </>
+          ) : (
+            <PanelActions>
+              <PanelAction disabled={busy} onClick={() => setConfirming(true)}>Restore this version</PanelAction>
+            </PanelActions>
+          )}
+        </PanelDetail>
+      )}
+    </Panel>
   );
 }

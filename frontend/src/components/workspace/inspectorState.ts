@@ -57,7 +57,7 @@ export function inspectorReducer(state: InspectorState, action: InspectorAction)
   }
 }
 
-export type ReviewView = "overview" | "settings" | "metrics" | "comparison";
+export type ReviewView = "overview" | "settings" | "metrics" | "findings" | "comparison";
 export type ReviewSelection = { run: RunResult | null; view: ReviewView };
 
 // Stale projections and failed retries still belong to the same completed run.

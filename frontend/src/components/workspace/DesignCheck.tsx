@@ -2,13 +2,14 @@
 
 import type { Edge } from "@xyflow/react";
 import { ViewportPortal } from "@xyflow/react";
-import { ChevronDown, ShieldCheck, Undo2, Wrench } from "lucide-react";
-import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { ShieldCheck, Undo2 } from "lucide-react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import {
   checkedFix,
   downtimePerYear,
   formatAvailability,
+  SEVERITY_WORD,
   strengthenWeakest,
   uptimeBreakdown,
   type CheckedFix,
@@ -19,7 +20,7 @@ import type { TrafficProfile } from "../../lib/architecture/evaluation/traffic";
 import { formatLatency, formatMonthlyCost, formatRate } from "../../lib/architecture/implementationStats";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 import { ARCHITECTURE_NODE_SIZE } from "../../lib/architecture/nodeLayout";
-import ToolPanelHeader from "./ToolPanelHeader";
+import Panel, { PanelAction, PanelActions, PanelDetail, PanelGroup, PanelLink, PanelRow, PanelText } from "./panel/Panel";
 import "./design-check.css";
 
 // Design check over the canvas: the engine's findings marked on the components they are about,
@@ -84,20 +85,17 @@ function EnabledSwitch({ check }: { check: DesignCheckState }) {
       type="button"
       role="switch"
       aria-checked={check.enabled}
-      className="ax-check-switch"
+      aria-label="Mark problems on the canvas"
+      className="axp-switch"
       title={check.enabled ? "Turn the design check off (hides its marks and this panel)" : "Turn the design check on"}
       onClick={() => check.setEnabled(!check.enabled)}
     >
-      <span className="ax-check-switch-track" aria-hidden="true">
-        <span className="ax-check-switch-thumb" />
-      </span>
-      <span className="ax-check-sr">Design check</span>
+      <span aria-hidden="true" />
     </button>
   );
 }
 
 const SEVERITY_RANK: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
-const SEVERITY_WORD: Record<Severity, string> = { high: "High", medium: "Medium", low: "Low" };
 const bySeverity = (a: EvaluationFinding, b: EvaluationFinding) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity];
 
 // The components a finding is about, for its marks on the canvas: not every component it
@@ -109,18 +107,19 @@ function markedNodes(finding: EvaluationFinding, nodes: readonly ArchitectureFlo
   return finding.id.startsWith("connection-") ? finding.nodeIds.slice(0, 2) : finding.nodeIds.slice(0, 1);
 }
 
-// What a fix changes, in the numbers that move: "Uptime 99.85% → 99.95% · Cost +$42/mo".
-function effect(before: LiveSummary, after: LiveSummary): string[] {
-  const parts: string[] = [];
-  if (after.score !== before.score) parts.push(`Score ${before.score} → ${after.score}`);
-  if (after.uptimePercent !== before.uptimePercent) parts.push(`Uptime ${before.uptimePercent}% → ${after.uptimePercent}%`);
+// What a fix changes, in the numbers that move: Availability "99.85% → 99.95%", Cost "+$42/mo".
+type Effect = { label: string; value: string };
+function effect(before: LiveSummary, after: LiveSummary): Effect[] {
+  const parts: Effect[] = [];
+  if (after.score !== before.score) parts.push({ label: "Score", value: `${before.score} → ${after.score}` });
+  if (after.uptimePercent !== before.uptimePercent) parts.push({ label: "Availability", value: `${before.uptimePercent}% → ${after.uptimePercent}%` });
   if (after.capacityRps !== before.capacityRps) {
     const show = (value: number | null) => (value === null ? "no limit" : `${formatRate(value)} req/s`);
-    parts.push(`Capacity ${show(before.capacityRps)} → ${show(after.capacityRps)}`);
+    parts.push({ label: "Capacity", value: `${show(before.capacityRps)} → ${show(after.capacityRps)}` });
   }
-  if (Math.round(after.p95LatencyMs) !== Math.round(before.p95LatencyMs)) parts.push(`p95 ${formatLatency(before.p95LatencyMs)} → ${formatLatency(after.p95LatencyMs)}`);
+  if (Math.round(after.p95LatencyMs) !== Math.round(before.p95LatencyMs)) parts.push({ label: "p95 latency", value: `${formatLatency(before.p95LatencyMs)} → ${formatLatency(after.p95LatencyMs)}` });
   const cost = Math.round(after.monthlyCost - before.monthlyCost);
-  if (cost !== 0) parts.push(`Cost ${cost > 0 ? "+" : "−"}${formatMonthlyCost(Math.abs(cost))}`);
+  if (cost !== 0) parts.push({ label: "Monthly cost", value: `${cost > 0 ? "+" : "−"}${formatMonthlyCost(Math.abs(cost))}` });
   return parts;
 }
 
@@ -211,20 +210,8 @@ export function DesignCheckPanel({
   onUndo: () => void;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
-  const restoreFocus = useRef(false);
-  useLayoutEffect(() => {
-    if (!check.open && restoreFocus.current) {
-      restoreFocus.current = false;
-      trigger.current?.focus();
-    }
-  }, [check.open]);
-  const closePanel = () => {
-    restoreFocus.current = true;
-    check.setOpen(false);
-    check.setFocus(null);
-  };
-  const [applied, setApplied] = useState<{ label: string; effect: string[] } | null>(null);
+  const [applied, setApplied] = useState<{ label: string; effect: Effect[] } | null>(null);
+  const [showUptime, setShowUptime] = useState(false);
   const ready = Boolean(result?.summary.ready);
   const findings = useMemo(() => (result && ready ? [...result.evaluation.findings].sort(bySeverity) : []), [result, ready]);
 
@@ -252,151 +239,114 @@ export function DesignCheckPanel({
     onApply(fix.design as unknown as Graph);
     setApplied({ label: fix.label, effect: effect(fix.before, fix.after) });
     check.setFocus(null);
+    setShowUptime(false);
   };
 
-  if (!check.enabled || !check.open) {
-    return (
-      <div className="ax-check ax-check-bar">
-        <button ref={trigger} type="button" className="ax-check-pill" aria-expanded={false}
-          aria-label={!check.enabled ? "Enable design check" : undefined}
-          onClick={() => {
-            if (!check.enabled) check.setEnabled(true);
-            check.setOpen(true);
-          }}>
-          <span className="ax-inspector-tool-icon"><ShieldCheck size={16} aria-hidden="true" /></span>
-          <span>Design check</span>
-          <span className="ax-check-count">{!check.enabled ? "Off" : findings.length === 0 ? "Clear" : `${findings.length} ${findings.length === 1 ? "issue" : "issues"}`}</span>
-          <ChevronDown size={13} aria-hidden="true" className="ax-tool-chevron" />
-        </button>
-      </div>
-    );
-  }
-
   const uptime = checked?.uptime;
+  const focused = findings.find((finding) => finding.id === check.focus);
+  const focusedFix = focused && checked?.fixes.get(focused.id);
+  const inDetail = Boolean(focused) || (showUptime && Boolean(uptime));
   return (
-    // Escape is handled by ToolWidget, the same way as Live estimates.
-    <section className="ax-check ax-check-panel ax-tool-panel" aria-label="Design check">
-      <ToolPanelHeader
-        toolKey="check"
-        icon={<ShieldCheck size={16} aria-hidden="true" />}
-        title="Design check"
-        meta={findings.length === 0 ? "No findings" : `${findings.length} ${findings.length === 1 ? "finding" : "findings"}`}
-        actions={<EnabledSwitch check={check} />}
-        onClose={closePanel}
-        headingRef={heading}
-      />
-
+    <Panel
+      toolKey="check"
+      icon={<ShieldCheck size={17} aria-hidden="true" />}
+      title="Design check"
+      status={findings.length === 0 ? "No findings" : `${findings.length} ${findings.length === 1 ? "finding" : "findings"}`}
+      revealKey={check.focus}
+      onClose={() => {
+        check.setOpen(false);
+        check.setFocus(null);
+      }}
+      headingRef={heading}
+    >
       {applied && (
-        <div className="ax-check-applied" role="status">
-          <p>
-            Applied: <strong>{applied.label}</strong>
-            {applied.effect.length > 0 && <span className="ax-check-effect">{applied.effect.join(" · ")}</span>}
-          </p>
-          <button
-            type="button"
-            className="ax-check-undo"
-            onClick={() => {
-              heading.current?.focus({ preventScroll: true });
-              onUndo();
-              setApplied(null);
-            }}
-          >
-            <Undo2 size={13} aria-hidden="true" /> Undo
-          </button>
-        </div>
+        <PanelGroup title={`Applied: ${applied.label}`}>
+          <div role="status">
+            {applied.effect.map(({ label, value }) => <PanelRow key={label} label={label} value={value} />)}
+          </div>
+          <PanelActions>
+            <PanelAction
+              onClick={() => {
+                heading.current?.focus({ preventScroll: true });
+                onUndo();
+                setApplied(null);
+              }}
+            >
+              <Undo2 size={14} aria-hidden="true" /> Undo
+            </PanelAction>
+          </PanelActions>
+        </PanelGroup>
       )}
 
-      <div className="ax-check-body">
-        {findings.length === 0 ? (
-          <p className="ax-check-note">No problems found at {formatRate(traffic.requestsPerSecond)} req/s.</p>
-        ) : (
-          <ol className="ax-check-list">
-            {findings.map((finding) => {
-              const fix = checked?.fixes.get(finding.id);
-              return (
-                <li
-                  key={finding.id}
-                  data-severity={finding.severity}
-                  data-focused={check.focus === finding.id || undefined}
-                >
-                  {/* Selection opens one finding and its canvas outline together. Native summary keeps Enter/Space support. */}
-                  <details open={check.focus === finding.id}>
-                    <summary className="ax-check-title" onClick={(event) => {
-                      event.preventDefault();
-                      check.setFocus(check.focus === finding.id ? null : finding.id);
-                    }} onKeyDown={(event) => {
-                      if (event.key === " " || event.key === "Enter") event.stopPropagation();
-                    }}>
-                      <span>{finding.title}</span>
-                      <span className="ax-check-severity">{SEVERITY_WORD[finding.severity]}</span>
-                      <ChevronDown size={13} aria-hidden="true" />
-                    </summary>
-                    <div className="ax-check-finding-body">
-                      <p className="ax-check-message">{finding.message}</p>
-                      {fix ? <FixButton fix={fix} onApply={apply} /> : <p className="ax-check-advice">{finding.recommendation}</p>}
-                    </div>
-                  </details>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-        {uptime && (
-          <details className="ax-check-uptime ax-panel-disclosure">
-            <summary>
-              <span>Availability calculation</span>
-              <strong>{uptime.percent}%</strong>
-              <ChevronDown size={13} aria-hidden="true" />
-            </summary>
-            <div className="ax-check-uptime-body">
-              <p className="ax-check-uptime-total">
-                <strong>{uptime.percent}% uptime</strong> <span>down {downtimePerYear(uptime.percent / 100)}</span>
-              </p>
-              {uptime.path.length > 0 && (
-                <>
-                  <p className="ax-check-label">A request that goes all the way along the main path needs each of these up:</p>
-                  <p className="ax-check-chain">
-                    {uptime.path.map((part, index) => (
-                      <span key={part.nodeId} data-weakest={part.nodeId === uptime.weakest?.nodeId || undefined}>
-                        {index > 0 && <span className="ax-check-times"> × </span>}
-                        {part.name} {formatAvailability(part.availability)}
-                        {part.instances > 1 && <span className="ax-check-instances"> ({part.instances}×)</span>}
-                      </span>
-                    ))}
-                    <span className="ax-check-times"> = </span>
-                    <strong>{formatAvailability(uptime.pathAvailability)}</strong>
-                  </p>
-                  {uptime.pathAvailability * 100 < uptime.percent - 0.005 && (
-                    <p className="ax-check-note">
-                      The overall uptime is higher because some requests finish earlier on the path (cached reads, static files, requests that never reach the database).
-                    </p>
-                  )}
-                  {uptime.weakest && (
-                    <p className="ax-check-note">
-                      The weakest link is <strong>{uptime.weakest.name}</strong>. A part with several instances is up while any one of them is.
-                    </p>
-                  )}
-                  {checked?.stronger && (
-                    <FixButton fix={checked.stronger} onApply={apply} />
-                  )}
-                </>
-              )}
-            </div>
-          </details>
-        )}
+      <div hidden={inDetail}>
+        <PanelGroup>
+          {findings.length === 0 ? (
+            <PanelText>No problems found at {formatRate(traffic.requestsPerSecond)} req/s.</PanelText>
+          ) : (
+            findings.map((finding) => (
+              <PanelLink
+                key={finding.id}
+                item
+                label={finding.title}
+                value={SEVERITY_WORD[finding.severity]}
+                title={finding.title}
+                onClick={() => check.setFocus(finding.id)}
+              />
+            ))
+          )}
+        </PanelGroup>
+        <PanelGroup>
+          {uptime && <PanelLink label="Availability" value={`${uptime.percent}%`} onClick={() => setShowUptime(true)} />}
+          <div className="axp-row">
+            <span className="axp-label">Mark problems on the canvas</span>
+            <EnabledSwitch check={check} />
+          </div>
+        </PanelGroup>
       </div>
-    </section>
+
+      {focused ? (
+        <PanelDetail key={focused.id} title={focused.title} onBack={() => check.setFocus(null)}>
+          <PanelGroup>
+            <PanelRow label="Severity" value={SEVERITY_WORD[focused.severity]} />
+          </PanelGroup>
+          <PanelText>{focused.message}</PanelText>
+          {focusedFix ? <FixAction fix={focusedFix} onApply={apply} /> : <PanelText>{focused.recommendation}</PanelText>}
+        </PanelDetail>
+      ) : showUptime && uptime && (
+        <PanelDetail title="Availability" onBack={() => setShowUptime(false)}>
+          <PanelGroup>
+            <PanelRow label="Availability" value={`${uptime.percent}%`} />
+            <PanelRow label="Downtime" value={downtimePerYear(uptime.percent / 100)} />
+          </PanelGroup>
+          {uptime.path.length > 0 && (
+            <PanelGroup title="Main path" meta={formatAvailability(uptime.pathAvailability)}>
+              {uptime.path.map((part) => (
+                <PanelRow
+                  key={part.nodeId}
+                  item
+                  label={`${part.name}${part.instances > 1 ? ` (${part.instances}×)` : ""}`}
+                  value={`${part.nodeId === uptime.weakest?.nodeId ? "Weakest · " : ""}${formatAvailability(part.availability)}`}
+                />
+              ))}
+              {uptime.pathAvailability * 100 < uptime.percent - 0.005 && (
+                <PanelText>Overall availability is higher because some requests finish earlier on the path.</PanelText>
+              )}
+            </PanelGroup>
+          )}
+          {checked?.stronger && <FixAction fix={checked.stronger} onApply={apply} />}
+        </PanelDetail>
+      )}
+    </Panel>
   );
 }
 
-function FixButton({ fix, onApply }: { fix: CheckedFix; onApply: (fix: CheckedFix) => void }) {
-  const changes = effect(fix.before, fix.after);
+function FixAction({ fix, onApply }: { fix: CheckedFix; onApply: (fix: CheckedFix) => void }) {
   return (
-    <div className="ax-check-fix">
-      <button type="button" className="ax-panel-action" data-variant="secondary" onClick={() => onApply(fix)}>
-        <Wrench size={13} aria-hidden="true" /> {fix.label}
-      </button>
-      {changes.length > 0 && <span className="ax-check-effect">{changes.join(" · ")}</span>}
-    </div>
+    <PanelGroup>
+      {effect(fix.before, fix.after).map(({ label, value }) => <PanelRow key={label} label={label} value={value} />)}
+      <PanelActions>
+        <PanelAction onClick={() => onApply(fix)}>{fix.label}</PanelAction>
+      </PanelActions>
+    </PanelGroup>
   );
 }

@@ -1,14 +1,10 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
-import type { ReactNode } from "react";
-
 import type { WhatIf, WhatIfOption } from "../../lib/architecture/evaluation/whatIf";
 import { formatLatency, formatMonthlyCost } from "../../lib/architecture/implementationStats";
 
-// Inside a component's technology picker: what each technology would do to the whole design
-// (score, p95, monthly cost, uptime), coloured better/worse against the current choice.
-// Clicking a row switches to that technology.
+// Choosing a technology: what each one would do to the whole design (score, p95, monthly cost,
+// availability), coloured better/worse against the current choice. Clicking a row switches to it.
 
 type Column = { label: string; value: (o: WhatIfOption) => number; format: (n: number) => string; higherIsBetter: boolean };
 
@@ -16,7 +12,7 @@ const COLUMNS: Column[] = [
   { label: "Score", value: (o) => o.summary.score, format: String, higherIsBetter: true },
   { label: "p95", value: (o) => o.summary.p95LatencyMs, format: formatLatency, higherIsBetter: false },
   { label: "Cost", value: (o) => o.summary.monthlyCost, format: (n) => formatMonthlyCost(n).replace("/mo", ""), higherIsBetter: false },
-  { label: "Uptime", value: (o) => o.summary.uptimePercent, format: (n) => `${n}%`, higherIsBetter: true },
+  { label: "Availability", value: (o) => o.summary.uptimePercent, format: (n) => `${n}%`, higherIsBetter: true },
 ];
 
 function tone(value: number, current: number, higherIsBetter: boolean): "better" | "worse" | undefined {
@@ -25,14 +21,12 @@ function tone(value: number, current: number, higherIsBetter: boolean): "better"
   return (value > current) === higherIsBetter ? "better" : "worse";
 }
 
-export function DesignComparisonTable({ whatIf, onChoose, context }: { whatIf: WhatIf; onChoose: (id: string) => void; context?: ReactNode }) {
+export function DesignComparisonTable({ whatIf, onChoose }: { whatIf: WhatIf; onChoose: (id: string) => void }) {
   if (!whatIf.ready || whatIf.options.length < 2) return null;
   const current = whatIf.options.find((option) => option.current) ?? whatIf.options[0];
   return (
-    <details className="ax-whatif ax-panel-disclosure">
-      <summary><span>Compare technologies</span><ChevronDown size={13} aria-hidden="true" /></summary>
-      {context}
-      <table>
+    <div className="axp-table-wrap">
+      <table className="axp-table">
         <thead>
           <tr>
             <th scope="col">Technology</th>
@@ -57,7 +51,6 @@ export function DesignComparisonTable({ whatIf, onChoose, context }: { whatIf: W
                 ) : (
                   <button
                     type="button"
-                    className="ax-whatif-pick"
                     onClick={(event) => {
                       event.stopPropagation();
                       onChoose(option.implementation.id);
@@ -79,6 +72,6 @@ export function DesignComparisonTable({ whatIf, onChoose, context }: { whatIf: W
           ))}
         </tbody>
       </table>
-    </details>
+    </div>
   );
 }

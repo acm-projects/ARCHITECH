@@ -21,7 +21,7 @@ export const EDGE_MIN_GAP = 40;
 export type EdgeBox = { x: number; y: number; width: number; height: number };
 export type EdgeSides = { sourcePosition: Position; targetPosition: Position };
 
-const FORWARD: EdgeSides = { sourcePosition: Position.Right, targetPosition: Position.Left };
+export const FORWARD_SIDES: EdgeSides = { sourcePosition: Position.Right, targetPosition: Position.Left };
 
 // The sides of two components that face each other, so a connection takes the short way round
 // wherever they are moved. Traffic left to right keeps its usual route; anything else leaves
@@ -32,7 +32,7 @@ export function facingSides(source: EdgeBox, target: EdgeBox): EdgeSides {
   const gapLeft = source.x - (target.x + target.width);
   const gapBelow = target.y - (source.y + source.height);
   const gapAbove = source.y - (target.y + target.height);
-  if (gapRight >= EDGE_MIN_GAP) return FORWARD;
+  if (gapRight >= EDGE_MIN_GAP) return FORWARD_SIDES;
 
   const gapVertical = Math.max(gapBelow, gapAbove);
   if (gapVertical >= EDGE_MIN_GAP && gapVertical >= gapLeft) {
@@ -41,7 +41,7 @@ export function facingSides(source: EdgeBox, target: EdgeBox): EdgeSides {
       : { sourcePosition: Position.Top, targetPosition: Position.Bottom };
   }
   if (gapLeft >= EDGE_MIN_GAP) return { sourcePosition: Position.Left, targetPosition: Position.Right };
-  return FORWARD;
+  return FORWARD_SIDES;
 }
 
 // The middle of one side of a component.
@@ -52,6 +52,17 @@ export function sideAnchor(box: EdgeBox, side: Position): { x: number; y: number
     case Position.Top: return { x: box.x + box.width / 2, y: box.y };
     case Position.Bottom: return { x: box.x + box.width / 2, y: box.y + box.height };
   }
+}
+
+// A plug is centred on the component's border (7px wide, `.ax-handle` in the stylesheet), and a
+// line lands on its outer edge. Handles measure out to the same point, so every side matches.
+const PLUG_RADIUS = 3.5;
+
+// Where a line meets the plug on one side of a component.
+export function plugAnchor(box: EdgeBox, side: Position): { x: number; y: number } {
+  const { x, y } = sideAnchor(box, side);
+  const outward = OUTWARD[side];
+  return { x: x + outward.x * PLUG_RADIUS, y: y + outward.y * PLUG_RADIUS };
 }
 
 type RouteProps = Pick<EdgeProps, "sourceX" | "sourceY" | "targetX" | "targetY" | "sourcePosition" | "targetPosition">;

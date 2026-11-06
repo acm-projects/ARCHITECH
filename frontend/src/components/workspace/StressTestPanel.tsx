@@ -10,11 +10,11 @@ import {
   stressRate,
   type TrafficProfile,
 } from "../../lib/architecture/evaluation/traffic";
+import { PanelAction, PanelActions, PanelField, PanelGroup, PanelText } from "./panel/Panel";
 
 type StressTestPanelProps = {
   // The load the next run will use.
   traffic: TrafficProfile;
-  embedded?: boolean;
   runLabel?: string;
   running: boolean;
   // Changes the load without running (the result on screen then reads as out of date).
@@ -32,7 +32,6 @@ const format = (value: number) => Math.round(value).toLocaleString("en-US");
 // system review.
 export default function StressTestPanel({
   traffic,
-  embedded = false,
   runLabel,
   running,
   onRateChange,
@@ -53,78 +52,72 @@ export default function StressTestPanel({
   };
 
   return (
-    <section className="ax-card ax-learn ax-stress ax-review-section" aria-label="Traffic" data-stress-panel data-embedded={embedded || undefined}>
-      <div className="ax-review-section-head">
-        <h3>Traffic</h3>
-        <span>Baseline {format(BASELINE_REQUESTS_PER_SECOND)} req/s</span>
-      </div>
-
-      <label className="ax-stress-rate">
-        <span>Request rate</span>
-        <span className="flex items-baseline gap-1">
-          <input
-            // Remounted when the rate changes elsewhere (a preset, Reset), so it never shows a stale value.
-            key={rate}
-            defaultValue={format(rate)}
-            inputMode="numeric"
-            aria-label="Request rate (req/s)"
-            aria-invalid={error !== null}
-            onBlur={(event) => commit(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
-              if (event.key === "Escape") {
-                event.currentTarget.value = format(rate);
-                setError(null);
-                event.currentTarget.blur();
-              }
-            }}
-            className="ax-field ax-stress-input tabular-nums"
-          />
-          <span className="ax-card-label">req/s</span>
-        </span>
-      </label>
-      {error && (
-        <p role="alert" className="ax-review-note">
-          {error}
-        </p>
-      )}
-
-      <ul className="ax-stress-presets" aria-label="Traffic multiples of the baseline load">
-        {STRESS_MULTIPLIERS.map((multiplier) => {
-          const target = stressRate(multiplier);
-          return (
-            <li key={multiplier}>
-              <button
-                type="button"
-                aria-label={`Run ${multiplier}× traffic test`}
-                aria-pressed={rate === target}
-                aria-disabled={running}
-                title={`${format(target)} req/s`}
-                onClick={() => {
-                  if (running) return;
-                  setError(null);
-                  onRunAtRate(target);
+    <section aria-label="Traffic" data-stress-panel>
+      <PanelGroup>
+        <PanelField
+          label="Request rate"
+          htmlFor="ax-request-rate"
+          title={`Baseline ${format(BASELINE_REQUESTS_PER_SECOND)} req/s`}
+          control={
+            <>
+              <input
+                // Remounted when the rate changes elsewhere (a preset, Reset), so it never shows a stale value.
+                key={rate}
+                id="ax-request-rate"
+                defaultValue={format(rate)}
+                inputMode="numeric"
+                aria-label="Request rate (req/s)"
+                aria-invalid={error !== null}
+                onBlur={(event) => commit(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") event.currentTarget.blur();
+                  if (event.key === "Escape") {
+                    event.currentTarget.value = format(rate);
+                    setError(null);
+                    event.currentTarget.blur();
+                  }
                 }}
-                className="ax-action ax-stress-preset"
-              >
-                {multiplier}×
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      <button
-        type="button"
-        aria-disabled={running}
-        onClick={() => {
-          if (!running) onRun();
-        }}
-        className="ax-stress-run ax-panel-action"
-        data-variant="primary"
-      >
-        {runLabel ?? `Run at ${format(rate)} req/s`}
-      </button>
+                className="axp-input axp-input-number axp-input-end"
+              />
+              <span className="axp-unit">req/s</span>
+            </>
+          }
+        />
+        {error && <PanelText role="alert" tone="danger">{error}</PanelText>}
+        <PanelActions>
+          <div className="axp-segments" role="group" aria-label="Traffic multiples of the baseline load">
+            {STRESS_MULTIPLIERS.map((multiplier) => {
+              const target = stressRate(multiplier);
+              return (
+                <button
+                  key={multiplier}
+                  type="button"
+                  aria-label={`Run ${multiplier}× traffic test`}
+                  aria-pressed={rate === target}
+                  aria-disabled={running}
+                  title={`${format(target)} req/s`}
+                  onClick={() => {
+                    if (running) return;
+                    setError(null);
+                    onRunAtRate(target);
+                  }}
+                >
+                  {multiplier}×
+                </button>
+              );
+            })}
+          </div>
+          <PanelAction
+            variant="primary"
+            aria-disabled={running}
+            onClick={() => {
+              if (!running) onRun();
+            }}
+          >
+            {runLabel ?? `Run at ${format(rate)} req/s`}
+          </PanelAction>
+        </PanelActions>
+      </PanelGroup>
     </section>
   );
 }

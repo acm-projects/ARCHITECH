@@ -1,6 +1,6 @@
 .ax-workspace {
   --ax-panel-margin: 12px;
-  --ax-panel-side-width: 420px;
+  --ax-panel-side-width: 360px;
   --ax-control-radius: 8px;
   --ax-primary: #155dfc;
   --ax-primary-hover: #1447e6;
@@ -30,21 +30,10 @@
     box-shadow: var(--ax-panel-shadow);
   }
 
-  .ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame,
-  .ax-workspace .ax-canvas-panel.ax-inspector[data-expanded="true"] .ax-inspector-frame,
-  .ax-workspace .ax-canvas-panel.ax-inspector[data-archie] .ax-inspector-frame,
-  .ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame:has(.ax-live-dock[open], .ax-check-panel),
-  .ax-workspace .ax-simulation-panel .ax-inspector-frame {
-    border: 1px solid var(--ax-line-strong);
-    border-radius: calc(var(--ax-panel-radius) / var(--ax-panel-zoom));
-    box-shadow: 0 6.4px 19.2px rgb(0 0 0 / 18%);
-    zoom: var(--ax-panel-zoom);
-  }
-
   /* The scale. */
-  .ax-workspace :is(.ax-panel-content .ax-component-menu, .ax-widget-stack .ax-tool-widget) { zoom: var(--ax-panel-zoom); }
+  .ax-workspace .ax-panel-content .ax-component-menu { zoom: var(--ax-panel-zoom); }
   .ax-workspace .ax-panel-content .ax-component-menu .ax-panel-title,
-  .ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-heading h2, .ax-panel-title, .ax-inspector-title, .ax-check-head h2, .ax-ai-title) {
+  .ax-workspace .ax-panel-content .ax-panel-title {
     font-size: 13px;
     font-weight: 600;
   }
@@ -53,7 +42,6 @@
   .ax-workspace .ax-panel-content .ax-component-menu .ax-item .ax-item-glyph { width: 18px; height: 18px; }
 
   /* The header: one height and inset, whichever panel it belongs to. */
-  .ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-heading, .ax-inspector-header, .ax-check-head, .ax-ai-header),
   .ax-workspace .ax-panel-content .ax-component-menu .ax-component-menu-header {
     min-height: 44px;
     padding-block: 6px;
@@ -80,24 +68,27 @@
   .ax-workspace .ax-project-menu :is(.ax-project-menu-item, .ax-ai-toggle) svg { width: 18px; height: 18px; flex-shrink: 0; }
 
   /* The bar on a selected component is the way into these panels, so it reads at their size. */
-  .ax-workspace .ax-nodebar { height: 40px; padding: 4px; border-color: var(--ax-line-strong); border-radius: 12px; box-shadow: 0 4px 14px rgb(0 0 0 / 12%); }
+  .ax-workspace .ax-nodebar { height: 40px; padding: 4px; border-color: var(--ax-line-strong); border-radius: 12px; box-shadow: var(--ax-shadow-float); }
   .ax-workspace .ax-nodebar button { height: 30px; padding: 0 12px; border-radius: 8px; font-size: 14px; }
 }
 
 /* ---- Right panels ----
-   Widgets in one column: each is its own rounded surface and any combination can be open.
-   Each takes the height of its content, Archie's conversation takes what is left, and the
-   column scrolls when more is open than fits. Nothing is squeezed past being readable. */
+   Widgets in one column, in panel/panel.css. Every panel is the height of its content and the
+   column scrolls when more is open than fits. The padding keeps the panels' shadows inside the
+   scrolling column, which would clip them. */
 .ax-workspace .ax-widget-stack {
+  --ax-stack-shadow-room: 32px;
   position: absolute;
   z-index: 20;
-  top: var(--ax-panel-margin);
-  right: var(--ax-panel-margin);
-  bottom: var(--ax-panel-margin);
+  top: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
+  flex-wrap: nowrap;
   gap: var(--ax-panel-margin);
-  width: min(var(--ax-panel-side-width), calc(100% - 2 * var(--ax-panel-margin)));
+  width: min(calc(var(--ax-panel-side-width) + var(--ax-stack-shadow-room) + var(--ax-panel-margin)), 100%);
+  padding: var(--ax-panel-margin) var(--ax-panel-margin) var(--ax-panel-margin) var(--ax-stack-shadow-room);
   overflow-y: auto;
   scrollbar-width: none;
   pointer-events: none;
@@ -112,56 +103,6 @@
 .ax-workspace .ax-workspace-canvas:has(.ax-canvas-overlays > .ax-canvas-panel[data-side="right"]:not([data-learn-collapsed])) .ax-diagram-viewport {
   width: calc(100% - 332px);
 }
-.ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-widget {
-  position: static;
-  z-index: auto;
-  display: flex;
-  flex: 0 1 auto;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  width: auto;
-  height: auto;
-  min-height: 0;
-  max-height: none;
-  inset: auto;
-  transform: none;
-}
-.ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-widget[hidden] { display: none; }
-.ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-widget[data-archie] {
-  flex: 1 0 340px;
-  min-height: 340px;
-}
-.ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-simulation-panel { flex: none; }
-.ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-tool-widget { flex: none; }
-.ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-tool-widget:has(.ax-check-panel) {
-  flex: 0 1 auto;
-  min-height: 200px;
-}
-.ax-workspace .ax-workspace-canvas .ax-canvas-overlays .ax-widget-stack .ax-widget[data-detail] { min-height: 240px; }
-.ax-workspace .ax-widget-stack .ax-canvas-panel.ax-inspector .ax-inspector-frame {
-  flex: 1 1 auto;
-  width: 100%;
-  max-width: none;
-  height: auto;
-  max-height: 100%;
-  min-height: 0;
-}
-.ax-workspace .ax-widget-stack .ax-widget[data-archie] .ax-inspector-frame { overflow: hidden; }
-.ax-workspace .ax-widget-stack .ax-widget[data-archie] .ax-inspector-section { flex: 1 1 auto; min-height: 0; border-top: 0; }
-.ax-workspace .ax-widget-stack .ax-widget[data-archie] .ax-inspector-archie { height: 100%; }
-.ax-workspace .ax-widget-stack .ax-simulation-panel .ax-inspector-frame { overflow: hidden; }
-.ax-workspace .ax-widget-stack .ax-tool-widget {
-  overflow: hidden;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: calc(var(--ax-panel-radius, 20px) / var(--ax-panel-zoom, 1));
-  background: var(--ax-surface);
-  box-shadow: 0 6.4px 19.2px rgb(0 0 0 / 18%);
-  pointer-events: auto;
-}
-.ax-workspace .ax-widget-stack .ax-tool-widget .ax-tool-panel { display: flex; flex-direction: column; min-height: 0; }
-.ax-workspace .ax-widget-stack .ax-tool-widget .ax-check-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-
 /* A popup keeps clear of the column: it fits the space beside it and slides left of the bar's
    center just far enough. The bar itself stays put, so nothing moves under the pointer. */
 .ax-workspace:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) {
@@ -170,36 +111,9 @@
   transform: translateX(calc(-50% - max(0px, var(--ax-popup-width) / 2 + var(--ax-panel-side-width) + 3 * var(--ax-panel-margin) - 50vw)));
 }
 
-/* Metrics read the same in every panel: label over value, side by side. A comparison keeps its
-   rows, because "before → after" needs the width. */
-.ax-workspace .ax-widget-stack .ax-panel-metrics:not(.ax-review-comparison) {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  margin: 0;
-}
-.ax-workspace .ax-widget-stack .ax-inspector .ax-panel-metrics:not(.ax-review-comparison) > div,
-.ax-workspace .ax-widget-stack .ax-inspector.ax-tool-widget .ax-panel-metrics > div + div {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-width: 0;
-  min-height: 0;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: var(--ax-control-radius);
-  background: var(--ax-canvas);
-}
-.ax-workspace .ax-widget-stack .ax-inspector .ax-panel-metrics:not(.ax-review-comparison) :is(dd, .ax-live-value) { margin: 0; font-size: 13px; font-weight: 600; }
-.ax-workspace .ax-widget-stack .ax-live .ax-live-details { margin-top: 8px; }
-
-/* Archie heads its own panel and closes one way, from the bar or its header. */
-.ax-workspace .ax-inspector .ax-archie-collapse { display: none; }
-
 /* The bar reaches under the column on narrower windows, so the column stops above it. */
 @media (max-width: 1399px) {
-  .ax-workspace .ax-widget-stack { bottom: calc(var(--ax-bar-height, 68px) + 2 * var(--ax-panel-margin)); }
+  .ax-workspace .ax-widget-stack { bottom: calc(var(--ax-bar-height, 68px) + var(--ax-panel-margin)); }
 }
 
 /* Archie sits in the bar at the size of the other tools. */
@@ -280,24 +194,18 @@
 
 /* ---- Inside every panel ----
    One radius for controls, one primary action and one row, whichever panel they sit in. */
-.ax-workspace :is(.ax-inspector, .ax-panel-content, .ax-new-project-dialog) :is(
-  .ax-field, .ax-panel-action, .ax-action, .ax-ai-send, .ax-ai-input, .ax-ai-starter, .ax-icon-btn,
-  .ax-item, .ax-tech-option, .ax-check-undo, .ax-challenge-intro-start, .ax-archie-collapse,
-  select, textarea, input:not([type="checkbox"], [type="radio"], [type="range"], [type="search"]),
-  .ax-stress-rate > span:last-child
-) { border-radius: var(--ax-control-radius); }
+.ax-workspace :is(.ax-panel-content, .ax-new-project-dialog) :is(.ax-field, .ax-panel-action, .ax-action, .ax-ai-send, .ax-icon-btn, .ax-ai-focus-chip, .ax-item, .ax-tech-option, .ax-challenge-intro-start, .ax-archie-collapse, select, textarea, input:not([type="checkbox"], [type="radio"], [type="range"], [type="search"])) { border-radius: var(--ax-control-radius); }
 
-.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-action[data-variant="primary"], .ax-ai-composer .ax-ai-send) {
+.ax-workspace .ax-panel-content :is(.ax-panel-action[data-variant="primary"], .ax-ai-composer .ax-ai-send) {
   border-color: var(--ax-primary);
   background: var(--ax-primary);
   color: #fff;
 }
-.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-action[data-variant="primary"], .ax-ai-composer .ax-ai-send):hover:not(:disabled) {
+.ax-workspace .ax-panel-content :is(.ax-panel-action[data-variant="primary"], .ax-ai-composer .ax-ai-send):hover:not(:disabled) {
   border-color: var(--ax-primary-hover);
   background: var(--ax-primary-hover);
 }
-.ax-workspace :is(.ax-inspector, .ax-panel-content) .ax-panel-action:is(:disabled, [aria-disabled="true"]) { opacity: .45; cursor: default; }
-.ax-workspace .ax-inspector .ax-panel-action[data-variant="primary"]:not(.ax-ai-send):not(.ax-stress-run) { width: 100%; }
+.ax-workspace .ax-panel-content .ax-panel-action:is(:disabled, [aria-disabled="true"]) { opacity: .45; cursor: default; }
 .ax-workspace .ax-learn .ax-panel-action {
   display: inline-flex;
   align-items: center;
@@ -309,26 +217,7 @@
   font: 500 13px/20px var(--font-sans);
   cursor: pointer;
 }
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-run { border-radius: var(--ax-control-radius); }
 .ax-workspace .ax-new-project-dialog .ax-challenge-intro-start { min-height: 44px; font-size: 15px; }
-
-/* The Challenge header stands in for the card's own title. */
-.ax-workspace .ax-inspector .ax-inspector-guidance .ax-card { padding-top: 0; margin-top: var(--ax-panel-inset); }
-.ax-workspace .ax-inspector .ax-inspector-guidance .ax-card > :first-child { margin-top: 0; }
-.ax-workspace .ax-inspector .ax-inspector-guidance .ax-card > .ax-panel-action[data-variant="primary"] { margin-top: var(--ax-panel-inset); }
-.ax-workspace .ax-inspector .ax-inspector-guidance .flex > .ax-panel-action[data-variant="primary"] { width: auto; }
-
-/* Finding rows are the same row in Design check and Simulation. */
-.ax-workspace .ax-inspector .ax-review-finding-title {
-  align-items: center;
-  min-height: 36px;
-  padding-block: 6px;
-  font-weight: 500;
-}
-
-/* Panel titles carry an icon at one size; Archie's portrait stands in for his. */
-.ax-workspace .ax-ai-title { display: inline-flex; align-items: center; gap: 8px; }
-.ax-workspace .ax-ai-title .ax-ai-portrait { width: 18px; height: 18px; border-width: 1px; }
 
 /* The lesson card collapses with the same plain control that closes other panels. */
 .ax-workspace .ax-learn .ax-archie-collapse {

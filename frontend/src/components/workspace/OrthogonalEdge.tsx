@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { BaseEdge, EdgeLabelRenderer, Position, useInternalNode, useStore, type ConnectionLineComponentProps, type EdgeProps, type InternalNode } from "@xyflow/react";
 
-import { arrowHeadPath, connectionEnd, facingSides, getOrthogonalEdgePath, sideAnchor, type EdgeBox } from "../../lib/architecture/edgeRouting";
+import { arrowHeadPath, connectionEnd, facingSides, getOrthogonalEdgePath, plugAnchor, type EdgeBox } from "../../lib/architecture/edgeRouting";
 import { ARCHITECTURE_NODE_SIZE } from "../../lib/architecture/nodeLayout";
 
 function EdgeLabel({ x, y, children }: { x: number; y: number; children: ReactNode }) {
@@ -60,21 +60,17 @@ export default function OrthogonalEdge(props: EdgeProps) {
   // Left to right runs handle to handle, exactly where the preview line ended.
   if (sourcePosition === Position.Right && targetPosition === Position.Left) return <ArchitectureEdge {...props} />;
 
-  const start = sideAnchor(from, sourcePosition);
-  const end = sideAnchor(to, targetPosition);
+  const start = plugAnchor(from, sourcePosition);
+  const end = plugAnchor(to, targetPosition);
   return (
-    <>
-      <ArchitectureEdge {...props} sourceX={start.x} sourceY={start.y} sourcePosition={sourcePosition}
-        targetX={end.x} targetY={end.y} targetPosition={targetPosition} />
-      <circle className="ax-edge-plug" cx={start.x} cy={start.y} r={3.5} />
-      <circle className="ax-edge-plug" cx={end.x} cy={end.y} r={3.5} />
-    </>
+    <ArchitectureEdge {...props} sourceX={start.x} sourceY={start.y} sourcePosition={sourcePosition}
+      targetX={end.x} targetY={end.y} targetPosition={targetPosition} />
   );
 }
 
 // The line under the cursor while connecting takes the route and arrow the finished edge
 // will have, so nothing jumps on release.
-export function ConnectionPreview({ fromX, fromY, toX, toY, fromPosition, toPosition, fromHandle, connectionStatus }: ConnectionLineComponentProps) {
+export function ConnectionPreview({ fromX, fromY, toX, toY, fromPosition, toPosition, fromHandle, toHandle, connectionStatus }: ConnectionLineComponentProps) {
   // A drag can start from an input handle; the traffic still flows into it.
   const reversed = fromHandle.type === "target";
   const [start, finish] = reversed
@@ -89,7 +85,8 @@ export function ConnectionPreview({ fromX, fromY, toX, toY, fromPosition, toPosi
     targetY: end.lineY,
     targetPosition: finish.side,
   });
-  const invalid = connectionStatus === "invalid";
+  // Over a component but away from its handle, a refusal has no status: only the target is known.
+  const invalid = connectionStatus === "invalid" || (Boolean(toHandle) && connectionStatus !== "valid");
   return (
     <g className={invalid ? "ax-connection-preview is-invalid" : "ax-connection-preview"}>
       <path className="react-flow__connection-path" fill="none" d={path} />

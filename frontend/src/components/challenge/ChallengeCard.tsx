@@ -1,3 +1,17 @@
+import { useState } from "react";
+import { Target } from "lucide-react";
+
+import type { OfficialResult } from "../../lib/architecture/challenge/challengeClient";
+import Panel, {
+  PanelAction,
+  PanelActions,
+  PanelDetail,
+  PanelGroup,
+  PanelLink,
+  PanelRow,
+  PanelText,
+} from "../workspace/panel/Panel";
+import { ChallengeLeaderboard } from "./ChallengeLeaderboard";
 import type { Challenge } from "./challenges";
 import type {
   Evaluation,
@@ -17,14 +31,16 @@ type ChallengeCardProps = {
   running?: boolean;
   // The latest submission failed.
   error?: string | null;
+  official: OfficialResult | null;
+  leaderboardVersion: number;
 };
 
 const MAX_FINDINGS = 4;
 
-const SEVERITY_MARK: Record<FindingSeverity, string> = {
-  warning: "!",
-  suggestion: "→",
-  good: "✓",
+const SEVERITY_WORD: Record<FindingSeverity, string> = {
+  warning: "Warning",
+  suggestion: "Suggestion",
+  good: "Passed",
 };
 
 const SCORE_ROWS: { key: keyof Evaluation; label: string }[] = [
@@ -37,21 +53,13 @@ const SCORE_ROWS: { key: keyof Evaluation; label: string }[] = [
 // Findings arrive most important first (warnings, suggestions, then good observations).
 const topFindings = (findings: Finding[]) => findings.slice(0, MAX_FINDINGS);
 
-function ScoreRow({ label, value }: { label: string; value: number }) {
-  return (
-    <li>
-      <div className="flex items-baseline justify-between text-(length:--ax-t-sm)">
-        <span>{label}</span>
-        <span className="tabular-nums">{value}</span>
-      </div>
-      <div className="ax-bar" aria-hidden="true">
-        <span style={{ width: `${value}%` }} />
-      </div>
-    </li>
-  );
+function rankOf(official: OfficialResult | null): string | undefined {
+  if (official?.status === "pending") return "Recording…";
+  if (official?.status === "graded" && official.rank !== null) return `#${official.rank} of ${official.participants}`;
+  return undefined;
 }
 
-// Small floating card over the canvas; the canvas stays fully interactive around it.
+// The Challenge panel: the brief, then the result of the latest submission.
 export default function ChallengeCard({
   challenge,
   result,
@@ -60,87 +68,80 @@ export default function ChallengeCard({
   stale = false,
   running = false,
   error = null,
+  official,
+  leaderboardVersion,
 }: ChallengeCardProps) {
+  const [detail, setDetail] = useState<string | null>(null);
+  const back = () => setDetail(null);
+  const findings = result ? topFindings(result.findings) : [];
+  const finding = findings.find(({ title }) => title === detail);
+
   return (
-    <div className="ax-card ax-learn" aria-live="polite">
-      {running && <p className="ax-card-label mt-3">Checking your design…</p>}
-      {error && (
-        <p role="alert" className="ax-card-label mt-3">
-          Submission failed: {error}
-        </p>
+    <Panel icon={<Target size={17} aria-hidden="true" />} title="Challenge" status={result ? result.overallScore : undefined}>
+      <div hidden={detail !== null} aria-live="polite">
+        {running && <PanelText>Checking your design…</PanelText>}
+        {error && <PanelText role="alert" tone="danger">Submission failed: {error}</PanelText>}
+        {result && stale && !running && <PanelText role="status">Your design changed — submit again.</PanelText>}
+        {official?.status === "failed" && <PanelText role="alert" tone="danger">{official.message}</PanelText>}
+
+        {result ? (
+          <>
+            <PanelGroup>
+              <PanelLink label="Design score" value={result.overallScore} onClick={() => setDetail("scores")} />
+            </PanelGroup>
+            <PanelGroup title="Findings">
+              {findings.map(({ title, severity }) =>
+                severity === "good" ? (
+                  <PanelRow key={title} item label={title} value={SEVERITY_WORD[severity]} title={title} />
+                ) : (
+                  <PanelLink key={title} item label={title} value={SEVERITY_WORD[severity]} title={title} onClick={() => setDetail(title)} />
+                ),
+              )}
+            </PanelGroup>
+            <PanelActions>
+              <PanelAction onClick={onBack}>Requirements</PanelAction>
+              <PanelAction variant="primary" onClick={onRun}>Submit again</PanelAction>
+            </PanelActions>
+          </>
+        ) : (
+          <>
+            <PanelGroup title={challenge.title}>
+              {challenge.summary.map((line) => <PanelRow key={line} item label={line} />)}
+            </PanelGroup>
+            <PanelGroup title="Requirements">
+              {challenge.highlights.map((line) => <PanelRow key={line} item label={line} />)}
+            </PanelGroup>
+            <PanelActions>
+              <PanelAction variant="primary" onClick={onRun}>Submit design</PanelAction>
+            </PanelActions>
+          </>
+        )}
+        <PanelGroup>
+          <PanelLink label="Leaderboard" value={rankOf(official)} onClick={() => setDetail("leaderboard")} />
+        </PanelGroup>
+      </div>
+
+      {detail === "leaderboard" && (
+        <PanelDetail title="Leaderboard" onBack={back}>
+          <ChallengeLeaderboard challengeId={challenge.id} official={official} version={leaderboardVersion} />
+        </PanelDetail>
       )}
-      {result && stale && !running && (
-        <p role="status" className="ax-card-label mt-3">
-          Your design changed — submit again.
-        </p>
+      {detail === "scores" && result && (
+        <PanelDetail title="Design score" onBack={back}>
+          <PanelGroup>
+            <PanelRow label="Overall" value={result.overallScore} />
+            {SCORE_ROWS.map(({ key, label }) => <PanelRow key={key} label={label} value={result[key] as number} />)}
+          </PanelGroup>
+        </PanelDetail>
       )}
-
-      {result ? (
-        <>
-          <div className="mt-4 flex items-baseline justify-between">
-            <span className="ax-card-title">Design score</span>
-            <span className="text-[16px] font-light tabular-nums">
-              {result.overallScore}
-            </span>
-          </div>
-
-          <ul className="mt-3 space-y-2.5">
-            {SCORE_ROWS.map(({ key, label }) => (
-              <ScoreRow key={key} label={label} value={result[key] as number} />
-            ))}
-          </ul>
-
-          <ul className="mt-4 space-y-2.5 border-t border-(--ax-line) pt-4">
-            {topFindings(result.findings).map((finding) => (
-              <li key={finding.title} className="text-(length:--ax-t-sm)">
-                <p>
-                  <span
-                    className={`ax-mark ax-mark-${finding.severity}`}
-                    aria-hidden="true"
-                  >
-                    {SEVERITY_MARK[finding.severity]}
-                  </span>{" "}
-                  {finding.title}
-                </p>
-                {finding.severity !== "good" && (
-                  <p className="ax-card-label mt-0.5 pl-4 leading-snug">
-                    {finding.explanation}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-4 flex items-center justify-between">
-            <button type="button" onClick={onBack} className="ax-more">
-              Back to requirements
-            </button>
-            <button type="button" onClick={onRun} className="ax-panel-action" data-variant="primary">
-              Submit again
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          <p className="ax-card-title mt-4">{challenge.title}</p>
-          <ul className="ax-card-body">
-            {challenge.summary.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-
-          <p className="ax-card-label mt-4">Requirements</p>
-          <ul className="mt-1 space-y-0.5 text-(length:--ax-t-sm)">
-            {challenge.highlights.map((line) => (
-              <li key={line}>• {line}</li>
-            ))}
-          </ul>
-
-          <button type="button" onClick={onRun} className="ax-panel-action" data-variant="primary">
-            Submit design
-          </button>
-        </>
+      {finding && (
+        <PanelDetail title={finding.title} onBack={back}>
+          <PanelGroup>
+            <PanelRow label="Severity" value={SEVERITY_WORD[finding.severity]} />
+          </PanelGroup>
+          <PanelText>{finding.explanation}</PanelText>
+        </PanelDetail>
       )}
-    </div>
+    </Panel>
   );
 }

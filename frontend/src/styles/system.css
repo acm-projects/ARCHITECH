@@ -199,24 +199,7 @@ pre { font-family: var(--font-mono); }
   box-shadow: none;
 }
 
-:where(
-  .toolbox,
-  .inspector,
-  .score-panel,
-  .ai-panel,
-  .project-list,
-  .mode-card,
-  .new-project-modal,
-  .manage-repos-modal,
-  .export-modal,
-  .command-palette,
-  .challenge-welcome,
-  .guided-build,
-  .tour-card,
-  .history-panel,
-  .configure-panel,
-  .stress-test-card
-) {
+:where(.toolbox, .inspector, .score-panel, .ai-panel, .project-list, .mode-card, .new-project-modal, .manage-repos-modal, .export-modal, .command-palette, .challenge-welcome, .guided-build, .tour-card, .history-panel, .configure-panel, .stress-test-card) {
   border: var(--panel-border);
   border-radius: var(--radius-panel);
   box-shadow: none;
@@ -797,42 +780,20 @@ pre { font-family: var(--font-mono); }
 .ax-dark-app .ax-dashboard-shell [class~="bg-neutral-100"] { background-color: #2d2d2d; }
 .ax-dark-app .ax-dashboard-shell [class~="bg-neutral-200"] { background-color: #383838; }
 
-.ax-dark-app :is(
-  [class~="text-black"],
-  [class~="text-neutral-950"],
-  [class~="text-neutral-900"],
-  [class~="text-neutral-800"],
-  [class~="text-neutral-700"],
-  [class~="text-[#0A0A0A]"]
-) {
+.ax-dark-app :is([class~="text-black"], [class~="text-neutral-950"], [class~="text-neutral-900"], [class~="text-neutral-800"], [class~="text-neutral-700"], [class~="text-[#0A0A0A]"]) {
   color: var(--ax-dark-text);
 }
 
-.ax-dark-app :is(
-  [class~="text-neutral-600"],
-  [class~="text-neutral-500"],
-  [class~="text-neutral-400"],
-  [class~="text-[#737373]"]
-) {
+.ax-dark-app :is([class~="text-neutral-600"], [class~="text-neutral-500"], [class~="text-neutral-400"], [class~="text-[#737373]"]) {
   color: var(--ax-dark-text);
 }
 
 /* Outside the canvas, secondary text stays a step below primary text. */
-.ax-dark-app :is(.ax-dashboard-shell, .ax-status-page) :is(
-  [class~="text-neutral-600"],
-  [class~="text-neutral-500"],
-  [class~="text-neutral-400"],
-  [class~="text-[#737373]"]
-) {
+.ax-dark-app :is(.ax-dashboard-shell, .ax-status-page) :is([class~="text-neutral-600"], [class~="text-neutral-500"], [class~="text-neutral-400"], [class~="text-[#737373]"]) {
   color: var(--ax-dark-muted);
 }
 
-.ax-dark-app :is(
-  [class~="border-neutral-100"],
-  [class~="border-neutral-200"],
-  [class~="border-neutral-300"],
-  [class~="border-neutral-400"]
-) {
+.ax-dark-app :is([class~="border-neutral-100"], [class~="border-neutral-200"], [class~="border-neutral-300"], [class~="border-neutral-400"]) {
   border-color: #454545;
 }
 
@@ -876,8 +837,7 @@ pre { font-family: var(--font-mono); }
 .ax-dark-app .ax-workspace {
   --ax-canvas: #141414;
   --ax-canvas-paper: #141414;
-  --ax-canvas-dot: #31465a;
-  --ax-canvas-tint: transparent;
+  --ax-canvas-dot: #3a3a3a;
   --ax-surface: #000000;
   --ax-ink: var(--ax-dark-text);
   --ax-ink-soft: var(--ax-dark-text);
@@ -888,9 +848,12 @@ pre { font-family: var(--font-mono); }
   --ax-accent: #75beff;
   --ax-brand: #9cdcfe;
   /* Lines and handles lighten on hover against the dark canvas instead of dimming. */
+  --ax-edge: #8a8a8a;
   --ax-edge-hover: #ffffff;
   --ax-handle: #6b6b6b;
+  --ax-plug: #b4b4b4;
   --ax-danger: #ff8a8a;
+  --ax-hover-fill: rgb(255 255 255 / 10%);
 }
 
 .ax-dark-app .ax-workspace .ax-canvas-panel {
@@ -904,6 +867,9 @@ pre { font-family: var(--font-mono); }
 
 .ax-dark-app .ax-workspace .ax-node {
   --ax-bright-family: color-mix(in srgb, var(--ax-family) 58%, white);
+  /* The name leads and the technology follows, as it does in the light theme. */
+  --ax-muted: #a3a3a3;
+  --ax-subtle: #6b6b6b;
 }
 
 .ax-dark-app .ax-workspace .ax-node .ax-node-icon {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useState, type ReactNode } from "react";
+import { RotateCcw } from "lucide-react";
 
 import { STALE_NOTICE, explainNodeInView } from "../../lib/architecture/archie/view";
 import type { PropertyView } from "../../lib/architecture/componentConfigView";
@@ -17,6 +18,7 @@ import {
   FAMILY_LABELS,
 } from "./componentCatalog";
 import type { ArchitectureNodeType } from "./nodes/ArchitectureNode";
+import { PanelField, PanelGroup, PanelText } from "./panel/Panel";
 
 export type NodePanel = "none" | "ai" | "configure";
 
@@ -70,29 +72,19 @@ export function NodeActionBar({
 // Explanation of a component: its catalog description, and, in the free workspace, Archie's
 // explanation of it from the latest Run Design. Archie is deterministic: it explains the
 // evaluation's own findings, and no AI request is made.
-export function ExplainCard({ type, nodeId, onAskArchie, compact = false }: {
+export function ExplainCard({ type, nodeId }: {
   type: ArchitectureNodeType;
   nodeId: string;
-  onAskArchie?: () => void;
-  compact?: boolean;
 }) {
   const { label, description, family } = COMPONENT_CATALOG[type];
   const archie = useContext(ArchieContext);
   const answer = archie ? explainNodeInView(archie(), nodeId) : null;
-  const [reviewPart, setReviewPart] = useState("overview");
   const explanations = answer && (answer.status === "findings" || answer.status === "no-findings")
     ? answer.explanations.slice(0, 2) : [];
-  const activeReviewPart = explanations.some((explanation) => explanation.id === reviewPart) ? reviewPart : "overview";
 
   return (
-    <div className={`ax-card ax-popover nodrag nopan nowheel${compact ? " ax-explain-compact" : ""}`}>
-      {compact && explanations.length > 0 && (
-        <select className="ax-field" aria-label="Component review details" value={activeReviewPart} onChange={(event) => setReviewPart(event.target.value)}>
-          <option value="overview">Overview</option>
-          {explanations.map((explanation) => <option key={explanation.id} value={explanation.id}>{explanation.title}</option>)}
-        </select>
-      )}
-      <div hidden={compact && activeReviewPart !== "overview"}>
+    <div className="ax-card ax-popover nodrag nopan nowheel">
+      <div>
         <p className="ax-card-eyebrow">{FAMILY_LABELS[family]}</p>
         <div className="mt-1 flex items-center gap-2">
           <ComponentGlyph
@@ -116,9 +108,9 @@ export function ExplainCard({ type, nodeId, onAskArchie, compact = false }: {
                   {STALE_NOTICE}
                 </p>
               )}
-              <p className="ax-card-body" hidden={compact && activeReviewPart !== "overview"}>{answer.summary}</p>
+              <p className="ax-card-body">{answer.summary}</p>
               {explanations.map((explanation) => (
-                <div key={explanation.id} className="mt-2" hidden={compact && activeReviewPart !== explanation.id}>
+                <div key={explanation.id} className="mt-2">
                   <p className="ax-card-title">{explanation.title}</p>
                   <p className="ax-card-body">
                     <b>What</b> {explanation.what}
@@ -143,15 +135,6 @@ export function ExplainCard({ type, nodeId, onAskArchie, compact = false }: {
           )}
         </div>
       )}
-      {onAskArchie && <div className="ax-card-section">
-        <button
-          type="button"
-          onClick={onAskArchie}
-          className="ax-card-link mt-0!"
-        >
-          Ask Archie →
-        </button>
-      </div>}
     </div>
   );
 }
@@ -165,7 +148,7 @@ type ConfigureCardProps = {
   // Commits a finished edit; returns why it was refused, or null when it was accepted.
   onSetProperty: (key: ComponentPropertyKey, text: string) => { message: string } | null;
   onResetProperty: (key: ComponentPropertyKey) => void;
-  // The technology picker (TechnologyChooser), shown under the type.
+  // The row that chooses the technology.
   technology?: ReactNode;
 };
 
@@ -175,6 +158,10 @@ type PropertyFieldProps = {
   onCommit: ConfigureCardProps["onSetProperty"];
   onReset: ConfigureCardProps["onResetProperty"];
 };
+
+// The unit beside a value, at a length that fits; the row's tooltip spells it out.
+const shortUnit = (unit: string) =>
+  unit.replace("operations/s", "ops/s").replace("requests/s", "req/s").replace(" per instance", "");
 
 // One setting. What is typed stays in this field as text and the graph is only changed when
 // the edit is finished: Enter, or leaving the field. A half-typed or invalid value never
@@ -201,52 +188,47 @@ function PropertyField({ type, view, onCommit, onReset }: PropertyFieldProps) {
     else setError(failure.message);
   };
 
+  const defaultText = `Default ${formatPropertyValue(view.defaultValue)}${view.unit ? ` ${view.unit}` : ""}`;
   return (
-    <div className="ax-configure-property">
-      <label htmlFor={inputId} className="ax-card-label block" title={view.description}>
-        {view.label}
-        {view.unit && <small className="ax-property-unit">{view.unit}</small>}
-      </label>
-      <input
-        id={inputId}
-        value={draft ?? formatPropertyValue(view.value)}
-        inputMode="decimal"
-        autoComplete="off"
-        aria-invalid={error !== null}
-        aria-describedby={`${inputId}-default`}
-        onChange={(event) => {
-          setDraft(event.target.value);
-          setError(null);
-        }}
-        onBlur={() => finish(true)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") finish(false);
-          // With text being edited, Escape only drops it and does not also close the card.
-          if (event.key === "Escape" && draft !== null) {
-            event.stopPropagation();
-            cancel();
-          }
-        }}
-        className="ax-field"
-      />
-      {error && (
-        <p role="alert" className="ax-card-label mt-1">
-          {error}
-        </p>
-      )}
-      <p id={`${inputId}-default`} className="ax-card-label ax-property-default mt-1" data-overridden={view.canReset || undefined}>
-        Default {formatPropertyValue(view.defaultValue)}
-        {view.unit ? ` ${view.unit}` : ""}
-        {view.canReset && (
+    <>
+      <PanelField
+        label={view.label}
+        htmlFor={inputId}
+        title={[view.description, view.unit, defaultText].filter(Boolean).join("\n")}
+        control={
           <>
-            {" · "}
-            <button type="button" onClick={() => onReset(view.key)} className="ax-card-link mt-0!">
-              Reset
-            </button>
+            <input
+              id={inputId}
+              value={draft ?? formatPropertyValue(view.value)}
+              inputMode="decimal"
+              autoComplete="off"
+              aria-invalid={error !== null}
+              onChange={(event) => {
+                setDraft(event.target.value);
+                setError(null);
+              }}
+              onBlur={() => finish(true)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") finish(false);
+                // With text being edited, Escape only drops it and does not also close the card.
+                if (event.key === "Escape" && draft !== null) {
+                  event.stopPropagation();
+                  cancel();
+                }
+              }}
+              className="axp-input axp-input-number axp-input-end"
+            />
+            {view.unit && <span className="axp-unit">{shortUnit(view.unit)}</span>}
+            {view.canReset && (
+              <button type="button" className="axp-icon-btn" aria-label={`Reset ${view.label.toLowerCase()}`} title={defaultText} onClick={() => onReset(view.key)}>
+                <RotateCcw size={13} aria-hidden="true" />
+              </button>
+            )}
           </>
-        )}
-      </p>
-    </div>
+        }
+      />
+      {error && <PanelText role="alert" tone="danger">{error}</PanelText>}
+    </>
   );
 }
 
@@ -264,14 +246,11 @@ export function ConfigureCard({
   const [draft, setDraft] = useState(name);
 
   return (
-    <div className="ax-card ax-popover ax-configure nodrag nopan nowheel">
-      <p className="ax-card-eyebrow">Configure</p>
-
-      <div className="ax-configure-identity">
-        <div className="ax-configure-property">
-          <label htmlFor="node-name" className="ax-card-label block">
-            Name
-          </label>
+    <PanelGroup>
+      <PanelField
+        label="Name"
+        htmlFor="node-name"
+        control={
           <input
             id="node-name"
             value={draft}
@@ -286,31 +265,20 @@ export function ConfigureCard({
             onKeyDown={(event) => {
               if (event.key === "Enter") event.currentTarget.blur();
             }}
-            className="ax-field"
+            className="axp-input axp-input-end"
           />
-        </div>
-
-        <div className="ax-configure-type">
-          <p className="ax-card-label">Type</p>
-          <p className="ax-configure-type-value">{COMPONENT_CATALOG[type].label}</p>
-        </div>
-      </div>
-
+        }
+      />
       {technology}
-
-      {properties.length > 0 && (
-        <div className="ax-card-section ax-configure-properties">
-          {properties.map((view) => (
-            <PropertyField
-              key={view.key}
-              type={type}
-              view={view}
-              onCommit={onSetProperty}
-              onReset={onResetProperty}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+      {properties.map((view) => (
+        <PropertyField
+          key={view.key}
+          type={type}
+          view={view}
+          onCommit={onSetProperty}
+          onReset={onResetProperty}
+        />
+      ))}
+    </PanelGroup>
   );
 }
