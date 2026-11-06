@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { Position } from "@xyflow/react";
 
-import { arrowHeadPath, connectionEnd, EDGE_STUB, EDGE_TARGET_LANE, facingSides, getOrthogonalEdgePath, sideAnchor } from "../src/lib/architecture/edgeRouting.ts";
+import { arrowHeadPath, connectionEnd, EDGE_STUB, EDGE_TARGET_LANE, facingSides, getOrthogonalEdgePath, plugAnchor, sideAnchor } from "../src/lib/architecture/edgeRouting.ts";
 import { ARCHITECTURE_NODE_SIZE } from "../src/lib/architecture/nodeLayout.ts";
 
 // Architecture nodes are 192×56 with the input handle on the left edge and the output on the
@@ -129,4 +129,12 @@ test("an anchor sits in the middle of its side", () => {
   const box = boxAt(100, 200);
   assert.deepEqual(sideAnchor(box, Position.Bottom), { x: 180, y: 256 });
   assert.deepEqual(sideAnchor(box, Position.Left), { x: 100, y: 228 });
+});
+
+test("a line lands the same distance from the plug on every side of a component", () => {
+  const box = { x: 100, y: 200, width: 160, height: 56 };
+  assert.deepEqual(plugAnchor(box, Position.Top), { x: 180, y: 196.5 });
+  assert.deepEqual(plugAnchor(box, Position.Bottom), { x: 180, y: 259.5 });
+  assert.deepEqual(plugAnchor(box, Position.Left), { x: 96.5, y: 228 });
+  assert.deepEqual(plugAnchor(box, Position.Right), { x: 263.5, y: 228 });
 });

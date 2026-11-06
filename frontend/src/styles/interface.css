@@ -6322,44 +6322,6 @@ body,
   overflow-wrap: anywhere;
 }
 
-.ax-daily-challenge .ax-learn-speech::before {
-  border-color: var(--color-line);
-  background: var(--color-surface);
-  top: calc(50% - 4px);
-  right: -5px;
-  transform: rotate(225deg);
-}
-
-.ax-daily-challenge {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 440px;
-  max-width: 100%;
-  margin: auto 0 0 auto;
-  padding-top: 16px;
-}
-
-.ax-daily-challenge .ax-learn-speech {
-  flex: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px 12px;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
-}
-
-.ax-daily-challenge .ax-card-body { grid-column: 1; font-weight: 600; color: var(--color-ink); }
-.ax-daily-challenge > img { flex-shrink: 0; }
-.ax-daily-challenge-action { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
-
-@media (max-width: 480px) {
-  .ax-daily-challenge .ax-learn-speech { grid-template-columns: minmax(0, 1fr); }
-  .ax-daily-challenge-action { grid-column: 1; grid-row: auto; }
-  .ax-daily-challenge > img { width: 72px; height: auto; }
-}
-
 /* Dashboard controls override the shared square button reset locally. */
 .ax-dashboard-avatar {
   border-radius: 50%;
@@ -7015,12 +6977,16 @@ body,
   color: var(--ax-announcement-ink);
 }
 
+/* The task and its action read as one centered group; the inset keeps it clear of the dismiss. */
 .ax-challenge-announcement-row {
+  position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   width: 100%;
   max-width: 1080px;
+  padding-inline: 36px;
   font-size: 14px;
   line-height: 20px;
 }
@@ -7057,7 +7023,7 @@ body,
   white-space: nowrap;
 }
 
-.ax-challenge-announcement-action { flex: none; margin-left: auto; }
+.ax-challenge-announcement-action { flex: none; margin-left: 4px; }
 
 /* A failed start reads beside the button, so the strip never changes height. */
 .ax-challenge-announcement-action > div { flex-direction: row-reverse; align-items: center; gap: 12px; }
@@ -7083,9 +7049,13 @@ body,
 }
 
 .ax-challenge-announcement-dismiss {
+  position: absolute;
+  top: 50%;
+  right: 0;
   display: grid;
   flex: none;
   place-items: center;
+  transform: translateY(-50%);
   width: 28px;
   height: 28px;
   border: 0;
@@ -7122,12 +7092,13 @@ body,
       "action action action";
     grid-template-columns: auto 1fr auto;
     gap: 2px 8px;
+    padding-inline: 0;
   }
 
   .ax-challenge-announcement-label { grid-area: label; margin-right: 0; }
   .ax-challenge-announcement-level { grid-area: level; justify-self: start; }
   .ax-challenge-announcement-title { grid-area: title; white-space: normal; }
-  .ax-challenge-announcement-dismiss { grid-area: dismiss; margin-right: -6px; }
+  .ax-challenge-announcement-dismiss { position: static; grid-area: dismiss; margin-right: -6px; transform: none; }
   .ax-challenge-announcement-action { grid-area: action; margin: 8px 0 0; }
   .ax-challenge-announcement-action > div { flex-direction: column; align-items: stretch; gap: 6px; }
 

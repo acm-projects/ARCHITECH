@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer } from "react";
+import { useCallback, useMemo, useReducer, useState } from "react";
 
 import { INITIAL_INSPECTOR_STATE, inspectorReducer, type InspectorSectionId } from "./inspectorState";
 
@@ -11,7 +11,12 @@ export function useWorkspaceInspector({ selectedNodeIds }: { selectedNodeIds: re
   if (state.selectionKey !== selectionKey) dispatch({ type: "selection-changed", selectionKey });
   const inspectComponent = useCallback(() => dispatch({ type: "open-configure" }), []);
   const closeConfiguration = useCallback(() => dispatch({ type: "close-configure" }), []);
-  const askArchie = useCallback(() => dispatch({ type: "open-archie" }), []);
+  // Counts requests, so asking again reaches a panel that is already open but folded.
+  const [archieRequest, setArchieRequest] = useState(0);
+  const askArchie = useCallback(() => {
+    dispatch({ type: "open-archie" });
+    setArchieRequest((count) => count + 1);
+  }, []);
   const closeArchie = useCallback(() => dispatch({ type: "close-archie" }), []);
   const openHistory = useCallback(() => dispatch({ type: "open-history" }), []);
   const closeHistory = useCallback(() => dispatch({ type: "close-history" }), []);
@@ -31,6 +36,7 @@ export function useWorkspaceInspector({ selectedNodeIds }: { selectedNodeIds: re
 
   return {
     ...state,
+    archieRequest,
     inspectComponent,
     closeConfiguration,
     askArchie,

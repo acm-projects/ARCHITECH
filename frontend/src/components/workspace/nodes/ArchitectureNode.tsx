@@ -17,7 +17,7 @@ import type {
   ArchitectureNodeType,
   NodeProperties,
 } from "../../../lib/architecture/types";
-import { facingSides } from "../../../lib/architecture/edgeRouting";
+import { FORWARD_SIDES, facingSides } from "../../../lib/architecture/edgeRouting";
 import { removeFromGraph } from "../../../lib/architecture/nodeOperations";
 import ComponentGlyph from "../ComponentGlyph";
 import { InspectorContext } from "../InspectorContext";
@@ -65,6 +65,9 @@ export const NODE_TYPE_LABELS: Record<ArchitectureNodeType, string> = {
 
 export type ArchitectureFlowNode = Node<ArchitectureNodeData, "architecture">;
 
+// The sides without a handle, where a line can still land.
+const PLUG_ONLY_SIDES = [Position.Top, Position.Bottom];
+
 export default function ArchitectureNode({
   id,
   data,
@@ -110,17 +113,19 @@ export default function ArchitectureNode({
   const connectingEnd = useConnection((c) =>
     c.inProgress ? (c.fromHandle.type === "source" ? "in" : "out") : null,
   );
-  // A handle with a line attached stays visible, so the line visibly plugs into the node.
-  // A line that has moved to another side (see OrthogonalEdge) brings its own plug.
+  // Every side a line lands on shows a plug, wherever OrthogonalEdge has moved that line to.
+  // Read as one string so the node only rerenders when a side changes.
   const incoming = useNodeConnections({ handleType: "target" });
   const outgoing = useNodeConnections({ handleType: "source" });
-  const runsForward = (connection: { source: string; target: string }, lookup: ReactFlowState["nodeLookup"]) => {
+  const sidesOf = (connection: { source: string; target: string }, lookup: ReactFlowState["nodeLookup"]) => {
     const from = lookup.get(connection.source);
     const to = lookup.get(connection.target);
-    return readOnly || !from || !to || facingSides(nodeBox(from), nodeBox(to)).sourcePosition === Position.Right;
+    return readOnly || !from || !to ? FORWARD_SIDES : facingSides(nodeBox(from), nodeBox(to));
   };
-  const hasIncoming = useStore((state) => incoming.some((connection) => runsForward(connection, state.nodeLookup)));
-  const hasOutgoing = useStore((state) => outgoing.some((connection) => runsForward(connection, state.nodeLookup)));
+  const linkedSides = useStore((state) => [
+    ...incoming.map((connection) => sidesOf(connection, state.nodeLookup).targetPosition),
+    ...outgoing.map((connection) => sidesOf(connection, state.nodeLookup).sourcePosition),
+  ].join(" "));
   const stateClass = [
     selected ? "is-selected" : "",
     connectingFrom !== null ? "is-connecting" : "",
@@ -159,7 +164,7 @@ export default function ArchitectureNode({
       <Handle
         type="target"
         position={Position.Left}
-        className={`ax-handle ax-handle-in ${hasIncoming ? "is-linked" : ""}`}
+        className={`ax-handle ax-handle-in ${linkedSides.includes(Position.Left) ? "is-linked" : ""}`}
       />
 
       <span className="ax-node-icon">
@@ -173,11 +178,14 @@ export default function ArchitectureNode({
       <Handle
         type="source"
         position={Position.Right}
-        className={`ax-handle ax-handle-out ${hasOutgoing ? "is-linked" : ""}`}
+        className={`ax-handle ax-handle-out ${linkedSides.includes(Position.Right) ? "is-linked" : ""}`}
       />
+      {PLUG_ONLY_SIDES.filter((side) => linkedSides.includes(side)).map((side) => (
+        <span key={side} className="ax-plug" data-side={side} aria-hidden="true" />
+      ))}
 
       {/* NodeToolbar keeps these attached to the node as it moves or the view changes. */}
-      {!readOnly && <NodeToolbar position={Position.Top} offset={6}>
+      {!readOnly && <NodeToolbar position={Position.Top} offset={16}>
         <NodeActionBar
           panel={activePanel}
           onAskAi={inspector ? inspector.askArchie : () => togglePanel("ai")}
@@ -187,7 +195,7 @@ export default function ArchitectureNode({
       </NodeToolbar>}
       {!readOnly && <NodeToolbar isVisible={selected && !inspector && panel !== "none"} position={Position.Bottom} offset={10}>
         {panel === "ai" && <ExplainCard type={data.type} nodeId={id} />}
-        {configuredNode && <ComponentInspector node={configuredNode} showReview={false} />}
+        {configuredNode && <div className="axp axp-popover nodrag nopan nowheel"><ComponentInspector node={configuredNode} showReview={false} /></div>}
       </NodeToolbar>}
     </div>
   );

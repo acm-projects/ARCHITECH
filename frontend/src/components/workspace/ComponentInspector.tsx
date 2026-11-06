@@ -1,26 +1,29 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import type { Edge } from "@xyflow/react";
 import { useReactFlow } from "@xyflow/react";
-import { ChevronDown } from "lucide-react";
 
+import { STALE_NOTICE, explainNodeInView } from "../../lib/architecture/archie/view";
 import { buildPropertyViews } from "../../lib/architecture/componentConfigView";
 import { ACTS_AS_LABELS, ACTS_AS_TYPES, actsAsOf } from "../../lib/architecture/customComponents";
 import { commitPropertyDraft, resetComponentProperty, setCustomRole } from "../../lib/architecture/propertyEditing";
-import { ConfigureCard, ExplainCard } from "./NodeContextUi";
-import { TechnologyChooser } from "./TechnologyPicker";
-import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
+import { ArchieContext } from "./ArchieContext";
+import { COMPONENT_CATALOG } from "./componentCatalog";
+import { ConfigureCard } from "./NodeContextUi";
+import { PanelDetail, PanelField, PanelGroup, PanelLink, PanelText } from "./panel/Panel";
+import { TechnologyDetail, TechnologyRow } from "./TechnologyPicker";
+import type { ArchitectureFlowNode, ArchitectureNodeType } from "./nodes/ArchitectureNode";
 
 type ComponentInspectorProps = {
   node: ArchitectureFlowNode;
   onAskArchie?: () => void;
   showReview?: boolean;
-  hidden?: boolean;
 };
 
-export default function ComponentInspector({ node, onAskArchie, showReview = true, hidden = false }: ComponentInspectorProps) {
+// A component's settings. The technology and the review are details of their own.
+export default function ComponentInspector({ node, onAskArchie, showReview = true }: ComponentInspectorProps) {
   const { getNodes, setNodes, updateNodeData } = useReactFlow<ArchitectureFlowNode, Edge>();
   const { id, data } = node;
-  const [reviewOpen, setReviewOpen] = useState(false);
+  const [detail, setDetail] = useState<"technology" | "review" | null>(null);
 
   // Reuse the canvas edits so validation, history, and autosave stay together.
   const setProperty = (key: string, text: string) => {
@@ -36,7 +39,8 @@ export default function ComponentInspector({ node, onAskArchie, showReview = tru
 
   return (
     <>
-      <div hidden={hidden || reviewOpen}>
+      {/* Stays mounted, so a half-typed value survives a look at a detail. */}
+      <div hidden={detail !== null}>
         <ConfigureCard
           type={data.type}
           name={data.label}
@@ -54,21 +58,55 @@ export default function ComponentInspector({ node, onAskArchie, showReview = tru
                 }}
               />
             ) : (
-              <TechnologyChooser nodeId={id} type={data.type} implementation={data.implementation} />
+              <TechnologyRow nodeId={id} type={data.type} implementation={data.implementation} onOpen={() => setDetail("technology")} />
             )
           }
         />
+        {showReview && (
+          <PanelGroup>
+            <PanelLink label="Component review" onClick={() => setDetail("review")} />
+          </PanelGroup>
+        )}
       </div>
-      {showReview && (
-        <details
-          className="ax-inspector-details ax-panel-disclosure"
-          hidden={hidden}
-          open={reviewOpen}
-          onToggle={(event) => setReviewOpen(event.currentTarget.open)}
-        >
-          <summary>Component review<ChevronDown size={13} aria-hidden="true" /></summary>
-          <ExplainCard type={data.type} nodeId={id} onAskArchie={onAskArchie} compact />
-        </details>
+      {detail === "technology" && (
+        <TechnologyDetail nodeId={id} type={data.type} implementation={data.implementation} onBack={() => setDetail(null)} />
+      )}
+      {detail === "review" && (
+        <PanelDetail title="Component review" onBack={() => setDetail(null)}>
+          <ComponentReview type={data.type} nodeId={id} onAskArchie={onAskArchie} />
+        </PanelDetail>
+      )}
+    </>
+  );
+}
+
+// What the component is and, in the free workspace, Archie's explanation of it from the latest
+// run. Archie is deterministic here: he explains the evaluation's own findings, and no AI
+// request is made.
+function ComponentReview({ type, nodeId, onAskArchie }: {
+  type: ArchitectureNodeType;
+  nodeId: string;
+  onAskArchie?: () => void;
+}) {
+  const archie = useContext(ArchieContext);
+  const answer = archie ? explainNodeInView(archie(), nodeId) : null;
+  const reviewed = answer && (answer.status === "findings" || answer.status === "no-findings") ? answer : null;
+  return (
+    <>
+      <PanelText>{COMPONENT_CATALOG[type].description}</PanelText>
+      {answer && !reviewed && "message" in answer && <PanelText>{answer.message}</PanelText>}
+      {reviewed?.stale && <PanelText role="status">{STALE_NOTICE}</PanelText>}
+      {reviewed && <PanelText>{reviewed.summary}</PanelText>}
+      {reviewed?.explanations.slice(0, 2).map((explanation) => (
+        <PanelGroup key={explanation.id} title={<span title={[explanation.why, explanation.impact, explanation.tradeoff].filter(Boolean).join("\n")}>{explanation.title}</span>}>
+          <PanelText>{explanation.what}</PanelText>
+          <PanelText>{explanation.suggestion}</PanelText>
+        </PanelGroup>
+      ))}
+      {onAskArchie && (
+        <PanelGroup>
+          <PanelLink label="Ask Archie" onClick={onAskArchie} />
+        </PanelGroup>
       )}
     </>
   );
@@ -78,24 +116,26 @@ export default function ComponentInspector({ node, onAskArchie, showReview = tru
 // Design with that role's numbers, which its settings below can then change.
 function CustomRoleChooser({ value, onChange }: { value: string | null; onChange: (actsAs: string | null) => void }) {
   return (
-    <div className="ax-card-section ax-configure-technology">
-      <label className="ax-card-label" htmlFor="ax-custom-role">Acts like</label>
-      <select
-        id="ax-custom-role"
-        className="ax-field mt-1"
-        value={value ?? ""}
-        onChange={(event) => onChange(event.target.value === "" ? null : event.target.value)}
-      >
-        <option value="">Not measured</option>
-        {ACTS_AS_TYPES.map((type) => (
-          <option key={type} value={type}>{ACTS_AS_LABELS[type]}</option>
-        ))}
-      </select>
-      <p className="ax-tech-basis">
-        {value
-          ? "Measured like this kind of component. Set its capacity, latency, cost and uptime below."
-          : "Choose what it behaves like to include it in live metrics and Run Design."}
-      </p>
-    </div>
+    <>
+      <PanelField
+        label="Acts like"
+        htmlFor="ax-custom-role"
+        title={value ? "Measured like this kind of component." : undefined}
+        control={
+          <select
+            id="ax-custom-role"
+            className="axp-input axp-input-end"
+            value={value ?? ""}
+            onChange={(event) => onChange(event.target.value === "" ? null : event.target.value)}
+          >
+            <option value="">Not measured</option>
+            {ACTS_AS_TYPES.map((type) => (
+              <option key={type} value={type}>{ACTS_AS_LABELS[type]}</option>
+            ))}
+          </select>
+        }
+      />
+      {!value && <PanelText>Choose what it behaves like to include it in live metrics and Run.</PanelText>}
+    </>
   );
 }

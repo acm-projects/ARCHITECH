@@ -30,7 +30,6 @@ import { ARCHITECTURE_NODE_SIZE, spreadOverlappingNodes } from "../../lib/archit
 import { snapNode, type SnapGuide } from "../../lib/architecture/nodeSnap";
 import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
-import { ChallengeLeaderboard } from "../challenge/ChallengeLeaderboard";
 import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
 import LearnCard from "../learn/LearnCard";
 import { projectActions } from "../projects/projectActions";
@@ -57,7 +56,6 @@ import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
 import { DesignCheckBadges, DesignCheckPanel, useDesignCheck } from "./DesignCheck";
 import { LiveEstimatesPanel } from "./LiveMetricsBar";
-import { ToolWidget } from "./ToolPanelHeader";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
@@ -325,14 +323,18 @@ function Workspace({ project }: { project: Project }) {
   // refusal here: the same rule that blocked the drop supplies the message.
   const handleConnectEnd = useCallback(
     (_event: MouseEvent | TouchEvent, state: FinalConnectionState) => {
-      if (state.isValid !== false || !state.fromNode || !state.toNode) return;
+      if (state.isValid === true || !state.fromNode || !state.toNode) return;
+      // A drag can start from an input handle; the connection still runs into it.
+      const reversed = state.fromHandle?.type === "target";
+      const [source, target] = reversed ? [state.toNode, state.fromNode] : [state.fromNode, state.toNode];
+      const [sourceHandle, targetHandle] = reversed ? [state.toHandle, state.fromHandle] : [state.fromHandle, state.toHandle];
       const verdict = validateConnection(
         { nodes: getNodes(), edges: getEdges() },
         {
-          source: state.fromNode.id,
-          target: state.toNode.id,
-          sourceHandle: state.fromHandle?.id ?? null,
-          targetHandle: state.toHandle?.id ?? null,
+          source: source.id,
+          target: target.id,
+          sourceHandle: sourceHandle?.id ?? null,
+          targetHandle: targetHandle?.id ?? null,
         },
         mode,
       );
@@ -659,46 +661,35 @@ function Workspace({ project }: { project: Project }) {
 
             {/* Keep floating tools below the header while the graph extends behind it. */}
             <div className="ax-canvas-overlays">
-              {connectionNotice && (
-                <p role="status" className="ax-connection-notice">{connectionNotice}</p>
-              )}
-
-
-              {/* If saving the selected mode fails, show the error without breaking the editor. */}
-              {modeError && (
-                <p
-                  role="alert"
-                  className="ax-card-label absolute bottom-4 left-4 z-10"
-                >
-                  {modeError}
-                </p>
-              )}
+              <div className="ax-canvas-notices">
+                {connectionNotice && <p role="status" className="ax-canvas-notice">{connectionNotice}</p>}
+                {/* If saving the selected mode fails, show the error without breaking the editor. */}
+                {modeError && <p role="alert" className="ax-canvas-notice">{modeError}</p>}
+              </div>
 
               {/* Every right panel stacks here, so opening one never hides another. */}
               <div className="ax-widget-stack">
+                {/* Simulation always heads the column. */}
+                <div ref={setSimulationHost} className="contents" />
                 {canRunDesign && liveOpen && (
-                  <ToolWidget toolKey="live" onClose={() => setLiveOpen(false)}>
-                    <LiveEstimatesPanel
-                      result={live.result}
-                      changes={live.changes}
-                      requestsPerSecond={activeRuns.traffic.requestsPerSecond}
-                      componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
-                      onClose={() => setLiveOpen(false)}
-                    />
-                  </ToolWidget>
+                  <LiveEstimatesPanel
+                    result={live.result}
+                    changes={live.changes}
+                    requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                    componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+                    onClose={() => setLiveOpen(false)}
+                  />
                 )}
                 {canRunDesign && liveReady && designCheck.enabled && designCheck.open && (
-                  <ToolWidget toolKey="check" onClose={closeDesignCheck}>
-                    <DesignCheckPanel
-                      result={live.result}
-                      nodes={nodes}
-                      edges={edges}
-                      traffic={activeRuns.traffic}
-                      check={designCheck}
-                      onApply={replaceGraph}
-                      onUndo={undo}
-                    />
-                  </ToolWidget>
+                  <DesignCheckPanel
+                    result={live.result}
+                    nodes={nodes}
+                    edges={edges}
+                    traffic={activeRuns.traffic}
+                    check={designCheck}
+                    onApply={replaceGraph}
+                    onUndo={undo}
+                  />
                 )}
                 {showInspector && (
                   <WorkspaceInspector
@@ -709,26 +700,20 @@ function Workspace({ project }: { project: Project }) {
                     onApply={replaceGraph}
                     customTechnologies={project.customTechnologies}
                     guidance={mode === "challenge" ? (
-                      <>
-                        <ChallengeCard
-                          challenge={challenge.challenge}
-                          result={challenge.cardResult}
-                          onRun={challenge.submit}
-                          onBack={challenge.backToBrief}
-                          stale={challenge.view?.isStale}
-                          running={challenge.view?.isRunning}
-                          error={challenge.view?.error}
-                        />
-                        <ChallengeLeaderboard
-                          challengeId={challenge.challenge.id}
-                          official={challenge.official}
-                          version={challenge.leaderboardVersion}
-                        />
-                      </>
+                      <ChallengeCard
+                        challenge={challenge.challenge}
+                        result={challenge.cardResult}
+                        onRun={challenge.submit}
+                        onBack={challenge.backToBrief}
+                        stale={challenge.view?.isStale}
+                        running={challenge.view?.isRunning}
+                        error={challenge.view?.error}
+                        official={challenge.official}
+                        leaderboardVersion={challenge.leaderboardVersion}
+                      />
                     ) : null}
                   />
                 )}
-                <div ref={setSimulationHost} className="contents" />
               </div>
 
               {!showInspector && (

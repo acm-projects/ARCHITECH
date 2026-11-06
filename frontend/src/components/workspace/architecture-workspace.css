@@ -17,8 +17,7 @@
   /* Color */
   --ax-canvas: #f5f5f5;
   --ax-canvas-paper: #ffffff;
-  --ax-canvas-dot: #c7ddf0;
-  --ax-canvas-tint: #e4f3ff;
+  --ax-canvas-dot: #d3d3ce;
   --ax-surface: #ffffff;
   --ax-ink: #111111;
   --ax-ink-soft: #4a4a46;
@@ -29,10 +28,16 @@
   --ax-accent: #1d4ed8;
   --ax-brand: #1446a0;
   --ax-danger: #b4343f;
+  --ax-warning: #d97706;
+  --ax-hover-fill: rgb(17 17 17 / 5%);
+  --ax-shadow-float: 0 4px 14px rgb(0 0 0 / 12%);
   /* Connections: idle line and arrow, hover, and idle handle dots. */
   --ax-edge: var(--ax-subtle);
   --ax-edge-hover: #77776f;
   --ax-handle: #b4b4af;
+  --ax-plug: var(--ax-ink-soft);
+  /* One line weight at rest and one for anything in focus. */
+  --ax-edge-width-active: 2.2;
 
   /* Type scale: contrast comes from size, so weights stay 400-500. */
   --ax-t-micro: 8.5px;
@@ -63,14 +68,6 @@
 
   background: var(--ax-canvas);
   color: var(--ax-ink);
-}
-
-/* Tiny metadata. */
-.ax-workspace .ax-label {
-  font-size: var(--ax-t-xs);
-  font-weight: 400;
-  line-height: 1;
-  color: var(--ax-muted);
 }
 
 /* The legacy sheets round and outline bare buttons and inputs; reset to this system. */
@@ -150,7 +147,6 @@
   inset: var(--ax-header-clearance) 0 0;
   pointer-events: none;
 }
-.ax-workspace .ax-canvas-overlays > .ax-live { pointer-events: auto; }
 
 .ax-workspace .ax-brand {
   display: inline-flex;
@@ -297,13 +293,6 @@
   background: var(--ax-ink-soft);
   color: #fff;
 }
-.ax-workspace .ax-action-primary .ax-arrow {
-  display: inline-block;
-  transition: transform var(--ax-base) var(--ax-ease);
-}
-.ax-workspace .ax-action-primary:hover .ax-arrow {
-  transform: translateX(2px);
-}
 
 /* Save status: nearly invisible when saved, a tiny pulse while saving. */
 .ax-workspace .ax-save {
@@ -448,20 +437,17 @@
 .ax-workspace .ax-panel-handle[aria-expanded="true"] {
   border-color: var(--ax-ink-soft);
 }
-.ax-workspace :is(.ax-panel-handle, .ax-inspector-section-toggle, .ax-inspector-header) {
+.ax-workspace :is(.ax-panel-handle) {
   transition: background-color var(--ax-fast) var(--ax-ease), border-color var(--ax-fast) var(--ax-ease);
 }
 @media (hover: hover) and (pointer: fine) {
-  .ax-workspace .ax-panel-handle:hover,
-  .ax-workspace .ax-inspector-section-toggle:hover:not(:disabled),
-  .ax-workspace .ax-inspector-header:hover { background: var(--ax-canvas); }
+  .ax-workspace .ax-panel-handle:hover { background: var(--ax-canvas); }
 }
 .ax-workspace .ax-panel-handle:active { background: var(--ax-line); }
 /* A small entrance confirms opening without moving the controls under the pointer. */
 .ax-workspace .ax-canvas-panel[data-side="left"] { --ax-panel-enter-x: -4px; }
 .ax-workspace .ax-canvas-panel[data-side="right"] { --ax-panel-enter-x: 4px; }
-.ax-workspace .ax-canvas-panel[data-hover-flyout] .ax-panel-content:not([hidden]),
-.ax-workspace .ax-inspector-section-content:not([hidden]) {
+.ax-workspace .ax-canvas-panel[data-hover-flyout] .ax-panel-content:not([hidden]) {
   animation: ax-panel-open var(--ax-base) var(--ax-ease);
 }
 @keyframes ax-panel-open {
@@ -593,27 +579,6 @@
   outline: none;
 }
 
-.ax-workspace .ax-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  font-size: var(--ax-t-xs);
-  color: var(--ax-muted);
-  transition: color var(--ax-fast) var(--ax-ease);
-}
-.ax-workspace .ax-more .ax-arrow {
-  transition: transform var(--ax-base) var(--ax-ease);
-}
-.ax-workspace .ax-more:hover {
-  color: var(--ax-ink);
-}
-.ax-workspace .ax-more:hover .ax-arrow {
-  transform: translateX(2px);
-}
-
 .ax-workspace .ax-section-label {
   padding: var(--ax-s4) 0 var(--ax-s1);
   font-size: var(--ax-t-micro);
@@ -663,25 +628,6 @@
   outline-offset: -1px;
 }
 
-.ax-workspace .ax-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: var(--ax-line-strong) transparent;
-}
-
-/* Delete (used by the retained Properties panel): quiet until hovered. */
-.ax-workspace .ax-delete {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  font-size: var(--ax-t-sm);
-  color: var(--ax-muted);
-  transition: color var(--ax-fast) var(--ax-ease);
-}
-.ax-workspace .ax-delete:hover,
-.ax-workspace .ax-delete:focus-visible {
-  color: var(--ax-danger);
-}
-
 /* ---- React Flow: canvas, controls, attribution ---- */
 
 /* One background layer per canvas, shared by every workspace mode and breakdown. */
@@ -689,10 +635,9 @@
 .ax-workspace .ax-workspace-canvas {
   background-image:
     radial-gradient(circle, var(--ax-canvas-dot) 0.8px, transparent 0.9px),
-    radial-gradient(ellipse at 100% 0%, var(--ax-canvas-tint), transparent 72%),
     linear-gradient(var(--ax-canvas-paper), var(--ax-canvas-paper));
-  background-size: 20px 20px, 100% 100%, 100% 100%;
-  background-position: 10px 10px, 0 0, 0 0;
+  background-size: 20px 20px, 100% 100%;
+  background-position: 10px 10px, 0 0;
 }
 /* The paper belongs to the workspace, so it carries on under the right panels. */
 .ax-workspace .ax-workspace-canvas .react-flow { background: transparent; }
@@ -705,9 +650,11 @@
   --xy-edge-stroke-selected: var(--ax-accent);
   --xy-edge-stroke-width: 1.6;
   --xy-connectionline-stroke: var(--ax-accent);
-  --xy-connectionline-stroke-width: 1.6;
+  --xy-connectionline-stroke-width: var(--ax-edge-width-active);
+  --xy-selection-background-color: color-mix(in srgb, var(--ax-accent) 6%, transparent);
+  --xy-selection-border: 1px dashed var(--ax-accent);
   --xy-controls-button-background-color: transparent;
-  --xy-controls-button-background-color-hover: rgba(17, 17, 17, 0.05);
+  --xy-controls-button-background-color-hover: var(--ax-hover-fill);
   --xy-controls-button-color: var(--ax-muted);
   --xy-controls-button-color-hover: var(--ax-ink);
   --xy-controls-button-border-color: transparent;
@@ -741,6 +688,19 @@
 .ax-workspace .react-flow__controls-button svg {
   width: 12px;
   height: 12px;
+  max-width: none;
+  max-height: none;
+}
+.ax-workspace .react-flow__controls-button:focus-visible,
+.ax-workspace .ax-nodebar button:focus-visible {
+  outline: 2px solid var(--ax-accent);
+  outline-offset: -2px;
+}
+
+/* Each selected component shows its own state, so the group needs no box of its own. */
+.ax-workspace .react-flow__nodesselection-rect {
+  border: 0;
+  background: transparent;
 }
 
 /* Required by React Flow's license: kept readable, but quiet. */
@@ -763,22 +723,24 @@
 .ax-workspace .react-flow__edge:hover .ax-edge-arrow { fill: var(--ax-edge-hover); }
 .ax-workspace .react-flow__edge .react-flow__edge-path.is-active {
   stroke: var(--ax-accent);
-  stroke-width: 2.2;
+  stroke-width: var(--ax-edge-width-active);
 }
 .ax-workspace .react-flow__edge .react-flow__edge-path.is-lit { stroke-width: 3.2; }
 .ax-workspace .react-flow__edge .ax-edge-arrow.is-active { fill: var(--ax-accent); }
 .ax-workspace .ax-connection-preview .ax-edge-arrow { fill: var(--ax-accent); }
 .ax-workspace .ax-connection-preview.is-invalid .react-flow__connection-path { stroke: var(--ax-danger); }
 .ax-workspace .ax-connection-preview.is-invalid .ax-edge-arrow { fill: var(--ax-danger); }
+.ax-workspace .react-flow__edge:focus-visible .react-flow__edge-path,
 .ax-workspace .react-flow__edge.selected .react-flow__edge-path,
 .ax-workspace .react-flow__edge.selected:hover .react-flow__edge-path {
   stroke: var(--ax-accent);
-  stroke-width: 2.6;
+  stroke-width: var(--ax-edge-width-active);
 }
+.ax-workspace .react-flow__edge:focus-visible .ax-edge-arrow,
 .ax-workspace .react-flow__edge.selected .ax-edge-arrow { fill: var(--ax-accent); }
-.ax-workspace .ax-edge-label { position: absolute; padding: 2px 4px; background: var(--ax-canvas); color: var(--ax-ink-soft); font-size: 11px; white-space: nowrap; }
+.ax-workspace .ax-edge-label { position: absolute; padding: 2px 4px; background: var(--ax-canvas-paper); color: var(--ax-ink-soft); font-size: 11px; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) {
-  .ax-workspace :is(.react-flow__edge-path, .ax-edge-arrow) { transition: none; }
+  .ax-workspace :is(.react-flow__edge-path, .ax-edge-arrow, .react-flow__handle.ax-handle, .ax-plug) { transition: none; }
 }
 
 /* ---- Architecture node: one size on the canvas and in breakdowns ---- */
@@ -841,39 +803,43 @@
 .ax-workspace .ax-node:hover {
   border-color: var(--ax-subtle);
 }
-/* A second outline makes selection readable without relying on family color. */
+/* One ring means "this component": selected, or an end of the connection being drawn. It is a
+   change of shape as well as color. Keyboard focus is the same ring, dashed. */
 .ax-workspace .ax-node.is-selected,
-.ax-workspace .ax-node.is-selected:hover {
-  border-color: var(--ax-accent);
-  outline: 1px solid var(--ax-ink);
-  outline-offset: 2px;
-}
-.ax-workspace .react-flow__node:focus-visible .ax-node { outline: 2px solid var(--ax-accent); outline-offset: 3px; }
-.ax-workspace .react-flow__node.dragging .ax-node {
-  box-shadow: 0 2px 6px rgba(17, 17, 17, 0.08);
-}
+.ax-workspace .ax-node.is-selected:hover,
 .ax-workspace .ax-node.is-connect-source {
   border-color: var(--ax-accent);
+  outline: 2px solid var(--ax-accent);
+  outline-offset: 2px;
+}
+.ax-workspace .react-flow__node:focus-visible .ax-node { outline: 2px dashed var(--ax-accent); outline-offset: 2px; }
+/* Picked up: it lifts off the paper. */
+.ax-workspace .react-flow__node.dragging .ax-node {
+  box-shadow: 0 8px 20px rgb(0 0 0 / 20%);
 }
 
 /*
- * Handles are anchor points: left = input (target), right = output (source), centered
- * on the node edge. Idle they are ~2px dots; they grow slightly on hover, selection and
- * while connecting. An invisible pad around each keeps them easy to grab.
+ * Handles are anchor points: left = input (target), right = output (source), centered on the
+ * node edge. Idle a free one is a 3px speck; a plug, or a handle on a component in hover or
+ * focus, is the full 7px dot. The box stays 7px and only its padding changes, because React
+ * Flow measures handles once and lines must land in the same place however they are drawn.
+ * An invisible pad around each keeps them easy to grab.
  */
-.ax-workspace .react-flow__handle.ax-handle {
-  width: 3px;
-  height: 3px;
+.ax-workspace .react-flow__handle.ax-handle,
+.ax-workspace .ax-plug {
+  box-sizing: border-box;
+  width: 7px;
+  height: 7px;
   min-width: 0;
   min-height: 0;
+  padding: 2px;
   border: 0;
   border-radius: 50%;
   background: var(--ax-handle);
+  background-clip: content-box;
   transition:
-    width var(--ax-fast) var(--ax-ease),
-    height var(--ax-fast) var(--ax-ease),
-    background-color var(--ax-fast) var(--ax-ease),
-    box-shadow var(--ax-fast) var(--ax-ease);
+    padding var(--ax-fast) var(--ax-ease),
+    background-color var(--ax-fast) var(--ax-ease);
 }
 .ax-workspace .react-flow__handle-left.ax-handle {
   left: -1px;
@@ -881,87 +847,86 @@
 .ax-workspace .react-flow__handle-right.ax-handle {
   right: -1px;
 }
-/* A handle with a line attached stays visible as a plug where the line joins the node. */
-.ax-workspace .react-flow__handle.ax-handle.is-linked {
-  width: 7px;
-  height: 7px;
-  background: var(--ax-ink-soft);
+/* Where a line joins the node. Top and bottom have no handle, so the plug stands alone. */
+.ax-workspace .react-flow__handle.ax-handle.is-linked,
+.ax-workspace .ax-plug {
+  padding: 0;
+  background-color: var(--ax-plug);
 }
+.ax-workspace .ax-plug {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.ax-workspace .ax-plug[data-side="top"] { top: -1px; }
+.ax-workspace .ax-plug[data-side="bottom"] { top: calc(100% + 1px); }
 .ax-workspace .react-flow__handle.ax-handle::before {
   content: "";
   position: absolute;
   inset: -6px;
 }
 .ax-workspace .ax-node:hover .react-flow__handle.ax-handle {
-  width: 4px;
-  height: 4px;
-  background: var(--ax-ink-soft);
+  padding: 0;
+  background-color: var(--ax-plug);
 }
 .ax-workspace .ax-node.is-selected .react-flow__handle.ax-handle,
+.ax-workspace .ax-node.is-selected .ax-plug,
 .ax-workspace .react-flow__handle.ax-handle:hover {
-  width: 4px;
-  height: 4px;
-  background: var(--ax-accent);
+  padding: 0;
+  background-color: var(--ax-accent);
 }
 
 /* Connection in progress. */
 .ax-workspace .ax-node.is-connect-source .react-flow__handle.ax-handle-out,
 .ax-workspace .react-flow__handle.ax-handle.connectingfrom {
-  width: 4px;
-  height: 4px;
-  background: var(--ax-accent);
-}
-.ax-workspace .ax-node.is-connecting:not(.is-connect-source) .react-flow__handle.ax-handle-in {
-  width: 4px;
-  height: 4px;
-  background: var(--ax-accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ax-accent) 14%, transparent);
+  padding: 0;
+  background-color: var(--ax-accent);
 }
 /* React Flow marks the hovered target "connectingto" whether or not it is allowed;
    "valid" is added only when it passes the connection rules. */
-.ax-workspace .ax-node .react-flow__handle.ax-handle-in.connectingto.valid {
-  width: 6px;
-  height: 6px;
-  background: var(--ax-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ax-accent) 18%, transparent);
-}
-.ax-workspace .ax-node .react-flow__handle.ax-handle-in.connectingto:not(.valid) {
-  width: 6px;
-  height: 6px;
-  background: var(--ax-surface);
-  box-shadow: 0 0 0 1.5px var(--ax-danger);
-  cursor: not-allowed;
-}
+.ax-workspace .ax-node .react-flow__handle.ax-handle.connectingto:not(.valid) { cursor: not-allowed; }
 
-/* Why the last connection was refused; clears itself after a few seconds. */
-.ax-workspace .ax-connection-notice {
+/* Messages about the canvas, in the same place above the bottom bar. A refused connection says
+   why here, and clears itself after a few seconds. */
+.ax-workspace .ax-canvas-notices {
   position: absolute;
-  bottom: 76px;
+  bottom: calc(var(--ax-bar-height, 68px) + 2 * var(--ax-panel-margin));
   left: 50%;
   z-index: 20;
-  max-width: min(420px, calc(100% - 24px));
-  margin: 0;
-  padding: 6px 10px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(480px, calc(100% - 2 * var(--ax-panel-margin)));
   transform: translateX(-50%);
+  pointer-events: none;
+}
+.ax-workspace .ax-canvas-notice {
+  margin: 0;
+  padding: 8px 14px;
   border: 1px solid var(--ax-danger);
-  border-radius: var(--ax-radius-sm);
+  border-radius: 12px;
   background: var(--ax-surface);
+  box-shadow: var(--ax-shadow-float);
   color: var(--ax-ink);
   font-size: var(--ax-t-md);
   line-height: 1.4;
+  pointer-events: auto;
 }
 
 /* A plain hover hint on the output handle, shown after a short delay. */
 .ax-workspace .react-flow__handle.ax-handle-out::after {
-  content: "Drag to connect →";
+  content: "Drag to connect";
   position: absolute;
-  top: 50%;
-  left: 8px;
-  transform: translateY(-50%);
-  padding: 2px 5px;
-  border-radius: var(--ax-radius-xs);
-  background: var(--ax-ink);
-  color: var(--ax-surface);
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 8px;
+  background: var(--ax-surface);
+  box-shadow: var(--ax-shadow-float);
+  color: var(--ax-ink);
   font-size: 12px;
   white-space: nowrap;
   pointer-events: none;
@@ -1003,33 +968,26 @@
   border-radius: 3px;
   background: transparent;
   font-size: 10px;
-  color: var(--ax-muted);
+  color: var(--ax-ink-soft);
   transition:
     background-color var(--ax-fast) var(--ax-ease),
     color var(--ax-fast) var(--ax-ease);
 }
 .ax-workspace .ax-nodebar button:hover:not(:disabled),
 .ax-workspace .ax-nodebar button[aria-pressed="true"] {
-  background: rgba(17, 17, 17, 0.05);
+  background: var(--ax-hover-fill);
   color: var(--ax-ink);
 }
-.ax-workspace .ax-nodebar .ax-nodebar-ai {
-  color: var(--ax-accent);
-}
-.ax-workspace .ax-nodebar .ax-nodebar-ai:hover:not(:disabled),
-.ax-workspace .ax-nodebar .ax-nodebar-ai[aria-pressed="true"] {
-  background: rgba(29, 78, 216, 0.07);
-  color: var(--ax-accent);
-}
-.ax-workspace .ax-nodebar .ax-nodebar-delete:hover {
-  background: rgba(180, 52, 63, 0.07);
+.ax-workspace .ax-nodebar .ax-nodebar-delete:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ax-danger) 10%, transparent);
   color: var(--ax-danger);
 }
 .ax-workspace .ax-nodebar .ax-nodebar-ai:disabled { color: var(--ax-subtle); cursor: default; }
 .ax-workspace .ax-nodebar .ax-nodebar-sep {
   width: 1px;
-  height: 7px;
-  background: var(--ax-line);
+  height: 14px;
+  margin-inline: 2px;
+  background: var(--ax-line-strong);
 }
 
 /* Information surfaces (Ask AI, Configure, Learn, Challenge): hairline, small radius. */
@@ -1070,116 +1028,6 @@
   margin-top: var(--ax-s3);
   padding-top: var(--ax-s3);
   border-top: 1px solid var(--ax-line);
-}
-.ax-workspace .ax-card-link {
-  margin-top: var(--ax-s3);
-  padding: 0;
-  border: 0;
-  background: transparent;
-  font-size: var(--ax-t-sm);
-  color: var(--ax-accent);
-  transition: opacity var(--ax-fast) var(--ax-ease);
-}
-.ax-workspace .ax-card-link:hover:not(:disabled) {
-  opacity: 0.65;
-}
-.ax-workspace .ax-card-link:disabled {
-  color: var(--ax-subtle);
-  cursor: not-allowed;
-}
-
-/* Component inspector: the same controls, arranged around the comparison table. */
-.ax-workspace .ax-card.ax-configure {
-  --ax-t-micro: 10.5px;
-  --ax-t-xs: 11px;
-  --ax-t-sm: 11px;
-  --ax-t-md: 11px;
-  width: min(324px, calc(100vw - 24px));
-  max-height: calc(100dvh - 144px);
-  overflow: auto;
-  overscroll-behavior: contain;
-  padding: 12px;
-  border-color: var(--ax-line-strong);
-  border-radius: 3px;
-  box-shadow: none;
-  font-size: 11px;
-  line-height: 1.4;
-}
-.ax-workspace .ax-configure > .ax-card-eyebrow {
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--ax-line);
-  color: var(--ax-ink);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-.ax-workspace .ax-configure .ax-card-label { color: var(--ax-ink-soft); }
-.ax-workspace .ax-configure .ax-card-section { margin-top: 8px; padding-top: 10px; }
-.ax-workspace .ax-configure-identity {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 96px;
-  gap: 10px;
-  margin-top: 10px;
-}
-.ax-workspace .ax-configure-property,
-.ax-workspace .ax-configure-type { min-width: 0; }
-.ax-workspace .ax-configure .ax-field,
-.ax-workspace .ax-configure-type-value {
-  min-height: 28px;
-  margin-top: 4px;
-  padding: 5px 8px;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: 2px;
-  background: var(--ax-surface);
-  font-size: 11px;
-  line-height: 16px;
-}
-.ax-workspace .ax-configure-type-value {
-  background: var(--ax-canvas);
-  color: var(--ax-ink-soft);
-}
-.ax-workspace .ax-configure .ax-field:hover { border-color: var(--ax-muted); }
-.ax-workspace .ax-configure .ax-field:focus-visible {
-  border-color: var(--ax-accent);
-  outline: 1px solid var(--ax-accent);
-  outline-offset: 1px;
-}
-.ax-workspace .ax-configure .ax-field[aria-invalid="true"] { border-color: var(--ax-danger); }
-.ax-workspace .ax-configure [role="alert"] { color: var(--ax-danger); }
-.ax-workspace .ax-configure .ax-tech-basis { color: var(--ax-muted); padding-bottom: 4px; }
-.ax-workspace .ax-configure-technology > .ax-field { margin-top: 4px; }
-.ax-workspace .ax-configure-technology > .ax-tech-meta { margin-top: 4px; }
-.ax-workspace .ax-tech-search { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.ax-workspace .ax-tech-search > input { flex: 1; min-width: 0; }
-.ax-workspace .ax-tech-more { flex-shrink: 0; padding: 2px 0; border: 0; background: transparent; color: var(--ax-muted); font-size: 11px; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
-.ax-workspace .ax-tech-more:hover { color: inherit; }
-.ax-workspace .ax-configure-properties {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-.ax-workspace .ax-configure-property > .ax-card-label:last-child:not(:first-child) {
-  color: var(--ax-muted);
-  font-size: 10px;
-  line-height: 1.4;
-}
-.ax-workspace .ax-configure .ax-tech-option { padding: 8px; border-radius: 2px; }
-@media (max-width: 600px) {
-  /* Above floating canvas controls, below the Architect drawer. */
-  .ax-workspace .react-flow:has(.ax-configure) { z-index: 26 !important; }
-  .ax-workspace .react-flow__node-toolbar:has(> .ax-configure) {
-    position: fixed !important;
-    top: auto !important;
-    right: 12px;
-    bottom: 12px;
-    left: 12px !important;
-    transform: none !important;
-  }
-  .ax-workspace .ax-card.ax-configure {
-    width: min(324px, 100%);
-    margin-inline: auto;
-    max-height: calc(100dvh - 120px);
-  }
 }
 
 /* ---- Learn and Challenge annotations over the canvas ---- */
@@ -1292,49 +1140,6 @@
     animation: none;
   }
 }
-.ax-workspace .ax-feedback {
-  padding-left: var(--ax-s3);
-  border-left: 1px solid #f05a72;
-}
-.ax-workspace .ax-bar {
-  margin-top: 3px;
-  height: 1px;
-  background: var(--ax-line-strong);
-}
-.ax-workspace .ax-bar > span {
-  display: block;
-  height: 100%;
-  background: var(--ax-ink);
-  transition: width var(--ax-base) var(--ax-ease);
-}
-.ax-workspace .ax-mark {
-  display: inline-block;
-  width: 10px;
-  color: var(--ax-muted);
-}
-.ax-workspace .ax-mark-warning {
-  color: #f05a72;
-}
-.ax-workspace .ax-mark-good {
-  color: var(--ax-accent);
-}
-.ax-workspace .ax-dot {
-  width: 5px;
-  height: 5px;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: 50%;
-  background: transparent;
-  transition:
-    background-color var(--ax-base) var(--ax-ease),
-    border-color var(--ax-base) var(--ax-ease);
-}
-.ax-workspace .ax-dot.is-done {
-  border-color: var(--ax-accent);
-  background: var(--ax-accent);
-}
-.ax-workspace .ax-dot.is-current {
-  border-color: var(--ax-accent);
-}
 
 /* ---- Motion ---- */
 
@@ -1440,123 +1245,14 @@
 }
 .ax-workspace .ax-tech-sized { color: var(--ax-ink-soft); }
 .ax-workspace .ax-tech-sized[data-short] { color: var(--ax-danger); }
-.ax-workspace .ax-tech-notes {
-  display: grid;
-  margin-top: 3px;
-  font-size: var(--ax-t-micro);
-  line-height: 1.45;
-  color: var(--ax-muted);
-}
 
 /* Traffic settings share the Run inspector with its completed results. */
 .ax-workspace .ax-run-trigger { display: inline-flex; align-items: center; gap: 8px; }
 .ax-workspace .ax-run-trigger:disabled { opacity: .5; cursor: default; }
-.ax-workspace .ax-stress[data-embedded="true"] {
-  width: 100%;
-  padding: 0 12px 12px;
-  border: 0;
-  border-radius: 0;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-rate {
-  gap: 12px;
-  font-size: 12px;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-rate > span:first-child {
-  white-space: nowrap;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-input {
-  width: 86px;
-  font-size: 13px;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-presets {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-preset {
-  width: 100%;
-  min-height: 30px;
-  padding: 4px;
-  border: 1px solid var(--ax-line);
-  border-radius: 3px;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-preset[aria-pressed="true"] {
-  border-color: var(--ax-ink);
-  box-shadow: inset 0 -1px var(--ax-ink);
-  color: var(--ax-ink);
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-run {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--ax-ink);
-  border-radius: 3px;
-  background: var(--ax-ink);
-  color: var(--ax-surface);
-  text-align: center;
-  font-size: 12px;
-}
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-run[aria-disabled="true"] {
-  opacity: .5;
-}
-
-/* Status surfaces share one anchored stack while retaining their own controls and scroll areas. */
-.ax-workspace .ax-canvas-status {
-  position: absolute;
-  bottom: 12px;
-  left: 56px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  max-width: min(600px, calc(100% - 68px));
-  max-height: calc(100% - 24px);
-  min-height: 0;
-}
-.ax-workspace .ax-canvas-status > :is(.ax-live-dock, .ax-check) {
-  position: relative;
-  inset: auto;
-  max-width: 100%;
-  box-shadow: none;
-  pointer-events: auto;
-}
-.ax-workspace .ax-live-dock { flex-shrink: 0; border: 1px solid var(--ax-line-strong); border-radius: var(--ax-radius-dock); background: var(--ax-surface); }
-.ax-workspace .ax-live-dock > summary { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 8px 12px; font-size: 12px; cursor: pointer; list-style: none; }
-.ax-workspace .ax-live-dock > summary small { margin-left: auto; color: var(--ax-muted); font-family: var(--font-mono); font-size: 10px; }
-.ax-workspace .ax-live-dock > summary::-webkit-details-marker { display: none; }
-.ax-workspace .ax-live-dock > summary:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 2px; }
-.ax-workspace .ax-live-dock[open] > summary { border-bottom: 1px solid var(--ax-line); }
-.ax-workspace .ax-live-dock[open] > summary .ax-tool-chevron { transform: rotate(180deg); }
-.ax-workspace .ax-live-dock > .ax-live { position: relative; inset: auto; max-width: 100%; border: 0; border-radius: 0 0 var(--ax-radius-dock) var(--ax-radius-dock); box-shadow: none; }
-.ax-workspace .ax-canvas-status > .ax-check-panel { max-height: none; min-height: 0; flex-shrink: 1; }
 /* On phones the inspector uses the space above the measured status stack. */
 @media (max-width: 767px) {
   .ax-workspace .ax-canvas-panel[data-side="left"] { position: absolute; top: calc(var(--ax-header-clearance) + 12px); left: 12px; margin: 0; }
   .ax-workspace .ax-canvas-overlays { display: flex; flex-direction: column; gap: 12px; padding: 76px 12px 12px; }
-  .ax-workspace .ax-canvas-status {
-    position: static;
-    order: 2;
-    max-width: 100%;
-    max-height: 55%;
-    flex-shrink: 0;
-  }
-  .ax-workspace .ax-canvas-status > .ax-live-dock { width: 100%; }
-  .ax-workspace .ax-canvas-status > .ax-check-panel { width: 100%; }
-  .ax-workspace .ax-canvas-status > .ax-check-bar { max-width: 100%; }
-  .ax-workspace .ax-check-count { white-space: normal; }
-  .ax-workspace .ax-workspace-canvas .ax-canvas-overlays > .ax-inspector[data-side="right"] {
-    position: relative;
-    inset: auto;
-    order: 1;
-    align-self: flex-end;
-    align-items: center;
-    justify-content: center;
-    flex: 1 1 auto;
-    width: calc(100% - 58px);
-    min-height: 0;
-    height: auto;
-    transform: none;
-  }
-  .ax-workspace .ax-workspace-canvas:has(.ax-live) .react-flow__controls { top: calc(var(--ax-header-clearance) + 76px); bottom: auto; }
   .ax-workspace [data-side="left"] .ax-panel-rail > ul { display: flex; gap: 4px; }
   .ax-workspace [data-side="left"] .ax-panel-handle { width: 40px; height: 40px; }
   .ax-workspace .ax-panel-rail .ax-library-divider { margin: 0; }
@@ -1565,15 +1261,6 @@
 }
 
 /* Simulation controls use the same compact treatment as the canvas tools. */
-.ax-workspace .ax-review-view { display: flex; gap: 2px; padding: 8px; border-bottom: 1px solid var(--ax-line); }
-.ax-workspace .ax-review-view button { flex: 1; padding: 7px 4px; border: 1px solid transparent; border-radius: 3px; background: transparent; font-size: 11px; color: var(--ax-muted); white-space: nowrap; }
-.ax-workspace .ax-review-view button:hover:not(:disabled) { background: var(--ax-canvas); color: var(--ax-ink); }
-.ax-workspace .ax-review-view button[aria-pressed="true"] { background: var(--ax-canvas); border-color: var(--ax-line-strong); color: var(--ax-ink); }
-.ax-workspace .ax-review-view button:disabled { opacity: .4; cursor: default; }
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-rate { flex-direction: column; align-items: stretch; gap: 8px; margin-top: 0; }
-.ax-workspace .ax-stress-rate > span:last-child { padding: 8px 10px; border: 1px solid var(--ax-line-strong); border-radius: 3px; }
-.ax-workspace .ax-stress-rate .ax-stress-input { flex: 1; width: 100%; text-align: left; border: 0; font-size: 18px; }
-.ax-workspace .ax-stress[data-embedded="true"] .ax-stress-run { min-height: 36px; margin-top: 16px; }
 @media (min-width: 1000px) {
   .ax-workspace { --ax-header-clearance: 52px; }
   .ax-workspace .ax-header { inset: 0 0 auto; border-width: 0 0 1px; border-radius: 0; padding-inline: 16px; }
@@ -1591,50 +1278,20 @@
 .ax-workspace .ax-canvas-panel[data-hover-flyout]:has(.ax-panel-content:not([hidden]))::after { left: 0; top: auto; bottom: 100%; width: 100%; height: 8px; }
 .ax-workspace [data-side="left"] .ax-rail-name { left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); }
 .ax-workspace .ax-canvas-overlays { display: block; padding: 0; }
-.ax-workspace .ax-workspace-canvas .ax-canvas-overlays > .ax-inspector[data-side="right"] {
-  position: absolute; inset: 12px auto 70px 12px; width: auto; height: auto; max-height: none;
-  align-items: flex-start; align-self: stretch; justify-content: flex-start; transform: none;
-}
-.ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame { width: 248px; max-width: calc(100vw - 24px); max-height: 100%; overflow-y: auto; }
-.ax-workspace .ax-canvas-panel.ax-inspector[data-expanded="true"] .ax-inspector-frame,
-.ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame:has(.ax-live-dock[open], .ax-check-panel) { width: 340px; }
-.ax-workspace .ax-inspector-frame .ax-inspector-tools { padding: 3px; gap: 2px; }
-.ax-workspace .ax-inspector-frame .ax-inspector-section-toggle { min-height: 34px; padding: 4px 8px; }
-.ax-workspace .ax-inspector .ax-canvas-status {
-  position: static; display: flex; flex-direction: column; align-items: stretch; gap: 0;
-  width: 100%; max-width: 100%; max-height: none; flex-shrink: 0;
-}
-.ax-workspace .ax-inspector .ax-canvas-status > :is(.ax-live-dock, .ax-check) { width: 100%; max-width: 100%; border: 0; border-top: 1px solid var(--ax-line); border-radius: 0; }
-.ax-workspace .ax-inspector .ax-live-dock > summary { min-height: 40px; padding: 8px 12px; gap: 6px; }
-.ax-workspace .ax-inspector .ax-live-dock > summary:hover { background: var(--ax-canvas); }
-.ax-workspace .ax-inspector .ax-live-row { flex-wrap: wrap; }
-.ax-workspace .ax-inspector .ax-check-bar { min-height: 40px; }
-.ax-workspace .ax-inspector .ax-check-panel { max-height: 300px; }
-.ax-workspace .ax-header .ax-inspector-section-toggle { flex: none; min-height: 34px; padding: 4px 10px; border-color: var(--ax-line-strong); }
-.ax-workspace .ax-header .ax-inspector-section-toggle:hover { background: var(--ax-canvas); }
-.ax-workspace .ax-header .ax-inspector-tool-icon { width: 18px; height: 18px; }
-.ax-workspace .ax-header .ax-inspector-section-toggle[aria-expanded="true"] { border-color: var(--ax-ink); }
-.ax-workspace .react-flow__controls,
-.ax-workspace .ax-workspace-canvas:has(.ax-live) .react-flow__controls { display: flex; flex-direction: row; align-items: center; top: auto; left: auto; right: 12px; bottom: 12px; margin: 0; padding: 3px; }
+.ax-workspace .react-flow__controls { display: flex; flex-direction: row; align-items: center; top: auto; left: auto; right: 12px; bottom: 12px; margin: 0; padding: 3px; }
 .ax-workspace .react-flow__controls-button { width: 30px; height: 30px; }
 @media (max-width: 600px) {
-  .ax-workspace .ax-header .ax-inspector-status { display: none; }
-  .ax-workspace .ax-header .ax-inspector-section-toggle { padding-inline: 6px; gap: 4px; font-size: 11px; }
   .ax-workspace .ax-header .brand-wordmark-header { width: 80px; }
   .ax-workspace .ax-header-project { gap: 6px; }
   .ax-workspace .ax-header-actions { gap: 4px; }
   .ax-workspace .ax-header .ax-title { padding-left: 6px; }
   .ax-workspace .ax-canvas-panel[data-side="left"] { left: 12px; transform: none; }
   .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content { left: 0; transform: none; }
-  .ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame { width: 236px; }
-  .ax-workspace .ax-canvas-panel.ax-inspector[data-expanded="true"] .ax-inspector-frame,
-  .ax-workspace .ax-canvas-panel.ax-inspector .ax-inspector-frame:has(.ax-live-dock[open], .ax-check-panel) { width: min(340px, calc(100vw - 24px)); }
   .ax-workspace .react-flow__controls-button { width: 26px; }
 }
 
 @media (max-width: 360px) {
-  .ax-workspace .react-flow__controls,
-  .ax-workspace .ax-workspace-canvas:has(.ax-live) .react-flow__controls { bottom: 66px; }
+  .ax-workspace .react-flow__controls { bottom: 66px; }
 }
 
 /* Wide, shallow component shelves leave the graph visible above the insertion tools. */
@@ -1650,7 +1307,6 @@
 .ax-workspace .ax-component-menu .ax-tech-list ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 8px; }
 .ax-workspace .ax-component-menu .ax-tech-option { padding: 6px 8px; }
 .ax-workspace .ax-component-menu .ax-tech-toggle { width: 24px; height: 24px; }
-.ax-workspace .ax-inspector-tools .ax-ai-portrait { width: 22px; height: 22px; }
 @media (max-width: 600px) {
   .ax-workspace .ax-component-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; }
   .ax-workspace .ax-component-menu .ax-tech-list ul { grid-template-columns: minmax(0, 1fr); }
@@ -1658,142 +1314,48 @@
 
 /* Shared panel rhythm: compact rows, clear separators, and readable values. */
 .ax-workspace { --ax-panel-inset: 12px; --ax-panel-row: 40px; --ax-panel-type: 12px; --ax-panel-control: 32px; --ax-panel-disclosure: 36px; --ax-panel-meta: 11px; --ax-panel-gap: 8px; }
-.ax-workspace .ax-inspector-frame .ax-inspector-tools { padding: 0; }
-.ax-workspace .ax-inspector-frame .ax-inspector-section-toggle {
-  min-height: 40px; padding: 6px var(--ax-panel-inset); border: 0; border-radius: 0;
-  font-weight: 500;
-}
-.ax-workspace .ax-inspector-frame .ax-inspector-tool-icon { width: 22px; height: 22px; }
-.ax-workspace .ax-inspector .ax-live-dock > summary { min-height: 40px; padding: 8px var(--ax-panel-inset); }
-.ax-workspace .ax-inspector .ax-check-bar { min-height: var(--ax-panel-row); gap: 0; }
-.ax-workspace .ax-inspector .ax-check-pill { flex: 1; min-width: 0; min-height: var(--ax-panel-row); padding: 6px var(--ax-panel-inset); gap: 8px; justify-content: flex-start; font-weight: 500; border-radius: 0; }
-.ax-workspace .ax-inspector .ax-check-head,
-.ax-workspace .ax-inspector .ax-inspector-header,
-.ax-workspace .ax-inspector .ax-ai-focus-bar { min-height: 40px; padding: 8px var(--ax-panel-inset); }
-.ax-workspace .ax-inspector .ax-live-dock > .ax-live { padding: 10px var(--ax-panel-inset) 12px; }
-.ax-workspace .ax-inspector .ax-live-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 8px; }
-.ax-workspace .ax-inspector .ax-live-metric { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 6px 0; }
-.ax-workspace .ax-inspector .ax-live-metric + .ax-live-metric { padding-left: 0; border: 0; border-top: 1px solid var(--ax-line); }
-.ax-workspace .ax-inspector .ax-live-note { margin-top: 10px; line-height: 1.45; }
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-rate { flex-direction: row; align-items: center; gap: 12px; }
-.ax-workspace .ax-inspector .ax-stress-rate > span:last-child { min-width: 0; width: 150px; padding: 6px 8px; }
-.ax-workspace .ax-inspector .ax-stress-rate .ax-stress-input { font-size: 13px; }
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-presets { margin-top: 10px; }
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-run { margin-top: 12px; }
-.ax-workspace .ax-inspector .ax-inspector-archie { height: min(400px, 55dvh); }
-.ax-workspace .ax-inspector .ax-ai-messages { gap: 12px; padding: 12px; }
-.ax-workspace .ax-inspector .ax-ai-starters { margin-top: 8px; }
 .ax-workspace .ax-component-menu-header { min-height: 40px; padding-block: 8px; }
 
 /* Simulation belongs to its header trigger; all floating surfaces share the panel frame. */
 .ax-workspace .ax-simulation-anchor { position: relative; flex-shrink: 0; }
-.ax-workspace .ax-simulation-panel {
-  position: absolute; top: calc(100% + 12px); right: 0;
-  width: min(340px, calc(100vw - 32px)); z-index: 30;
-}
-.ax-workspace .ax-simulation-panel[hidden] { display: none; }
-.ax-workspace .ax-simulation-panel .ax-inspector-frame {
-  width: 100%; max-width: none; max-height: min(420px, calc(100dvh - 140px));
-}
-.ax-workspace .ax-simulation-panel .ax-review { overflow: hidden; }
-.ax-workspace :is(.ax-inspector-frame, .ax-panel-content, .ax-project-menu) {
+.ax-workspace :is(.ax-panel-content, .ax-project-menu) {
   border-color: var(--ax-line-strong); border-radius: var(--ax-radius-dock);
   background: var(--ax-surface); box-shadow: none;
 }
 /* One visual contract for the picker, inspector, checks, simulation and history. */
-.ax-workspace :is(.ax-inspector, .ax-panel-content) {
+.ax-workspace :is(.ax-panel-content) {
   font-size: var(--ax-panel-type); line-height: 1.5; color: var(--ax-ink);
 }
-.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-heading, .ax-component-menu-header, .ax-inspector-header, .ax-check-head, .ax-ai-header, .ax-ai-focus-bar) {
+.ax-workspace :is(.ax-panel-content) :is(.ax-component-menu-header, .ax-ai-header, .ax-ai-focus-bar) {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   min-height: var(--ax-panel-row); padding: 6px var(--ax-panel-inset);
   border-bottom: 1px solid var(--ax-line); flex-shrink: 0;
   background: var(--ax-surface);
 }
-.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-panel-heading h2, .ax-panel-title, .ax-inspector-title, .ax-check-head h2, .ax-ai-title) {
+.ax-workspace :is(.ax-panel-content) :is(.ax-panel-title, .ax-ai-title) {
   margin: 0; padding: 0; color: var(--ax-ink); font-family: inherit;
   font-size: var(--ax-panel-type); font-weight: 500; line-height: 20px;
   letter-spacing: normal; text-transform: none;
 }
-.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-icon-btn, .ax-check-close) {
+.ax-workspace :is(.ax-panel-content) :is(.ax-icon-btn) {
   display: inline-flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; padding: 0; flex-shrink: 0;
   border: 0; border-radius: 2px; background: transparent; color: var(--ax-muted);
 }
-.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-icon-btn, .ax-check-close):hover {
-  background: var(--ax-canvas); color: var(--ax-ink);
+.ax-workspace :is(.ax-panel-content) :is(.ax-icon-btn):hover {
+  background: var(--ax-hover-fill); color: var(--ax-ink);
 }
-.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-field, .ax-ai-input) {
+.ax-workspace :is(.ax-panel-content) :is(.ax-field) {
   min-height: var(--ax-panel-control); padding: 6px 8px;
   border: 1px solid var(--ax-line-strong); border-radius: 2px;
   background: var(--ax-surface); color: var(--ax-ink); font-size: var(--ax-panel-type);
 }
-.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-review-configure, .ax-check-fix button, .ax-check-undo, .ax-history-restore, .ax-ai-apply) {
-  min-height: var(--ax-panel-control); padding: 5px 10px;
-  border: 1px solid var(--ax-line-strong); border-radius: 2px;
-  background: var(--ax-surface); color: var(--ax-ink);
-  font-size: var(--ax-panel-type); font-weight: 500; line-height: 20px;
-}
-.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(.ax-review-configure, .ax-check-fix button, .ax-check-undo, .ax-history-restore, .ax-ai-apply):hover:not(:disabled) {
-  background: var(--ax-canvas); border-color: var(--ax-ink-soft);
-}
-.ax-workspace :is(.ax-inspector, .ax-panel-content) :is(button, input, select, textarea, summary):focus-visible {
+.ax-workspace :is(.ax-panel-content) :is(button, input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--ax-ink); outline-offset: -2px;
 }
-.ax-workspace :is(.ax-inspector, .ax-panel-content) button:disabled { opacity: .45; cursor: default; }
-.ax-workspace .ax-inspector :is(.ax-live, .ax-ai-panel, .ax-card.ax-configure) { font-size: var(--ax-panel-type); }
-.ax-workspace .ax-inspector :is(.ax-history-save, .ax-review-footer, .ax-ai-composer) {
-  padding: 10px var(--ax-panel-inset); gap: 8px;
-}
-.ax-workspace .ax-inspector :is(.ax-inspector-meta, .ax-check-summary, .ax-live-note, .ax-card-label) {
-  font-size: 11px; line-height: 1.5; color: var(--ax-muted);
-}
-.ax-workspace .ax-inspector .ax-check-switch[aria-checked="true"] .ax-check-switch-track { background: var(--ax-ink); }
-.ax-workspace .ax-inspector .ax-check-switch-thumb { box-shadow: none; }
-
-.ax-workspace .ax-inspector .ax-stress-rate .ax-stress-input {
-  min-height: 0; padding: 0; border: 0; background: transparent;
-}
-
-/* The left dock uses one icon column and one trailing control column. */
-.ax-workspace .ax-inspector .ax-inspector-tool-icon { color: var(--ax-ink-soft); }
-.ax-workspace .ax-inspector .ax-live-dock > summary { gap: 8px; font-weight: 500; }
-.ax-workspace .ax-inspector :is(.ax-live-dock > summary small, .ax-check-count) { font: 400 11px/20px var(--font-sans); color: var(--ax-muted); }
-.ax-workspace .ax-inspector .ax-check-switch { padding: 6px 4px; }
-.ax-workspace .ax-inspector .ax-check-switch-track { width: 24px; height: 14px; }
-.ax-workspace .ax-inspector .ax-check-switch-thumb { width: 10px; height: 10px; }
-.ax-workspace .ax-inspector .ax-check-switch[aria-checked="true"] .ax-check-switch-thumb { transform: translateX(10px); }
-.ax-workspace .ax-inspector .ax-check-bar[data-off] { padding-left: var(--ax-panel-inset); gap: 8px; }
-.ax-workspace .ax-inspector .ax-check-off-label { padding: 0; font-weight: 500; }
-.ax-workspace .ax-inspector-section-toggle[aria-expanded="true"] .ax-tool-chevron { transform: rotate(180deg); }
-.ax-workspace .ax-inspector .ax-check-head { gap: 8px; }
-.ax-workspace .ax-inspector .ax-inspector-frame { scrollbar-width: thin; scrollbar-color: var(--ax-line-strong) transparent; }
+.ax-workspace :is(.ax-panel-content) button:disabled { opacity: .45; cursor: default; }
 
 /* Expanded surfaces: navigation at the edge, one readable content region. */
-.ax-workspace .ax-inspector .ax-review-view { padding: 0 12px; gap: 16px; }
-.ax-workspace .ax-inspector .ax-review-view button {
-  flex: 0 1 auto; min-height: 38px; padding: 8px 0;
-  border: 0; border-bottom: 2px solid transparent; border-radius: 0;
-  background: transparent;
-}
-.ax-workspace .ax-inspector .ax-review-view button[aria-pressed="true"] {
-  border-color: var(--ax-ink); background: transparent; color: var(--ax-ink);
-}
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: var(--ax-panel-inset);
-}
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-rate { grid-column: 1 / -1; margin: 0; }
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-presets {
-  grid-column: 1 / -1; margin: 0; gap: 0; border: 1px solid var(--ax-line-strong); border-radius: 2px;
-}
-.ax-workspace .ax-inspector .ax-stress-preset {
-  border: 0; border-radius: 0; min-height: 30px; box-shadow: none;
-}
-.ax-workspace .ax-inspector .ax-stress-presets li + li { border-left: 1px solid var(--ax-line); }
-.ax-workspace .ax-inspector .ax-stress-preset[aria-pressed="true"] { background: var(--ax-canvas); box-shadow: inset 0 -2px var(--ax-ink); }
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] > .ax-card-label { align-self: center; margin: 0; }
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-run { width: auto; margin: 0; padding: 5px 10px; min-height: var(--ax-panel-control); border-radius: 2px; }
-.ax-workspace .ax-inspector .ax-stress [role="alert"] { grid-column: 1 / -1; }
 .ax-workspace .ax-component-menu .ax-library-group[data-detail] {
   display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 0 12px;
 }
@@ -1806,151 +1368,19 @@
 .ax-workspace .ax-library-detail .ax-tech-list li { border-top: 1px solid var(--ax-line); }
 .ax-workspace .ax-component-menu .ax-tech-option { padding: 8px; }
 .ax-workspace .ax-component-menu .ax-item:has([aria-expanded="true"]) { box-shadow: inset 2px 0 var(--ax-ink); }
-.ax-workspace .ax-inspector .ax-check-finding-body { padding: 0 0 12px; line-height: 1.5; }
-.ax-workspace .ax-inspector .ax-check-summary { padding-bottom: 2px; }
-.ax-workspace .ax-inspector .ax-check-fix { gap: 6px; margin-top: 10px; }
-.ax-workspace .ax-inspector .ax-inspector-details.ax-panel-disclosure > summary { padding-inline: var(--ax-panel-inset); }
 @media (max-width: 600px) {
   .ax-workspace .ax-component-menu .ax-library-group[data-detail] { grid-template-columns: 112px minmax(0, 1fr); gap: 8px; }
   .ax-workspace .ax-library-detail { padding-left: 8px; }
   .ax-workspace .ax-component-menu .ax-library-detail .ax-tech-list ul { grid-template-columns: minmax(0, 1fr); }
 }
-
-/* Utility launcher: consistent targets, quiet metadata, one action per row. */
-.ax-workspace .ax-inspector .ax-check-bar { padding: 0; }
-.ax-workspace .ax-inspector-frame .ax-inspector-section-toggle,
-.ax-workspace .ax-inspector .ax-live-dock > summary,
-.ax-workspace .ax-inspector .ax-check-pill {
-  min-height: var(--ax-panel-row); padding: 6px var(--ax-panel-inset); gap: var(--ax-panel-gap);
-  font-size: var(--ax-panel-type); font-weight: 500; line-height: 20px;
-  color: var(--ax-ink); cursor: pointer;
-}
-.ax-workspace .ax-inspector .ax-inspector-tool-icon { width: 22px; height: 22px; flex: 0 0 22px; }
-.ax-workspace .ax-inspector .ax-check-pill > svg,
-.ax-workspace .ax-inspector .ax-live-dock > summary > svg,
-.ax-workspace .ax-inspector .ax-tool-chevron { flex-shrink: 0; color: var(--ax-muted); }
-.ax-workspace .ax-inspector .ax-check-count { margin-left: auto; white-space: nowrap; }
-.ax-workspace .ax-inspector .ax-check-pill:hover,
-.ax-workspace .ax-inspector .ax-live-dock > summary:hover,
-.ax-workspace .ax-inspector .ax-inspector-section-toggle:hover:not(:disabled) { background: var(--ax-canvas); }
-.ax-workspace .ax-inspector .ax-inspector-section-toggle[aria-expanded="true"],
-.ax-workspace .ax-inspector .ax-live-dock[open] > summary,
-.ax-workspace .ax-inspector .ax-check-panel > .ax-check-head { box-shadow: inset 2px 0 var(--ax-ink); }
-/* Every launcher row: one 22px icon column, label, tabular meta, chevron. Open state is the inset rule, not weight or fill. */
-.ax-workspace .ax-inspector .ax-inspector-section-toggle[aria-expanded="true"] { background: transparent; }
-.ax-workspace .ax-inspector .ax-inspector-section-toggle[aria-expanded="true"] .ax-inspector-section-label { font-weight: 500; }
-.ax-workspace .ax-inspector .ax-inspector-tool-icon .ax-ai-portrait { width: 20px; height: 20px; border: 1px solid var(--ax-line-strong); }
-.ax-workspace .ax-inspector :is(.ax-live-dock > summary small, .ax-check-count) { font-variant-numeric: tabular-nums; }
-.ax-workspace .ax-inspector .ax-tool-chevron { width: 13px; height: 13px; transition: transform 120ms ease; }
-.ax-workspace .ax-inspector .ax-check-head .ax-check-switch { margin-left: auto; }
-.ax-workspace .ax-inspector .ax-check-head h2 { flex: 0 1 auto; }
-@media (prefers-reduced-motion: reduce) {
-  .ax-workspace .ax-inspector .ax-tool-chevron { transition: none; }
-}
-
-/* Panel interiors use document hierarchy rather than nested containers. */
-.ax-workspace .ax-inspector :is(.ax-review-content, .ax-ai-messages) { padding: var(--ax-panel-inset); gap: 12px; }
-.ax-workspace .ax-inspector :is(.ax-review-finding-title p, .ax-check-title, .ax-ai-answer) { font-size: var(--ax-panel-type); line-height: 1.5; }
-.ax-workspace .ax-inspector :is(.ax-review-finding, .ax-check-finding-body) { line-height: 1.6; }
-.ax-workspace .ax-inspector .ax-review-context { align-items: baseline; padding-bottom: 4px; }
-.ax-workspace .ax-inspector .ax-review-finding-title { align-items: start; }
-.ax-workspace .ax-inspector .ax-check-body { padding: 0 var(--ax-panel-inset) var(--ax-panel-inset); }
-.ax-workspace .ax-inspector .ax-check-finding-body { padding-left: 0; color: var(--ax-ink-soft); }
-.ax-workspace .ax-inspector .ax-check-fix { padding-top: 8px; }
-.ax-workspace .ax-inspector .ax-check-effect { padding-top: 4px; line-height: 1.6; }
-.ax-workspace .ax-inspector .ax-ai-starters { margin-left: 35px; }
-.ax-workspace .ax-inspector .ax-ai-starter { padding: 10px 0; font-size: 12px; line-height: 1.5; }
-.ax-workspace .ax-inspector .ax-ai-composer { padding: var(--ax-panel-inset); }
-.ax-workspace .ax-inspector .ax-ai-input { min-height: 64px; padding: 8px 10px; }
-.ax-workspace .ax-inspector .ax-card.ax-configure { padding: var(--ax-panel-inset); }
-.ax-workspace .ax-inspector .ax-configure .ax-card-section { margin-top: 16px; padding-top: 12px; }
-.ax-workspace .ax-inspector .ax-configure-properties { gap: 12px 16px; }
-.ax-workspace .ax-inspector .ax-configure-type-value { border: 0; background: transparent; padding-left: 0; }
+/* Read-only, so no box, but it sits on the same line as the field beside it and reads like one. */
 .ax-workspace .ax-library-detail .ax-tech-name { font-size: 12px; color: var(--ax-ink); }
 .ax-workspace .ax-library-detail .ax-tech-meta { font-size: 11px; line-height: 1.5; }
 .ax-workspace .ax-library-detail .ax-tech-option { gap: 3px; }
 
 /* Property editing follows the same label/value rhythm as metric readouts. */
-.ax-workspace .ax-inspector .ax-configure-properties { grid-template-columns: minmax(0, 1fr); gap: 0; }
-.ax-workspace .ax-inspector .ax-configure-properties > .ax-configure-property {
-  display: grid; grid-template-columns: minmax(0, 1fr) 108px;
-  align-items: center; gap: 4px 12px; padding: 8px 0;
-}
-.ax-workspace .ax-inspector .ax-configure-properties > .ax-configure-property + .ax-configure-property { border-top: 1px solid var(--ax-line); }
-.ax-workspace .ax-inspector .ax-configure-properties .ax-field { margin-top: 0; text-align: right; font-variant-numeric: tabular-nums; }
-.ax-workspace .ax-inspector .ax-configure-properties .ax-card-label:first-child { color: var(--ax-ink); font-size: 12px; }
-.ax-workspace .ax-inspector .ax-configure-properties p { grid-column: 1 / -1; margin: 0; }
-.ax-workspace :is(.ax-component-list, .ax-check-body, .ax-review-scroll, .ax-ai-messages, .ax-inspector-frame) {
+.ax-workspace :is(.ax-component-list, .ax-ai-messages) {
   overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--ax-line-strong) transparent;
-}
-.ax-workspace .ax-inspector :is(.ax-field, .ax-ai-input):hover:not(:disabled) { border-color: var(--ax-muted); }
-.ax-workspace .ax-inspector :is(.ax-field, .ax-ai-input)[aria-invalid="true"] { border-color: var(--ax-danger); }
-.ax-workspace .ax-inspector [role="alert"] { color: var(--ax-danger); }
-.ax-workspace .ax-inspector .ax-review-view { gap: 12px; }
-.ax-workspace .ax-inspector .ax-review-view button { min-width: 0; white-space: normal; line-height: 1.4; }
-.ax-workspace .ax-inspector .ax-tech-label-row { display: flex; align-items: center; justify-content: space-between; min-height: 28px; }
-.ax-workspace .ax-inspector .ax-tech-label-row .ax-card-label { color: var(--ax-ink); font-size: 12px; }
-.ax-workspace .ax-inspector .ax-tech-search { margin: 4px 0 8px; }
-.ax-workspace .ax-inspector .ax-tech-comparison-context { padding: 4px 0 8px; }
-.ax-workspace .ax-inspector .ax-property-unit { display: block; margin-top: 2px; color: var(--ax-muted); font-size: 10px; font-weight: 400; }
-.ax-workspace .ax-inspector .ax-property-default:not([data-overridden]) { display: none; }
-.ax-workspace .ax-inspector .ax-configure-property:focus-within .ax-property-default { display: block; }
-.ax-workspace .ax-inspector .ax-panel-disclosure > summary {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  min-height: var(--ax-panel-disclosure); padding: 8px 0; list-style: none; cursor: pointer; font-size: var(--ax-panel-type); font-weight: 500; line-height: 20px; color: var(--ax-ink-soft);
-}
-.ax-workspace .ax-panel-disclosure > summary::-webkit-details-marker { display: none; }
-.ax-workspace .ax-panel-disclosure > summary:hover { color: var(--ax-ink); background: var(--ax-canvas); }
-.ax-workspace .ax-panel-disclosure[open] > summary > svg { transform: rotate(180deg); }
-.ax-workspace .ax-inspector .ax-live-details { margin-top: 8px; border-top: 1px solid var(--ax-line); }
-.ax-workspace .ax-inspector .ax-live-details .ax-live-row { margin-top: 0; }
-
-/* Shared primitives for panel readouts, disclosures and actions. */
-.ax-workspace .ax-inspector .ax-panel-metrics {
-  display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin: 0;
-}
-.ax-workspace .ax-inspector .ax-panel-metrics > div {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: 12px; padding: 8px 0; border: 0;
-}
-.ax-workspace .ax-inspector .ax-panel-metrics > div + div { border-top: 1px solid var(--ax-line); }
-.ax-workspace .ax-inspector .ax-panel-metrics :is(dt, .ax-live-label) { color: var(--ax-muted); font-size: var(--ax-panel-meta); }
-.ax-workspace .ax-inspector .ax-panel-metrics :is(dd, .ax-live-value) {
-  margin: 0; color: var(--ax-ink); font: 500 var(--ax-panel-type)/20px var(--font-mono);
-  font-variant-numeric: tabular-nums; letter-spacing: normal; text-align: right;
-}
-.ax-workspace .ax-inspector :is(.ax-check-title, .ax-review-finding-title) {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto 13px;
-  align-items: center; gap: var(--ax-panel-gap); min-height: var(--ax-panel-row);
-  margin: 0; padding: 10px 0; font-size: var(--ax-panel-type); line-height: 1.5;
-}
-.ax-workspace .ax-inspector :is(.ax-check-title, .ax-review-finding-title):hover { background: var(--ax-canvas); }
-.ax-workspace .ax-inspector :is(.ax-check-title .ax-check-severity, .ax-review-finding-title .ax-review-severity) {
-  margin: 0; padding: 0; font-size: var(--ax-panel-meta); font-weight: 400; color: var(--ax-muted);
-}
-.ax-workspace .ax-inspector .ax-check-uptime > summary > strong { margin-left: auto; font: 500 var(--ax-panel-meta)/20px var(--font-mono); }
-.ax-workspace .ax-inspector .ax-configure :is(label.ax-card-label, .ax-tech-label-row .ax-card-label, .ax-configure-type > .ax-card-label) {
-  color: var(--ax-ink); font-size: var(--ax-panel-type); font-weight: 400;
-}
-.ax-workspace .ax-inspector .ax-inspector-heading > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
-.ax-workspace .ax-inspector .ax-inspector-meta { margin: 0; }
-.ax-workspace .ax-inspector .ax-panel-action {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  min-height: var(--ax-panel-control); padding: 5px 10px;
-  border: 1px solid var(--ax-line-strong); border-radius: 2px;
-  background: var(--ax-surface); color: var(--ax-ink);
-  font: 500 var(--ax-panel-type)/20px var(--font-sans); text-decoration: none; cursor: pointer;
-}
-.ax-workspace .ax-inspector .ax-panel-action:hover:not(:disabled) { border-color: var(--ax-muted); background: var(--ax-canvas); text-decoration: none; opacity: 1; }
-.ax-workspace .ax-inspector .ax-panel-action[data-variant="primary"] { border-color: var(--ax-ink); background: var(--ax-ink); color: var(--ax-surface); }
-.ax-workspace .ax-inspector .ax-panel-action[data-variant="primary"]:hover:not(:disabled) { background: var(--ax-ink-soft); }
-.ax-workspace .ax-inspector .ax-panel-action:disabled { opacity: .45; cursor: default; }
-
-@media (max-width: 420px) {
-  .ax-workspace .ax-inspector .ax-configure-identity { grid-template-columns: minmax(0, 1fr); }
-  .ax-workspace .ax-inspector .ax-configure-type { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-  .ax-workspace .ax-inspector .ax-configure-type-value { min-height: 0; margin: 0; padding: 0; }
-  .ax-workspace .ax-inspector .ax-review-view { gap: 8px; }
 }
 
 /* ---- Bottom bar: component library and canvas tools ----
@@ -1990,126 +1420,17 @@
 .ax-workspace .ax-panel-handle:disabled:hover { background: transparent; }
 /* Design check's finding count: real state, kept small and neutral. */
 .ax-workspace .ax-rail-badge {
-  position: absolute; top: 3px; right: 3px; min-width: 15px; height: 15px; padding: 0 4px;
-  border-radius: 8px; background: var(--ax-ink); color: var(--ax-surface);
-  font: 600 9px/15px var(--font-mono); font-variant-numeric: tabular-nums; text-align: center;
+  position: absolute; top: 2px; right: 2px; min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 9px; background: var(--ax-ink); color: var(--ax-surface);
+  font: 600 11px/18px var(--font-mono); font-variant-numeric: tabular-nums; text-align: center;
   pointer-events: none;
 }
 
-/* Live estimates and Design check, sized to their content. */
-.ax-workspace .ax-tool-widget { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
-.ax-workspace .ax-tool-widget .ax-live {
-  position: static; max-width: none; padding: 10px var(--ax-panel-inset) 12px;
-  border: 0; border-radius: 0; background: transparent;
-}
-.ax-workspace .ax-tool-widget .ax-check.ax-check-panel {
-  position: static; width: auto; max-height: none; min-height: 0;
-  border: 0; border-radius: 0;
-}
-.ax-workspace .ax-tool-widget .ax-check-panel > .ax-check-head { box-shadow: none; }
-
-/* ---- Simulation: one stack of identical sections ----
-   Traffic, Last run, Findings, Scores and Compare share one anatomy: a head (title left,
-   muted meta right), then rows or controls; 12px inset and a hairline between sections. */
-.ax-workspace .ax-inspector .ax-review-section {
-  display: grid; gap: 8px; margin: 0; padding: 12px var(--ax-panel-inset) 14px;
-  border: 0; border-bottom: 1px solid var(--ax-line); border-radius: 0; background: transparent;
-}
-.ax-workspace .ax-inspector .ax-review-section-head {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-height: 20px;
-}
-.ax-workspace .ax-inspector .ax-review-section-head h3 { margin: 0; color: var(--ax-ink); font-size: 12px; font-weight: 500; line-height: 20px; }
-.ax-workspace .ax-inspector .ax-review-section-head > span {
-  color: var(--ax-muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap;
-}
-.ax-workspace .ax-inspector .ax-review-health { color: var(--ax-ink); text-transform: capitalize; }
-.ax-workspace .ax-inspector .ax-review-health[data-demand="exceeds"] { color: var(--ax-danger); }
-.ax-workspace .ax-inspector .ax-review-note { margin: 0; color: var(--ax-muted); font-size: 11px; line-height: 1.5; }
-.ax-workspace .ax-inspector .ax-review-section .ax-panel-metrics { margin: 0; }
-.ax-workspace .ax-inspector .ax-review-scores > div:first-child :is(dt, dd) { color: var(--ax-ink); font-weight: 500; }
-.ax-workspace .ax-inspector .ax-review-comparison dd { display: flex; align-items: baseline; justify-content: flex-end; gap: 6px; font-size: 11px; }
-.ax-workspace .ax-inspector .ax-review-comparison small { margin: 0; color: var(--ax-muted); font: 400 10px/1 var(--font-sans); }
-.ax-workspace .ax-inspector .ax-review-section .ax-inspector-findings { margin: 0; }
-.ax-workspace .ax-inspector .ax-review-section .ax-review-finding-title { padding-inline: 0; }
-
-/* Traffic section controls. */
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-rate {
-  display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; margin: 0;
-  color: var(--ax-ink-soft); font-size: 12px;
-}
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-presets { display: flex; margin: 0; }
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-presets li { flex: 1; }
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-preset { width: 100%; }
-.ax-workspace .ax-inspector .ax-stress[data-embedded="true"] .ax-stress-run {
-  display: flex; justify-content: center; width: 100%; min-height: 32px; margin: 0; padding: 6px 12px;
-}
-
-/* Notices sit between Traffic and the results as a slim status row. */
-.ax-workspace .ax-inspector .ax-review-notices { margin: 0; padding: 8px var(--ax-panel-inset); border-bottom: 1px solid var(--ax-line); }
-
-/* Tabs: one per part of a run, in the section heads' type (12px), underlined when open. */
-.ax-workspace .ax-inspector .ax-review-view {
-  display: flex; gap: 16px; padding: 0 var(--ax-panel-inset); border-bottom: 1px solid var(--ax-line);
-}
-.ax-workspace .ax-inspector .ax-review-view button {
-  flex: 0 0 auto; min-height: 36px; padding: 8px 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0;
-  background: transparent; color: var(--ax-muted); font-size: 12px; font-weight: 400; line-height: 18px; white-space: nowrap;
-}
-.ax-workspace .ax-inspector .ax-review-view button:hover:not(:disabled) { background: transparent; color: var(--ax-ink); }
-.ax-workspace .ax-inspector .ax-review-view button[aria-pressed="true"] { border-color: var(--ax-ink); color: var(--ax-ink); font-weight: 500; }
-
 /* Docked: the active tab scrolls inside the full-height panel. */
-@media (min-width: 768px) {
-  .ax-workspace .ax-simulation-panel .ax-inspector-frame > .ax-review { flex: 1 1 auto; min-height: 0; }
-  .ax-workspace .ax-simulation-panel .ax-review-scroll { flex: 1 1 auto; }
-}
-
-/* ---- Bottom-bar tool panels: Live estimates and Design check read alike ----
-   Same header (icon, title, state on the right, controls, close), same body inset,
-   same row rhythm, same disclosure at the end. */
-.ax-workspace .ax-tool-head { justify-content: flex-start; gap: 8px; padding: 6px 6px 6px var(--ax-panel-inset); }
-.ax-workspace .ax-tool-head-icon {
-  display: inline-grid; place-items: center; width: 16px; height: 16px; flex-shrink: 0; color: var(--ax-ink-soft);
-}
-.ax-workspace .ax-tool-head h2 { flex: 1 1 auto; min-width: 0; white-space: nowrap; }
-.ax-workspace .ax-tool-widget .ax-tool-head h2:focus { outline: none; }
-.ax-workspace .ax-tool-head-meta {
-  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
-  color: var(--ax-muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap;
-}
-.ax-workspace .ax-tool-head-meta[title] { cursor: help; }
-.ax-workspace .ax-tool-head .ax-check-switch { margin: 0; }
-.ax-workspace .ax-tool-panel[data-health="healthy"] .ax-live-dot { background: #16a34a; }
-.ax-workspace .ax-tool-panel[data-health="warning"] .ax-live-dot { background: #d97706; }
-.ax-workspace .ax-tool-panel[data-health="critical"] .ax-live-dot { background: var(--ax-danger); }
-.ax-workspace .ax-tool-head .ax-live-dot { width: 6px; height: 6px; }
-
-/* One body inset for both panels. */
-.ax-workspace .ax-tool-widget .ax-live,
-.ax-workspace .ax-tool-widget .ax-check-body { padding: 4px var(--ax-panel-inset) 8px; }
-.ax-workspace .ax-tool-widget .ax-live-row { margin-top: 0; }
-.ax-workspace .ax-tool-widget .ax-check-applied { margin: 8px var(--ax-panel-inset) 0; }
-
-/* Rows: metric rows and finding rows share one height and hairline. */
-.ax-workspace .ax-tool-widget .ax-panel-metrics > div { min-height: 36px; align-items: center; padding: 6px 0; }
-.ax-workspace .ax-tool-widget .ax-check-title { min-height: 36px; padding-block: 6px; }
-.ax-workspace .ax-tool-widget .ax-check-list li:first-child { border-top: 0; }
-.ax-workspace .ax-tool-widget :is(.ax-check-note, .ax-live-note) { margin: 8px 0 4px; color: var(--ax-muted); font-size: 11px; line-height: 1.5; }
-
-/* The closing disclosure (More metrics / Availability calculation) looks the same in both. */
-.ax-workspace .ax-tool-widget :is(.ax-live-details, .ax-check-uptime) { margin-top: 0; border-top: 1px solid var(--ax-line); }
-.ax-workspace .ax-tool-widget :is(.ax-live-details, .ax-check-uptime) > summary {
-  display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 0;
-  color: var(--ax-ink-soft); font-size: 12px; font-weight: 500;
-}
-.ax-workspace .ax-tool-widget .ax-live-details > summary > svg { margin-left: auto; }
-.ax-workspace .ax-tool-widget .ax-check-uptime > summary > strong { margin-left: auto; }
 
 /* Phones: the bottom bar (library plus tools) spans the width, so the zoom controls sit above it. */
 @media (max-width: 600px) {
-  .ax-workspace .react-flow__controls,
-  .ax-workspace .ax-workspace-canvas:has(.ax-live) .react-flow__controls { bottom: 66px; }
+  .ax-workspace .react-flow__controls { bottom: 66px; }
   /* An open bar flyout covers that corner; hide the zoom controls until it closes. */
   .ax-workspace:has([data-side="left"] .ax-panel-content:not([hidden])) .react-flow__controls { visibility: hidden; }
 }
@@ -2217,12 +1538,12 @@
   .ax-workspace .react-flow__controls {
     padding: 4px;
     border-radius: 14px;
-    box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
+    box-shadow: var(--ax-shadow-float);
   }
   .ax-workspace .react-flow__controls-button { width: 40px; height: 40px; border-radius: 10px; }
   .ax-workspace .react-flow__controls-button svg { width: 16px; height: 16px; }
-  .ax-workspace .ax-rail-name { padding: 6px 10px; font-size: 14px; }
-  .ax-workspace .ax-connection-notice { font-size: 14px; }
+  .ax-workspace .ax-rail-name { padding: 6px 10px; border-radius: 8px; box-shadow: var(--ax-shadow-float); font-size: 14px; }
+  .ax-workspace .ax-canvas-notice { font-size: 14px; }
   .ax-workspace .ax-learn-instruction { font-size: 14px; }
   .ax-workspace .ax-learn-speech .ax-card-body { font-size: 15px; }
 }
@@ -2238,9 +1559,9 @@
   inset: -24px;
   width: auto;
   height: auto;
+  padding: 0;
   border-radius: 0;
   background: transparent;
-  box-shadow: none;
   transform: none;
   transition: none;
 }
@@ -2252,21 +1573,25 @@
 .ax-workspace .ax-node.accepts-in .react-flow__handle.ax-handle-in::after,
 .ax-workspace .ax-node.accepts-out .react-flow__handle.ax-handle-out::after {
   content: "";
+  display: block;
   position: absolute;
   top: 50%;
+  bottom: auto;
   width: 9px;
   height: 9px;
   padding: 0;
+  border: 0;
   border-radius: 50%;
   background: var(--ax-accent);
+  box-shadow: none;
   opacity: 1;
   pointer-events: none;
 }
+.ax-workspace .ax-node .react-flow__handle.ax-handle.connectingto:not(.valid)::after { background: var(--ax-danger); }
 .ax-workspace .ax-node.accepts-in .react-flow__handle.ax-handle-in::after { left: 24px; transform: translate(-50%, -50%); }
 .ax-workspace .ax-node.accepts-out .react-flow__handle.ax-handle-out::after { right: 24px; left: auto; transform: translate(50%, -50%); }
-.ax-workspace .ax-node:has(.react-flow__handle.connectingto.valid) { outline: 2px solid var(--ax-accent); outline-offset: 2px; }
-.ax-workspace .ax-node:has(.react-flow__handle.connectingto:not(.valid)) { outline: 2px solid var(--ax-danger); outline-offset: 2px; }
-.ax-workspace .ax-edge-plug { fill: var(--ax-ink-soft); pointer-events: none; }
+.ax-workspace .ax-node:has(.react-flow__handle.connectingto.valid) { border-color: var(--ax-accent); outline: 2px solid var(--ax-accent); outline-offset: 2px; }
+.ax-workspace .ax-node:has(.react-flow__handle.connectingto:not(.valid)) { border-color: var(--ax-danger); outline: 2px solid var(--ax-danger); outline-offset: 2px; }
 .ax-workspace .ax-snap-guide {
   position: absolute;
   top: 0;

@@ -4,7 +4,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import type { Edge } from "@xyflow/react";
 import { useOnSelectionChange, useReactFlow, useStore } from "@xyflow/react";
-import { ArrowLeft, BoxSelect, MessageSquarePlus, Send, Square, X } from "lucide-react";
+import { MessageSquarePlus, Send, Square, X } from "lucide-react";
 
 import type { MetricsSnapshot, SuggestionEvent } from "../../../lib/ai/architectChat";
 import { applyChanges } from "../../../lib/ai/changes";
@@ -22,8 +22,8 @@ import { graphFromCanvas } from "../../../lib/projects/projectPayload";
 import { DesignTrafficContext } from "../DesignTrafficContext";
 import { ArchieEnabledContext } from "../ArchieContext";
 import type { ArchitectureFlowNode } from "../nodes/ArchitectureNode";
-import ArchiePanel, { ArchiePortrait } from "./ArchiePanel";
-import { ArchieMessage, ArchieStarters } from "./ArchieConversation";
+import Panel, { PanelAction, PanelActions, PanelDelta, PanelGroup, PanelLink, PanelRow, PanelText } from "../panel/Panel";
+import { ArchiePortrait } from "./ArchiePanel";
 
 // The AI Architect: a chat docked to the right of the canvas. It sends the current design,
 // traffic and conversation to POST /api/ai/chat, shows the answer as it streams in, and shows
@@ -93,6 +93,7 @@ export function ArchitectToggle({ open, onToggle }: { open: boolean; onToggle: (
 const money = (value: number) => `$${Math.round(value).toLocaleString("en-US")}`;
 const rate = (value: number | null) => (value === null ? "unlimited" : `${Math.round(value).toLocaleString("en-US")} req/s`);
 
+// Only what the change moves: an unchanged number says nothing about a suggestion.
 function PreviewRow({ label, before, after, format, higherIsBetter }: {
   label: string;
   before: number | null;
@@ -100,23 +101,10 @@ function PreviewRow({ label, before, after, format, higherIsBetter }: {
   format: (value: number | null) => string;
   higherIsBetter: boolean;
 }) {
-  const changed = before !== after;
+  if (before === after) return null;
   const better =
     before !== null && after !== null ? (higherIsBetter ? after > before : after < before) : after === null && higherIsBetter;
-  return (
-    <>
-      <dt>{label}</dt>
-      <dd>
-        {format(before)}
-        {changed && (
-          <>
-            {" → "}
-            <span className={better ? "ax-ai-better" : "ax-ai-worse"}>{format(after)}</span>
-          </>
-        )}
-      </dd>
-    </>
-  );
+  return <PanelRow label={label} value={<>{format(before)} → <PanelDelta better={better}>{format(after)}</PanelDelta></>} />;
 }
 
 function SuggestionCard({ suggestion, status, onApply, streaming }: {
@@ -128,43 +116,40 @@ function SuggestionCard({ suggestion, status, onApply, streaming }: {
 }) {
   const { before, after }: { before: MetricsSnapshot; after: MetricsSnapshot } = suggestion.preview;
   return (
-    <div className="ax-ai-suggestion">
-      <p className="ax-ai-suggestion-title">{suggestion.title}</p>
-      {suggestion.reason && <p className="ax-ai-suggestion-reason">{suggestion.reason}</p>}
-      <dl className="ax-ai-preview" aria-label="What this change does to the design">
+    <PanelGroup>
+      <p className="axp-message"><strong>{suggestion.title}</strong></p>
+      {suggestion.reason && <PanelText>{suggestion.reason}</PanelText>}
+      <div aria-label="What this change does to the design">
         <PreviewRow label="Score" before={before.score} after={after.score} format={(v) => String(v)} higherIsBetter />
         <PreviewRow label="Capacity" before={before.capacityRps} after={after.capacityRps} format={rate} higherIsBetter />
-        <PreviewRow label="p95" before={before.p95LatencyMs} after={after.p95LatencyMs} format={(v) => `${v} ms`} higherIsBetter={false} />
-        <PreviewRow label="Cost" before={before.monthlyCost} after={after.monthlyCost} format={(v) => `${money(v ?? 0)}/mo`} higherIsBetter={false} />
-        <PreviewRow label="Uptime" before={before.uptimePercent} after={after.uptimePercent} format={(v) => `${v}%`} higherIsBetter />
-      </dl>
-      <div className="ax-ai-apply-row">
-        {status === "applied" ? (
-          <span className="ax-ai-applied">Applied · undo with Ctrl/Cmd+Z</span>
-        ) : (
-          <button type="button" className="ax-ai-apply ax-panel-action" data-variant="secondary" onClick={onApply} disabled={streaming}>
-            Apply
-          </button>
-        )}
-        {status && status !== "applied" && <span className="ax-ai-error">{status}</span>}
+        <PreviewRow label="p95 latency" before={before.p95LatencyMs} after={after.p95LatencyMs} format={(v) => `${v} ms`} higherIsBetter={false} />
+        <PreviewRow label="Monthly cost" before={before.monthlyCost} after={after.monthlyCost} format={(v) => `${money(v ?? 0)}/mo`} higherIsBetter={false} />
+        <PreviewRow label="Availability" before={before.uptimePercent} after={after.uptimePercent} format={(v) => `${v}%`} higherIsBetter />
       </div>
-    </div>
+      {status === "applied" ? (
+        <PanelText role="status">Applied · undo with Ctrl/Cmd+Z</PanelText>
+      ) : (
+        <PanelActions>
+          <PanelAction onClick={onApply} disabled={streaming}>Apply</PanelAction>
+        </PanelActions>
+      )}
+      {status && status !== "applied" && <PanelText role="alert" tone="danger">{status}</PanelText>}
+    </PanelGroup>
   );
 }
 
 export default function ArchitectPanel({
   projectId,
   onClose,
-  backLabel,
-  embedded = false,
+  revealKey,
   onApply,
   customTechnologies,
 }: {
   // The conversation is saved with this project and restored when the panel opens.
   projectId: string;
   onClose: () => void;
-  backLabel?: string;
-  embedded?: boolean;
+  // A new truthy value unfolds the panel: someone just asked Archie about something.
+  revealKey?: unknown;
   // Replaces the design in one undo step.
   onApply: (next: { nodes: ArchitectureFlowNode[]; edges: Edge[] }) => void;
   customTechnologies?: readonly CustomTechnology[];
@@ -297,126 +282,107 @@ export default function ArchitectPanel({
     updateAssistant(turnId, (turn) => ({ ...turn, applied: { ...turn.applied, [suggestion.id]: "applied" } }));
   };
 
+  const scope = focusedName ?? components(focus.length);
   return (
-    <ArchiePanel
-      embedded={embedded}
-      empty={turns.length === 0}
-      messageRef={list}
-      headerAction={
-        <span className="ax-ai-header-actions">
-          {turns.length > 0 && (
-            <button type="button" className="ax-icon-btn" aria-label="Start a new conversation" title="New chat" onClick={newChat} disabled={busy}>
-              <MessageSquarePlus size={14} aria-hidden="true" />
-            </button>
-          )}
-          {!embedded && (
-            <button type="button" className="ax-icon-btn" aria-label={backLabel ?? "Close Archie"} title={backLabel} onClick={onClose}>
-              {backLabel ? <ArrowLeft size={14} aria-hidden="true" /> : <X size={14} aria-hidden="true" />}
-            </button>
-          )}
-        </span>
-      }
-      focus={<>
-        {focus.length === 0 && (
-          <span className="ax-ai-focus-hint" title="Shift+drag a box on the canvas, or Ctrl/Cmd-click components, to ask about just that part">
-            <BoxSelect size={13} aria-hidden="true" />
-            Whole design · Shift+drag to focus
-          </span>
-        )}
-        {focus.length > 0 && (
-          <span className="ax-ai-focus-chip">
-            <span className="ax-ai-focus-name">{focusedName ?? components(focus.length)}</span>
-            <button type="button" aria-label="Clear the selection and ask about the whole design" onClick={clearFocus}>
-              <X size={11} aria-hidden="true" />
-            </button>
-          </span>
-        )}
-      </>}
-      footer={
-        <form
-          className="ax-ai-composer"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void ask(draft);
-          }}
-        >
-          <textarea
-            className="ax-ai-input"
-            value={draft}
-            disabled={busy}
-            maxLength={4_000}
-            placeholder={focus.length > 0 ? "Ask Archie about the selected part…" : "Ask Archie about your architecture…"}
-            aria-label="Ask Archie"
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void ask(draft);
-              }
-            }}
-          />
-          <div className="ax-ai-composer-row">
-            <span className="ax-ai-hint">
-              {usage ? (
-                <span className={usage.remainingToday <= 5 ? "ax-ai-usage-low" : undefined} title={usageLabel(usage)}>
-                  {usage.remainingToday} question{usage.remainingToday === 1 ? "" : "s"} left today
-                </span>
-              ) : (
-                "Enter to send · Shift+Enter for a new line"
-              )}
-            </span>
-            {busy ? (
-              <button type="button" className="ax-ai-send ax-panel-action" data-variant="secondary" onClick={() => abort.current?.abort()}>
-                <Square size={11} aria-hidden="true" /> Stop
-              </button>
-            ) : (
-              <button type="submit" className="ax-ai-send ax-panel-action" data-variant="primary" disabled={!draft.trim()}>
-                <Send size={12} aria-hidden="true" /> Send
-              </button>
-            )}
-          </div>
-        </form>
-      }
+    <Panel
+      fill
+      toolKey="archie"
+      label="Ask Archie"
+      icon={<ArchiePortrait />}
+      title="Archie"
+      status={usage ? (usage.remainingToday <= 5 ? <PanelDelta better={false}>{usage.remainingToday} left today</PanelDelta> : `${usage.remainingToday} left today`) : undefined}
+      statusTitle={usage ? usageLabel(usage) : undefined}
+      revealKey={revealKey}
+      actions={turns.length > 0 && (
+        <button type="button" className="axp-icon-btn" aria-label="Start a new conversation" title="New chat" onClick={newChat} disabled={busy}>
+          <MessageSquarePlus size={15} aria-hidden="true" />
+        </button>
+      )}
+      closeLabel="Close Archie"
+      onClose={onClose}
     >
-      {turns.length === 0 && (
-        <div className="ax-ai-empty">
-          <ArchieMessage role="assistant">
-            <p className="ax-ai-answer">
-              {focus.length > 0
-                ? focus.length === 1
-                  ? "Ask how this component works, connects, or affects your system."
-                  : "Ask how these components work, connect, or affect your system."
-                : "Ask about traffic, reliability, or cost. Preview changes before applying them."}
-            </p>
-          </ArchieMessage>
-          <ArchieStarters questions={focus.length > 0 ? FOCUS_STARTERS : STARTERS} onAsk={question => void ask(question)} />
+      {focus.length > 0 && (
+        <div className="axp-row">
+          <span className="axp-label">About {scope}</span>
+          <button type="button" className="axp-icon-btn" aria-label="Clear the selection and ask about the whole design" onClick={clearFocus}>
+            <X size={13} aria-hidden="true" />
+          </button>
         </div>
       )}
-      {turns.map((turn) =>
-        turn.role === "user" ? (
-          <ArchieMessage key={turn.id} role="user" focusLabel={turn.focusCount > 0 ? `About ${components(turn.focusCount)}` : undefined}>
-            {turn.text}
-          </ArchieMessage>
+      <div className="axp-messages" ref={list} aria-live="polite">
+        {turns.length === 0 && (
+          <>
+            <p className="axp-message" data-tone="soft">
+              {focus.length > 0 ? "Ask how this part works, connects, or affects your system." : "Ask about traffic, reliability, or cost. Preview changes before applying them."}
+            </p>
+            <div>
+              {(focus.length > 0 ? FOCUS_STARTERS : STARTERS).map((question) => (
+                <PanelLink key={question} item label={question} title={question} onClick={() => void ask(question)} />
+              ))}
+            </div>
+          </>
+        )}
+        {turns.map((turn) =>
+          turn.role === "user" ? (
+            <p key={turn.id} className="axp-message" data-role="user">
+              {turn.focusCount > 0 && <small>About {components(turn.focusCount)}</small>}
+              {turn.text}
+            </p>
+          ) : (
+            <div key={turn.id}>
+              {turn.text && <p className="axp-message">{turn.text}</p>}
+              {!turn.text && !turn.done && !turn.error && <p className="axp-message" data-tone="soft">Looking at your design…</p>}
+              {turn.suggestions.map((suggestion) => (
+                <SuggestionCard
+                  key={suggestion.id}
+                  suggestion={suggestion}
+                  status={turn.applied[suggestion.id]}
+                  streaming={!turn.done}
+                  onApply={() => apply(turn.id, suggestion)}
+                />
+              ))}
+              {turn.notes.map((note, index) => (
+                <p key={index} className="axp-message" data-tone="soft">{note}</p>
+              ))}
+              {turn.error && <p role="alert" className="axp-message" data-tone="danger">{turn.error}</p>}
+            </div>
+          ),
+        )}
+      </div>
+      <form
+        className="axp-compose"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void ask(draft);
+        }}
+      >
+        <textarea
+          className="axp-textarea"
+          rows={1}
+          value={draft}
+          disabled={busy}
+          maxLength={4_000}
+          placeholder={focus.length > 0 ? `Ask about ${scope}…` : "Ask about your whole design…"}
+          aria-label="Ask Archie"
+          title="Enter to send · Shift+Enter for a new line · Shift+drag on the canvas to ask about part of the design"
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              void ask(draft);
+            }
+          }}
+        />
+        {busy ? (
+          <PanelAction onClick={() => abort.current?.abort()}>
+            <Square size={12} aria-hidden="true" /> Stop
+          </PanelAction>
         ) : (
-          <ArchieMessage key={turn.id} role="assistant">
-            {turn.text && <p className="ax-ai-answer">{turn.text}</p>}
-            {!turn.text && !turn.done && !turn.error && <p className="ax-ai-thinking">Looking at your design…</p>}
-            {turn.suggestions.map((suggestion) => (
-              <SuggestionCard
-                key={suggestion.id}
-                suggestion={suggestion}
-                status={turn.applied[suggestion.id]}
-                streaming={!turn.done}
-                onApply={() => apply(turn.id, suggestion)}
-              />
-            ))}
-            {turn.notes.map((note, index) => (
-              <p key={index} className="ax-ai-note">{note}</p>
-            ))}
-            {turn.error && <p role="alert" className="ax-ai-error">{turn.error}</p>}
-          </ArchieMessage>
-        ),
-      )}
-    </ArchiePanel>
+          <PanelAction type="submit" variant="primary" disabled={!draft.trim()}>
+            <Send size={13} aria-hidden="true" /> Send
+          </PanelAction>
+        )}
+      </form>
+    </Panel>
   );
 }

@@ -1,23 +1,25 @@
 "use client"
 
-import { useLayoutEffect, useRef, useState } from "react"
+import { useState } from "react"
 
 import type { ResultsView } from "../../lib/architecture/evaluation/resultsView"
 import type { RunResult } from "../../lib/architecture/evaluation/runSession"
 import type { TrafficProfile } from "../../lib/architecture/evaluation/traffic"
 import {
-  ReviewSection,
+  RunAllMetrics,
   RunComparison,
   RunFindings,
   RunNotices,
   RunMetrics,
   RunSummary,
+  staleNotice,
 } from "./RunResults"
 import {
   reviewViewForRun,
   type ReviewSelection,
   type ReviewView,
 } from "./inspectorState"
+import { PanelDetail, PanelGroup } from "./panel/Panel"
 import StressTestPanel from "./StressTestPanel"
 
 type RunPanelProps = {
@@ -30,103 +32,52 @@ type RunPanelProps = {
   componentName: (id: string) => string
 }
 
-// The Simulation panel: a tab per part of a run. Every tab is built from the same sections
-// (RunResults' ReviewSection), so Traffic, Last run, Scores and Compare runs read alike.
-const VIEWS = [
-  ["settings", "Traffic"],
-  ["overview", "Last run"],
-  ["metrics", "Scores"],
-  ["comparison", "Compare runs"],
-] as const
-
+// The Simulation panel: the traffic to run and what the last run found. Scores, findings and
+// the full numbers, compared with the run before, are details, one at a time.
 export default function RunPanel(props: RunPanelProps) {
   const { view, completedRun, traffic } = props
   const { result, comparison } = view
-  const viewPicker = useRef<HTMLButtonElement>(null)
-  const details = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<ReviewSelection>(() => ({
     run: completedRun,
     view: completedRun ? "overview" : "settings",
   }))
   // Edits preserve the chosen view; a completed test opens its summary.
   const activeView = reviewViewForRun(selection, completedRun)
-  useLayoutEffect(() => {
-    details.current?.scrollTo({ top: 0 })
-  }, [activeView, completedRun])
-  const selectView = (next: ReviewView) => {
-    // Keep keyboard focus within the persistent view controls.
-    viewPicker.current?.focus()
-    setSelection({ run: completedRun, view: next })
+  const select = (next: ReviewView) => setSelection({ run: completedRun, view: next })
+  const titles: Partial<Record<ReviewView, string>> = {
+    metrics: "Scores",
+    findings: "Findings",
+    comparison: comparison ? "Compare runs" : "All metrics",
   }
-  const startRun = (action: () => void) => {
-    // The traffic form is hidden after a run, so focus stays on the persistent picker.
-    viewPicker.current?.focus()
-    action()
-  }
+  const detail = result ? titles[activeView] : undefined
+  const stale = staleNotice(view, traffic)
 
   return (
-    <div
-      className="ax-review"
-      aria-live="polite"
-      data-run-state={view.runButtonState}
-    >
-      <div className="ax-review-view" role="group" aria-label="Run view" hidden={!result}>
-        {VIEWS.map(([value, label]) => (
-          <button
-            key={value}
-            ref={value === activeView ? viewPicker : undefined}
-            type="button"
-            aria-pressed={activeView === value}
-            disabled={value !== "settings" && !result}
-            onClick={() => selectView(value)}
-          >{label}</button>
-        ))}
-      </div>
-      <div
-        ref={details}
-        className="ax-review-scroll"
-        role="region"
-        aria-label="Run details"
-        tabIndex={0}
-      >
-        <RunNotices
-          view={view}
-          onRun={() => startRun(props.onRun)}
-          liveTraffic={traffic}
+    <div aria-live="polite" data-run-state={view.runButtonState}>
+      {/* Keep the form mounted so looking at a detail preserves what was typed. */}
+      <div hidden={Boolean(detail)}>
+        <StressTestPanel
+          traffic={traffic}
+          runLabel={view.isRunning ? "Running…" : "Run simulation"}
+          running={view.isRunning}
+          onRateChange={props.onRateChange}
+          onRun={props.onRun}
+          onRunAtRate={props.onRunAtRate}
         />
-        {/* Keep the form mounted so inspecting a result preserves its current input. */}
-        <div hidden={activeView !== "settings"}>
-          <StressTestPanel
-            traffic={traffic}
-            embedded
-            runLabel={view.isRunning ? "Running…" : "Run simulation"}
-            running={view.isRunning}
-            onRateChange={props.onRateChange}
-            onRun={() => startRun(props.onRun)}
-            onRunAtRate={(rate) => startRun(() => props.onRunAtRate(rate))}
-          />
-        </div>
+        <RunNotices view={view} onRun={props.onRun} />
         {result && (
-          <>
-            <div hidden={activeView !== "overview"}>
-              <RunSummary result={result} />
-              <RunFindings result={result} componentName={props.componentName} />
-            </div>
-            <div hidden={activeView !== "metrics"}>
-              <RunMetrics result={result} />
-            </div>
-            <div hidden={activeView !== "comparison"}>
-              {comparison ? (
-                <RunComparison comparison={comparison} />
-              ) : (
-                <ReviewSection title="Compare runs">
-                  <p className="ax-review-note">Run another test to compare it with this one.</p>
-                </ReviewSection>
-              )}
-            </div>
-          </>
+          <PanelGroup title="Last run" meta={stale && <strong role="status">{stale}</strong>}>
+            <RunSummary result={result} comparison={comparison} numbersTitle={titles.comparison ?? ""} onOpen={select} />
+          </PanelGroup>
         )}
       </div>
+      {result && detail && (
+        <PanelDetail title={detail} onBack={() => select("overview")}>
+          {activeView === "metrics" && <RunMetrics result={result} />}
+          {activeView === "findings" && <RunFindings result={result} componentName={props.componentName} />}
+          {activeView === "comparison" && (comparison ? <RunComparison comparison={comparison} /> : <RunAllMetrics result={result} />)}
+        </PanelDetail>
+      )}
     </div>
   )
 }

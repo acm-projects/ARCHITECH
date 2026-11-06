@@ -1,0 +1,317 @@
+/* Right panels. Every rule for what a panel looks like is in this file.
+   Four text styles: the title, a row, a row's value, and small text. One row height, one
+   control height, one divider between groups. No fills behind content, and no line between
+   rows. A hover or a selection is the only thing that fills a row. */
+.axp {
+  --axp-inset: 14px;
+  --axp-row: 34px;
+  --axp-control: 36px;
+  --axp-radius: 8px;
+  --axp-good: #16a34a;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 14px;
+  background: var(--ax-surface);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 10%);
+  color: var(--ax-ink);
+  font: 400 14px/20px var(--font-sans);
+  pointer-events: auto;
+}
+.axp[hidden] { display: none; }
+.axp :where(h2, h3, p, ol, ul) { margin: 0; padding: 0; list-style: none; }
+.axp :where(button) { font: inherit; cursor: pointer; }
+.axp :where(button:disabled, button[aria-disabled="true"]) { cursor: default; }
+.axp :is(button, input, select, textarea):focus-visible { outline: 2px solid var(--ax-ink); outline-offset: -2px; }
+
+/* Header: icon, title, one status, controls. */
+.axp-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 4px 8px 4px var(--axp-inset);
+  cursor: pointer;
+}
+.axp-head h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font: 600 15px/20px var(--font-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axp-head h2:focus { outline: 0; }
+.axp-icon { display: inline-grid; flex: none; place-items: center; width: 18px; height: 18px; color: var(--ax-ink-soft); }
+.axp-icon .ax-ai-portrait { width: 18px; height: 18px; border-width: 1px; }
+.axp-status {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  max-width: 45%;
+  overflow: hidden;
+  color: var(--ax-ink-soft);
+  font: 400 12px/18px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.axp-icon-btn {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--axp-radius);
+  background: transparent;
+  color: var(--ax-muted);
+}
+.axp-icon-btn:hover:not(:disabled), .axp-head:hover .axp-collapse {
+  background: var(--ax-hover-fill);
+  color: var(--ax-ink);
+}
+.axp-icon-btn:disabled { opacity: .4; }
+.axp-collapse[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+/* Body and groups. */
+.axp-body { display: flex; flex-direction: column; min-height: 0; padding-bottom: 6px; }
+.axp-body[hidden] { display: none; }
+.axp-group { padding-block: 4px; }
+.axp-group + .axp-group,
+.axp-text + .axp-group,
+.axp-actions + .axp-group { margin-top: 4px; border-top: 1px solid var(--ax-line); padding-top: 8px; }
+.axp-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+  padding-inline: var(--axp-inset);
+  color: var(--ax-muted);
+  font: 400 12px/18px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.axp-group-head strong { color: var(--ax-ink); font-weight: 400; }
+
+/* The row. */
+.axp-row {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--axp-row);
+  padding: 4px var(--axp-inset);
+  border: 0;
+  background: transparent;
+  color: var(--ax-ink);
+  text-align: left;
+}
+.axp-lead { display: inline-grid; flex: none; place-items: center; width: 16px; height: 16px; color: var(--ax-ink-soft); }
+.axp-lead svg { width: 16px; height: 16px; }
+.axp-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ax-ink-soft);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axp-value {
+  flex: none;
+  max-width: 70%;
+  overflow: hidden;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axp-row[data-item] .axp-label { color: var(--ax-ink); }
+.axp-row[data-item] .axp-value { color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+.axp-link { cursor: pointer; }
+.axp-link:hover:not(:disabled) { background: var(--ax-hover-fill); }
+.axp-link:hover:not(:disabled) .axp-go { color: var(--ax-ink); }
+.axp-link:disabled { opacity: .5; }
+.axp-go { flex: none; margin-right: -4px; color: var(--ax-muted); }
+
+/* A detail. */
+.axp-back {
+  display: flex;
+  box-sizing: border-box;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  min-height: var(--axp-row);
+  padding: 7px var(--axp-inset) 7px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ax-ink);
+  font-weight: 500;
+  text-align: left;
+}
+.axp-back svg { flex: none; margin-top: 3px; color: var(--ax-muted); }
+.axp-back:hover { background: var(--ax-hover-fill); }
+.axp-text { padding: 4px var(--axp-inset); color: var(--ax-ink-soft); }
+.axp-text[data-tone="danger"] { color: var(--ax-danger); }
+.axp-small { color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+
+/* Fields sit where a row's value sits, and only look like fields when touched. */
+.axp-field label { cursor: text; }
+.axp .axp-input, .axp .axp-textarea {
+  box-sizing: border-box;
+  height: 26px;
+  min-width: 0;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ax-ink);
+  font: 500 14px/20px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.axp .axp-input-end { flex: 0 1 60%; width: 100%; margin-right: -7px; text-align: right; }
+.axp .axp-input-end:has(+ .axp-unit, + .axp-icon-btn) { margin-right: 0; }
+.axp .axp-input-number { flex: 0 0 96px; width: 96px; }
+.axp-unit { flex: none; color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+.axp .axp-input:hover { border-color: var(--ax-line-strong); }
+.axp .axp-input:focus, .axp .axp-textarea:focus { border-color: var(--ax-ink); outline: 0; background: var(--ax-surface); }
+.axp .axp-input[aria-invalid="true"] { border-color: var(--ax-danger); }
+.axp .axp-input-box {
+  flex: 1 1 auto;
+  height: var(--axp-control);
+  padding-inline: 10px;
+  border-color: var(--ax-line-strong);
+  border-radius: var(--axp-radius);
+  font-weight: 400;
+}
+
+/* A field with its button beside it. */
+.axp-compose { display: flex; align-items: flex-end; gap: 8px; padding: 4px var(--axp-inset); }
+.axp .axp-textarea {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: var(--axp-control);
+  max-height: 120px;
+  padding: 7px 10px;
+  border-color: var(--ax-line-strong);
+  border-radius: var(--axp-radius);
+  font-weight: 400;
+  field-sizing: content;
+  resize: none;
+}
+
+/* Actions. */
+.axp-actions { display: flex; gap: 8px; padding: 6px var(--axp-inset); }
+.axp .axp-action {
+  display: inline-flex;
+  box-sizing: border-box;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--axp-control);
+  padding: 0 12px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: var(--axp-radius);
+  background: var(--ax-surface);
+  color: var(--ax-ink);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.axp .axp-compose .axp-action { flex: none; }
+.axp .axp-action:hover:not(:disabled, [aria-disabled="true"]) { background: var(--ax-hover-fill); }
+.axp .axp-action[data-variant="primary"] { border-color: var(--ax-primary); background: var(--ax-primary); color: #fff; }
+.axp .axp-action[data-variant="primary"]:hover:not(:disabled, [aria-disabled="true"]) { border-color: var(--ax-primary-hover); background: var(--ax-primary-hover); }
+.axp .axp-action:is(:disabled, [aria-disabled="true"]) { opacity: .5; }
+
+/* Choices in a row, like the traffic multiples. */
+.axp-segments { display: flex; flex: none; border: 1px solid var(--ax-line-strong); border-radius: var(--axp-radius); }
+.axp .axp-segments button {
+  width: 38px;
+  height: calc(var(--axp-control) - 2px);
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ax-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.axp .axp-segments button:hover { background: var(--ax-hover-fill); }
+.axp .axp-segments button[aria-pressed="true"] { background: var(--ax-ink); color: var(--ax-surface); font-weight: 500; }
+
+.axp-switch { display: inline-flex; flex: none; padding: 0; border: 0; background: transparent; }
+.axp-switch span { display: block; width: 30px; height: 18px; border-radius: 9px; background: var(--ax-line-strong); }
+.axp-switch span::after { content: ""; display: block; width: 14px; height: 14px; margin: 2px; border-radius: 50%; background: var(--ax-surface); }
+.axp-switch[aria-checked="true"] span { background: var(--ax-ink); }
+.axp-switch[aria-checked="true"] span::after { margin-left: 14px; }
+
+/* Options. */
+.axp-option {
+  display: flex;
+  box-sizing: border-box;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7px var(--axp-inset);
+  border: 0;
+  background: transparent;
+  color: var(--ax-ink);
+  text-align: left;
+}
+.axp-option:hover { background: var(--ax-hover-fill); }
+.axp-option[aria-checked="true"] .axp-option-label { font-weight: 500; }
+.axp-option > svg { flex: none; margin-top: 3px; }
+.axp-option-text { display: grid; min-width: 0; }
+
+/* A table, for the one comparison that needs columns. The chosen row says so in weight, and
+   its fill is the same as a hover. */
+.axp-table-wrap { padding-inline: 8px; }
+.axp-table { width: 100%; border-collapse: collapse; font: 400 12px/18px var(--font-sans); font-variant-numeric: tabular-nums; }
+.axp-table th, .axp-table td { padding: 6px; font-weight: 400; text-align: right; white-space: nowrap; }
+.axp-table thead th { color: var(--ax-muted); }
+.axp-table :is(th, td):first-child { max-width: 112px; overflow: hidden; text-align: left; text-overflow: ellipsis; }
+.axp-table tbody tr { cursor: pointer; }
+.axp-table tbody tr:hover, .axp-table tbody tr[aria-current="true"] { background: var(--ax-hover-fill); }
+.axp-table tbody tr[aria-current="true"] { cursor: default; }
+.axp-table tbody tr[aria-current="true"] :is(th, td) { font-weight: 600; }
+.axp-table tbody :is(th, td):first-child { border-radius: 6px 0 0 6px; }
+.axp-table tbody :is(th, td):last-child { border-radius: 0 6px 6px 0; }
+.axp .axp-table button { padding: 0; border: 0; background: transparent; color: inherit; }
+.axp-table td[data-tone="better"] { color: var(--axp-good); }
+.axp-table td[data-tone="worse"] { color: var(--ax-danger); }
+
+/* State. */
+.axp-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ax-muted); }
+.axp-dot[data-health="healthy"] { background: var(--axp-good); }
+.axp-dot[data-health="warning"] { background: var(--ax-warning); }
+.axp-dot[data-health="critical"] { background: var(--ax-danger); }
+.axp-change { margin-left: 4px; font-size: 9px; vertical-align: 1px; }
+.axp-change[data-direction="improved"], .axp-delta[data-direction="improved"] { color: var(--axp-good); }
+.axp-change[data-direction="regressed"], .axp-delta[data-direction="regressed"] { color: var(--ax-danger); }
+
+/* A conversation scrolls inside its panel, the one exception to the column scrolling. */
+.axp[data-fill]:not([data-folded]) { flex: 1 0 380px; }
+.axp[data-fill] .axp-body { flex: 1 1 auto; padding-bottom: 8px; }
+.axp-messages { display: flex; flex: 1 1 auto; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding: 4px 0 8px; }
+.axp-message { padding-inline: var(--axp-inset); overflow-wrap: anywhere; white-space: pre-wrap; }
+.axp-message[data-role="user"] { align-self: flex-end; max-width: 85%; margin-right: var(--axp-inset); padding: 6px 10px; border-radius: var(--axp-radius); background: var(--ax-hover-fill); }
+.axp-message[data-tone="danger"] { color: var(--ax-danger); }
+.axp-message[data-tone="soft"] { color: var(--ax-muted); }
+.axp-message small { display: block; color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+
+.axp-message strong { font-weight: 500; }
+
+/* The component settings in a guided lesson, attached to the node. */
+.axp-popover { width: 320px; padding-block: 4px; }
+
+/* History opens over the lesson card in a frame of its own. */
+.ax-panel-content > .axp { border: 0; border-radius: 0; box-shadow: none; }

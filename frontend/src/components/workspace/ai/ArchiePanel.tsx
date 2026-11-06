@@ -66,7 +66,10 @@ export default function ArchiePanel({
       {!embedded && (
         <div className="ax-ai-header">
           <p className="ax-ai-title"><ArchiePortrait />Archie</p>
-          <div className="ax-archie-panel-actions">{headerAction}{collapseControl}</div>
+          <div className="ax-archie-panel-actions">
+            {headerAction}
+            {collapseControl}
+          </div>
         </div>
       )}
       <div className="ax-ai-focus-bar">{focus}{embedded && <div className="ax-archie-panel-actions">{headerAction}{collapseControl}</div>}</div>
