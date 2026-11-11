@@ -9,8 +9,10 @@ import type { ProjectMode } from "../projects/projectStore";
 
 type WorkspaceHeaderProps = {
   title: string;
-  onTitleChange: (title: string) => void;
-  onReset: () => void;
+  // Absent where the title is fixed, as in a system breakdown.
+  onTitleChange?: (title: string) => void;
+  // Absent where there is no design to reset.
+  onReset?: () => void;
   saveStatus?: "saved" | "saving" | "error";
   // The project's mode. Learn and Challenge are two ways of working in the same project.
   mode: ProjectMode;
@@ -20,6 +22,8 @@ type WorkspaceHeaderProps = {
   // The caller supplies Run only where testing is available.
   runControl?: ReactNode;
   projectActions?: (menuId: string) => ReactNode;
+  // Header controls of the page itself, placed before the theme toggle.
+  actions?: ReactNode;
 };
 
 const MODES: { mode: ProjectMode; label: string }[] = [
@@ -39,6 +43,7 @@ export default function WorkspaceHeader({
   modeStatus,
   runControl,
   projectActions,
+  actions,
 }: WorkspaceHeaderProps) {
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -61,7 +66,7 @@ export default function WorkspaceHeader({
 
     // An empty title is not allowed, so the previous one is kept.
     const nextTitle = draft.trim();
-    if (save && nextTitle) onTitleChange(nextTitle);
+    if (save && nextTitle) onTitleChange?.(nextTitle);
     setIsEditing(false);
   };
 
@@ -82,6 +87,8 @@ export default function WorkspaceHeader({
             }}
             className="ax-field ax-header-title-input"
           />
+        ) : !onTitleChange ? (
+          <h1 className="ax-title"><span>{title}</span></h1>
         ) : (
           <button
             type="button"
@@ -104,6 +111,7 @@ export default function WorkspaceHeader({
         )}
       </>}
       actions={<>
+        {actions}
         <ThemeToggle />
         <button
           type="button"
@@ -152,15 +160,17 @@ export default function WorkspaceHeader({
           <div className="ax-project-menu-actions">
             {projectActions?.(menuId)}
           </div>
-          <div className="ax-project-menu-group">
-            <button type="button" className="ax-project-menu-item" onClick={() => {
-              closeMenu();
-              onReset();
-            }}>
-              <RotateCcw size={15} aria-hidden="true" />
-              <span>Reset design</span>
-            </button>
-          </div>
+          {onReset && (
+            <div className="ax-project-menu-group">
+              <button type="button" className="ax-project-menu-item" onClick={() => {
+                closeMenu();
+                onReset();
+              }}>
+                <RotateCcw size={15} aria-hidden="true" />
+                <span>Reset design</span>
+              </button>
+            </div>
+          )}
         </div>
         {runControl}
       </>}

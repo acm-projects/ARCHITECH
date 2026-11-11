@@ -30,6 +30,7 @@ import { ARCHITECTURE_NODE_SIZE, spreadOverlappingNodes } from "../../lib/archit
 import { snapNode, type SnapGuide } from "../../lib/architecture/nodeSnap";
 import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
+import type { Challenge } from "../challenge/challenges";
 import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
 import LearnCard from "../learn/LearnCard";
 import { projectActions } from "../projects/projectActions";
@@ -110,12 +111,32 @@ const emptyGraph = (): {
   edges: [],
 });
 
+// What the editor needs from a project. A system breakdown supplies the same fields without a
+// saved project behind them.
+export type WorkspaceProject = Pick<Project, "id" | "title" | "nodes" | "edges" | "mode" | "learnSkipped" | "customTechnologies">;
+
+// A system breakdown's Challenge: the same editor in Challenge mode, outside any project.
+// Nothing goes to the project store or the server's project records; the breakdown keeps the
+// design itself through `onGraphChange`, and Learn returns to its walkthrough.
+export type BreakdownChallenge = {
+  challenge: Challenge;
+  onLearn: () => void;
+  // Returns false when the design could not be kept; the header then says so.
+  onGraphChange: (nodes: ArchitectureFlowNode[], edges: Edge[]) => boolean;
+};
+
+// How long the canvas stays still before a breakdown keeps its design.
+const BREAKDOWN_SAVE_DELAY_MS = 400;
+
 // This is the main controller for one project's editor.
 //
 // The actual architecture belongs to the project, so nodes, edges, history,
 // autosave, clipboard, and keyboard behavior are shared between Learn and Challenge.
 // Each mode only adds its own lesson/evaluation state around that same canvas.
-function Workspace({ project }: { project: Project }) {
+function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdown?: BreakdownChallenge }) {
+  // The saved project behind the editor; null in a breakdown. `project.id` still scopes undo
+  // history, run results and the challenge introduction.
+  const savedProjectId = breakdown ? null : project.id;
   // React Flow owns the live node/edge state while this project is open.
   // Spread once here rather than in the store: the saved layout only changes with the
   // user's next edit, so opening a project does not count as editing it.
@@ -212,7 +233,7 @@ function Workspace({ project }: { project: Project }) {
   // BACKEND: useProjectAutosave is one of the places that will eventually send
   // project updates through the backend project API instead of browser storage.
   const { status: saveStatus, flush: saveNow } = useProjectAutosave(
-    project.id,
+    savedProjectId,
     title,
     nodes,
     edges,
@@ -220,11 +241,17 @@ function Workspace({ project }: { project: Project }) {
 
   // The mode is saved on the project, so reopening it brings the user back
   // to whichever mode they were using last.
-  const [mode, setMode] = useState<ProjectMode>(project.mode);
+  const [mode, setMode] = useState<ProjectMode>(breakdown ? "challenge" : project.mode);
   const [modeError, setModeError] = useState<string | null>(null);
 
+  const onLearnBreakdown = breakdown?.onLearn;
   const switchMode = useCallback(
     (next: ProjectMode) => {
+      // A breakdown's Learn is its walkthrough, outside this editor.
+      if (onLearnBreakdown) {
+        if (next === "learn") onLearnBreakdown();
+        return;
+      }
       // Switch the UI right away, then persist that choice on the project.
       setMode(next);
       setLearnPanelCollapsed(false);
@@ -234,14 +261,31 @@ function Workspace({ project }: { project: Project }) {
       const result = projectActions.setMode(project.id, next);
       setModeError(result.ok ? null : result.message);
     },
-    [project.id, resetInspector],
+    [project.id, resetInspector, onLearnBreakdown],
   );
+
+  // A breakdown keeps its design once the canvas settles, like autosave does for a project.
+  const onBreakdownGraphChange = breakdown?.onGraphChange;
+  const [breakdownSaveFailed, setBreakdownSaveFailed] = useState(false);
+  useEffect(() => {
+    if (!onBreakdownGraphChange) return;
+    const timer = window.setTimeout(() => setBreakdownSaveFailed(!onBreakdownGraphChange(nodes, edges)), BREAKDOWN_SAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [nodes, edges, onBreakdownGraphChange]);
+  // Leaving for Learn straight after an edit still keeps it.
+  const latestGraph = useRef({ nodes, edges });
+  useEffect(() => {
+    latestGraph.current = { nodes, edges };
+  }, [nodes, edges]);
+  useEffect(() => () => {
+    onBreakdownGraphChange?.(latestGraph.current.nodes, latestGraph.current.edges);
+  }, [onBreakdownGraphChange]);
 
   // Learn and Challenge each manage their own mode-specific state,
   // but both receive the same live architecture from this project.
   const learn = useLearnMode({
     enabled: mode === "learn",
-    scopeKey: project.id,
+    scopeKey: savedProjectId,
     initiallySkipped: project.learnSkipped,
     nodes,
     edges,
@@ -249,9 +293,10 @@ function Workspace({ project }: { project: Project }) {
 
   const challenge = useChallengeMode({
     enabled: mode === "challenge",
-    scopeKey: project.id,
+    scopeKey: savedProjectId,
     nodes,
     edges,
+    challenge: breakdown?.challenge,
   });
 
   const { reportConnection } = learn.engine;
@@ -548,7 +593,7 @@ function Workspace({ project }: { project: Project }) {
             and save status. It does not own the graph itself. */}
         <WorkspaceHeader
           title={title}
-          onTitleChange={setTitle}
+          onTitleChange={breakdown ? undefined : setTitle}
           onReset={handleReset}
           mode={mode}
           onModeChange={switchMode}
@@ -559,7 +604,7 @@ function Workspace({ project }: { project: Project }) {
                 : undefined
               : challenge.challenge.title
           }
-          saveStatus={saveStatus}
+          saveStatus={savedProjectId ? saveStatus : breakdownSaveFailed ? "error" : undefined}
           runControl={canRunDesign && <SimulationControl
             panelHost={simulationHost}
             runs={activeRuns}
@@ -570,9 +615,9 @@ function Workspace({ project }: { project: Project }) {
           />}
           projectActions={(menuId) => (
             <div hidden={!showInspector}>
-              <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />
+              {savedProjectId && <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />}
               <ExportButton title={title} popoverTarget={menuId} />
-              <RunnableAppButton projectId={project.id} popoverTarget={menuId} />
+              {savedProjectId && <RunnableAppButton projectId={savedProjectId} popoverTarget={menuId} />}
             </div>
           )}
         />
@@ -693,7 +738,7 @@ function Workspace({ project }: { project: Project }) {
                 )}
                 {showInspector && (
                   <WorkspaceInspector
-                    projectId={project.id}
+                    projectId={savedProjectId}
                     nodes={nodes}
                     controller={inspector}
                     onClearSelection={clearCanvasSelection}
@@ -762,18 +807,20 @@ function Workspace({ project }: { project: Project }) {
   );
 }
 
-// A canvas only exists inside a saved project; there is no separate scratch workspace.
+// A canvas lives inside a saved project, or inside a system breakdown's Challenge.
 // ReactFlowProvider gives the editor access to React Flow helpers like fitView/getNodes.
 export default function ArchitectureWorkspace({
   project,
+  breakdown,
 }: {
-  project: Project;
+  project: WorkspaceProject;
+  breakdown?: BreakdownChallenge;
 }) {
   return (
     <ReactFlowProvider>
       {/* Starting a different project creates a fresh Workspace, so graph/history/
           lesson/submission state from the previous project cannot carry over. */}
-      <Workspace key={project.id} project={project} />
+      <Workspace key={project.id} project={project} breakdown={breakdown} />
     </ReactFlowProvider>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   Handle,
   Position,
@@ -17,8 +17,8 @@ import "@xyflow/react/dist/style.css";
 import "../workspace/architecture-workspace.css";
 import "./breakdowns.css";
 
-import WorkspaceHeaderShell from "../workspace/WorkspaceHeaderShell";
-import ThemeToggle from "../workspace/ThemeToggle";
+import ArchitectureWorkspace, { type BreakdownChallenge, type WorkspaceProject } from "../workspace/ArchitectureWorkspace";
+import WorkspaceHeader from "../workspace/WorkspaceHeader";
 import ArchitectureNode, { type ArchitectureFlowNode } from "../workspace/nodes/ArchitectureNode";
 import {
   NETFLIX_COMPONENTS,
@@ -35,6 +35,9 @@ import NetflixPreview from "./NetflixPreview";
 import { useLivePreviewSetting } from "./useLivePreviewSetting";
 import { ArchitectureEdge, type EdgeRoute } from "../workspace/OrthogonalEdge";
 import { getOrthogonalEdgePath } from "../../lib/architecture/edgeRouting";
+import { netflixStreamingChallenge } from "../challenge/challenges";
+import { browserStorage, readBreakdownDraft, writeBreakdownDraft } from "./breakdownDraft";
+import { breakdownMode, breakdownModeQuery, type BreakdownMode } from "./breakdownMode";
 
 function BreakdownNode(props: NodeProps<ArchitectureFlowNode>) {
   const component = NETFLIX_COMPONENTS.find(item => item.id === props.id);
@@ -78,7 +81,9 @@ const FIT_OPTIONS = { padding: { left: "70px", right: "420px", top: "90px", bott
 const MOBILE_FIT_OPTIONS = { padding: 0.15, maxZoom: 1.1 };
 const NO_CONNECTIONS: readonly string[] = [];
 
-function NetflixWalkthrough() {
+const BREAKDOWN_TITLE = "Netflix System breakdown";
+
+function NetflixWalkthrough({ onChallenge }: { onChallenge: () => void }) {
   const pathname = usePathname();
   const query = useSearchParams();
   const progress = netflixProgress(query.get("step"), query.get("built"));
@@ -149,11 +154,12 @@ function NetflixWalkthrough() {
 
   return (
     <main className="ax-workspace ax-breakdown">
-      <WorkspaceHeaderShell
-        project={<h1 className="ax-title"><span>Netflix System breakdown</span></h1>}
+      <WorkspaceHeader
+        title={BREAKDOWN_TITLE}
+        mode="learn"
+        onModeChange={mode => { if (mode === "challenge") onChallenge(); }}
         actions={<>
           <LivePreviewToggle />
-          <ThemeToggle />
           <button type="button" className="ax-action" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>
         </>}
       />
@@ -196,6 +202,43 @@ function NetflixWalkthrough() {
   );
 }
 
+// The design lives in this browser, so the editor only opens once the page is in the browser.
+const subscribeNever = () => () => {};
+const useInBrowser = () => useSyncExternalStore(subscribeNever, () => true, () => false);
+
+// Challenge: the project editor in Challenge mode, on a design kept for this breakdown.
+function NetflixChallenge({ onLearn }: { onLearn: () => void }) {
+  const challengeId = netflixStreamingChallenge.id;
+  const [project] = useState<WorkspaceProject>(() => ({
+    id: "breakdown-netflix",
+    title: BREAKDOWN_TITLE,
+    mode: "challenge",
+    ...readBreakdownDraft(browserStorage(), challengeId),
+  }));
+  const onGraphChange = useCallback<BreakdownChallenge["onGraphChange"]>(
+    (nodes, edges) => writeBreakdownDraft(browserStorage(), challengeId, nodes, edges),
+    [challengeId],
+  );
+  const breakdown = useMemo<BreakdownChallenge>(
+    () => ({ challenge: netflixStreamingChallenge, onLearn, onGraphChange }),
+    [onLearn, onGraphChange],
+  );
+  return <ArchitectureWorkspace project={project} breakdown={breakdown} />;
+}
+
 export default function NetflixBreakdown() {
-  return <ReactFlowProvider><NetflixWalkthrough /></ReactFlowProvider>;
+  const pathname = usePathname();
+  const mode = breakdownMode(useSearchParams().get("mode"));
+  const inBrowser = useInBrowser();
+  // Replace, as the walkthrough's steps do, so Back still returns to the dashboard.
+  const switchMode = useCallback((next: BreakdownMode) => {
+    window.history.replaceState(null, "", `${pathname}${breakdownModeQuery(window.location.search, next)}`);
+  }, [pathname]);
+  const openLearn = useCallback(() => switchMode("learn"), [switchMode]);
+  const openChallenge = useCallback(() => switchMode("challenge"), [switchMode]);
+
+  if (mode === "challenge") {
+    return inBrowser ? <NetflixChallenge onLearn={openLearn} /> : <div className="ax-status-page h-screen bg-white" />;
+  }
+  return <ReactFlowProvider><NetflixWalkthrough onChallenge={openChallenge} /></ReactFlowProvider>;
 }

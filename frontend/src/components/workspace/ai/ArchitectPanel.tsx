@@ -146,7 +146,8 @@ export default function ArchitectPanel({
   customTechnologies,
 }: {
   // The conversation is saved with this project and restored when the panel opens.
-  projectId: string;
+  // Null outside a saved project (a system breakdown): the conversation lasts as long as the page.
+  projectId: string | null;
   onClose: () => void;
   // A new truthy value unfolds the panel: someone just asked Archie about something.
   revealKey?: unknown;
@@ -180,9 +181,10 @@ export default function ArchitectPanel({
 
   // Restore the saved conversation once, then save after each finished answer or applied
   // suggestion (only when something changed).
-  const [restored, setRestored] = useState(false);
+  const [restored, setRestored] = useState(projectId === null);
   const lastSaved = useRef("[]");
   useEffect(() => {
+    if (projectId === null) return;
     const controller = new AbortController();
     void loadConversation(projectId, controller.signal).then((raw) => {
       if (controller.signal.aborted) return;
@@ -196,7 +198,7 @@ export default function ArchitectPanel({
     return () => controller.abort();
   }, [projectId]);
   useEffect(() => {
-    if (!restored || busy) return;
+    if (projectId === null || !restored || busy) return;
     const saved = toSaved(turns);
     const text = JSON.stringify(saved);
     if (text === lastSaved.current) return;

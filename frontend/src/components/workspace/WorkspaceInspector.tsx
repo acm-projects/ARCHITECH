@@ -17,7 +17,8 @@ import type { useRunSession } from "./useRunSession";
 import "./workspace-inspector.css";
 
 type WorkspaceInspectorProps = {
-  projectId: string;
+  // Null outside a saved project: no saved versions, and Archie's chat is not kept.
+  projectId: string | null;
   nodes: ArchitectureFlowNode[];
   controller: WorkspaceInspectorController;
   onClearSelection: () => void;
@@ -136,7 +137,7 @@ export default function WorkspaceInspector({
         </Panel>
       )}
       {guidance}
-      {historyOpen && <HistoryPanel projectId={projectId} onClose={closeHistory} onRestore={onApply} />}
+      {historyOpen && projectId !== null && <HistoryPanel projectId={projectId} onClose={closeHistory} onRestore={onApply} />}
       {archieOpen && (
         <ArchitectPanel
           key={projectId}

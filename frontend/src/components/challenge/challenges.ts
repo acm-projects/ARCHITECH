@@ -126,3 +126,118 @@ export const urlShortenerChallenge: Challenge = {
   ],
   definition: urlShortenerDefinition,
 };
+
+// A streaming service at the scale of a busy evening: 50,000 requests a second, nine in ten
+// of them video segments and artwork. The API tier only sees the remaining tenth, so the
+// design is judged on keeping video off the servers as much as on the servers themselves.
+// The dataset is catalogue and viewing data; video files live in object storage.
+export const netflixStreamingDefinition: ChallengeDefinition = {
+  id: "netflix-streaming",
+  title: "Design a Video Streaming Service",
+  difficulty: "Advanced",
+  description:
+    "Design a service that lets members browse a catalogue and play video, with video delivered close to the viewer.",
+  traffic: {
+    requestsPerSecond: 50_000,
+    concurrentUsers: 200_000,
+    readRatio: 98,
+    staticShare: 90,
+    datasetGb: 500,
+    networkLatencyMs: 30,
+  },
+  requirements: [
+    {
+      id: "capacity",
+      kind: "min-capacity",
+      minRps: 50_000,
+      label: "Handle peak traffic (about 50,000 requests per second)",
+      mandatory: true,
+      weight: 3,
+    },
+    {
+      id: "edge-delivery",
+      kind: "requires-component",
+      componentType: "cdn",
+      label: "Deliver video from a CDN close to viewers",
+      mandatory: true,
+      weight: 2,
+    },
+    {
+      id: "video-storage",
+      kind: "requires-component",
+      componentType: "object-storage",
+      label: "Keep video files in object storage",
+      mandatory: true,
+      weight: 1,
+    },
+    {
+      id: "backend",
+      kind: "requires-component",
+      componentType: "server",
+      label: "Run an API server for browsing and playback",
+      mandatory: true,
+      weight: 1,
+    },
+    {
+      id: "catalogue",
+      kind: "requires-component",
+      componentType: "database",
+      label: "Store the catalogue and viewing history in a database",
+      weight: 1,
+    },
+    {
+      id: "fast-start",
+      kind: "max-latency",
+      maxP95Ms: 120,
+      label: "Playback starts fast (p95 under 120 ms)",
+      weight: 2,
+    },
+    {
+      id: "available",
+      kind: "min-availability",
+      minPercent: 99.9,
+      label: "Streaming stays available (99.9% uptime)",
+      weight: 2,
+    },
+  ],
+  constraints: [
+    {
+      id: "budget",
+      kind: "max-cost",
+      maxMonthlyCost: 1_500,
+      label: "Stay under $1,500 a month",
+      weight: 1,
+    },
+    {
+      id: "size",
+      kind: "max-components",
+      max: 16,
+      label: "Use no more than 16 components",
+      weight: 1,
+    },
+  ],
+  scoring: DEFAULT_CHALLENGE_SCORING,
+};
+
+export const netflixStreamingChallenge: Challenge = {
+  id: netflixStreamingDefinition.id,
+  title: netflixStreamingDefinition.title,
+  difficulty: netflixStreamingDefinition.difficulty,
+  description: netflixStreamingDefinition.description,
+  announcement: "Design a video streaming service for 50,000 requests a second",
+  requirements: [
+    "Members browse the catalogue and press play",
+    "Video segments make up 90% of requests",
+    "Playback should start quickly",
+    "Streaming must stay available",
+    "Video servers sit close to viewers",
+  ],
+  summary: ["50,000 requests / second", "90% video segments"],
+  highlights: ["Edge delivery", "Fast playback start", "High availability"],
+  traffic: [
+    { label: "Peak requests", value: "50k/s" },
+    { label: "Video share", value: "90%" },
+    { label: "Read / Write", value: "49:1" },
+  ],
+  definition: netflixStreamingDefinition,
+};
