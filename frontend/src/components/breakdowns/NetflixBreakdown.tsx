@@ -39,6 +39,8 @@ import { netflixStreamingChallenge } from "../challenge/challenges";
 import { browserStorage, readBreakdownDraft, writeBreakdownDraft } from "./breakdownDraft";
 import { breakdownMode, breakdownModeQuery, type BreakdownMode } from "./breakdownMode";
 
+const HIDE_ATTRIBUTION = { hideAttribution: true };
+
 function BreakdownNode(props: NodeProps<ArchitectureFlowNode>) {
   const component = NETFLIX_COMPONENTS.find(item => item.id === props.id);
   return <>
@@ -168,6 +170,7 @@ function NetflixWalkthrough({ onChallenge }: { onChallenge: () => void }) {
         <section className="ax-breakdown-diagram" aria-label="Netflix example architecture">
           <div className="ax-breakdown-canvas">
             <ReactFlow
+              proOptions={HIDE_ATTRIBUTION}
               defaultNodes={nodes}
               defaultEdges={edges}
               nodeTypes={NODE_TYPES}

@@ -68,6 +68,8 @@ import ArchitectureNode, {
 // After every component's own styles: this is the shared panel system they all sit in.
 import "./workspace-panels.css";
 
+// The canvas is the product, so no library credit sits on it.
+const HIDE_ATTRIBUTION = { hideAttribution: true };
 const MIN_ZOOM = 0.25;
 // How close a dragged component gets, on screen, before it lines up with another.
 const SNAP_REACH_PX = 8;
@@ -664,6 +666,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
             <div className="ax-diagram-viewport">
               <InspectorContext.Provider value={showInspector ? inspector.nodeActions : null}>
                 <ReactFlow
+                  proOptions={HIDE_ATTRIBUTION}
                   nodes={nodes}
                   edges={edges}
                   nodeTypes={nodeTypes}
