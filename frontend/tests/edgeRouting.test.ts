@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { Position } from "@xyflow/react";
 
-import { arrowHeadPath, connectionEnd, EDGE_STUB, EDGE_TARGET_LANE, facingSides, getOrthogonalEdgePath, plugAnchor, sideAnchor } from "../src/lib/architecture/edgeRouting.ts";
+import { arrowHeadPath, connectionEnd, connectionSides, EDGE_PAIR_LANE, EDGE_STUB, EDGE_TARGET_LANE, facingSides, getOrthogonalEdgePath, hasReverseEdge, isMirroredPair, pairLane, plugAnchor, sideAnchor, type EdgeBox } from "../src/lib/architecture/edgeRouting.ts";
 import { ARCHITECTURE_NODE_SIZE } from "../src/lib/architecture/nodeLayout.ts";
 
 // Architecture nodes are 192×56 with the input handle on the left edge and the output on the
@@ -137,4 +137,77 @@ test("a line lands the same distance from the plug on every side of a component"
   assert.deepEqual(plugAnchor(box, Position.Bottom), { x: 180, y: 259.5 });
   assert.deepEqual(plugAnchor(box, Position.Left), { x: 96.5, y: 228 });
   assert.deepEqual(plugAnchor(box, Position.Right), { x: 263.5, y: 228 });
+});
+
+// Two-way pairs: a connection and the one back the other way between the same components.
+type Segment = { a: { x: number; y: number }; b: { x: number; y: number } };
+
+function segments(path: string): Segment[] {
+  const p = points(path);
+  return p.slice(1).map((b, i) => ({ a: p[i], b }));
+}
+
+// True when two axis-aligned segments touch or cross.
+function intersects(s: Segment, t: Segment): boolean {
+  const [sx1, sx2] = [Math.min(s.a.x, s.b.x), Math.max(s.a.x, s.b.x)];
+  const [sy1, sy2] = [Math.min(s.a.y, s.b.y), Math.max(s.a.y, s.b.y)];
+  const [tx1, tx2] = [Math.min(t.a.x, t.b.x), Math.max(t.a.x, t.b.x)];
+  const [ty1, ty2] = [Math.min(t.a.y, t.b.y), Math.max(t.a.y, t.b.y)];
+  return sx1 <= tx2 && tx1 <= sx2 && sy1 <= ty2 && ty1 <= sy2;
+}
+
+function pairRoute(from: EdgeBox, to: EdgeBox, mirrored: boolean) {
+  const sides = connectionSides(from, to, mirrored);
+  const lane = pairLane(from, to, sides);
+  const end = connectionEnd(lane.end.x, lane.end.y, sides.targetPosition);
+  const [path] = getOrthogonalEdgePath({
+    sourceX: lane.start.x, sourceY: lane.start.y, sourcePosition: sides.sourcePosition,
+    targetX: end.lineX, targetY: end.lineY, targetPosition: sides.targetPosition,
+    centerX: lane.centerX, centerY: lane.centerY,
+  });
+  return { sides, lane, path };
+}
+
+function assertSeparatePair(a: EdgeBox, b: EdgeBox) {
+  const there = pairRoute(a, b, false);
+  const back = pairRoute(b, a, true);
+  // Both lines use the same two sides, swapped.
+  assert.equal(there.sides.sourcePosition, back.sides.targetPosition);
+  assert.equal(there.sides.targetPosition, back.sides.sourcePosition);
+  // Each end of one line sits a full lane pair away from the other line's end on that side.
+  const apart = (p: { x: number; y: number }, q: { x: number; y: number }) => Math.hypot(p.x - q.x, p.y - q.y);
+  assert.equal(apart(there.lane.start, back.lane.end), 2 * EDGE_PAIR_LANE);
+  assert.equal(apart(there.lane.end, back.lane.start), 2 * EDGE_PAIR_LANE);
+  // The two lines never touch.
+  for (const s of segments(there.path)) {
+    for (const t of segments(back.path)) assert.ok(!intersects(s, t), `${there.path} touches ${back.path}`);
+  }
+}
+
+test("a two-way pair stacked vertically runs in two separate lanes", () => {
+  // The database above and to the right of the cache, as on a typical canvas.
+  assertSeparatePair({ x: 403, y: 0, width: 183, height: H }, { x: 265, y: 522, width: 183, height: H });
+});
+
+test("a two-way pair side by side runs in two separate lanes", () => {
+  assertSeparatePair({ x: 0, y: 0, width: W, height: H }, { x: 400, y: 120, width: W, height: H });
+  assertSeparatePair({ x: 0, y: 0, width: W, height: H }, { x: 400, y: 0, width: W, height: H });
+});
+
+test("a two-way pair shares sides even where facing sides differ by direction", () => {
+  // Far enough right to run forward one way; further below than to the side the other way.
+  const a = { x: 0, y: 0, width: W, height: H };
+  const b = { x: W + 108, y: 400, width: W, height: H };
+  const forward = facingSides(a, b);
+  const reverse = facingSides(b, a);
+  assert.notEqual(forward.sourcePosition, reverse.targetPosition);
+  assertSeparatePair(a, b);
+});
+
+test("only one connection of a two-way pair is mirrored", () => {
+  assert.equal(isMirroredPair("a", "b", true), false);
+  assert.equal(isMirroredPair("b", "a", true), true);
+  assert.equal(isMirroredPair("b", "a", false), false);
+  assert.ok(hasReverseEdge([{ source: "b", target: "a" }], "a", "b"));
+  assert.ok(!hasReverseEdge([{ source: "a", target: "b" }], "a", "b"));
 });

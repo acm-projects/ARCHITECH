@@ -17,7 +17,7 @@ import type {
   ArchitectureNodeType,
   NodeProperties,
 } from "../../../lib/architecture/types";
-import { FORWARD_SIDES, facingSides } from "../../../lib/architecture/edgeRouting";
+import { FORWARD_SIDES, connectionSides, hasReverseEdge, isMirroredPair } from "../../../lib/architecture/edgeRouting";
 import { removeFromGraph } from "../../../lib/architecture/nodeOperations";
 import ComponentGlyph from "../ComponentGlyph";
 import { InspectorContext } from "../InspectorContext";
@@ -117,14 +117,16 @@ export default function ArchitectureNode({
   // Read as one string so the node only rerenders when a side changes.
   const incoming = useNodeConnections({ handleType: "target" });
   const outgoing = useNodeConnections({ handleType: "source" });
-  const sidesOf = (connection: { source: string; target: string }, lookup: ReactFlowState["nodeLookup"]) => {
-    const from = lookup.get(connection.source);
-    const to = lookup.get(connection.target);
-    return readOnly || !from || !to ? FORWARD_SIDES : facingSides(nodeBox(from), nodeBox(to));
+  const sidesOf = (connection: { source: string; target: string }, state: ReactFlowState) => {
+    const from = state.nodeLookup.get(connection.source);
+    const to = state.nodeLookup.get(connection.target);
+    if (readOnly || !from || !to) return FORWARD_SIDES;
+    const twoWay = hasReverseEdge(state.edges, connection.source, connection.target);
+    return connectionSides(nodeBox(from), nodeBox(to), isMirroredPair(connection.source, connection.target, twoWay));
   };
   const linkedSides = useStore((state) => [
-    ...incoming.map((connection) => sidesOf(connection, state.nodeLookup).targetPosition),
-    ...outgoing.map((connection) => sidesOf(connection, state.nodeLookup).sourcePosition),
+    ...incoming.map((connection) => sidesOf(connection, state).targetPosition),
+    ...outgoing.map((connection) => sidesOf(connection, state).sourcePosition),
   ].join(" "));
   const stateClass = [
     selected ? "is-selected" : "",

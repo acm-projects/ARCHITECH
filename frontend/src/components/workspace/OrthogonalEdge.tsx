@@ -1,7 +1,17 @@
 import type { ReactNode } from "react";
 import { BaseEdge, EdgeLabelRenderer, Position, useInternalNode, useStore, type ConnectionLineComponentProps, type EdgeProps, type InternalNode } from "@xyflow/react";
 
-import { arrowHeadPath, connectionEnd, facingSides, getOrthogonalEdgePath, plugAnchor, type EdgeBox } from "../../lib/architecture/edgeRouting";
+import {
+  arrowHeadPath,
+  connectionEnd,
+  connectionSides,
+  getOrthogonalEdgePath,
+  hasReverseEdge,
+  isMirroredPair,
+  pairLane,
+  plugAnchor,
+  type EdgeBox,
+} from "../../lib/architecture/edgeRouting";
 import { ARCHITECTURE_NODE_SIZE } from "../../lib/architecture/nodeLayout";
 
 function EdgeLabel({ x, y, children }: { x: number; y: number; children: ReactNode }) {
@@ -52,11 +62,22 @@ export function nodeBox(node: InternalNode): EdgeBox {
 export default function OrthogonalEdge(props: EdgeProps) {
   const source = useInternalNode(props.source);
   const target = useInternalNode(props.target);
+  // A connection back the other way makes a two-way pair, drawn as two separate lanes.
+  const twoWay = useStore((state) => hasReverseEdge(state.edges, props.source, props.target));
   if (!source || !target) return <ArchitectureEdge {...props} />;
 
   const from = nodeBox(source);
   const to = nodeBox(target);
-  const { sourcePosition, targetPosition } = facingSides(from, to);
+  const sides = connectionSides(from, to, isMirroredPair(props.source, props.target, twoWay));
+  const { sourcePosition, targetPosition } = sides;
+  if (twoWay) {
+    const lane = pairLane(from, to, sides);
+    const route: EdgeRoute = (routed) => getOrthogonalEdgePath({ ...routed, centerX: lane.centerX, centerY: lane.centerY });
+    return (
+      <ArchitectureEdge {...props} route={route} sourceX={lane.start.x} sourceY={lane.start.y} sourcePosition={sourcePosition}
+        targetX={lane.end.x} targetY={lane.end.y} targetPosition={targetPosition} />
+    );
+  }
   // Left to right runs handle to handle, exactly where the preview line ended.
   if (sourcePosition === Position.Right && targetPosition === Position.Left) return <ArchitectureEdge {...props} />;
 

@@ -44,6 +44,64 @@ export function facingSides(source: EdgeBox, target: EdgeBox): EdgeSides {
   return FORWARD_SIDES;
 }
 
+// The sides a connection uses. Two connections running opposite ways between the same pair
+// of components must share a pair of sides, but `facingSides` is not symmetric (a forward
+// gap wins one way, a vertical gap the other). So the second of the pair takes the first's
+// sides, swapped.
+export function connectionSides(source: EdgeBox, target: EdgeBox, mirrored: boolean): EdgeSides {
+  if (!mirrored) return facingSides(source, target);
+  const { sourcePosition, targetPosition } = facingSides(target, source);
+  return { sourcePosition: targetPosition, targetPosition: sourcePosition };
+}
+
+// True when another connection runs from `target` back to `source`.
+export function hasReverseEdge(edges: readonly { source: string; target: string }[], source: string, target: string): boolean {
+  return edges.some((edge) => edge.source === target && edge.target === source);
+}
+
+// Which connection of a two-way pair is drawn mirrored: decided by the component ids, so both
+// connections of the pair agree without reading each other.
+export function isMirroredPair(source: string, target: string, twoWay: boolean): boolean {
+  return twoWay && source > target;
+}
+
+// The two lines of a two-way pair run this far either side of the shared route, so each has
+// its own arrow clear of the other line and of the plug between them.
+export const EDGE_PAIR_LANE = 10;
+
+type Point = { x: number; y: number };
+
+// The side a line keeps to as it travels in a direction (screen coordinates, y down).
+// Both lines of a pair keep right, so they run parallel and never cross.
+function keepRight(direction: Point): Point {
+  return { x: -direction.y, y: direction.x };
+}
+
+export type PairLane = { start: Point; end: Point; centerX?: number; centerY?: number };
+
+// One line of a two-way pair: where it leaves and enters (on the component borders, beside
+// the plugs), and where its middle segment runs so it nests inside or outside its partner.
+export function pairLane(source: EdgeBox, target: EdgeBox, sides: EdgeSides, lane = EDGE_PAIR_LANE): PairLane {
+  const from = sideAnchor(source, sides.sourcePosition);
+  const to = sideAnchor(target, sides.targetPosition);
+  const leaving = keepRight(OUTWARD[sides.sourcePosition]);
+  const entering = OUTWARD[sides.targetPosition];
+  const arriving = keepRight({ x: -entering.x, y: -entering.y });
+  const start = { x: from.x + leaving.x * lane, y: from.y + leaving.y * lane };
+  const end = { x: to.x + arriving.x * lane, y: to.y + arriving.y * lane };
+
+  const vertical = sides.sourcePosition === Position.Top || sides.sourcePosition === Position.Bottom;
+  if (vertical) {
+    // Leaving up or down, the middle segment runs across.
+    const across = Math.sign(to.x - from.x);
+    if (across === 0) return { start, end };
+    return { start, end, centerY: (from.y + to.y) / 2 + keepRight({ x: across, y: 0 }).y * lane };
+  }
+  const along = Math.sign(to.y - from.y);
+  if (along === 0) return { start, end };
+  return { start, end, centerX: (from.x + to.x) / 2 + keepRight({ x: 0, y: along }).x * lane };
+}
+
 // The middle of one side of a component.
 export function sideAnchor(box: EdgeBox, side: Position): { x: number; y: number } {
   switch (side) {
@@ -65,7 +123,9 @@ export function plugAnchor(box: EdgeBox, side: Position): { x: number; y: number
   return { x: x + outward.x * PLUG_RADIUS, y: y + outward.y * PLUG_RADIUS };
 }
 
-type RouteProps = Pick<EdgeProps, "sourceX" | "sourceY" | "targetX" | "targetY" | "sourcePosition" | "targetPosition">;
+// `centerX`/`centerY` place the middle segment instead of the default lane (two-way pairs).
+type RouteProps = Pick<EdgeProps, "sourceX" | "sourceY" | "targetX" | "targetY" | "sourcePosition" | "targetPosition">
+  & { centerX?: number; centerY?: number };
 
 export function getOrthogonalEdgePath({
   sourceX,
@@ -74,6 +134,8 @@ export function getOrthogonalEdgePath({
   targetY,
   sourcePosition = Position.Right,
   targetPosition = Position.Left,
+  centerX,
+  centerY,
 }: RouteProps): [string, number, number, number, number] {
   // A back-edge: out of a right-hand handle into a left-hand handle that is not far enough to
   // the right. Step routing would run back through both components, so go out by the stub,
@@ -98,7 +160,8 @@ export function getOrthogonalEdgePath({
     targetPosition,
     borderRadius: 12,
     offset: EDGE_STUB,
-    centerX: forward ? Math.max(sourceX + EDGE_STUB, targetX - EDGE_TARGET_LANE) : undefined,
+    centerX: centerX ?? (forward ? Math.max(sourceX + EDGE_STUB, targetX - EDGE_TARGET_LANE) : undefined),
+    centerY,
   });
 }
 
