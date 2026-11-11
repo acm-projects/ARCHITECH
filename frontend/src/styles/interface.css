@@ -6290,38 +6290,6 @@ body,
   :root { --page-header-inset: 16px; --page-logo-width: 140px; }
 }
 
-/* Shared Archie message bar for Learn and the dashboard. */
-.ax-learn-speech {
-  position: relative;
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid var(--ax-line-strong, var(--color-line));
-  border-radius: var(--radius-panel);
-  background: var(--ax-canvas, var(--color-canvas));
-}
-
-.ax-learn-speech::before {
-  content: "";
-  position: absolute;
-  right: 15px;
-  top: -5px;
-  width: 8px;
-  height: 8px;
-  border-left: 1px solid var(--ax-line-strong, var(--color-line));
-  border-bottom: 1px solid var(--ax-line-strong, var(--color-line));
-  background: var(--ax-canvas, var(--color-canvas));
-  transform: rotate(135deg);
-}
-
-.ax-learn-speech .ax-card-body,
-.ax-workspace .ax-learn-speech .ax-card-body {
-  margin-top: 0;
-  font-size: 15px;
-  line-height: 1.65;
-  color: var(--ax-ink-soft, var(--color-muted));
-  overflow-wrap: anywhere;
-}
-
 /* Dashboard controls override the shared square button reset locally. */
 .ax-dashboard-avatar {
   border-radius: 50%;

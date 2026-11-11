@@ -5,6 +5,7 @@ import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import type { Direction } from "../../../lib/architecture/evaluation/comparison";
 import { PanelCollapseToggle, toggleFromHeader, usePanelCollapse, type PanelCollapse } from "../PanelCollapse";
+import { columnScrollDelta } from "./columnScroll";
 import "./panel.css";
 
 // Every right panel is built from this file, and no panel has styles of its own.
@@ -13,13 +14,16 @@ import "./panel.css";
 //   PanelRow     one line: a label and a value
 //   PanelLink    the same line, opening a detail
 //   PanelDetail  takes over the panel's body, one level deep, with a way back
-//   PanelField, PanelAction, PanelText for what is left
+//   PanelField, PanelAction, PanelText, PanelReveal for what is left
 // A panel shows its rows at rest, and anything longer than one line belongs in a detail.
 
 // Gives focus back to the tool's bottom-bar button, which stays mounted when its panel closes.
 function focusToolButton(toolKey: string) {
   document.querySelector<HTMLButtonElement>(`.ax-panel-rail [data-tool="${toolKey}"]`)?.focus();
 }
+
+// Clear of the column's edges when it scrolls to a panel, matching --ax-panel-margin.
+const COLUMN_MARGIN = 12;
 
 export default function Panel({
   id,
@@ -69,12 +73,22 @@ export default function Panel({
 }) {
   const own = usePanelCollapse(revealKey);
   const { collapsed, toggle } = collapse ?? own;
+  const root = useRef<HTMLElement>(null);
+  // Whatever opens a panel, or asks for it again, gets to see it. A panel that comes and goes
+  // with canvas clicks leaves the column where it is.
+  useEffect(() => {
+    const panel = root.current;
+    const column = panel?.closest<HTMLElement>(".ax-widget-stack");
+    if (!panel || !column || collapsed || hidden || transient) return;
+    column.scrollTop += columnScrollDelta(panel.getBoundingClientRect(), column.getBoundingClientRect(), COLUMN_MARGIN);
+  }, [collapsed, hidden, transient, revealKey]);
   const close = () => {
     if (toolKey) focusToolButton(toolKey);
     onClose?.();
   };
   return (
     <section
+      ref={root}
       id={id}
       className="axp ax-widget"
       aria-label={label ?? title}
@@ -224,6 +238,19 @@ export function PanelField({ label, htmlFor, control, title }: {
 
 export function PanelText({ tone, role, children }: { tone?: "danger"; role?: "alert" | "status"; children: ReactNode }) {
   return <p className="axp-text" data-tone={tone} role={role}>{children}</p>;
+}
+
+// A row that unfolds text under it, for help someone may want to try without.
+export function PanelReveal({ label, children }: { label: ReactNode; children: ReactNode }) {
+  return (
+    <details className="axp-reveal">
+      <summary className="axp-row axp-link">
+        <span className="axp-label">{label}</span>
+        <ChevronRight size={15} aria-hidden="true" className="axp-go" />
+      </summary>
+      <PanelText>{children}</PanelText>
+    </details>
+  );
 }
 
 export function PanelActions({ children }: { children: ReactNode }) {

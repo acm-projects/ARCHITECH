@@ -85,6 +85,7 @@
 .axp-group { padding-block: 4px; }
 .axp-group + .axp-group,
 .axp-text + .axp-group,
+.axp-messages + .axp-group,
 .axp-actions + .axp-group { margin-top: 4px; border-top: 1px solid var(--ax-line); padding-top: 8px; }
 .axp-group-head {
   display: flex;
@@ -161,6 +162,11 @@
 .axp-text { padding: 4px var(--axp-inset); color: var(--ax-ink-soft); }
 .axp-text[data-tone="danger"] { color: var(--ax-danger); }
 .axp-small { color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+
+.axp-reveal > summary { list-style: none; }
+.axp-reveal > summary::-webkit-details-marker { display: none; }
+.axp-reveal > summary:focus-visible { outline: 2px solid var(--ax-ink); outline-offset: -2px; }
+.axp-reveal[open] .axp-go { transform: rotate(90deg); }
 
 /* Fields sit where a row's value sits, and only look like fields when touched. */
 .axp-field label { cursor: text; }
@@ -313,5 +319,5 @@
 /* The component settings in a guided lesson, attached to the node. */
 .axp-popover { width: 320px; padding-block: 4px; }
 
-/* History opens over the lesson card in a frame of its own. */
+/* History opens in a frame of its own. */
 .ax-panel-content > .axp { border: 0; border-radius: 0; box-shadow: none; }

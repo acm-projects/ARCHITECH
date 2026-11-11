@@ -1,11 +1,15 @@
 import Image from "next/image";
-import { Minus } from "lucide-react";
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { Check, GraduationCap, MousePointer2 } from "lucide-react";
 
 import { FREE_PLAY_BODY, FREE_PLAY_TITLE, type ConnectionFeedback, type Lesson } from "./lessons";
 import type { LessonStatus } from "./useLessonEngine";
+import { ArchiePortrait } from "../workspace/ai/ArchiePanel";
+import ComponentGlyph from "../workspace/ComponentGlyph";
+import Panel, { PanelAction, PanelActions, PanelReveal, PanelText } from "../workspace/panel/Panel";
 import { CATEGORY_ICONS } from "../workspace/toolbox/categoryIcons";
 import { COMPONENT_CATALOG, FAMILY_COLORS, FAMILY_LABELS } from "../workspace/componentCatalog";
+import "./learn-card.css";
 
 type LearnCardProps = {
   lesson: Lesson;
@@ -20,9 +24,6 @@ type LearnCardProps = {
   // A hint worked out from the design, shown when the learner is stuck.
   hint?: string | null;
   onDismissFeedback?: () => void;
-  verticalOffset: number;
-  onVerticalOffsetChange: (offset: number) => void;
-  onCollapse?: () => void;
 };
 
 function DialogueText({ text }: { text: string }) {
@@ -53,7 +54,7 @@ function DialogueText({ text }: { text: string }) {
 
   return <>
     <span className="sr-only">{text}</span>
-    <span aria-hidden="true" className="ax-learn-typed">
+    <span aria-hidden="true">
       {count >= text.length ? text : <>
         {text.slice(0, count)}<span style={{ visibility: "hidden" }}>{text.slice(count)}</span>
       </>}
@@ -61,21 +62,48 @@ function DialogueText({ text }: { text: string }) {
   </>;
 }
 
-// Keep Archie's explanation distinct from the action the learner should take.
-function ArchieDialogue({ children }: { children: string }) {
+// The components a lesson adds, in the order it adds them.
+function lessonComponents(lesson: Lesson) {
+  return lesson.steps.flatMap(({ objective }) => objective.kind === "node" ? [COMPONENT_CATALOG[objective.componentType]] : []);
+}
+
+// Archie's first words, with the system the lesson builds.
+function LessonIntro({ lesson, onStart }: { lesson: Lesson; onStart: () => void }) {
   return (
-    <div className="ax-learn-dialogue">
-      <div className="ax-learn-speech">
-        <span className="sr-only">Archie: </span>
-        <p className="ax-card-body">
-          <DialogueText key={children} text={children} />
-        </p>
+    <div className="axl-intro">
+      <div className="axl-hello">
+        <Image src="/archie.svg" alt="Archie" width={518} height={400} className="axl-mascot" />
+        <div>
+          <p className="axl-hello-title">Hi, I&apos;m Archie!</p>
+          <p className="axl-hello-text"><DialogueText text="I'll help you build your first web system, one piece at a time." /></p>
+        </div>
       </div>
+      <ul className="axl-parts" aria-label="Components in this lesson">
+        {lessonComponents(lesson).map((component) => (
+          <li key={component.type} style={{ "--axl-family": FAMILY_COLORS[component.family] } as CSSProperties}>
+            <span className="axl-tile"><ComponentGlyph type={component.type} /></span>
+            {component.label}
+          </li>
+        ))}
+      </ul>
+      <PanelActions>
+        <PanelAction variant="primary" onClick={onStart}>Start lesson</PanelAction>
+      </PanelActions>
     </div>
   );
 }
 
-// The canvas stays interactive while the current instruction remains visible.
+function LessonProgress({ done, total }: { done: number; total: number }) {
+  return (
+    <div className="axl-progress" aria-hidden="true">
+      {Array.from({ length: total }, (_, index) => (
+        <span key={index} data-state={index < done ? "done" : index === done ? "current" : undefined} />
+      ))}
+    </div>
+  );
+}
+
+// The lesson speaks through the Archie panel. The canvas stays interactive throughout.
 export default function LearnCard({
   lesson,
   stepIndex,
@@ -87,17 +115,16 @@ export default function LearnCard({
   feedback,
   hint,
   onDismissFeedback,
-  verticalOffset,
-  onVerticalOffsetChange,
-  onCollapse,
 }: LearnCardProps) {
-  const dragStart = useRef<{
-    pointerY: number;
-    offset: number;
-    minOffset: number;
-    maxOffset: number;
-  } | null>(null);
+  // Local on purpose: an empty canvas is a fair moment for him to say hello again.
+  const [started, setStarted] = useState(false);
   const step = lesson.steps[stepIndex];
+  const total = lesson.steps.length;
+  const succeeded = !freePlay && status === "success";
+  const retrying = !freePlay && !succeeded && Boolean(feedback);
+  const guided = !freePlay && !succeeded && !retrying;
+  // Building in the first step counts as starting.
+  const intro = guided && !started && stepIndex === 0;
   // Add-component instructions follow the catalog when a component moves categories.
   const category = step.objective.kind === "node"
     ? COMPONENT_CATALOG[step.objective.componentType].family
@@ -105,118 +132,74 @@ export default function LearnCard({
   const CategoryIcon = category ? CATEGORY_ICONS[category] : null;
   const heading = freePlay
     ? skipped ? "Free play" : FREE_PLAY_TITLE
+    : succeeded ? step.successMessage
     : feedback ? feedback.title : step.title;
-
-  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    const panel = event.currentTarget.closest(".ax-canvas-panel");
-    const overlay = panel?.parentElement;
-    if (!panel || !overlay) return;
-    const panelRect = panel.getBoundingClientRect();
-    const overlayRect = overlay.getBoundingClientRect();
-    dragStart.current = {
-      pointerY: event.clientY,
-      offset: verticalOffset,
-      minOffset: verticalOffset + overlayRect.top - panelRect.top,
-      maxOffset: verticalOffset + overlayRect.bottom - panelRect.bottom,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const start = dragStart.current;
-    if (!start || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
-    const requested = start.offset + event.clientY - start.pointerY;
-    onVerticalOffsetChange(Math.max(start.minOffset, Math.min(start.maxOffset, requested)));
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
-    event.preventDefault();
-    event.stopPropagation();
-    const panel = event.currentTarget.closest(".ax-canvas-panel");
-    const overlay = panel?.parentElement;
-    if (!panel || !overlay) return;
-    const panelRect = panel.getBoundingClientRect();
-    const overlayRect = overlay.getBoundingClientRect();
-    const minOffset = verticalOffset + overlayRect.top - panelRect.top;
-    const maxOffset = verticalOffset + overlayRect.bottom - panelRect.bottom;
-    const change = event.key === "ArrowUp" ? -24 : 24;
-    onVerticalOffsetChange(Math.max(minOffset, Math.min(maxOffset, verticalOffset + change)));
-  };
+  const message = freePlay
+    ? skipped ? "Build, configure, and test your architecture." : FREE_PLAY_BODY
+    : succeeded ? step.successExplanation
+    : feedback ? feedback.explanation : step.description;
 
   return (
-    <div className="ax-card ax-learn" aria-live="polite" data-learn-phase={freePlay ? "free-play" : "guided"}>
-      <div
-        className="ax-learn-header"
-        data-celebrating={status === "success"}
-        role="group"
-        aria-label="Move lesson panel vertically. Drag or use the up and down arrow keys."
-        tabIndex={0}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={() => { dragStart.current = null; }}
-        onPointerCancel={() => { dragStart.current = null; }}
-        onKeyDown={handleKeyDown}
-      >
-        <p className="ax-card-title">{!freePlay && !feedback && `${String(stepIndex + 1).padStart(2, "0")}. `}{heading}</p>
-        <span key={`${step.id}-${status}`} className="ax-learn-portrait" aria-hidden="true">
-          <Image src="/archie.svg" alt="" width={518} height={400} />
-        </span>
-        {onCollapse && <button type="button" className="ax-archie-collapse" aria-label="Collapse lesson guidance" title="Collapse lesson guidance"
-          onPointerDown={event => event.stopPropagation()}
-          onKeyDown={event => event.stopPropagation()}
-          onClick={onCollapse}><Minus size={18} aria-hidden="true" /></button>}
+    <Panel
+      label="Lesson guidance"
+      icon={<GraduationCap size={17} aria-hidden="true" />}
+      title={lesson.title}
+      status={freePlay || intro ? undefined : `${stepIndex + 1} of ${total}`}
+    >
+      <div aria-live="polite">
+        {intro ? <LessonIntro lesson={lesson} onStart={() => setStarted(true)} /> : (
+          <>
+            <LessonProgress done={freePlay ? total : succeeded ? stepIndex + 1 : stepIndex} total={total} />
+            <div className="axl-say">
+              <span key={`${step.id}-${status}`} className="axl-face" data-nod={succeeded || freePlay || undefined}>
+                <ArchiePortrait />
+              </span>
+              <div>
+                <p className="axl-say-title">
+                  {succeeded && <span className="axl-done"><Check size={12} strokeWidth={3} aria-hidden="true" /></span>}
+                  {heading}
+                </p>
+                <p className="axl-say-text">
+                  <span className="sr-only">Archie: </span>
+                  <DialogueText key={message} text={message} />
+                </p>
+              </div>
+            </div>
+
+            {guided && (
+              <div className="axl-task">
+                <p className="axl-task-label">Your turn</p>
+                <ul>
+                  {CategoryIcon && category && (
+                    <li>
+                      <CategoryIcon size={16} color={FAMILY_COLORS[category]} aria-hidden="true" />
+                      <span>Open <strong>{FAMILY_LABELS[category]}</strong> in the bottom toolbar</span>
+                    </li>
+                  )}
+                  <li>
+                    <MousePointer2 size={16} aria-hidden="true" />
+                    <span>{step.instruction}</span>
+                  </li>
+                </ul>
+              </div>
+            )}
+            {guided && hint && <PanelReveal label="Hint">{hint}</PanelReveal>}
+
+            {(freePlay || succeeded) && (
+              <PanelActions>
+                <PanelAction variant="primary" onClick={onContinue}>{freePlay ? "Continue exploring" : "Continue"}</PanelAction>
+              </PanelActions>
+            )}
+            {retrying && (
+              <PanelActions>
+                <PanelAction variant="primary" onClick={onDismissFeedback}>Try again</PanelAction>
+              </PanelActions>
+            )}
+          </>
+        )}
+
+        {error && <PanelText tone="danger" role="alert">{error}</PanelText>}
       </div>
-
-      {freePlay ? (
-        <>
-          <ArchieDialogue>{skipped
-            ? "Build, configure, and test your architecture."
-            : FREE_PLAY_BODY}</ArchieDialogue>
-          <button type="button" className="ax-learn-continue" onClick={onContinue}>
-            Continue exploring
-          </button>
-        </>
-      ) : status === "success" ? (
-        <>
-          <ArchieDialogue>{step.successExplanation}</ArchieDialogue>
-          <button type="button" className="ax-learn-continue" onClick={onContinue}>
-            Continue
-          </button>
-        </>
-      ) : feedback ? (
-        <div>
-          <ArchieDialogue>{feedback.explanation}</ArchieDialogue>
-          <button
-            type="button"
-            onClick={onDismissFeedback}
-            className="ax-panel-action"
-            data-variant="primary"
-          >
-            Try again
-          </button>
-        </div>
-      ) : (
-        <>
-          <ArchieDialogue>{step.description}</ArchieDialogue>
-          <div className="ax-learn-instruction">
-            {CategoryIcon && category && <p>
-              Open{" "}<span className="ax-learn-category">
-                <CategoryIcon size={16} color={FAMILY_COLORS[category]} aria-hidden="true" />
-                <span>{FAMILY_LABELS[category]}</span>
-              </span>{" "}in the bottom toolbar.
-            </p>}
-            <p>{step.instruction}</p>
-          </div>
-          {hint && <details className="ax-learn-hint">
-            <summary>Hint</summary>
-            <p className="ax-card-body">{hint}</p>
-          </details>}
-        </>
-      )}
-
-      {error && <p className="ax-card-body mt-2" role="alert">{error}</p>}
-    </div>
+    </Panel>
   );
 }

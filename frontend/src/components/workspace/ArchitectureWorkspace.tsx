@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { Gauge, ShieldCheck } from "lucide-react";
 import {
   Controls,
@@ -204,9 +204,6 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
     const timer = window.setTimeout(() => setConnectionNotice(null), CONNECTION_NOTICE_MS);
     return () => window.clearTimeout(timer);
   }, [connectionNotice]);
-  const [learnPanelOffset, setLearnPanelOffset] = useState(0);
-  const [learnPanelCollapsed, setLearnPanelCollapsed] = useState(false);
-  const learnPanelStyle = { "--ax-learn-offset": `${learnPanelOffset}px` } as CSSProperties;
   // Clear node/edge selection without changing the architecture itself.
   const clearCanvasSelection = useCallback(() => {
     const next = clearSelection({
@@ -256,8 +253,6 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
       }
       // Switch the UI right away, then persist that choice on the project.
       setMode(next);
-      setLearnPanelCollapsed(false);
-      setLearnPanelOffset(0);
       resetInspector();
 
       const result = projectActions.setMode(project.id, next);
@@ -579,11 +574,6 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
     <ArchieContext.Provider value={archie}>
       <DesignTrafficContext.Provider value={activeRuns.traffic}>
       <div className="ax-workspace flex h-screen flex-col overflow-hidden">
-        {!showInspector && learnPanelCollapsed && !inspector.historyOpen && <button
-          type="button" className="ax-archie-launcher" aria-label="Expand lesson guidance"
-          title="Expand lesson guidance" aria-expanded={false}
-          onClick={() => setLearnPanelCollapsed(false)}><ArchiePortrait /></button>}
-
         <ChallengeIntroduction
           key={`${project.id}:${challenge.challenge.id}`}
           enabled={mode === "challenge"}
@@ -762,43 +752,34 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                     ) : null}
                   />
                 )}
+                {!showInspector && !inspector.historyOpen && (
+                  <LearnCard
+                    lesson={learn.lesson}
+                    stepIndex={learn.engine.stepIndex}
+                    status={learn.engine.status}
+                    freePlay={learn.freePlay}
+                    skipped={learn.skipped}
+                    onContinue={learn.freePlay ? learn.continueExploring : learn.engine.continueStep}
+                    error={learn.tutorialError}
+                    feedback={learn.engine.feedback}
+                    hint={learn.engine.hintVisible ? learn.engine.hint?.text : null}
+                    onDismissFeedback={learn.engine.dismissFeedback}
+                  />
+                )}
               </div>
 
-              {!showInspector && (
-                <aside
-                  className="ax-canvas-panel"
-                  data-side="right"
-                  data-learn-movable={!inspector.historyOpen || undefined}
-                  data-learn-collapsed={learnPanelCollapsed && !inspector.historyOpen || undefined}
-                  style={!inspector.historyOpen ? learnPanelStyle : undefined}
-                  aria-label="Guidance"
-                >
-                  <div className="ax-panel-content" data-architect={inspector.historyOpen || undefined}>
-                    {inspector.historyOpen ? (
-                      <HistoryPanel projectId={project.id} onClose={inspector.closeHistory} onRestore={replaceGraph} />
-                    ) : (
-                    <LearnCard
-                      lesson={learn.lesson}
-                      stepIndex={learn.engine.stepIndex}
-                      status={learn.engine.status}
-                      freePlay={learn.freePlay}
-                      skipped={learn.skipped}
-                      onContinue={learn.freePlay ? learn.continueExploring : learn.engine.continueStep}
-                      error={learn.tutorialError}
-                      feedback={learn.engine.feedback}
-                      hint={learn.engine.hintVisible ? learn.engine.hint?.text : null}
-                      onDismissFeedback={learn.engine.dismissFeedback}
-                      verticalOffset={learnPanelOffset}
-                      onVerticalOffsetChange={setLearnPanelOffset}
-                      onCollapse={() => setLearnPanelCollapsed(true)}
-                    />
-                    )}
-                    {/* Keep Archie mounted, but out of the guided tutorial. */}
-                    <div hidden>
-                      <ArchitectToggle open={false} onToggle={askArchie} />
-                    </div>
+              {!showInspector && inspector.historyOpen && (
+                <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
+                  <div className="ax-panel-content" data-architect>
+                    <HistoryPanel projectId={project.id} onClose={inspector.closeHistory} onRestore={replaceGraph} />
                   </div>
                 </aside>
+              )}
+              {/* Keep Archie mounted, but out of the guided tutorial. */}
+              {!showInspector && (
+                <div hidden>
+                  <ArchitectToggle open={false} onToggle={askArchie} />
+                </div>
               )}
             </div>
           </main>

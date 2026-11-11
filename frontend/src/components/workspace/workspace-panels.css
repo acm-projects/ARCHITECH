@@ -30,6 +30,11 @@
     box-shadow: var(--ax-panel-shadow);
   }
 
+  /* More holds the whole catalog, so it stays shallow and scrolls. */
+  .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu .ax-search) {
+    max-height: min(264px, calc(100dvh - 164px));
+  }
+
   /* The scale. */
   .ax-workspace .ax-panel-content .ax-component-menu { zoom: var(--ax-panel-zoom); }
   .ax-workspace .ax-panel-content .ax-component-menu .ax-panel-title,
@@ -96,19 +101,25 @@
 
 /* The canvas ends where the panels begin, so no component can sit behind one. A lone selection
    label is left out: it comes and goes with every click, and the canvas must not move under
-   the pointer. The lesson card holds the same edge at its own width. */
-.ax-workspace .ax-workspace-canvas:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-diagram-viewport {
-  width: calc(100% - var(--ax-panel-side-width) - 2 * var(--ax-panel-margin));
-}
-.ax-workspace .ax-workspace-canvas:has(.ax-canvas-overlays > .ax-canvas-panel[data-side="right"]:not([data-learn-collapsed])) .ax-diagram-viewport {
-  width: calc(100% - 332px);
+   the pointer. History holds the same edge at its own width. A phone has no room to spare, so
+   panels sit over the canvas there and fold out of the way. */
+@media (min-width: 768px) {
+  .ax-workspace .ax-workspace-canvas:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-diagram-viewport {
+    width: calc(100% - var(--ax-panel-side-width) - 2 * var(--ax-panel-margin));
+  }
+  .ax-workspace .ax-workspace-canvas:has(.ax-canvas-overlays > .ax-canvas-panel[data-side="right"]) .ax-diagram-viewport {
+    width: calc(100% - 332px);
+  }
 }
 /* A popup keeps clear of the column: it fits the space beside it and slides left of the bar's
-   center just far enough. The bar itself stays put, so nothing moves under the pointer. */
-.ax-workspace:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) {
-  --ax-popup-width: min(var(--ax-panel-bar-width, 640px), calc(100vw - var(--ax-panel-side-width) - 4 * var(--ax-panel-margin)));
-  width: var(--ax-popup-width);
-  transform: translateX(calc(-50% - max(0px, var(--ax-popup-width) / 2 + var(--ax-panel-side-width) + 3 * var(--ax-panel-margin) - 50vw)));
+   center just far enough. The bar itself stays put, so nothing moves under the pointer. A phone
+   has no space beside the column, so the popup keeps its full width there. */
+@media (min-width: 768px) {
+  .ax-workspace:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) {
+    --ax-popup-width: min(var(--ax-panel-bar-width, 640px), calc(100vw - var(--ax-panel-side-width) - 4 * var(--ax-panel-margin)));
+    width: var(--ax-popup-width);
+    transform: translateX(calc(-50% - max(0px, var(--ax-popup-width) / 2 + var(--ax-panel-side-width) + 3 * var(--ax-panel-margin) - 50vw)));
+  }
 }
 
 /* The bar reaches under the column on narrower windows, so the column stops above it. */
@@ -206,25 +217,5 @@
   background: var(--ax-primary-hover);
 }
 .ax-workspace .ax-panel-content .ax-panel-action:is(:disabled, [aria-disabled="true"]) { opacity: .45; cursor: default; }
-.ax-workspace .ax-learn .ax-panel-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: var(--ax-panel-control);
-  margin-top: 8px;
-  border: 1px solid transparent;
-  font: 500 13px/20px var(--font-sans);
-  cursor: pointer;
-}
 .ax-workspace .ax-new-project-dialog .ax-challenge-intro-start { min-height: 44px; font-size: 15px; }
 
-/* The lesson card collapses with the same plain control that closes other panels. */
-.ax-workspace .ax-learn .ax-archie-collapse {
-  width: 24px;
-  height: 24px;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.ax-workspace .ax-learn .ax-archie-collapse:hover { background: var(--ax-canvas); }

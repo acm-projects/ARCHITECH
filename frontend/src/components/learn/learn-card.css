@@ -1,0 +1,61 @@
+/* A guided lesson sits in a panel but is not a data panel: Archie talks, and one tinted box
+   says what to do next. Text keeps to the panel styles, apart from his greeting. */
+.axl-intro { padding-top: 2px; }
+.axl-hello { display: flex; align-items: center; gap: 12px; padding: 2px var(--axp-inset) 10px; }
+.axl-mascot { flex: none; width: 92px; height: auto; }
+.axl-hello-title { font: 600 20px/26px var(--font-sans); }
+.axl-hello-text { color: var(--ax-ink-soft); }
+.axp .axl-parts {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  margin: 2px var(--axp-inset) 6px;
+  padding: 10px 8px;
+  border-radius: var(--axp-radius);
+  background: var(--ax-hover-fill);
+}
+.axl-parts li { display: grid; justify-items: center; gap: 4px; color: var(--ax-ink-soft); font: 400 12px/18px var(--font-sans); white-space: nowrap; }
+.axl-tile {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--axp-radius);
+  background: color-mix(in srgb, var(--axl-family) 16%, transparent);
+  color: var(--axl-family);
+}
+
+.axl-progress { display: flex; gap: 3px; padding: 2px var(--axp-inset) 10px; }
+.axl-progress span { flex: 1 1 0; height: 4px; border-radius: 2px; background: var(--ax-line-strong); transition: background-color 200ms ease; }
+.axl-progress [data-state="done"] { background: var(--ax-primary); }
+.axl-progress [data-state="current"] { background: color-mix(in srgb, var(--ax-primary) 40%, var(--ax-line-strong)); }
+
+.axl-say { display: flex; gap: 10px; padding: 0 var(--axp-inset) 10px; }
+.axl-face { flex: none; }
+.axl-face .ax-ai-portrait { display: block; }
+.axl-say-title { display: flex; align-items: center; gap: 6px; font: 600 15px/20px var(--font-sans); }
+.axp .axl-say-text { margin-top: 2px; color: var(--ax-ink-soft); overflow-wrap: anywhere; }
+.axl-done { display: inline-grid; flex: none; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--axp-good); color: #fff; }
+.axl-face[data-nod] img { transform-origin: 50% 65%; animation: axl-nod 480ms ease-in-out 1; }
+@keyframes axl-nod {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  35% { transform: translateY(2px) rotate(5deg); }
+  70% { transform: translateY(-1px) rotate(-2deg); }
+}
+
+.axl-task {
+  margin: 0 var(--axp-inset) 6px;
+  padding: 8px 12px 10px;
+  border-radius: var(--axp-radius);
+  background: color-mix(in srgb, var(--ax-primary) 9%, transparent);
+}
+.axl-task-label { color: var(--ax-ink); font: 500 14px/20px var(--font-sans); }
+.axl-task ul { display: grid; gap: 4px; margin-top: 2px; }
+.axl-task li { display: flex; gap: 8px; }
+.axl-task li > svg { flex: none; margin-top: 2px; }
+.axl-task strong { font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .axl-progress span { transition: none; }
+  .axl-face[data-nod] img { animation: none; }
+}

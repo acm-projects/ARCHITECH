@@ -628,7 +628,7 @@
   outline-offset: -1px;
 }
 
-/* ---- React Flow: canvas, controls, attribution ---- */
+/* ---- React Flow: canvas and controls ---- */
 
 /* One background layer per canvas, shared by every workspace mode and breakdown. */
 .ax-workspace .react-flow,
@@ -659,7 +659,6 @@
   --xy-controls-button-color-hover: var(--ax-ink);
   --xy-controls-button-border-color: transparent;
   --xy-controls-box-shadow: none;
-  --xy-attribution-background-color: transparent;
 }
 
 /* Zoom controls share the component rail surface. */
@@ -701,15 +700,6 @@
 .ax-workspace .react-flow__nodesselection-rect {
   border: 0;
   background: transparent;
-}
-
-/* Required by React Flow's license: kept readable, but quiet. */
-.ax-workspace .react-flow__attribution {
-  font-size: var(--ax-t-micro);
-  color: #85857f;
-}
-.ax-workspace .react-flow__attribution a {
-  color: #85857f;
 }
 
 /* Edges read as technical drawing lines. The arrowhead is part of the edge, so it follows
@@ -1030,42 +1020,7 @@
   border-top: 1px solid var(--ax-line);
 }
 
-/* ---- Learn and Challenge annotations over the canvas ---- */
-
-.ax-workspace .ax-learn {
-  width: 100%;
-  border-color: var(--ax-line);
-  background: var(--ax-surface);
-}
-
-/* Guided lessons leave more of the canvas exposed than the analysis panels. */
-.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content:has(> .ax-learn[data-learn-phase="guided"]) {
-  width: min(290px, calc(100vw - 78px));
-}
-
-.ax-workspace .ax-learn[data-learn-phase="guided"] { padding: 14px 12px; }
-
-@media (min-width: 768px) {
-  .ax-workspace .ax-learn[data-learn-phase="guided"] {
-    display: flex;
-    flex-direction: column;
-    row-gap: 8px;
-  }
-
-
-}
-
-/* A dialogue portrait accompanies explanations; task controls stay outside it. */
-.ax-workspace .ax-learn-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px;
-  align-items: center;
-  gap: 10px;
-}
-
-.ax-workspace .ax-learn-dialogue {
-  margin-top: 10px;
-}
+/* ---- Archie's portrait ---- */
 
 .ax-workspace .ax-learn-portrait {
   position: relative;
@@ -1084,61 +1039,6 @@
   height: auto;
   left: -39%;
   top: -5%;
-}
-
-.ax-workspace .ax-learn-instruction {
-  display: grid;
-  gap: 4px;
-  margin-top: 12px;
-  font-size: var(--ax-t-sm);
-  line-height: 1.6;
-}
-
-.ax-workspace .ax-learn-category {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  vertical-align: middle;
-}
-
-.ax-workspace .ax-learn-continue {
-  display: block;
-  margin-top: 12px;
-  padding: 8px 14px;
-  border: 1px solid var(--ax-ink);
-  border-radius: 3px;
-  background: var(--ax-ink);
-  color: var(--ax-surface);
-  font-size: var(--ax-t-sm);
-  font-weight: 500;
-}
-
-.ax-workspace .ax-learn-continue:hover { background: var(--ax-ink-soft); }
-.ax-workspace .ax-learn-continue:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 3px; }
-
-.ax-workspace .ax-learn-hint {
-  margin-top: 12px;
-  font-size: var(--ax-t-xs);
-  color: var(--ax-muted);
-}
-
-.ax-workspace .ax-learn-hint summary { cursor: pointer; }
-
-.ax-workspace .ax-learn-header[data-celebrating="true"] .ax-learn-portrait img {
-  transform-origin: 50% 65%;
-  animation: ax-learn-nod 480ms ease-in-out 1;
-}
-
-@keyframes ax-learn-nod {
-  0%, 100% { transform: translateY(0) rotate(0); }
-  35% { transform: translateY(2px) rotate(5deg); }
-  70% { transform: translateY(-1px) rotate(-2deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ax-workspace .ax-learn-header[data-celebrating="true"] .ax-learn-portrait img {
-    animation: none;
-  }
 }
 
 /* ---- Motion ---- */
@@ -1442,49 +1342,10 @@
 .ax-workspace .ax-panel-rail { box-shadow: 0 4px 14px rgb(0 0 0 / 12%); }
 .ax-workspace .ax-panel-content { box-shadow: 0 8px 24px rgb(0 0 0 / 18%); }
 .ax-workspace .ax-node { box-shadow: 0 2px 8px rgb(0 0 0 / 14%); }
-.ax-workspace .ax-learn { box-shadow: 0 8px 24px rgb(0 0 0 / 20%); }
-.ax-workspace .ax-canvas-panel[data-learn-movable] {
-  top: calc(50% + var(--ax-learn-offset, 0px));
-}
-.ax-workspace .ax-learn-header {
-  cursor: grab;
-  touch-action: none;
-}
-.ax-workspace .ax-learn-header:active { cursor: grabbing; }
-.ax-workspace .ax-learn-header:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: 3px; }
 
 @media (max-width: 600px) {
   .ax-workspace .ax-title,
   .ax-workspace .ax-header-title-input { font-size: 18px; }
-}
-
-@media (max-width: 767px) {
-  .ax-workspace .ax-canvas-panel[data-learn-movable] {
-    top: calc(12px + var(--ax-learn-offset, 0px));
-  }
-}
-
-/* Numbered lesson instructions stay below the header, rather than vertically centered. */
-.ax-workspace .ax-canvas-panel[data-learn-movable] {
-  top:calc(12px + var(--ax-learn-offset, 0px));
-  transform:none;
-  max-height:calc(100% - 112px);
-}
-.ax-workspace .ax-canvas-panel[data-learn-collapsed="true"] { display:none; }
-.ax-workspace .ax-canvas-panel[data-learn-movable] .ax-panel-content {
-  width:min(380px, calc(100vw - 32px));
-  max-height:100%;
-  border-radius:var(--ax-panel-radius, 20px);
-}
-.ax-workspace .ax-panel-content .ax-card.ax-learn { border-radius:var(--ax-panel-radius, 20px); }
-.ax-workspace .ax-learn-header { grid-template-columns:minmax(0,1fr) 40px 30px; }
-.ax-workspace .ax-learn-header .ax-card-title { font-size:16.25px; font-weight:600; line-height:1.25; color:var(--ax-ink); }
-.ax-workspace .ax-learn .ax-learn-speech { background:#fff; border-color:#109bfd; color:#000; border-radius:12px; }
-.ax-workspace .ax-learn .ax-learn-speech::before { background:#fff; border-color:#109bfd; }
-.ax-workspace .ax-learn .ax-learn-speech .ax-card-body { color:#000; }
-@media(max-width:767px) {
-  .ax-workspace .ax-canvas-panel[data-learn-movable] { top:calc(12px + var(--ax-learn-offset, 0px)); max-height:calc(100% - 112px); }
-  .ax-workspace .ax-canvas-panel[data-learn-movable] .ax-panel-content { max-height:min(55dvh, 100%); }
 }
 
 /* Component categories open on hover, with a safe gap into the flyout. */
@@ -1544,8 +1405,6 @@
   .ax-workspace .react-flow__controls-button svg { width: 16px; height: 16px; }
   .ax-workspace .ax-rail-name { padding: 6px 10px; border-radius: 8px; box-shadow: var(--ax-shadow-float); font-size: 14px; }
   .ax-workspace .ax-canvas-notice { font-size: 14px; }
-  .ax-workspace .ax-learn-instruction { font-size: 14px; }
-  .ax-workspace .ax-learn-speech .ax-card-body { font-size: 15px; }
 }
 
 /* ---- Connections ----
