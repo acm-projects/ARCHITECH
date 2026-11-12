@@ -2156,7 +2156,7 @@
 .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) { border-radius:20px; }
 .ax-workspace .ax-panel-content .ax-component-menu .ax-panel-title { font-size:15px; line-height:22px; font-weight:600; }
 
-/* The header runs the design model; Run as app remains a separate project action. */
+/* Run offers simulation and the runnable app from the same control. */
 .ax-workspace .ax-header .ax-run-button {
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
   min-height:36px; padding:8px 18px; border:1px solid #155dfc; border-radius:12px;
@@ -2165,6 +2165,20 @@
 .ax-workspace .ax-header .ax-run-button:hover:not(:disabled) { background:#1447e6; border-color:#1447e6; }
 .ax-workspace .ax-header .ax-run-button:active:not(:disabled) { background:#193cb8; }
 .ax-workspace .ax-header .ax-run-button:disabled { opacity:.6; cursor:wait; }
+.ax-workspace .ax-header .ax-run-button { anchor-name: --ax-run-menu-trigger; }
+.ax-workspace .ax-run-menu {
+  position-anchor: --ax-run-menu-trigger;
+  top: var(--ax-header-clearance);
+  right: 12px;
+  border-radius: 3px;
+}
+.ax-workspace .ax-run-menu button:disabled { opacity: .5; cursor: wait; }
+@supports (position-anchor: --ax-run-menu-trigger) {
+  .ax-workspace .ax-run-menu {
+    top: calc(anchor(bottom) + 8px);
+    right: max(12px, anchor(right));
+  }
+}
 /* React Flow's viewport already begins below the header, so no second header offset. */
 .ax-workspace .ax-workspace-canvas .ax-diagram-viewport .react-flow__controls,
 .ax-workspace.ax-breakdown .ax-breakdown-canvas .react-flow__controls {

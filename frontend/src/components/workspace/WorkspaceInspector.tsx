@@ -1,4 +1,4 @@
-import { useId, useRef, type ComponentProps, type ReactNode } from "react";
+import { useId, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { ChevronDown, LoaderCircle, Play, X } from "lucide-react";
 
 import type { CustomTechnology } from "../../lib/projects/customTechnologies";
@@ -7,6 +7,7 @@ import ComponentGlyph from "./ComponentGlyph";
 import ComponentInspector from "./ComponentInspector";
 import { COMPONENT_CATALOG, FAMILY_LABELS } from "./componentCatalog";
 import RunPanel from "./RunPanel";
+import { RunnableAppButton } from "./ExportButton";
 import HistoryPanel from "./history/HistoryPanel";
 import type { WorkspaceInspectorController } from "./useWorkspaceInspector";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
@@ -25,7 +26,8 @@ type WorkspaceInspectorProps = {
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate">;
 };
 
-export function SimulationControl({ expanded, onToggle, runs, componentName, onShowResults }: {
+export function SimulationControl({ projectId, expanded, onToggle, runs, componentName, onShowResults }: {
+  projectId: string;
   expanded: boolean;
   onToggle: () => void;
   runs: WorkspaceInspectorProps["runs"];
@@ -33,19 +35,33 @@ export function SimulationControl({ expanded, onToggle, runs, componentName, onS
   onShowResults: (action: () => void) => void;
 }) {
   const anchor = useRef<HTMLDivElement>(null);
+  const runMenuId = useId();
+  const [runMenuOpen, setRunMenuOpen] = useState(false);
   return <div className="ax-simulation-anchor" ref={anchor} onKeyDown={(event) => {
-    if (event.key === "Escape" && expanded) {
+    if (event.key === "Escape" && expanded && !runMenuOpen) {
       event.stopPropagation();
       onToggle();
       anchor.current?.querySelector<HTMLButtonElement>("button")?.focus();
     }
   }}>
-    <button type="button" className="ax-run-button" aria-label="Run simulation"
-      aria-controls="ax-run-panel" aria-expanded={expanded} aria-busy={runs.view.isRunning}
-      disabled={runs.view.isRunning} onClick={() => onShowResults(runs.run)}>
+    <button type="button" className="ax-run-button" aria-label="Run options"
+      popoverTarget={runMenuId} aria-haspopup="dialog" aria-expanded={runMenuOpen} aria-busy={runs.view.isRunning}>
       {runs.view.isRunning ? <LoaderCircle size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
       Run
+      <ChevronDown size={12} aria-hidden="true" />
     </button>
+    <div id={runMenuId} popover="auto" role="dialog" aria-label="Run options"
+      className="ax-project-menu ax-run-menu"
+      onToggle={(event) => setRunMenuOpen(event.currentTarget.matches(":popover-open"))}>
+      <button type="button" className="ax-project-menu-item" aria-label="Run simulation"
+        aria-controls="ax-run-panel" aria-expanded={expanded}
+        popoverTarget={runMenuId} popoverTargetAction="hide"
+        disabled={runs.view.isRunning} onClick={() => onShowResults(runs.run)}>
+        <Play size={15} aria-hidden="true" />
+        Run
+      </button>
+      <RunnableAppButton projectId={projectId} popoverTarget={runMenuId} />
+    </div>
     <section id="ax-run-panel" className="ax-inspector ax-simulation-panel" aria-label="Simulation" hidden={!expanded}>
       <div className="ax-inspector-frame">
         <div className="ax-panel-heading">

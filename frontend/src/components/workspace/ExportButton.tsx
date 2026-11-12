@@ -40,7 +40,6 @@ export function RunnableAppButton({ projectId, popoverTarget }: { projectId: str
   };
   const id = encodeURIComponent(projectId);
   return (
-    <>
       <a
         className="ax-ai-toggle"
         href={`/workspace/${id}/run`}
@@ -52,16 +51,24 @@ export function RunnableAppButton({ projectId, popoverTarget }: { projectId: str
         <Play size={15} aria-hidden="true" />
         Run as app
       </a>
+  );
+}
+
+export function DownloadAppButton({ projectId, popoverTarget }: { projectId: string; popoverTarget?: string }) {
+  const id = encodeURIComponent(projectId);
+  return (
       <a
         className="ax-ai-toggle"
         href={`/api/projects/${id}/export/runnable-app`}
         download
-        onClick={(event) => closeMenu(event.currentTarget)}
+        onClick={(event) => {
+          const target = event.currentTarget.ownerDocument.getElementById(popoverTarget ?? "");
+          target?.hidePopover();
+        }}
         title="Download this design as an app that runs every part in its own container (docker compose)"
       >
         <Download size={15} aria-hidden="true" />
         Download app (Docker)
       </a>
-    </>
   );
 }

@@ -43,7 +43,7 @@ import { useWorkspaceInspector } from "./useWorkspaceInspector";
 import WorkspaceInspector, { SimulationControl } from "./WorkspaceInspector";
 import { ArchitectToggle } from "./ai/ArchitectPanel";
 import { ArchiePortrait } from "./ai/ArchiePanel";
-import { ExportButton, RunnableAppButton } from "./ExportButton";
+import { ExportButton, DownloadAppButton } from "./ExportButton";
 import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
@@ -494,6 +494,7 @@ function Workspace({ project }: { project: Project }) {
           }
           saveStatus={saveStatus}
           runControl={canRunDesign && <SimulationControl
+            projectId={project.id}
             runs={activeRuns}
             componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
             onShowResults={(action) => { closeUtilityPanels(); inspector.showResults(action); }}
@@ -504,7 +505,7 @@ function Workspace({ project }: { project: Project }) {
             <div hidden={!showInspector}>
               <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />
               <ExportButton title={title} popoverTarget={menuId} />
-              <RunnableAppButton projectId={project.id} popoverTarget={menuId} />
+              <DownloadAppButton projectId={project.id} popoverTarget={menuId} />
             </div>
           )}
         />
