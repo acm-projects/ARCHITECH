@@ -1,13 +1,9 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BaseEdge,
-  Controls,
-  EdgeLabelRenderer,
   Handle,
-  MarkerType,
   Position,
   ReactFlow,
   ReactFlowProvider,
@@ -22,6 +18,7 @@ import "../workspace/architecture-workspace.css";
 import "./breakdowns.css";
 
 import WorkspaceHeaderShell from "../workspace/WorkspaceHeaderShell";
+import ThemeToggle from "../workspace/ThemeToggle";
 import ArchitectureNode, { type ArchitectureFlowNode } from "../workspace/nodes/ArchitectureNode";
 import {
   NETFLIX_COMPONENTS,
@@ -33,7 +30,11 @@ import {
   type NetflixNavigation,
 } from "./netflix";
 import NetflixGuide from "./NetflixGuide";
-import { getOrthogonalEdgePath } from "../workspace/OrthogonalEdge";
+import LivePreviewToggle from "./LivePreviewToggle";
+import NetflixPreview from "./NetflixPreview";
+import { useLivePreviewSetting } from "./useLivePreviewSetting";
+import { ArchitectureEdge, type EdgeRoute } from "../workspace/OrthogonalEdge";
+import { getOrthogonalEdgePath } from "../../lib/architecture/edgeRouting";
 
 function BreakdownNode(props: NodeProps<ArchitectureFlowNode>) {
   const component = NETFLIX_COMPONENTS.find(item => item.id === props.id);
@@ -56,24 +57,18 @@ function videoReturnPath({ sourceX, sourceY, targetX, targetY }: Pick<EdgeProps,
   return `M ${sourceX} ${sourceY} V ${laneY} H ${returnX} V ${targetY} H ${targetX}`;
 }
 
+const breakdownRoute: EdgeRoute = (props) => {
+  if (props.id === "cdn-viewer") return [videoReturnPath(props), VIDEO_RETURN_ROUTE.labelX, VIDEO_RETURN_ROUTE.laneY];
+  const [path, labelX, labelY] = getOrthogonalEdgePath(props);
+  // Short links leave too little room between ports for a label. Put it below
+  // the preparation row instead of covering either component's text.
+  const belowRow = props.id === "encoding-assets" || props.id === "assets-cdn";
+  return [path, labelX, belowRow ? labelY + NETFLIX_NODE_SIZE.height / 2 + PREPARATION_LABEL_GAP : labelY];
+};
+
+// Everything visual comes from the canvas edge; a breakdown only adds its lanes.
 function BreakdownEdge(props: EdgeProps) {
-  const { id, label, markerEnd, style } = props;
-  let [path, labelX, labelY] = getOrthogonalEdgePath(props);
-  if (id === "cdn-viewer") {
-    path = videoReturnPath(props);
-    labelX = VIDEO_RETURN_ROUTE.labelX;
-    labelY = VIDEO_RETURN_ROUTE.laneY;
-  } else if (id === "encoding-assets" || id === "assets-cdn") {
-    // Short links leave too little room between ports for a label. Put it below
-    // the preparation row instead of covering either component's text.
-    labelY += NETFLIX_NODE_SIZE.height / 2 + PREPARATION_LABEL_GAP;
-  }
-  return <>
-    <BaseEdge id={id} path={path} markerEnd={markerEnd} style={style} />
-    {label && <EdgeLabelRenderer>
-      <span className="ax-breakdown-edge-label" style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}>{label}</span>
-    </EdgeLabelRenderer>}
-  </>;
+  return <ArchitectureEdge {...props} route={breakdownRoute} lit={Boolean(props.data?.lit)} />;
 }
 
 const NODE_TYPES = { architecture: BreakdownNode };
@@ -81,6 +76,7 @@ const EDGE_TYPES = { breakdown: BreakdownEdge };
 // Include the outer return paths as well as the floating guide when fitting nodes.
 const FIT_OPTIONS = { padding: { left: "70px", right: "420px", top: "90px", bottom: "110px" }, maxZoom: 1.1 } as const;
 const MOBILE_FIT_OPTIONS = { padding: 0.15, maxZoom: 1.1 };
+const NO_CONNECTIONS: readonly string[] = [];
 
 function NetflixWalkthrough() {
   const pathname = usePathname();
@@ -93,6 +89,9 @@ function NetflixWalkthrough() {
   const nodesReady = useNodesInitialized();
   const framedCount = useRef(0);
   const [guideSession, setGuideSession] = useState(0);
+  // The live preview names the connections it is using, so they light up on the diagram too.
+  const [litConnections, setLitConnections] = useState(NO_CONNECTIONS);
+  const livePreview = useLivePreviewSetting();
   const navigate = (action: NetflixNavigation) => {
     if (action === "restart" || (action === "next" && stepIndex === NETFLIX_COMPONENTS.length)) {
       setGuideSession(session => session + 1);
@@ -107,19 +106,16 @@ function NetflixWalkthrough() {
     ariaLabel: `${node.data.label}: explain this component`,
   })), [scene, component?.id]);
   const edges: Edge[] = useMemo(() => scene.connections.map(connection => {
-    const active = component && (connection.source === component.id || connection.target === component.id);
-    const color = active ? "var(--ax-accent)" : "var(--ax-subtle)";
     return {
       ...connection,
+      data: { lit: litConnections.includes(connection.id) },
       type: "breakdown",
       sourceHandle: connection.id === "control-steering" ? "state-out" : connection.id === "cdn-viewer" ? "video-out" : undefined,
       targetHandle: connection.id === "control-steering" ? "state-in" : undefined,
       selectable: false,
       focusable: false,
-      markerEnd: { type: MarkerType.ArrowClosed, color, width: 12, height: 12 },
-      style: { stroke: color, strokeWidth: active ? 1.8 : 1.2, strokeDasharray: connection.kind === "video" ? "6 4" : undefined },
     };
-  }), [scene, component]);
+  }), [scene, litConnections]);
   // React Flow owns measurement and selection; the lesson supplies a read-only
   // graph whenever its visible components or focused step change.
   useEffect(() => {
@@ -152,10 +148,14 @@ function NetflixWalkthrough() {
   }, [component, revealedCount, nodesReady, fitView, setCenter]);
 
   return (
-    <main className="ax-workspace ax-breakdown" style={{ "--ax-breakdown-node-width": `${NETFLIX_NODE_SIZE.width}px`, "--ax-breakdown-node-height": `${NETFLIX_NODE_SIZE.height}px` } as CSSProperties}>
+    <main className="ax-workspace ax-breakdown">
       <WorkspaceHeaderShell
         project={<h1 className="ax-title"><span>Netflix System breakdown</span></h1>}
-        actions={<button type="button" className="ax-action" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>}
+        actions={<>
+          <LivePreviewToggle />
+          <ThemeToggle />
+          <button type="button" className="ax-action" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>
+        </>}
       />
 
       <div className="ax-breakdown-body">
@@ -183,16 +183,14 @@ function NetflixWalkthrough() {
               maxZoom={2}
               fitView
               fitViewOptions={FIT_OPTIONS}
-            >
-              <Controls showInteractive={false} onFitView={() => void fitView(window.matchMedia("(max-width: 900px)").matches ? MOBILE_FIT_OPTIONS : FIT_OPTIONS)} />
-            </ReactFlow>
-          </div>
-          <div className="ax-breakdown-legend" aria-label="Connection types">
-            <span><i />API &amp; control</span><span><i className="is-video" />Video files</span>
+            />
           </div>
         </section>
 
-        <NetflixGuide key={guideSession} progress={progress} connections={scene.connections} onNavigate={navigate} />
+        <div className="ax-breakdown-rail">
+          {livePreview.enabled && <NetflixPreview key={component?.id ?? "review"} step={component?.id ?? "review"} onFrame={setLitConnections} />}
+          <NetflixGuide key={guideSession} progress={progress} connections={scene.connections} onNavigate={navigate} />
+        </div>
       </div>
     </main>
   );

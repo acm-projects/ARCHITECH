@@ -6015,6 +6015,13 @@ body,
   border: 0;
 }
 
+/* Step 2 has two choices; keep each tile the size of a step-1 tile. */
+.onboarding-options[data-count="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-self: center;
+  width: min(100%, 656px);
+}
+
 .onboarding-sr-only {
   position: absolute;
   width: 1px;
@@ -6108,7 +6115,8 @@ body,
 }
 
 @media (max-width: 700px) {
-  .onboarding-options {
+  .onboarding-options,
+  .onboarding-options[data-count="2"] {
     grid-template-columns: 1fr;
     gap: 12px;
   }
@@ -6174,51 +6182,6 @@ body,
   text-align: center;
 }
 
-/* Step 2: GitHub */
-.onboarding-github {
-  width: min(100%, 420px);
-  align-self: center;
-  display: flex;
-  flex-direction: column;
-}
-
-.onboarding-github-icon {
-  width: 36px;
-  height: 36px;
-  margin: 0 auto 20px;
-  color: var(--onb-ink);
-}
-
-.onboarding-github-icon svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.onboarding-benefits {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0;
-  padding: 18px 0 0;
-  border-top: 1px solid var(--neutral-200);
-  list-style: none;
-  color: var(--onb-muted);
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.onboarding-benefits li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.onboarding-benefits svg {
-  flex: 0 0 auto;
-  color: var(--onb-ink);
-}
-
 .onboarding-message {
   margin: 20px 0 0;
   border-radius: var(--onb-radius);
@@ -6226,30 +6189,19 @@ body,
   line-height: 1.45;
 }
 
-.onboarding-text-button,
 .onboarding-back {
   align-self: center;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-height: 36px;
+  margin-top: 20px;
   padding: 0 8px;
   border: 0;
   border-radius: 6px;
   background: transparent;
-  font: inherit;
-}
-
-.onboarding-text-button {
-  margin-top: 10px;
-  color: var(--onb-ink);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.onboarding-back {
-  margin-top: 20px;
   color: var(--onb-subtle);
+  font: inherit;
   font-size: 13px;
 }
 
@@ -6257,7 +6209,6 @@ body,
   transform: scaleX(-1);
 }
 
-.onboarding-text-button:hover,
 .onboarding-back:hover {
   color: var(--onb-ink);
   text-decoration: underline;
@@ -6371,44 +6322,6 @@ body,
   overflow-wrap: anywhere;
 }
 
-.ax-daily-challenge .ax-learn-speech::before {
-  border-color: var(--color-line);
-  background: var(--color-surface);
-  top: calc(50% - 4px);
-  right: -5px;
-  transform: rotate(225deg);
-}
-
-.ax-daily-challenge {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 440px;
-  max-width: 100%;
-  margin: auto 0 0 auto;
-  padding-top: 16px;
-}
-
-.ax-daily-challenge .ax-learn-speech {
-  flex: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px 12px;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
-}
-
-.ax-daily-challenge .ax-card-body { grid-column: 1; font-weight: 600; color: var(--color-ink); }
-.ax-daily-challenge > img { flex-shrink: 0; }
-.ax-daily-challenge-action { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
-
-@media (max-width: 480px) {
-  .ax-daily-challenge .ax-learn-speech { grid-template-columns: minmax(0, 1fr); }
-  .ax-daily-challenge-action { grid-column: 1; grid-row: auto; }
-  .ax-daily-challenge > img { width: 72px; height: auto; }
-}
-
 /* Dashboard controls override the shared square button reset locally. */
 .ax-dashboard-avatar {
   border-radius: 50%;
@@ -6430,7 +6343,7 @@ body,
   background: var(--dashboard-action, rgb(21 93 252));
   color: var(--neutral-0);
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.2;
 }
 
@@ -6444,6 +6357,13 @@ body,
 }
 
 .ax-new-project-dialog {
+  --ax-dialog-accent: var(--dashboard-action, rgb(21 93 252));
+  --ax-dialog-accent-hover: rgb(20 71 230);
+  --ax-dialog-accent-active: rgb(18 60 200);
+  --ax-dialog-accent-ink: rgb(255 255 255);
+  --ax-dialog-tint: rgb(219 234 254);
+  --ax-dialog-tint-ink: rgb(21 93 252);
+  --ax-dialog-row-hover: rgb(239 246 255);
   position: fixed;
   inset: 0;
   width: min(400px, calc(100vw - 32px));
@@ -6451,15 +6371,23 @@ body,
   margin: auto;
   padding: 24px;
   overflow-y: auto;
-  border: 1px solid var(--neutral-300);
-  border-radius: var(--radius-panel);
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
   background: var(--neutral-0);
   color: var(--neutral-950);
   font-family: inherit;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
 }
 
 .ax-new-project-dialog::backdrop {
   background: rgb(0 0 0 / 40%);
+}
+
+/* Theme changes crossfade. Reduced motion skips the transition in changeThemeWithTransition. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 240ms;
+  animation-timing-function: ease;
 }
 
 .ax-new-project-heading {
@@ -6467,9 +6395,7 @@ body,
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 12px;
-  color: var(--neutral-500);
-  font-size: 11px;
+  margin-bottom: 16px;
 }
 
 .ax-new-project-heading button {
@@ -6478,17 +6404,17 @@ body,
   width: 28px;
   height: 28px;
   border: 1px solid transparent;
-  border-radius: var(--radius-control);
+  border-radius: var(--radius-action);
   background: transparent;
   color: var(--neutral-600);
 }
 
 .ax-new-project-dialog h2 {
-  margin: 0 0 24px;
-  font-size: 20px;
-  font-weight: 500;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
   line-height: 1.3;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.015em;
 }
 
 .ax-new-project-options {
@@ -6501,30 +6427,35 @@ body,
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 64px;
-  padding: 12px;
-  border: 1px solid var(--neutral-300);
-  border-radius: var(--radius-panel);
-  background: var(--neutral-50);
+  min-height: 60px;
+  padding: 11px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--neutral-0);
   color: var(--neutral-950);
   text-align: left;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .ax-new-project-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 32px;
-  height: 32px;
-  border: 1px solid var(--neutral-200);
-  border-radius: var(--radius-control);
-  background: var(--neutral-0);
+  flex: 0 0 36px;
+  height: 36px;
+  border-radius: var(--radius-action);
+  background: var(--ax-dialog-tint);
+  color: var(--ax-dialog-tint-ink);
 }
 
 .ax-new-project-dialog button { cursor: pointer; }
-.ax-new-project-dialog button:hover:not(:disabled) { background: var(--neutral-100); border-color: var(--neutral-400); }
+.ax-new-project-dialog button:hover:not(:disabled) { background: var(--neutral-50); border-color: var(--neutral-400); }
 .ax-new-project-dialog button:active:not(:disabled) { background: var(--neutral-200); }
+
+.ax-new-project-dialog :is(.ax-new-project-options, .ax-repository-list) > button:hover:not(:disabled) {
+  border-color: var(--ax-dialog-accent);
+  background: var(--ax-dialog-row-hover);
+}
 .ax-new-project-dialog button:focus-visible { outline: 2px solid var(--neutral-950); outline-offset: 3px; }
 .ax-new-project-dialog button:disabled { cursor: wait; opacity: 0.5; }
 
@@ -6538,30 +6469,20 @@ body,
 .ax-dashboard-section-title {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.025em;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
 }
 
-.ax-dashboard-section-title {
-  font-size: 34px;
-  font-weight: 600;
-}
-
-/* The project pane keeps two visible rows on desktop. */
+/* The -4px margin keeps tile edges on the page inset; the padding leaves room for focus rings. */
 .ax-dashboard-project-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-auto-rows: 160px;
   gap: 20px;
-  max-height: 348px;
-  margin: 0;
+  margin: 0 -4px;
   padding: 4px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable;
   list-style: none;
 }
 
@@ -6570,24 +6491,95 @@ body,
 }
 
 @media (min-width: 1024px) {
-  .ax-dashboard-project-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ax-dashboard-project-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* Match the grid's padding and reserved scrollbar gutter. */
 .ax-dashboard-project-heading {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 4px;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable;
 }
 
-.ax-dashboard-project-heading .ax-dashboard-project-create {
+.ax-dashboard-project-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
   margin-left: auto;
+}
+
+.ax-dashboard-project-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 272px;
+  height: 36px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-action);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  transition: border-color 140ms ease;
+}
+
+.ax-dashboard-project-search:hover { border-color: var(--color-line-strong); }
+
+/* A second line of border shows focus without relying on the color change alone. */
+.ax-dashboard-project-search:focus-within {
+  border-color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-ink);
+}
+
+.ax-dashboard-project-search > svg {
+  position: absolute;
+  left: 10px;
+  width: 15px;
+  height: 15px;
+  pointer-events: none;
+}
+
+.ax-dashboard-project-search input {
+  width: 100%;
+  height: 100%;
+  padding: 0 32px;
+  border: 0;
+  border-radius: inherit;
+  outline: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.ax-dashboard-project-search input::placeholder { color: var(--color-muted); opacity: 1; }
+.ax-dashboard-project-search input::-webkit-search-cancel-button { appearance: none; }
+
+.ax-dashboard-project-search button {
+  position: absolute;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.ax-dashboard-project-search button:hover { background: var(--color-surface-2); color: var(--color-ink); }
+.ax-dashboard-project-search button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 1px; }
+.ax-dashboard-project-search button svg { width: 14px; height: 14px; }
+
+/* On phones New project stays beside the title and search takes the next row. */
+@media (max-width: 639px) {
+  .ax-dashboard-project-actions { display: contents; }
+  .ax-dashboard-project-create { margin-left: auto; }
+  .ax-dashboard-project-search { flex: 1 1 100%; order: 1; width: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-dashboard-project-search { transition: none; }
 }
 
 .ax-dashboard-project-create:disabled {
@@ -6602,9 +6594,17 @@ body,
   flex-direction: column;
 }
 
+/* The banner and both sections share one centered column: 1080px plus the 56px side padding. */
+.ax-dashboard-content > * {
+  flex: none;
+  width: 100%;
+  max-width: 1192px;
+  margin-inline: auto;
+}
+
 .ax-dashboard-projects {
   display: flex;
-  min-height: 0;
+  flex: none;
   flex-direction: column;
 }
 
@@ -6614,14 +6614,15 @@ body,
   display: flex;
   flex-direction: column;
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-panel);
+  border-radius: 20px;
   background: var(--color-surface);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 14%);
   transition: border-color 140ms ease;
 }
 
 .ax-dashboard-project-card:hover,
 .ax-dashboard-project-card:focus-within {
-  border-color: var(--canvas-accent);
+  border-color: var(--color-line-strong);
 }
 
 .ax-dashboard-project-preview-link { flex: 1; min-height: 0; }
@@ -6630,20 +6631,47 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  overflow: hidden;
+  border-radius: 19px 19px 0 0;
   --tile: var(--canvas-surface-soft);
   background: var(--tile);
 }
 
-.ax-preview-accent-node {
-  fill: var(--preview-accent);
-  stroke: var(--preview-accent);
-  paint-order: stroke fill;
+/* Tile previews draw the canvas in miniature: neutral boxes, with family color on the icon alone. */
+.ax-topology-link {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ax-ink) 55%, transparent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
 }
+
+.ax-topology-box {
+  fill: var(--ax-surface);
+  stroke: color-mix(in srgb, var(--ax-ink) 40%, transparent);
+  stroke-width: 1.25px;
+  vector-effect: non-scaling-stroke;
+}
+
+.ax-topology-glyph { color: var(--ax-family); stroke-width: 1.6; }
+
+.ax-topology-count-box { fill: var(--ax-ink); }
+
+.ax-topology-count {
+  fill: var(--ax-surface);
+  dominant-baseline: central;
+  font-size: 7px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.ax-preview-accent-node { paint-order: stroke fill; }
 
 .ax-dashboard-project-card:hover .ax-preview-accent-node,
 .ax-dashboard-project-card:focus-within .ax-preview-accent-node {
-  stroke: color-mix(in srgb, var(--preview-accent) 30%, transparent);
+  stroke: color-mix(in srgb, var(--ax-family) 30%, transparent);
   stroke-width: 2.5px;
 }
 
@@ -6651,72 +6679,207 @@ body,
   flex-shrink: 0;
   padding: 8px 12px 10px;
   border-top: 1px solid var(--color-line);
+  border-radius: 0 0 19px 19px;
 }
 
 .ax-dashboard-tutorials {
-  min-height: 0;
-  padding-top: 16px;
   padding-bottom: 16px;
 }
 
 .ax-dashboard-tutorial-heading { margin-bottom: 12px; }
 .ax-dashboard-learning-content { display: grid; gap: 16px; }
 
-/* Examples use the project tile and spacing; only the number of available items differs. */
-.ax-breakdown-catalog { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 160px; max-height: none; align-content: start; }
-.ax-breakdown-catalog-logo { width: 90px; height: 42px; object-fit: contain; filter: grayscale(1); opacity: .55; }
+/* Examples use the project tile and grid, so both sections share their columns. */
 .ax-dashboard-project-card.is-unavailable:hover { border-color: var(--color-line); }
 
-@media (max-width: 639px) {
-  .ax-breakdown-catalog { grid-template-columns: minmax(0, 1fr); }
+/* Breakdowns are canvases: canvas panels around the dot grid, with the real node and edge styles. */
+.ax-workspace.ax-breakdown-catalog { background: none; }
+
+.ax-workspace.ax-breakdown-catalog > .ax-dashboard-project-card {
+  border: 1px solid var(--ax-line-strong);
+  background: var(--ax-surface);
 }
 
-.ax-dashboard-learning-content .ax-daily-challenge {
-  width: min(100%, 320px);
-  margin: 0 0 0 auto;
-  padding-top: 0;
-  align-self: start;
+.ax-workspace.ax-breakdown-catalog > .ax-dashboard-project-card:is(:hover, :focus-within) { border-color: var(--breakdown-accent); }
+
+/* Tiles use the canvas paper and dot grid, in the canvas's colors for the theme. */
+.ax-dashboard-project-grid > .ax-dashboard-project-card .ax-workspace.ax-dashboard-project-preview {
+  background: var(--ax-canvas-paper);
 }
 
-.ax-dashboard-learning-content .ax-daily-challenge > img {
-  width: 64px;
-  height: auto;
+.ax-breakdown-catalog > .ax-dashboard-project-card .ax-workspace.ax-dashboard-project-preview,
+.ax-dashboard-projects .ax-dashboard-project-preview::before {
+  background: radial-gradient(circle, var(--ax-canvas-dot) 0.8px, transparent 0.9px) 10px 10px / 20px 20px, var(--ax-canvas-paper);
 }
 
-.ax-dashboard-learning-content .ax-daily-challenge .ax-learn-speech {
-  grid-template-columns: minmax(0, 1fr);
+/* Project dots sit on their own layer, so they can fade in with the hover. */
+.ax-dashboard-projects .ax-dashboard-project-preview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
 }
 
-.ax-dashboard-learning-content .ax-daily-challenge-action {
-  grid-column: 1;
-  grid-row: auto;
+.ax-dashboard-projects .ax-dashboard-project-preview > * { position: relative; }
+.ax-dashboard-projects .ax-dashboard-project-card:is(:hover, :focus-within) .ax-dashboard-project-preview::before { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-dashboard-projects .ax-dashboard-project-preview::before { transition: none; }
 }
 
-.ax-dashboard-learning-content .ax-dashboard-challenge-start {
-  height: 32px;
-  padding: 0 16px;
-  font-size: 12px;
+.ax-workspace.ax-breakdown-catalog > .ax-dashboard-project-card .ax-dashboard-project-metadata {
+  border-top-color: var(--ax-line);
+  background: var(--ax-surface);
+}
+
+/* Each breakdown wears its brand; hovering lifts the logo away to show the system behind it. */
+.ax-breakdown-topology,
+.ax-breakdown-brand { position: absolute; inset: 0; }
+.ax-breakdown-topology { padding: 10px; }
+
+.ax-breakdown-brand {
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  background: var(--neutral-0);
+  transition: opacity 240ms ease;
+}
+
+/* Sized from the tile, so the logo keeps its margins at every tile height. */
+.ax-breakdown-catalog-logo {
+  width: 44%;
+  height: 52%;
+  object-fit: contain;
+  transition: transform 320ms var(--ax-ease);
+}
+
+.ax-breakdown-topology .ax-topology-link {
+  opacity: 0;
+  transition: opacity 200ms ease 120ms;
+}
+
+.ax-breakdown-topology .ax-topology-node {
+  opacity: 0;
+  transform: scale(0.4);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 160ms ease, transform 260ms cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+/* A short stagger, so nodes arrive in groups rather than all at once. */
+.ax-breakdown-topology .ax-topology-node:nth-of-type(3n + 1) { transition-delay: 60ms; }
+.ax-breakdown-topology .ax-topology-node:nth-of-type(3n + 2) { transition-delay: 120ms; }
+.ax-breakdown-topology .ax-topology-node:nth-of-type(3n) { transition-delay: 180ms; }
+
+@media (hover: hover) {
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-breakdown-brand { opacity: 0; }
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-breakdown-catalog-logo { transform: scale(1.14); }
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-topology-link { opacity: 1; }
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-topology-node { opacity: 1; transform: none; }
+}
+
+/* Both lines share one grid cell, so swapping them never moves the tile's name. */
+.ax-project-tile-info { display: inline-grid; justify-items: end; }
+.ax-project-tile-info > span { grid-area: 1 / 1; white-space: nowrap; transition: opacity 160ms ease; }
+.ax-project-tile-size { opacity: 0; }
+.ax-dashboard-project-card:is(:hover, :focus-within) .ax-project-tile-size { opacity: 1; }
+.ax-dashboard-project-card:is(:hover, :focus-within) .ax-project-tile-time { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-project-tile-info > span { transition: none; }
+}
+
+/* Project nodes stay visible; hovering runs one soft pulse through them, in the same stagger. */
+@keyframes ax-preview-node-pulse {
+  50% { transform: scale(1.16); }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-node {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: ax-preview-node-pulse 420ms ease-in-out;
+  }
+
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-node:nth-of-type(3n + 1) { animation-delay: 0ms; }
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-node:nth-of-type(3n + 2) { animation-delay: 80ms; }
+  .ax-dashboard-projects .ax-dashboard-project-card:hover .ax-topology-node:nth-of-type(3n) { animation-delay: 160ms; }
+}
+
+/* Keyboard users get the same reveal; touch devices keep the logo. */
+.ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-breakdown-brand { opacity: 0; }
+.ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-topology-link { opacity: 1; }
+.ax-breakdown-catalog > .ax-dashboard-project-card:focus-within .ax-topology-node { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-breakdown-brand,
+  .ax-breakdown-catalog-logo,
+  .ax-breakdown-topology .ax-topology-link,
+  .ax-breakdown-topology .ax-topology-node { transition: none; }
+  .ax-breakdown-catalog > .ax-dashboard-project-card:hover .ax-breakdown-catalog-logo { transform: none; }
 }
 
 @media (min-width: 1024px) {
+  /* Reserved on both sides, so the column stays centered under the header. */
   .ax-dashboard-content {
-    display: grid;
-    grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
+    overflow-y: auto;
+    scrollbar-gutter: stable both-edges;
   }
 
+  /* Projects shows two rows and scrolls past that, so breakdowns stay in reach. */
+  .ax-dashboard-project-grid:not(.ax-breakdown-catalog) {
+    max-height: calc(2 * 160px + 20px + 22px);
+    margin: -6px -16px -8px -10px;
+    padding: 10px 4px 12px 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+}
+
+/* A wide target that draws thin: the scrollbar is 12px and transparent borders leave a 4px pill.
+   Setting scrollbar-width turns these rules off in Chrome, so the standard properties are only for
+   browsers without them. */
+.ax-dashboard-content::-webkit-scrollbar,
+.ax-dashboard-project-grid::-webkit-scrollbar { width: 12px; }
+
+.ax-dashboard-content::-webkit-scrollbar-button,
+.ax-dashboard-project-grid::-webkit-scrollbar-button { display: none; }
+
+.ax-dashboard-content::-webkit-scrollbar-track,
+.ax-dashboard-project-grid::-webkit-scrollbar-track { background: transparent; }
+
+/* The thumb runs the height of the tiles, not the pane's padding. */
+.ax-dashboard-project-grid::-webkit-scrollbar-track { margin-block: 10px 12px; }
+
+.ax-dashboard-content::-webkit-scrollbar-thumb,
+.ax-dashboard-project-grid::-webkit-scrollbar-thumb {
+  min-height: 48px;
+  border: 4px solid transparent;
+  border-radius: var(--radius-action);
+  background: var(--ax-dashboard-scrollbar-rest) padding-box;
+}
+
+.ax-dashboard-content:hover::-webkit-scrollbar-thumb,
+.ax-dashboard-project-grid:hover::-webkit-scrollbar-thumb {
+  background-color: var(--ax-dashboard-scrollbar-hover);
+}
+
+.ax-dashboard-content::-webkit-scrollbar-thumb:hover,
+.ax-dashboard-content::-webkit-scrollbar-thumb:active,
+.ax-dashboard-project-grid::-webkit-scrollbar-thumb:hover,
+.ax-dashboard-project-grid::-webkit-scrollbar-thumb:active {
+  background-color: var(--ax-dashboard-scrollbar-active);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .ax-dashboard-content,
   .ax-dashboard-project-grid {
-    flex: 1;
-    min-height: 0;
-    max-height: none;
-    grid-auto-rows: max(160px, calc((100% - 20px) / 2));
-    align-content: start;
-  }
-
-  .ax-dashboard-tutorials { overflow-y: auto; }
-
-  .ax-dashboard-learning-content {
-    grid-template-columns: minmax(0, 1fr) 280px;
-    align-items: stretch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--ax-dashboard-scrollbar-rest) transparent;
   }
 }
 
@@ -6726,19 +6889,19 @@ body,
 }
 
 
-.ax-repository-picker { display: grid; gap: 14px; font-size: 12px; }
+.ax-repository-picker { display: grid; gap: 14px; font-size: 14px; }
 .ax-repository-list { display: grid; gap: 6px; max-height: min(240px, 35dvh); overflow-y: auto; padding: 3px; margin: -3px; }
-.ax-repository-list > button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); background: var(--neutral-0); text-align: left; }
+.ax-repository-list > button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--neutral-0); font-weight: 600; text-align: left; }
 .ax-repository-list > button > span { overflow-wrap: anywhere; min-width: 0; }
-.ax-repository-list svg { flex-shrink: 0; }
-.ax-repository-list small { margin-left: auto; color: var(--color-muted); font-size: 10px; }
+.ax-repository-list svg { flex-shrink: 0; color: var(--ax-dialog-tint-ink); }
+.ax-repository-list small { margin-left: auto; color: var(--color-muted); font-size: 12px; font-weight: 400; }
 .ax-repository-picker p { margin: 0; color: var(--color-muted); line-height: 1.5; }
-.ax-repository-picker form { display: grid; gap: 8px; }
-.ax-repository-picker label { color: var(--color-muted); font-size: 11px; }
-.ax-repository-picker input { min-width: 0; width: 100%; padding: 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); background: var(--neutral-50); font-size: 12px; }
+.ax-repository-picker form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; }
+.ax-repository-picker label { grid-column: 1 / -1; color: var(--color-muted); font-size: 13px; }
+.ax-repository-picker input { min-width: 0; width: 100%; height: 36px; padding: 0 12px; border: 1px solid var(--color-line); border-radius: var(--radius-action); background: var(--neutral-0); font-size: 14px; }
 .ax-repository-picker input:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
-.ax-repository-import { justify-self: end; padding: 8px 12px; border: 1px solid var(--neutral-950); border-radius: var(--radius-control); background: var(--neutral-950); color: var(--neutral-0); }
-.ax-new-project-dialog .ax-repository-import:hover:not(:disabled) { background: var(--neutral-800); }
+.ax-repository-import { min-height: 36px; padding: 0 14px; border: 1px solid var(--ax-dialog-accent); border-radius: var(--radius-action); background: var(--ax-dialog-accent); color: var(--ax-dialog-accent-ink); font-size: 14px; font-weight: 600; }
+.ax-new-project-dialog .ax-repository-import:hover:not(:disabled) { border-color: var(--ax-dialog-accent-hover); background: var(--ax-dialog-accent-hover); }
 .ax-repository-back { justify-self: start; padding: 4px 0; border: 1px solid transparent; background: transparent; color: var(--color-muted); }
 .ax-repository-picker .ax-repository-error { color: var(--color-danger); }
 .ax-import-yaml { width: 100%; min-height: 260px; max-height: 45dvh; padding: 10px; border: 1px solid var(--neutral-300); border-radius: var(--radius-control); background: var(--neutral-50); color: var(--color-ink); font: 11px/1.5 var(--font-mono); white-space: pre; overflow: auto; resize: vertical; tab-size: 2; }
@@ -6753,166 +6916,195 @@ body,
 .ax-challenge-intro-symbol { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 20px; border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--color-surface-2); }
 .ax-challenge-intro-label { margin: 0 0 8px; color: var(--color-muted); font-size: 11px; }
 .ax-challenge-intro h2 { margin-bottom: 12px; font-size: 21px; }
-.ax-challenge-intro > p:not(.ax-challenge-intro-label) { margin: 0; color: var(--color-muted); font-size: 12px; line-height: 1.6; }
-.ax-challenge-intro > .ax-challenge-intro-name { margin-top: 20px; color: var(--color-ink); font-weight: 500; }
 .ax-challenge-intro ul { display: grid; gap: 10px; margin: 14px 0 24px; padding-left: 16px; list-style: disc; color: var(--color-muted); font-size: 12px; line-height: 1.5; }
 .ax-challenge-intro-start { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 38px; padding: 10px 14px; border: 1px solid var(--neutral-950); border-radius: var(--radius-action); background: var(--neutral-950); color: var(--neutral-0); font-size: 12px; font-weight: 500; }
-.ax-new-project-dialog .ax-challenge-intro-start:hover:not(:disabled) { background: var(--neutral-800); }
-.ax-new-project-dialog .ax-challenge-intro-start:active:not(:disabled) { background: var(--neutral-700); }
+.ax-new-project-dialog .ax-challenge-intro-start:active:not(:disabled) { background: var(--ax-dialog-accent-active); }
 
-.ax-dashboard-challenge-region {
-  flex-shrink: 0;
-  padding-top: 18px;
-  padding-bottom: 0;
+.ax-dashboard-shell {
+  --ax-dashboard-scrollbar-rest: var(--color-line-strong);
+  --ax-dashboard-scrollbar-hover: var(--neutral-500);
+  --ax-dashboard-scrollbar-active: var(--color-ink);
+  background: var(--neutral-0);
 }
 
-.ax-dashboard-shell { background: #ffffff; }
-
 .ax-dashboard-shell .page-header {
+  border-bottom: 1px solid var(--color-line);
   background: transparent;
 }
 
-.ax-daily-challenge-banner {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(370px, 46%);
-  align-items: center;
-  gap: 12px;
-  margin-right: 19px;
-  padding: 12px 14px;
-  overflow: hidden;
-  border: 1px solid var(--color-line);
-  border-radius: 12px;
-  background: var(--color-surface);
-  color: var(--color-ink);
-  box-shadow: 0 6px 20px rgb(15 23 42 / 8%), 0 2px 6px rgb(15 23 42 / 4%);
+/* Zoom also multiplies viewport units, so the height is divided back to fill the window exactly. */
+@media (min-width: 1024px) {
+  .ax-dashboard-shell {
+    --ax-dashboard-scale: 1.05;
+    height: calc(100dvh / var(--ax-dashboard-scale));
+    zoom: var(--ax-dashboard-scale);
+  }
 }
-
-.ax-daily-challenge-banner::before {
-  position: absolute;
-  top: 7px;
-  bottom: 7px;
-  left: 0;
-  width: 5px;
-  border-radius: 4px;
-  background: var(--canvas-accent);
-  content: "";
-}
-
-.ax-daily-challenge-kicker {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  min-width: max-content;
-  min-height: 30px;
-  padding-right: 12px;
-  border-right: 1px solid var(--color-line);
-}
-
-.ax-daily-challenge-kicker span {
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.025em;
-}
-
-.ax-daily-challenge-title {
-  margin: 0;
-  color: var(--neutral-950);
-  font-family: var(--font-sans);
-  font-size: 22px;
-  font-weight: 400;
-  line-height: 1;
-  overflow-wrap: anywhere;
-}
-
-.ax-daily-challenge-banner .ax-dashboard-challenge-start {
-  width: 156px;
-  min-height: 30px;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: var(--radius-action);
-  color: var(--neutral-0);
-  font-size: 15px;
-  white-space: nowrap;
-}
-
-.ax-daily-challenge-banner .ax-dashboard-challenge-start > span {
-  width: 100%;
-  flex-wrap: nowrap;
-  justify-content: space-between;
-  white-space: nowrap;
-}
-
-.ax-daily-challenge-details {
-  display: grid;
-  grid-template-columns: 156px max-content;
-  min-width: 0;
-  align-items: stretch;
-  justify-content: end;
-  gap: 8px;
-}
-
-.ax-daily-challenge-actions {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 3px;
-}
-
-.ax-daily-challenge-actions > div,
-.ax-daily-challenge-actions > div > button { width: 100%; }
-
-.ax-daily-challenge-metrics {
-  display: grid;
-  grid-template-columns: max-content max-content;
-  align-items: center;
-  justify-content: start;
-  column-gap: 8px;
-  border-left: 1px solid var(--color-line);
-  padding-left: 6px;
-}
-
-.ax-daily-challenge-detail { min-width: 0; }
-.ax-daily-challenge-detail-heading { display: flex; min-width: 0; align-items: center; gap: 5px; }
-.ax-daily-challenge-detail-heading > svg { width: 18px; height: 18px; flex: 0 0 18px; color: var(--canvas-accent); stroke-width: 1.8; }
-.ax-daily-challenge-detail-copy { display: grid; min-width: 0; gap: 1px; }
-.ax-daily-challenge-detail-heading > .ax-daily-challenge-detail-copy { flex: 1; }
-.ax-daily-challenge-detail span { color: var(--color-muted); font-size: 10px; }
-.ax-daily-challenge-detail strong { color: var(--color-ink); font-size: 12px; font-weight: 650; overflow-wrap: anywhere; }
 
 .ax-challenge-intro {
   width: min(460px, calc(100vw - 32px));
   padding: 28px;
-  border-radius: 8px;
+  border-radius: 20px;
   background: var(--neutral-0);
   color: var(--challenge-intro-ink);
   box-shadow: 0 14px 40px rgb(0 0 0 / 24%);
 }
 
 .ax-challenge-intro-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-.ax-challenge-intro-symbol { display: grid; place-items: center; width: 38px; height: 38px; flex: none; margin: 0; border: 1px solid var(--color-line); border-radius: var(--radius-panel); background: var(--neutral-0); color: var(--canvas-accent); }
+.ax-challenge-intro-symbol { display: grid; place-items: center; width: 38px; height: 38px; flex: none; margin: 0; border: 0; border-radius: var(--radius-action); background: var(--ax-dialog-tint); color: var(--ax-dialog-tint-ink); }
 .ax-challenge-intro-label { margin: 0; color: var(--challenge-intro-ink); font-size: 18px; font-weight: 700; }
 .ax-challenge-intro h2 { margin: 0 0 12px; font-size: 21px; }
 .ax-challenge-intro > .ax-challenge-intro-name { margin: 0 0 14px; color: var(--challenge-intro-ink); font-size: 20px; font-weight: 700; line-height: 1.25; }
-.ax-challenge-intro ul { display: grid; gap: 10px; margin: 0 0 24px; padding-left: 20px; color: var(--challenge-intro-ink); font-size: 14px; line-height: 1.5; }
-.ax-challenge-intro-start { min-height: 48px; border: 1px solid var(--challenge-intro-ink); border-radius: 8px; background: var(--challenge-intro-ink); color: var(--neutral-0); font-size: 14px; font-weight: 600; }
-.ax-challenge-intro .ax-challenge-intro-start:hover:not(:disabled) { border-color: var(--challenge-intro-hover); background: var(--challenge-intro-hover); }
+.ax-challenge-intro ul { display: grid; gap: 10px; margin: 0 0 24px; padding-left: 20px; color: var(--challenge-intro-ink); font-size: 15px; line-height: 1.5; }
+.ax-challenge-intro-start { min-height: 48px; border: 1px solid var(--ax-dialog-accent); border-radius: 8px; background: var(--ax-dialog-accent); color: var(--ax-dialog-accent-ink); font-size: 14px; font-weight: 600; }
+.ax-challenge-intro .ax-challenge-intro-start:hover:not(:disabled) { border-color: var(--ax-dialog-accent-hover); background: var(--ax-dialog-accent-hover); }
 
-@media (max-width: 700px) {
-  .ax-daily-challenge-banner { grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 8px 12px; margin-right: 0; }
-  .ax-daily-challenge-kicker { min-width: max-content; min-height: 26px; padding-right: 8px; }
-  .ax-daily-challenge-kicker span { font-size: 16px; }
-  .ax-daily-challenge-title { font-size: 16px; }
-  .ax-daily-challenge-details { grid-column: 1 / -1; grid-template-columns: 120px max-content; justify-content: end; gap: 6px; padding: 4px 0 0; border-top: 1px solid var(--color-line); }
-  .ax-daily-challenge-banner .ax-dashboard-challenge-start,
-  .ax-daily-challenge-actions { width: 120px; }
-  .ax-daily-challenge-banner .ax-dashboard-challenge-start { min-width: 120px; min-height: 36px; height: 36px; font-size: 14px; }
-  .ax-daily-challenge-metrics { column-gap: 6px; padding-left: 4px; }
+/* One line across the page, with its content on the same column as the dashboard below it.
+   Light blue with navy reads the same in both themes, so these values are not remapped for dark. */
+.ax-challenge-announcement {
+  --ax-announcement-surface: rgb(147 197 253);
+  --ax-announcement-ink: rgb(11 37 89);
+  --ax-announcement-muted: rgb(23 56 120);
+  --ax-announcement-action-ink: rgb(255 255 255);
+  --ax-announcement-action-hover: rgb(30 64 140);
+  --ax-announcement-dismiss-hover: rgb(120 176 250);
+  display: flex;
+  flex: none;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 20px;
+  background: var(--ax-announcement-surface);
+  color: var(--ax-announcement-ink);
+}
+
+/* The task and its action read as one centered group; the inset keeps it clear of the dismiss. */
+.ax-challenge-announcement-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 1080px;
+  padding-inline: 36px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.ax-challenge-announcement-label,
+.ax-challenge-announcement-level {
+  flex: none;
+  margin: 0;
+  color: var(--ax-announcement-ink);
+}
+
+/* The label and task read as one sentence, so one space follows the colon, not the row's gap. */
+.ax-challenge-announcement-label { margin-right: -8px; }
+
+.ax-challenge-announcement-level {
+  padding: 1px 8px;
+  border-radius: 6px;
+  background: rgb(255 255 255);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.ax-challenge-announcement-title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: inherit;
+  font-family: var(--font-sans);
+  font-size: inherit;
+  font-weight: 600;
+  line-height: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ax-challenge-announcement-action { flex: none; margin-left: 4px; }
+
+/* A failed start reads beside the button, so the strip never changes height. */
+.ax-challenge-announcement-action > div { flex-direction: row-reverse; align-items: center; gap: 12px; }
+.ax-challenge-announcement-action [role="alert"] { color: var(--ax-announcement-ink); }
+
+.ax-challenge-announcement .ax-dashboard-challenge-start {
+  min-height: 28px;
+  height: 28px;
+  padding: 0 12px;
+  background: var(--ax-announcement-ink);
+  color: var(--ax-announcement-action-ink);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ax-challenge-announcement .ax-dashboard-challenge-start:hover { background: var(--ax-announcement-action-hover); }
+
+.ax-challenge-announcement .ax-dashboard-challenge-start:focus-visible,
+.ax-challenge-announcement-dismiss:focus-visible {
+  outline: 2px solid var(--ax-announcement-ink);
+  outline-offset: 2px;
+}
+
+.ax-challenge-announcement-dismiss {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: grid;
+  flex: none;
+  place-items: center;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--ax-announcement-muted);
+}
+
+.ax-challenge-announcement-dismiss:hover {
+  background: var(--ax-announcement-dismiss-hover);
+  color: var(--ax-announcement-ink);
+}
+
+.ax-challenge-announcement-dismiss svg { width: 14px; height: 14px; }
+
+@media (min-width: 640px) {
+  .ax-challenge-announcement { padding: 0 32px; }
+}
+
+/* The page's 56px inset plus its 12px scrollbar gutter. */
+@media (min-width: 1024px) {
+  .ax-challenge-announcement { padding: 0 68px; }
+}
+
+/* Below this the line no longer fits, so it stacks: details, the task, then the action. */
+@media (max-width: 799px) {
+  .ax-challenge-announcement { padding-top: 8px; padding-bottom: 12px; }
+
+  .ax-challenge-announcement-row {
+    display: grid;
+    grid-template-areas:
+      "label level dismiss"
+      "title title title"
+      "action action action";
+    grid-template-columns: auto 1fr auto;
+    gap: 2px 8px;
+    padding-inline: 0;
+  }
+
+  .ax-challenge-announcement-label { grid-area: label; margin-right: 0; }
+  .ax-challenge-announcement-level { grid-area: level; justify-self: start; }
+  .ax-challenge-announcement-title { grid-area: title; white-space: normal; }
+  .ax-challenge-announcement-dismiss { position: static; grid-area: dismiss; margin-right: -6px; transform: none; }
+  .ax-challenge-announcement-action { grid-area: action; margin: 8px 0 0; }
+  .ax-challenge-announcement-action > div { flex-direction: column; align-items: stretch; gap: 6px; }
+
+  .ax-challenge-announcement .ax-dashboard-challenge-start {
+    width: 100%;
+    min-height: 32px;
+    height: 32px;
+  }
 }

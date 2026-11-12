@@ -14,13 +14,13 @@ export const STARTER_NODES: readonly ArchitectureFlowNode[] = [
   {
     id: "server-1",
     type: "architecture",
-    position: { x: 320, y: 80 },
+    position: { x: 380, y: 80 },
     data: { type: "server", label: "API Server" },
   },
   {
     id: "database-1",
     type: "architecture",
-    position: { x: 500, y: 80 },
+    position: { x: 620, y: 80 },
     data: { type: "database", label: "Database" },
   },
 ];

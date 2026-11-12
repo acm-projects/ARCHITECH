@@ -1,0 +1,230 @@
+.ax-workspace {
+  --ax-panel-margin: 12px;
+  --ax-panel-side-width: 360px;
+  --ax-control-radius: 8px;
+  --ax-primary: #155dfc;
+  --ax-primary-hover: #1447e6;
+}
+
+/* ---- Panel system ----
+   Everything that opens over the canvas is one surface at one scale, sized to read beside the
+   bottom bar: component popups, Live estimates, Design check, Simulation, Configure, Archie,
+   History and the project menu. Loaded after the other workspace styles.
+
+   Panel contents keep their own rules and are zoomed as a whole, so their proportions hold and
+   nothing inside falls behind. Lengths set on a zoomed element are divided by the zoom. */
+@media (min-width: 768px) {
+  .ax-workspace {
+    --ax-panel-zoom: 1.25;
+    --ax-panel-radius: 20px;
+    --ax-panel-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+    --ax-panel-bar-width: 640px;
+  }
+
+  /* The frame. */
+  .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) {
+    width: min(var(--ax-panel-bar-width), calc(100vw - 2 * var(--ax-panel-margin)));
+    max-height: min(480px, calc(100dvh - 164px));
+    border: 1px solid var(--ax-line-strong);
+    border-radius: var(--ax-panel-radius);
+    box-shadow: var(--ax-panel-shadow);
+  }
+
+  /* The scale. */
+  .ax-workspace .ax-panel-content .ax-component-menu { zoom: var(--ax-panel-zoom); }
+  .ax-workspace .ax-panel-content .ax-component-menu .ax-panel-title,
+  .ax-workspace .ax-panel-content .ax-panel-title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .ax-workspace .ax-panel-content .ax-component-menu .ax-icon-btn { width: 28px; height: 28px; }
+  .ax-workspace .ax-panel-content .ax-component-menu .ax-item { min-height: 40px; }
+  .ax-workspace .ax-panel-content .ax-component-menu .ax-item .ax-item-glyph { width: 18px; height: 18px; }
+
+  /* The header: one height and inset, whichever panel it belongs to. */
+  .ax-workspace .ax-panel-content .ax-component-menu .ax-component-menu-header {
+    min-height: 44px;
+    padding-block: 6px;
+    padding-inline: var(--ax-panel-inset) 8px;
+  }
+
+  /* The project menu is anchored to its trigger, so it is sized directly rather than zoomed. */
+  .ax-workspace .ax-project-menu {
+    --ax-menu-width: 320px;
+    padding: 8px;
+    border-radius: var(--ax-panel-radius);
+    box-shadow: var(--ax-panel-shadow);
+  }
+  .ax-workspace .ax-project-menu-label { padding: 6px 12px; font-size: 13px; }
+  .ax-workspace .ax-project-menu-item,
+  .ax-workspace .ax-project-menu .ax-ai-toggle {
+    min-height: 44px;
+    padding: 8px 12px;
+    gap: 12px;
+    border-radius: 10px;
+    font-size: 15px;
+  }
+  .ax-workspace .ax-project-menu-item small { font-size: 13px; }
+  .ax-workspace .ax-project-menu :is(.ax-project-menu-item, .ax-ai-toggle) svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* The bar on a selected component is the way into these panels, so it reads at their size. */
+  .ax-workspace .ax-nodebar { height: 40px; padding: 4px; border-color: var(--ax-line-strong); border-radius: 12px; box-shadow: var(--ax-shadow-float); }
+  .ax-workspace .ax-nodebar button { height: 30px; padding: 0 12px; border-radius: 8px; font-size: 14px; }
+}
+
+/* ---- Right panels ----
+   Widgets in one column, in panel/panel.css. Every panel is the height of its content and the
+   column scrolls when more is open than fits. The padding keeps the panels' shadows inside the
+   scrolling column, which would clip them. */
+.ax-workspace .ax-widget-stack {
+  --ax-stack-shadow-room: 32px;
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: var(--ax-panel-margin);
+  width: min(calc(var(--ax-panel-side-width) + var(--ax-stack-shadow-room) + var(--ax-panel-margin)), 100%);
+  padding: var(--ax-panel-margin) var(--ax-panel-margin) var(--ax-panel-margin) var(--ax-stack-shadow-room);
+  overflow-y: auto;
+  scrollbar-width: none;
+  pointer-events: none;
+}
+
+/* The canvas ends where the panels begin, so no component can sit behind one. A lone selection
+   label is left out: it comes and goes with every click, and the canvas must not move under
+   the pointer. The lesson card holds the same edge at its own width. */
+.ax-workspace .ax-workspace-canvas:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-diagram-viewport {
+  width: calc(100% - var(--ax-panel-side-width) - 2 * var(--ax-panel-margin));
+}
+.ax-workspace .ax-workspace-canvas:has(.ax-canvas-overlays > .ax-canvas-panel[data-side="right"]:not([data-learn-collapsed])) .ax-diagram-viewport {
+  width: calc(100% - 332px);
+}
+/* A popup keeps clear of the column: it fits the space beside it and slides left of the bar's
+   center just far enough. The bar itself stays put, so nothing moves under the pointer. */
+.ax-workspace:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) {
+  --ax-popup-width: min(var(--ax-panel-bar-width, 640px), calc(100vw - var(--ax-panel-side-width) - 4 * var(--ax-panel-margin)));
+  width: var(--ax-popup-width);
+  transform: translateX(calc(-50% - max(0px, var(--ax-popup-width) / 2 + var(--ax-panel-side-width) + 3 * var(--ax-panel-margin) - 50vw)));
+}
+
+/* The bar reaches under the column on narrower windows, so the column stops above it. */
+@media (max-width: 1399px) {
+  .ax-workspace .ax-widget-stack { bottom: calc(var(--ax-bar-height, 68px) + var(--ax-panel-margin)); }
+}
+
+/* Archie sits in the bar at the size of the other tools. */
+.ax-workspace .ax-panel-handle[data-tool="archie"] .ax-ai-portrait { width: 34px; height: 34px; }
+
+/* ---- Component folders ----
+   A category popup is a file folder: a tab at the left holds the name and close control where
+   the full-width header was. The frame moves from the popup to the list, so the tab and list
+   read as one outline. The space beside the tab is not part of the folder and leaves the
+   canvas reachable. */
+.ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+.ax-workspace .ax-panel-content .ax-component-menu {
+  overflow: visible;
+  padding: 0;
+  filter: drop-shadow(0 6.4px 9.6px rgb(0 0 0 / 18%));
+}
+.ax-workspace .ax-panel-content .ax-component-menu .ax-component-menu-header {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  width: max-content;
+  max-width: 100%;
+  min-height: 32px;
+  margin: 0 0 -1px;
+  padding: 0 4px 0 12px;
+  gap: 4px;
+  border: 1px solid var(--ax-line-strong);
+  border-bottom-color: var(--ax-surface);
+  border-radius: 12px 12px 0 0;
+  background: var(--ax-surface);
+  pointer-events: auto;
+}
+.ax-workspace .ax-panel-content .ax-component-menu .ax-panel-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ax-workspace .ax-panel-content .ax-component-menu .ax-component-list {
+  padding: 6px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 0 calc(var(--ax-panel-radius, 20px) / var(--ax-panel-zoom, 1)) calc(var(--ax-panel-radius, 20px) / var(--ax-panel-zoom, 1));
+  background: var(--ax-surface);
+  pointer-events: auto;
+}
+
+/* More's folder tab holds a compact search in place of a name. */
+.ax-workspace .ax-panel-content .ax-component-menu .ax-search {
+  flex: none;
+  width: 168px;
+  margin: 0;
+}
+.ax-workspace .ax-panel-content .ax-component-menu .ax-search-input {
+  height: 30px;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+}
+.ax-workspace .ax-panel-content .ax-component-menu .ax-search-input:is(:hover, :focus, :focus-visible) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ax-workspace .ax-panel-content .ax-component-menu .ax-component-menu-header:has(.ax-search-input:focus-visible) {
+  border-color: var(--ax-ink);
+  border-bottom-color: var(--ax-surface);
+}
+
+/* The bar's popup is centered with a transform, which the side panels' entrance would replace. */
+.ax-workspace .ax-canvas-panel[data-side="left"][data-hover-flyout] .ax-panel-content:not([hidden]) { animation: none; }
+
+/* ---- Inside every panel ----
+   One radius for controls, one primary action and one row, whichever panel they sit in. */
+.ax-workspace :is(.ax-panel-content, .ax-new-project-dialog) :is(.ax-field, .ax-panel-action, .ax-action, .ax-ai-send, .ax-icon-btn, .ax-ai-focus-chip, .ax-item, .ax-tech-option, .ax-challenge-intro-start, .ax-archie-collapse, select, textarea, input:not([type="checkbox"], [type="radio"], [type="range"], [type="search"])) { border-radius: var(--ax-control-radius); }
+
+.ax-workspace .ax-panel-content :is(.ax-panel-action[data-variant="primary"], .ax-ai-composer .ax-ai-send) {
+  border-color: var(--ax-primary);
+  background: var(--ax-primary);
+  color: #fff;
+}
+.ax-workspace .ax-panel-content :is(.ax-panel-action[data-variant="primary"], .ax-ai-composer .ax-ai-send):hover:not(:disabled) {
+  border-color: var(--ax-primary-hover);
+  background: var(--ax-primary-hover);
+}
+.ax-workspace .ax-panel-content .ax-panel-action:is(:disabled, [aria-disabled="true"]) { opacity: .45; cursor: default; }
+.ax-workspace .ax-learn .ax-panel-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--ax-panel-control);
+  margin-top: 8px;
+  border: 1px solid transparent;
+  font: 500 13px/20px var(--font-sans);
+  cursor: pointer;
+}
+.ax-workspace .ax-new-project-dialog .ax-challenge-intro-start { min-height: 44px; font-size: 15px; }
+
+/* The lesson card collapses with the same plain control that closes other panels. */
+.ax-workspace .ax-learn .ax-archie-collapse {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ax-workspace .ax-learn .ax-archie-collapse:hover { background: var(--ax-canvas); }

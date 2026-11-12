@@ -1,11 +1,14 @@
-import { useId, useRef, useState, type ComponentProps, type ReactNode } from "react";
-import { ChevronDown, LoaderCircle, Play, X } from "lucide-react";
+import { useEffect, useId, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { BoxSelect, ChevronDown, LoaderCircle, Play } from "lucide-react";
 
 import type { CustomTechnology } from "../../lib/projects/customTechnologies";
 import ArchitectPanel from "./ai/ArchitectPanel";
 import ComponentGlyph from "./ComponentGlyph";
 import ComponentInspector from "./ComponentInspector";
-import { COMPONENT_CATALOG, FAMILY_LABELS } from "./componentCatalog";
+import { COMPONENT_CATALOG, FAMILY_COLORS } from "./componentCatalog";
+import { usePanelCollapse } from "./PanelCollapse";
+import Panel, { PanelGroup, PanelHealth, PanelRow } from "./panel/Panel";
 import RunPanel from "./RunPanel";
 import { RunnableAppButton } from "./ExportButton";
 import HistoryPanel from "./history/HistoryPanel";
@@ -22,12 +25,13 @@ type WorkspaceInspectorProps = {
   onApply: ComponentProps<typeof ArchitectPanel>["onApply"];
   customTechnologies?: readonly CustomTechnology[];
   guidance: ReactNode;
-  testingEnabled: boolean;
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate">;
 };
 
-export function SimulationControl({ projectId, expanded, onToggle, runs, componentName, onShowResults }: {
+export function SimulationControl({ projectId, panelHost, expanded, onToggle, runs, componentName, onShowResults }: {
   projectId: string;
+  // The Run button stays in the header; its panel joins the right panels.
+  panelHost: HTMLElement | null;
   expanded: boolean;
   onToggle: () => void;
   runs: WorkspaceInspectorProps["runs"];
@@ -37,6 +41,11 @@ export function SimulationControl({ projectId, expanded, onToggle, runs, compone
   const anchor = useRef<HTMLDivElement>(null);
   const runMenuId = useId();
   const [runMenuOpen, setRunMenuOpen] = useState(false);
+  const running = runs.view.isRunning;
+  // Simulation heads the column, which may be scrolled down to a panel further along it.
+  useEffect(() => {
+    if (expanded) panelHost?.closest(".ax-widget-stack")?.scrollTo({ top: 0 });
+  }, [expanded, running, panelHost]);
   return <div className="ax-simulation-anchor" ref={anchor} onKeyDown={(event) => {
     if (event.key === "Escape" && expanded && !runMenuOpen) {
       event.stopPropagation();
@@ -62,21 +71,26 @@ export function SimulationControl({ projectId, expanded, onToggle, runs, compone
       </button>
       <RunnableAppButton projectId={projectId} popoverTarget={runMenuId} />
     </div>
-    <section id="ax-run-panel" className="ax-inspector ax-simulation-panel" aria-label="Simulation" hidden={!expanded}>
-      <div className="ax-inspector-frame">
-        <div className="ax-panel-heading">
-          <h2>Simulation</h2>
-          <button type="button" className="ax-icon-btn" aria-label="Close simulation" onClick={() => {
-            onToggle();
-            anchor.current?.querySelector<HTMLButtonElement>("button")?.focus();
-          }}><X size={14} aria-hidden="true" /></button>
-        </div>
+    {panelHost && createPortal(
+      <Panel
+        id="ax-run-panel"
+        icon={<Play size={17} aria-hidden="true" />}
+        title="Simulation"
+        status={running ? "Running…" : runs.view.result ? <PanelHealth status={runs.view.result.health.status} /> : undefined}
+        revealKey={running}
+        hidden={!expanded}
+        onClose={() => {
+          onToggle();
+          anchor.current?.querySelector<HTMLButtonElement>("button")?.focus();
+        }}
+      >
         <RunPanel view={runs.view} completedRun={runs.state.current} traffic={runs.traffic}
           onRateChange={runs.setRequestRate} onRun={() => onShowResults(runs.run)}
           onRunAtRate={(rate) => onShowResults(() => runs.runAtRate(rate))}
           componentName={componentName} />
-      </div>
-    </section>
+      </Panel>,
+      panelHost,
+    )}
   </div>;
 }
 
@@ -84,105 +98,71 @@ export default function WorkspaceInspector({
   projectId,
   nodes, controller, onClearSelection, onApply, customTechnologies,
   guidance,
-}: WorkspaceInspectorProps) {
-  const { archieOpen, historyOpen, configuring, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory } = controller;
-  const archieContentId = useId();
+}: Omit<WorkspaceInspectorProps, "runs">) {
+  const { archieOpen, archieRequest, historyOpen, configuring, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory } = controller;
+  const selectionCollapse = usePanelCollapse();
   const selected = nodes.filter((node) => node.selected);
   const component = selected.length === 1 ? selected[0] : null;
-  const selectionKey = selected.map((node) => node.id).join("\0");
-  const title = component?.data.label ?? (selected.length ? `${selected.length} components` : "System");
-
-  const panelExpanded = archieOpen || historyOpen || configuring || selected.length > 1 || Boolean(guidance);
-  const selectionHeader = (
-    <summary className="ax-inspector-header" onClick={(event) => {
-      if (component) {
-        event.preventDefault();
-        if (configuring) closeConfiguration();
-        else inspectComponent();
-      } else if (archieOpen) {
-        event.preventDefault();
-        closeArchie();
-      }
-    }}>
-      <div className="ax-inspector-heading">
-        {component && <ComponentGlyph type={component.data.type} />}
-        <div>
-          <h2 className="ax-inspector-title">{title}</h2>
-          <p className="ax-inspector-meta">
-            {component ? FAMILY_LABELS[COMPONENT_CATALOG[component.data.type].family] : "Selection"}
-          </p>
-        </div>
-      </div>
-      {/* Clearing selection must not also toggle the section summary. */}
-      <button type="button" className="ax-icon-btn" aria-label="Clear component selection" onClick={(event) => {
-        event.stopPropagation();
-        onClearSelection();
-      }}>
-        <X size={14} aria-hidden="true" />
-      </button>
-      {!configuring && <ChevronDown size={13} aria-hidden="true" />}
-    </summary>
-  );
-
-  // The canvas tools live on the bottom bar; this left panel appears only when it has
-  // something to show (a selection, Archie, history or challenge guidance).
-  if (!component && selected.length < 2 && !guidance && !archieOpen && !historyOpen) return null;
+  // A component's panel opens and closes with its configuration.
+  const componentCollapse = {
+    collapsed: !configuring,
+    toggle: () => (configuring ? closeConfiguration() : inspectComponent()),
+  };
 
   return (
-    <aside
-      className="ax-canvas-panel ax-inspector"
-      data-side="right"
-      data-expanded={panelExpanded}
-      data-selection={selected.length > 0}
-      data-archie={archieOpen || undefined}
-      aria-label="Architecture inspector"
-    >
-      <div className="ax-inspector-frame">
-        {component ? (
-          <details key={selectionKey} className="ax-inspector-section ax-inspector-component" aria-label="Component" data-archie-open={archieOpen} open={configuring}>
-            {selectionHeader}
-            <ComponentInspector key={component.id} node={component} onAskArchie={askArchie} hidden={!configuring || archieOpen || historyOpen} />
-          </details>
-        ) : selected.length > 1 && (
-          <details key={selectionKey} className="ax-inspector-section" aria-label="Selected components" open>
-            {selectionHeader}
-            <ul className="ax-inspector-selection">
-              {selected.map((node) => (
-                <li key={node.id}>
-                  <ComponentGlyph type={node.data.type} />
-                  <span>{node.data.label}<small>{COMPONENT_CATALOG[node.data.type].label}</small></span>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-        {guidance && <section className="ax-inspector-section ax-inspector-guidance" aria-label="Challenge">{guidance}</section>}
-        <section
-          id={archieContentId}
-          className="ax-inspector-section"
-          aria-label="Ask Archie"
-          hidden={!archieOpen}
+    <>
+      {component && (
+        <Panel
+          key={component.id}
+          label="Component"
+          icon={<ComponentGlyph type={component.data.type} />}
+          title={component.data.label}
+          status={component.data.label !== COMPONENT_CATALOG[component.data.type].label ? COMPONENT_CATALOG[component.data.type].label : undefined}
+          collapse={componentCollapse}
+          transient={!configuring}
+          closeLabel="Clear component selection"
+          onClose={onClearSelection}
         >
-          {archieOpen && (
-            <div className="ax-inspector-archie" data-architect>
-              <ArchitectPanel
-                key={projectId}
-                projectId={projectId}
-                onClose={closeArchie}
-                onApply={onApply}
-                customTechnologies={customTechnologies}
-              />
-            </div>
-          )}
-        </section>
-        {historyOpen && (
-          <section className="ax-inspector-section" aria-label="History">
-            <div className="ax-inspector-archie">
-              <HistoryPanel projectId={projectId} onClose={closeHistory} onRestore={onApply} />
-            </div>
-          </section>
-        )}
-      </div>
-    </aside>
+          <ComponentInspector node={component} onAskArchie={askArchie} />
+        </Panel>
+      )}
+      {selected.length > 1 && (
+        <Panel
+          label="Selected components"
+          icon={<BoxSelect size={17} aria-hidden="true" />}
+          title={`${selected.length} components`}
+          collapse={selectionCollapse}
+          closeLabel="Clear component selection"
+          onClose={onClearSelection}
+        >
+          <PanelGroup>
+            {selected.map((node) => {
+              const { family, label: typeLabel } = COMPONENT_CATALOG[node.data.type];
+              return (
+                <PanelRow
+                  key={node.id}
+                  item
+                  lead={<ComponentGlyph type={node.data.type} style={{ color: FAMILY_COLORS[family] }} />}
+                  label={node.data.label}
+                  value={node.data.label !== typeLabel ? typeLabel : undefined}
+                />
+              );
+            })}
+          </PanelGroup>
+        </Panel>
+      )}
+      {guidance}
+      {historyOpen && <HistoryPanel projectId={projectId} onClose={closeHistory} onRestore={onApply} />}
+      {archieOpen && (
+        <ArchitectPanel
+          key={projectId}
+          projectId={projectId}
+          revealKey={archieRequest}
+          onClose={closeArchie}
+          onApply={onApply}
+          customTechnologies={customTechnologies}
+        />
+      )}
+    </>
   );
 }

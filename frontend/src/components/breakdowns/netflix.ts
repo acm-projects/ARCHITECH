@@ -1,4 +1,5 @@
 import type { ArchitectureNodeType } from "../../lib/architecture/types.ts";
+import { ARCHITECTURE_NODE_SIZE } from "../../lib/architecture/nodeLayout.ts";
 import type { ArchitectureFlowNode } from "../workspace/nodes/ArchitectureNode";
 
 export const NETFLIX_SOURCES = {
@@ -35,7 +36,7 @@ export const NETFLIX_SOURCES = {
 type SourceId = keyof typeof NETFLIX_SOURCES;
 export const NETFLIX_CHAPTERS = ["Browsing", "Playback", "Video preparation"] as const;
 
-export const NETFLIX_NODE_SIZE = { width: 192, height: 56 } as const;
+export const NETFLIX_NODE_SIZE = ARCHITECTURE_NODE_SIZE;
 
 type NetflixComponent = {
   id: string;
@@ -130,7 +131,7 @@ export const NETFLIX_COMPONENTS = [
     position: { x: 480, y: 520 },
     explanation: "Open Connect sends the video to your device. Its appliances keep files close to viewers, including inside participating internet providers' networks. The video does not pass through the application API.",
     why: "Serving popular files locally reduces long-distance traffic and the bandwidth needed upstream.",
-    flow: "After the app receives delivery URLs, it requests video from an appliance. The dashed arrow points back to the viewer because that is where the files go.",
+    flow: "After the app receives delivery URLs, it requests video from an appliance. The arrow points back to the viewer because that is where the files go.",
     tradeoff: "Each appliance has limited storage and bandwidth. Netflix has to choose which files to put there and where to send traffic if it fails.",
     sources: ["delivery", "platform", "fill"],
   },

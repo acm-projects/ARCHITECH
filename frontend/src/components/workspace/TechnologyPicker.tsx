@@ -5,7 +5,6 @@ import { useContext, useMemo, useState, type CSSProperties } from "react";
 import type { Edge } from "@xyflow/react";
 import { useReactFlow } from "@xyflow/react";
 import { useSession } from "next-auth/react";
-import { Search } from "lucide-react";
 
 import type { ExperienceLevel } from "../../types";
 import { roleOf } from "../../lib/architecture/analysis";
@@ -30,8 +29,8 @@ import {
 } from "./componentCatalog";
 import { DesignTrafficContext } from "./DesignTrafficContext";
 import { DesignComparisonTable } from "./DesignComparisonTable";
+import { PanelDetail, PanelGroup, PanelLink, PanelOption, PanelRow, PanelText } from "./panel/Panel";
 import { compareTechnologiesInDesign } from "../../lib/architecture/evaluation/whatIf";
-import "./live-metrics.css";
 import type { ArchitectureFlowNode, ArchitectureNodeType } from "./nodes/ArchitectureNode";
 import { setComponentDragImage } from "./toolbox/dragPreview";
 
@@ -40,8 +39,8 @@ import { setComponentDragImage } from "./toolbox/dragPreview";
 // latency, all from the evaluation engine (lib/architecture/implementationStats.ts).
 //   - TechnologyDragList: inside the toolbox. Each technology can be dragged onto the canvas
 //     directly, so a component can be configured before it is placed or connected.
-//   - TechnologyChooser: inside a component's Configure card. A list of options with their
-//     strengths and trade-offs for beginners, a compact dropdown for everyone else.
+//   - TechnologyRow and TechnologyDetail: a component's panel. A row naming the choice, opening
+//     a list with strengths and trade-offs for beginners, a comparison table for everyone else.
 
 // ---- Shared text ----
 
@@ -146,20 +145,37 @@ export function TechnologyDragList({ component, id }: { component: ComponentDefi
   );
 }
 
-// ---- Configure card ----
+// ---- A component's panel ----
 
 // More technologies than this for a type: show a search and a short list.
 const SHORT_LIST = 8;
 
-export function TechnologyChooser({
-  nodeId,
-  type,
-  implementation,
-}: {
+type TechnologyProps = {
   nodeId: string;
   type: ArchitectureNodeType;
   implementation: string | undefined;
-}) {
+};
+
+export function TechnologyRow({ nodeId, type, implementation, onOpen }: TechnologyProps & { onOpen: () => void }) {
+  const traffic = useContext(DesignTrafficContext);
+  const { getNodes, getEdges } = useReactFlow<ArchitectureFlowNode, Edge>();
+  const comparison = compareTechnologiesForNode({ nodes: getNodes(), edges: getEdges() }, traffic, nodeId);
+  // A custom component has no technologies to choose from.
+  if (!comparison || type === "custom") return null;
+  const current = currentImplementationId(type, implementation);
+  const selected = comparison.options.find((option) => option.implementation.id === current) ?? comparison.options[0];
+  const name = selected.implementation.name;
+  return (
+    <>
+      {comparison.options.length < 2
+        ? <PanelRow label="Technology" value={name} title={tradeoffs(selected)} />
+        : <PanelLink label="Technology" value={name} title={tradeoffs(selected)} onClick={onOpen} />}
+      {!selected.enough && <PanelText tone="danger">{sizedLine(type, selected)}</PanelText>}
+    </>
+  );
+}
+
+export function TechnologyDetail({ nodeId, type, implementation, onBack }: TechnologyProps & { onBack: () => void }) {
   const traffic = useContext(DesignTrafficContext);
   const { data: session } = useSession();
   // Same fallback as the rest of the app when there is no level yet.
@@ -169,16 +185,14 @@ export function TechnologyChooser({
   // With dozens of technologies for a type: a search, and a short list until "Show all".
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
 
-  // Measured in the design as it is now. The card is open only while this component is
+  // Measured in the design as it is now. The detail is open only while this component is
   // selected and re-renders when its data changes, so this is the graph on screen. A few
   // small simulations per option; cheap enough to redo on each render.
   const graph = { nodes: getNodes(), edges: getEdges() };
   const comparison = compareTechnologiesForNode(graph, traffic, nodeId);
   // Each technology's effect on the whole design (memoized by fingerprint, so cheap to redo).
   const whatIf = compareTechnologiesInDesign(graph, traffic, nodeId);
-  // A custom component has no technologies to choose from.
   if (!comparison || type === "custom") return null;
 
   const current = currentImplementationId(type, implementation);
@@ -189,7 +203,6 @@ export function TechnologyChooser({
     setError(null);
     if (result.changed) setNodes(result.nodes);
   };
-  const basis = basisLine(comparison, traffic.datasetGb, usesStorage(type));
 
   // Which technologies to list. Few: all. Many: the common ones, the current one and the three
   // that do best in this design, unless the user searches or asks for all.
@@ -215,130 +228,64 @@ export function TechnologyChooser({
   );
   const listed = comparison.options.filter((option) => visible.has(option.implementation.id));
   const shownWhatIf = whatIf ? { ...whatIf, options: whatIf.options.filter((option) => visible.has(option.implementation.id)) } : whatIf;
+  const showTable = level !== "Beginner" && Boolean(shownWhatIf?.ready) && (shownWhatIf?.options.length ?? 0) >= 2;
 
   return (
-    <div className="ax-card-section ax-configure-technology">
-      <div className="ax-tech-label-row">
-        <p className="ax-card-label">Technology</p>
-        {many && <button type="button" className="ax-icon-btn" aria-label="Search technologies"
-          aria-expanded={searchOpen} aria-controls={`technology-search-${nodeId}`}
-          onClick={() => { setSearchOpen(!searchOpen); setQuery(""); }}>
-          <Search size={14} aria-hidden="true" />
-        </button>}
-      </div>
-      {level === "Beginner" && <p className="ax-tech-basis">{basis}</p>}
-      {many && searchOpen && (
-        <div className="ax-tech-search" id={`technology-search-${nodeId}`}>
-          <input
-            type="search"
-            autoFocus
-            className="ax-field"
-            aria-label="Search technologies"
-            placeholder={`Search ${comparison.options.length} technologies`}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          {!needle && (
-            <button type="button" className="ax-tech-more" onClick={() => setShowAll((value) => !value)}>
-              {showAll ? "Show fewer" : `Show all ${comparison.options.length}`}
-            </button>
-          )}
-        </div>
-      )}
-
-      {level === "Beginner" ? (
-        <div role="radiogroup" aria-label="Technology" className="ax-tech-list">
-          {listed.map((estimate) => {
-            const checked = estimate.implementation.id === current;
-            return (
-              <button
-                key={estimate.implementation.id}
-                type="button"
-                role="radio"
-                aria-checked={checked}
-                onClick={() => choose(estimate.implementation.id)}
-                className="ax-tech-option"
-              >
-                <span className="ax-tech-head">
-                  <span className="ax-tech-name">{estimate.implementation.name}</span>
-                  {estimate.implementation.isDefault && <span className="ax-tech-tag">default</span>}
-                </span>
-                <span className="ax-tech-meta">{perInstanceLine(type, estimate)}</span>
-                <span className="ax-tech-meta ax-tech-sized" data-short={!estimate.enough || undefined}>
-                  {sizedLine(type, estimate)}
-                </span>
-                {checked && (
-                  <span className="ax-tech-notes">
-                    {estimate.implementation.strengths.map((text) => (
-                      <span key={text}>+ {text}</span>
-                    ))}
-                    {estimate.implementation.tradeoffs.map((text) => (
-                      <span key={text}>− {text}</span>
-                    ))}
-                  </span>
-                )}
+    <PanelDetail title="Technology" onBack={onBack}>
+      <PanelText>{basisLine(comparison, traffic.datasetGb, usesStorage(type))}</PanelText>
+      <PanelGroup>
+        {selected.enough
+          ? <PanelRow label="In this design" value={sizedLine(type, selected)} />
+          : <PanelText tone="danger">{sizedLine(type, selected)}</PanelText>}
+        <PanelRow label="Per instance" value={perInstanceLine(type, selected)} title={tradeoffs(selected)} />
+      </PanelGroup>
+      <PanelGroup>
+        {many && (
+          <div className="axp-compose">
+            <input
+              type="search"
+              className="axp-input axp-input-box"
+              aria-label="Search technologies"
+              placeholder={`Search ${comparison.options.length} technologies`}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            {!needle && (
+              <button type="button" className="axp-action" onClick={() => setShowAll((value) => !value)}>
+                {showAll ? "Show fewer" : "Show all"}
               </button>
-            );
-          })}
-        </div>
-      ) : (
-        <>
-          <select
-            aria-label="Technology"
-            value={current}
-            onChange={(event) => choose(event.target.value)}
-            className="ax-field mt-1"
-            disabled={comparison.options.length < 2}
-          >
-            {many ? (
-              <>
-                <optgroup label="Common">
-                  {comparison.options.filter((estimate) => CORE_IMPLEMENTATION_IDS.has(estimate.implementation.id) && (!needle || matches(estimate) || estimate.implementation.id === current)).map((estimate) => (
-                    <option key={estimate.implementation.id} value={estimate.implementation.id}>
-                      {estimate.implementation.name}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label={needle ? "More (matching your search)" : "More technologies"}>
-                  {comparison.options
-                    .filter((estimate) => !CORE_IMPLEMENTATION_IDS.has(estimate.implementation.id) && (!needle || matches(estimate) || estimate.implementation.id === current))
-                    .map((estimate) => (
-                      <option key={estimate.implementation.id} value={estimate.implementation.id}>
-                        {estimate.implementation.name}
-                      </option>
-                    ))}
-                </optgroup>
-              </>
-            ) : (
-              comparison.options.map((estimate) => (
-                <option key={estimate.implementation.id} value={estimate.implementation.id}>
-                  {estimate.implementation.name}
-                </option>
-              ))
             )}
-          </select>
-          {!selected.enough && <p className="ax-tech-meta ax-tech-sized" data-short>{sizedLine(type, selected)}</p>}
-        </>
-      )}
-      {shownWhatIf && <DesignComparisonTable whatIf={shownWhatIf} onChoose={choose} context={
-        <div className="ax-tech-comparison-context">
-          <p className="ax-tech-basis">{basis}</p>
-          <p className="ax-tech-meta">{sizedLine(type, selected)}</p>
-          <p className="ax-tech-meta" title={tradeoffs(selected)}>{perInstanceLine(type, selected)}</p>
-        </div>
-      } />}
-      {level !== "Beginner" && (!shownWhatIf?.ready || shownWhatIf.options.length < 2) && (
-        <div className="ax-tech-meta mt-1" title={tradeoffs(selected)}>
-          <p>{sizedLine(type, selected)}</p>
-          <p>{perInstanceLine(type, selected)}</p>
-        </div>
-      )}
-      {many && needle && listed.length <= 1 && <p className="ax-tech-meta mt-1">No other technology matches “{query.trim()}”.</p>}
-      {error && (
-        <p role="alert" className="ax-card-label mt-1">
-          {error}
-        </p>
-      )}
-    </div>
+          </div>
+        )}
+        {showTable && shownWhatIf ? (
+          <DesignComparisonTable whatIf={shownWhatIf} onChoose={choose} />
+        ) : (
+          <div role="radiogroup" aria-label="Technology">
+            {listed.map((estimate) => {
+              const checked = estimate.implementation.id === current;
+              return (
+                <PanelOption
+                  key={estimate.implementation.id}
+                  label={estimate.implementation.name}
+                  detail={sizedLine(type, estimate)}
+                  checked={checked}
+                  title={tradeoffs(estimate)}
+                  onChoose={() => choose(estimate.implementation.id)}
+                >
+                  {checked && level === "Beginner" && (
+                    <>
+                      {estimate.implementation.strengths.map((text) => <span key={text} className="axp-small">+ {text}</span>)}
+                      {estimate.implementation.tradeoffs.map((text) => <span key={text} className="axp-small">− {text}</span>)}
+                    </>
+                  )}
+                </PanelOption>
+              );
+            })}
+          </div>
+        )}
+        {many && needle && listed.length <= 1 && <PanelText>No other technology matches “{query.trim()}”.</PanelText>}
+        {error && <PanelText role="alert" tone="danger">{error}</PanelText>}
+      </PanelGroup>
+    </PanelDetail>
   );
 }

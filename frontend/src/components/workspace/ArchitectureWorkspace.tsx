@@ -1,18 +1,20 @@
 "use client";
 
-import { useCallback, useMemo, useState, type CSSProperties, type DragEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
 import { Gauge, ShieldCheck } from "lucide-react";
 import {
   Controls,
-  ConnectionLineType,
-  MarkerType,
   ReactFlow,
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
   useReactFlow,
+  SelectionMode,
+  ViewportPortal,
   type Connection,
+  type FinalConnectionState,
   type Edge,
+  type NodeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./architecture-workspace.css";
@@ -24,9 +26,10 @@ import {
   removeSelected,
 } from "../../lib/architecture/nodeOperations";
 import { applyReset, planReset } from "../../lib/architecture/reset";
+import { ARCHITECTURE_NODE_SIZE, spreadOverlappingNodes } from "../../lib/architecture/nodeLayout";
+import { snapNode, type SnapGuide } from "../../lib/architecture/nodeSnap";
 import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
-import { ChallengeLeaderboard } from "../challenge/ChallengeLeaderboard";
 import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
 import LearnCard from "../learn/LearnCard";
 import { projectActions } from "../projects/projectActions";
@@ -48,6 +51,7 @@ import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
+import { useKeepNodesInView } from "./useKeepNodesInView";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
 import { DesignCheckBadges, DesignCheckPanel, useDesignCheck } from "./DesignCheck";
@@ -55,11 +59,17 @@ import { LiveEstimatesPanel } from "./LiveMetricsBar";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
-import OrthogonalEdge from "./OrthogonalEdge";
+import OrthogonalEdge, { ConnectionPreview } from "./OrthogonalEdge";
 import ArchitectureNode, {
   type ArchitectureFlowNode,
   type ArchitectureNodeData,
 } from "./nodes/ArchitectureNode";
+// After every component's own styles: this is the shared panel system they all sit in.
+import "./workspace-panels.css";
+
+const MIN_ZOOM = 0.25;
+// How close a dragged component gets, on screen, before it lines up with another.
+const SNAP_REACH_PX = 8;
 
 // Keep this outside the component so React Flow gets the same node type reference
 // instead of creating a new one every time the workspace rerenders.
@@ -67,27 +77,29 @@ const nodeTypes = {
   architecture: ArchitectureNode,
 };
 
-const FIT_VIEW_OPTIONS = {
-  padding: 0.4,
+// Components open at the scale of the bottom bar, whether the view is fitted or starts empty.
+const WORKSPACE_ZOOM = 1.4;
+const DESKTOP_FIT_VIEW_OPTIONS = {
+  padding: 0.2,
+  maxZoom: WORKSPACE_ZOOM,
 };
+// The same fit the breakdown uses on small screens, so labels stay readable.
+const MOBILE_FIT_VIEW_OPTIONS = {
+  padding: 0.15,
+  maxZoom: 1.1,
+};
+const fitViewOptionsForScreen = () =>
+  window.matchMedia("(max-width: 900px)").matches ? MOBILE_FIT_VIEW_OPTIONS : DESKTOP_FIT_VIEW_OPTIONS;
 
+// Every edge draws as a right-angle route with its own arrowhead, including saved edges
+// without a type ("default") and those saved as "orthogonal".
 const edgeTypes = {
+  default: OrthogonalEdge,
   orthogonal: OrthogonalEdge,
 };
 
-// React Flow creates arrowheads from edge options rather than stylesheet rules.
-const defaultEdgeOptions = {
-  type: "orthogonal" as const,
-  markerEnd: {
-    type: MarkerType.ArrowClosed,
-    color: "#b4b4af",
-    width: 6,
-    height: 6,
-  },
-};
-
-const NODE_WIDTH = 82;
-const NODE_HEIGHT = 27;
+// A refused connection explains itself for this long, then clears.
+const CONNECTION_NOTICE_MS = 4000;
 
 // Learn and Challenge both reset to an empty architecture so the user builds it themselves.
 const emptyGraph = (): {
@@ -105,20 +117,56 @@ const emptyGraph = (): {
 // Each mode only adds its own lesson/evaluation state around that same canvas.
 function Workspace({ project }: { project: Project }) {
   // React Flow owns the live node/edge state while this project is open.
+  // Spread once here rather than in the store: the saved layout only changes with the
+  // user's next edit, so opening a project does not count as editing it.
+  const [initialNodes] = useState(() => spreadOverlappingNodes(project.nodes));
+  const [fitViewOptions] = useState(fitViewOptionsForScreen);
+  useKeepNodesInView(MIN_ZOOM);
   const [nodes, setNodes, onNodesChange] =
-    useNodesState<ArchitectureFlowNode>(project.nodes);
+    useNodesState<ArchitectureFlowNode>(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(project.edges);
-  const visibleEdges = useMemo(
-    () => edges.map((edge) => edge.type === "orthogonal" ? edge : { ...edge, type: "orthogonal" }),
-    [edges],
-  );
 
   const {
     screenToFlowPosition,
     fitView,
     getNodes,
     getEdges,
+    getZoom,
   } = useReactFlow<ArchitectureFlowNode, Edge>();
+
+  // One component dragged alone lines up with the others; a group keeps its own arrangement.
+  const [snapGuides, setSnapGuides] = useState<readonly SnapGuide[]>([]);
+  // React Flow tracks the drag from the pointer, and its last event carries that raw position.
+  const lastSnap = useRef<{ id: string; x: number; y: number } | null>(null);
+  const handleNodesChange = useCallback((changes: NodeChange<ArchitectureFlowNode>[]) => {
+    const moves = changes.filter((change) => change.type === "position");
+    const move = moves.length === 1 ? moves[0] : undefined;
+    const moving = move?.dragging && move.position ? getNodes().find((node) => node.id === move.id) : undefined;
+    if (!move?.position || !moving) {
+      const landed = lastSnap.current;
+      lastSnap.current = null;
+      if (moves.length > 0) setSnapGuides((guides) => (guides.length > 0 ? [] : guides));
+      const land = move?.position && move.id === landed?.id ? { ...move, position: { x: landed.x, y: landed.y } } : undefined;
+      onNodesChange(land ? changes.map((change) => (change === move ? land : change)) : changes);
+      return;
+    }
+    const boxOf = (node: ArchitectureFlowNode) => ({
+      x: node.position.x,
+      y: node.position.y,
+      width: node.measured?.width ?? ARCHITECTURE_NODE_SIZE.width,
+      height: node.measured?.height ?? ARCHITECTURE_NODE_SIZE.height,
+    });
+    const connected = new Set(getEdges().flatMap((edge) =>
+      edge.source === move.id ? [edge.target] : edge.target === move.id ? [edge.source] : []));
+    const snapped = snapNode(
+      { ...boxOf(moving), ...move.position },
+      getNodes().filter((node) => node.id !== move.id).map((node) => ({ box: boxOf(node), connected: connected.has(node.id) })),
+      SNAP_REACH_PX / getZoom(),
+    );
+    lastSnap.current = { id: move.id, x: snapped.x, y: snapped.y };
+    setSnapGuides(snapped.guides);
+    onNodesChange(changes.map((change) => (change === move ? { ...move, position: { x: snapped.x, y: snapped.y } } : change)));
+  }, [getNodes, getEdges, getZoom, onNodesChange]);
 
   // Give every new node a unique ID for this editing session.
   // Deleted IDs are not reused, which keeps history and connections predictable.
@@ -127,6 +175,12 @@ function Workspace({ project }: { project: Project }) {
   );
 
   const [title, setTitle] = useState(project.title);
+  const [connectionNotice, setConnectionNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (!connectionNotice) return;
+    const timer = window.setTimeout(() => setConnectionNotice(null), CONNECTION_NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [connectionNotice]);
   const [learnPanelOffset, setLearnPanelOffset] = useState(0);
   const [learnPanelCollapsed, setLearnPanelCollapsed] = useState(false);
   const learnPanelStyle = { "--ax-learn-offset": `${learnPanelOffset}px` } as CSSProperties;
@@ -149,7 +203,6 @@ function Workspace({ project }: { project: Project }) {
 
   const inspector = useWorkspaceInspector({
     selectedNodeIds: nodes.filter((node) => node.selected).map((node) => node.id),
-    onClearSelection: clearCanvasSelection,
   });
   const { askArchie, reset: resetInspector } = inspector;
 
@@ -212,27 +265,15 @@ function Workspace({ project }: { project: Project }) {
   // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
   const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
   // Problems marked on the canvas, with one-click fixes and where the uptime comes from.
-  const rawDesignCheck = useDesignCheck();
+  const designCheck = useDesignCheck();
   const liveReady = Boolean(live.result?.summary.ready);
   const findingCount = liveReady ? (live.result?.evaluation.findings.length ?? 0) : 0;
-  const [libraryOpen, setLibraryOpen] = useState(false);
   const [liveOpen, setLiveOpen] = useState(false);
-  const closeUtilityPanels = () => {
-    setLibraryOpen(false);
-    setLiveOpen(false);
-    rawDesignCheck.setOpen(false);
-    rawDesignCheck.setFocus(null);
-  };
-  const designCheck = {
-    ...rawDesignCheck,
-    setOpen: (value: Parameters<typeof rawDesignCheck.setOpen>[0]) => {
-      const open = typeof value === "function" ? value(rawDesignCheck.open) : value;
-      if (open) {
-        closeUtilityPanels();
-        inspector.openSection(null);
-      }
-      rawDesignCheck.setOpen(open);
-    },
+  // Where Simulation renders from the header, so it joins the other right panels.
+  const [simulationHost, setSimulationHost] = useState<HTMLDivElement | null>(null);
+  const closeDesignCheck = () => {
+    designCheck.setOpen(false);
+    designCheck.setFocus(null);
   };
 
   // Check a connection before React Flow lets the user create it.
@@ -264,14 +305,42 @@ function Workspace({ project }: { project: Project }) {
         mode,
       );
 
-      if (!result.ok) return;
+      if (!result.ok) {
+        setConnectionNotice(result.message);
+        return;
+      }
 
+      setConnectionNotice(null);
       setEdges(result.edges);
 
       // Learn uses this to react to what the student connected during the tutorial.
       reportConnection(connection);
     },
     [getNodes, getEdges, mode, setEdges, reportConnection],
+  );
+
+  // React Flow skips onConnect when the drop target fails isValidConnection, so explain the
+  // refusal here: the same rule that blocked the drop supplies the message.
+  const handleConnectEnd = useCallback(
+    (_event: MouseEvent | TouchEvent, state: FinalConnectionState) => {
+      if (state.isValid === true || !state.fromNode || !state.toNode) return;
+      // A drag can start from an input handle; the connection still runs into it.
+      const reversed = state.fromHandle?.type === "target";
+      const [source, target] = reversed ? [state.toNode, state.fromNode] : [state.fromNode, state.toNode];
+      const [sourceHandle, targetHandle] = reversed ? [state.toHandle, state.fromHandle] : [state.fromHandle, state.toHandle];
+      const verdict = validateConnection(
+        { nodes: getNodes(), edges: getEdges() },
+        {
+          source: source.id,
+          target: target.id,
+          sourceHandle: sourceHandle?.id ?? null,
+          targetHandle: targetHandle?.id ?? null,
+        },
+        mode,
+      );
+      if (!verdict.ok) setConnectionNotice(verdict.message);
+    },
+    [getNodes, getEdges, mode],
   );
 
   // This is the one place new canvas nodes are created.
@@ -288,8 +357,8 @@ function Workspace({ project }: { project: Project }) {
           id,
           type: "architecture",
           position: {
-            x: center.x - NODE_WIDTH / 2,
-            y: center.y - NODE_HEIGHT / 2,
+            x: center.x - ARCHITECTURE_NODE_SIZE.width / 2,
+            y: center.y - ARCHITECTURE_NODE_SIZE.height / 2,
           },
           data: component,
         }),
@@ -357,7 +426,7 @@ function Workspace({ project }: { project: Project }) {
 
         // Wait until React Flow renders the reset graph before adjusting the viewport.
         requestAnimationFrame(() => {
-          fitView(FIT_VIEW_OPTIONS);
+          fitView(fitViewOptions);
         });
       },
 
@@ -383,6 +452,7 @@ function Workspace({ project }: { project: Project }) {
     edges,
     replaceGraph,
     fitView,
+    fitViewOptions,
     clearCanvasSelection,
     learn,
     challenge,
@@ -462,13 +532,10 @@ function Workspace({ project }: { project: Project }) {
     <ArchieContext.Provider value={archie}>
       <DesignTrafficContext.Provider value={activeRuns.traffic}>
       <div className="ax-workspace flex h-screen flex-col overflow-hidden">
-        {((showInspector && !inspector.archieOpen) || (!showInspector && learnPanelCollapsed && !inspector.historyOpen)) && <button
-          type="button" className="ax-archie-launcher" aria-label={showInspector ? "Expand Archie" : "Expand lesson guidance"}
-          title={showInspector ? "Expand Archie" : "Expand lesson guidance"} aria-expanded={false}
-          onClick={() => {
-            if (showInspector) { closeUtilityPanels(); inspector.askArchie(); }
-            else setLearnPanelCollapsed(false);
-          }}><ArchiePortrait /></button>}
+        {!showInspector && learnPanelCollapsed && !inspector.historyOpen && <button
+          type="button" className="ax-archie-launcher" aria-label="Expand lesson guidance"
+          title="Expand lesson guidance" aria-expanded={false}
+          onClick={() => setLearnPanelCollapsed(false)}><ArchiePortrait /></button>}
 
         <ChallengeIntroduction
           key={`${project.id}:${challenge.challenge.id}`}
@@ -495,11 +562,12 @@ function Workspace({ project }: { project: Project }) {
           saveStatus={saveStatus}
           runControl={canRunDesign && <SimulationControl
             projectId={project.id}
+            panelHost={simulationHost}
             runs={activeRuns}
             componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
-            onShowResults={(action) => { closeUtilityPanels(); inspector.showResults(action); }}
-            expanded={!inspector.archieOpen && !inspector.historyOpen && !nodes.some((node) => node.selected) && inspector.section === "run"}
-            onToggle={() => { closeUtilityPanels(); inspector.toggleSection("run"); }}
+            onShowResults={inspector.showResults}
+            expanded={inspector.section === "run"}
+            onToggle={() => inspector.toggleSection("run")}
           />}
           projectActions={(menuId) => (
             <div hidden={!showInspector}>
@@ -512,20 +580,21 @@ function Workspace({ project }: { project: Project }) {
 
         <div className="relative flex min-h-0 flex-1 flex-row bg-(--ax-canvas)">
           {/* Components are dragged from here onto the shared project canvas. */}
-          <ComponentToolbox customTechnologies={project.customTechnologies} active={libraryOpen}
-            onActivate={() => { closeUtilityPanels(); inspector.openSection(null); setLibraryOpen(true); }}
+          <ComponentToolbox customTechnologies={project.customTechnologies}
             tools={[
+              ...(showInspector ? [{
+                key: "archie",
+                label: "Ask Archie",
+                icon: <ArchiePortrait />,
+                open: inspector.archieOpen,
+                onToggle: inspector.archieOpen ? inspector.closeArchie : inspector.askArchie,
+              }] : []),
               ...(canRunDesign ? [{
                 key: "live",
                 label: "Live estimates",
                 icon: <Gauge size={16} aria-hidden="true" />,
                 open: liveOpen,
-                onToggle: () => {
-                  const next = !liveOpen;
-                  closeUtilityPanels();
-                  inspector.openSection(null);
-                  setLiveOpen(next);
-                },
+                onToggle: () => setLiveOpen((open) => !open),
               }, {
                 key: "check",
                 label: "Design check",
@@ -536,34 +605,14 @@ function Workspace({ project }: { project: Project }) {
                 title: "Connect a client to check the design.",
                 onToggle: () => {
                   if (designCheck.enabled && designCheck.open) {
-                    designCheck.setOpen(false);
-                    designCheck.setFocus(null);
+                    closeDesignCheck();
                     return;
                   }
                   if (!designCheck.enabled) designCheck.setEnabled(true);
                   designCheck.setOpen(true);
                 },
               }] : []),
-            ]}
-            toolContent={!canRunDesign ? null : liveOpen ? (
-              <LiveEstimatesPanel
-                result={live.result}
-                changes={live.changes}
-                requestsPerSecond={activeRuns.traffic.requestsPerSecond}
-                componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
-                onClose={() => setLiveOpen(false)}
-              />
-            ) : designCheck.enabled && designCheck.open ? (
-              <DesignCheckPanel
-                result={live.result}
-                nodes={nodes}
-                edges={edges}
-                traffic={activeRuns.traffic}
-                check={designCheck}
-                onApply={replaceGraph}
-                onUndo={undo}
-              />
-            ) : null} />
+            ]} />
 
           <main className="ax-workspace-canvas relative min-h-0 min-w-0 flex-1 bg-(--ax-canvas)" data-inspector={showInspector}>
             {/* React Flow is only responsible for displaying/interacting with the graph.
@@ -572,58 +621,86 @@ function Workspace({ project }: { project: Project }) {
               <InspectorContext.Provider value={showInspector ? inspector.nodeActions : null}>
                 <ReactFlow
                   nodes={nodes}
-                  edges={visibleEdges}
+                  edges={edges}
                   nodeTypes={nodeTypes}
                   edgeTypes={edgeTypes}
-                  onNodesChange={onNodesChange}
+                  onNodesChange={handleNodesChange}
                   onEdgesChange={onEdgesChange}
                   onConnect={handleConnect}
+                  onConnectEnd={handleConnectEnd}
                   isValidConnection={isValidConnection}
+                  connectionLineComponent={ConnectionPreview}
                   // Delete and Backspace are handled by useWorkspaceKeyboard so all
                   // keyboard behavior goes through the same history-aware path.
                   deleteKeyCode={null}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  defaultEdgeOptions={defaultEdgeOptions}
-                  connectionLineType={ConnectionLineType.SmoothStep}
                   fitView
-                  fitViewOptions={FIT_VIEW_OPTIONS}
+                  fitViewOptions={fitViewOptions}
+                  defaultViewport={{ x: 0, y: 0, zoom: WORKSPACE_ZOOM }}
+                  minZoom={MIN_ZOOM}
+                  maxZoom={2}
                   // Drag empty canvas to pan; dragging a component still moves it.
+                  // Shift+drag draws a selection box that picks every component it touches.
                   panOnDrag
                   panOnScroll
+                  selectionMode={SelectionMode.Partial}
+                  elevateEdgesOnSelect
                 >
-                  <Controls showInteractive={false} />
+                  <Controls showInteractive={false} fitViewOptions={fitViewOptions} />
                   {canRunDesign && <DesignCheckBadges result={live.result} nodes={nodes} check={designCheck} />}
+                  <ViewportPortal>
+                    {snapGuides.map((guide) => (
+                      <div key={guide.axis} className="ax-snap-guide" data-axis={guide.axis} aria-hidden="true" style={guide.axis === "x"
+                        ? { transform: `translate(${guide.at}px, ${guide.from}px)`, height: guide.to - guide.from }
+                        : { transform: `translate(${guide.from}px, ${guide.at}px)`, width: guide.to - guide.from }} />
+                    ))}
+                  </ViewportPortal>
                 </ReactFlow>
               </InspectorContext.Provider>
             </div>
 
             {/* Keep floating tools below the header while the graph extends behind it. */}
             <div className="ax-canvas-overlays">
+              <div className="ax-canvas-notices">
+                {connectionNotice && <p role="status" className="ax-canvas-notice">{connectionNotice}</p>}
+                {/* If saving the selected mode fails, show the error without breaking the editor. */}
+                {modeError && <p role="alert" className="ax-canvas-notice">{modeError}</p>}
+              </div>
 
-
-              {/* If saving the selected mode fails, show the error without breaking the editor. */}
-              {modeError && (
-                <p
-                  role="alert"
-                  className="ax-card-label absolute bottom-4 left-4 z-10"
-                >
-                  {modeError}
-                </p>
-              )}
-
-              {showInspector ? (
-                <WorkspaceInspector
-                  projectId={project.id}
-                  nodes={nodes}
-                  controller={inspector}
-                  onClearSelection={clearCanvasSelection}
-                  onApply={replaceGraph}
-                  customTechnologies={project.customTechnologies}
-                  testingEnabled={canRunDesign}
-                  runs={activeRuns}
-                  guidance={mode === "challenge" ? (
-                    <>
+              {/* Every right panel stacks here, so opening one never hides another. */}
+              <div className="ax-widget-stack">
+                {/* Simulation always heads the column. */}
+                <div ref={setSimulationHost} className="contents" />
+                {canRunDesign && liveOpen && (
+                  <LiveEstimatesPanel
+                    result={live.result}
+                    changes={live.changes}
+                    requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                    componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+                    onClose={() => setLiveOpen(false)}
+                  />
+                )}
+                {canRunDesign && liveReady && designCheck.enabled && designCheck.open && (
+                  <DesignCheckPanel
+                    result={live.result}
+                    nodes={nodes}
+                    edges={edges}
+                    traffic={activeRuns.traffic}
+                    check={designCheck}
+                    onApply={replaceGraph}
+                    onUndo={undo}
+                  />
+                )}
+                {showInspector && (
+                  <WorkspaceInspector
+                    projectId={project.id}
+                    nodes={nodes}
+                    controller={inspector}
+                    onClearSelection={clearCanvasSelection}
+                    onApply={replaceGraph}
+                    customTechnologies={project.customTechnologies}
+                    guidance={mode === "challenge" ? (
                       <ChallengeCard
                         challenge={challenge.challenge}
                         result={challenge.cardResult}
@@ -632,16 +709,15 @@ function Workspace({ project }: { project: Project }) {
                         stale={challenge.view?.isStale}
                         running={challenge.view?.isRunning}
                         error={challenge.view?.error}
-                      />
-                      <ChallengeLeaderboard
-                        challengeId={challenge.challenge.id}
                         official={challenge.official}
-                        version={challenge.leaderboardVersion}
+                        leaderboardVersion={challenge.leaderboardVersion}
                       />
-                    </>
-                  ) : null}
-                />
-              ) : (
+                    ) : null}
+                  />
+                )}
+              </div>
+
+              {!showInspector && (
                 <aside
                   className="ax-canvas-panel"
                   data-side="right"

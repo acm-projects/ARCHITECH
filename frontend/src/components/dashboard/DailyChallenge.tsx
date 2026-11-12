@@ -1,7 +1,5 @@
 "use client";
 
-import { BarChart3, Hourglass } from "lucide-react";
-
 import type { ChallengeDifficulty } from "../challenge/challenges";
 import StartChallengeButton from "./StartChallengeButton";
 
@@ -9,7 +7,6 @@ type DailyChallengeProps = {
   title: string;
   difficulty: ChallengeDifficulty;
   requirement: string;
-  compact?: boolean;
 };
 
 // Request path drawn in the hero: Client -> Load Balancer -> API Servers -> Cache / DB.
@@ -111,44 +108,7 @@ export default function DailyChallenge({
   title,
   difficulty,
   requirement,
-  compact = false,
 }: DailyChallengeProps) {
-  if (compact) {
-    return (
-      <aside className="ax-daily-challenge-banner" aria-label="Daily challenge">
-        <div className="ax-daily-challenge-kicker" aria-label="Daily challenge">
-          <span>Daily</span>
-          <span>challenge</span>
-        </div>
-        <h2 className="ax-daily-challenge-title">{title}</h2>
-        <div className="ax-daily-challenge-details" aria-label="Challenge details">
-          <div className="ax-daily-challenge-actions">
-            <StartChallengeButton title={title} label="Start challenge" />
-          </div>
-          <div className="ax-daily-challenge-metrics">
-            <div className="ax-daily-challenge-detail">
-              <div className="ax-daily-challenge-detail-heading">
-                <BarChart3 aria-hidden="true" />
-                <div className="ax-daily-challenge-detail-copy">
-                  <span>Difficulty</span>
-                  <strong>{difficulty}</strong>
-                </div>
-              </div>
-            </div>
-            <div className="ax-daily-challenge-detail">
-              <div className="ax-daily-challenge-detail-heading">
-                <Hourglass aria-hidden="true" />
-                <div className="ax-daily-challenge-detail-copy">
-                  <span>Est. time</span>
-                  <strong>Not specified</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-    );
-  }
   // Two lines of display type; each line is revealed from behind a mask.
   const words = title.split(" ");
   const split = Math.ceil(words.length / 2);

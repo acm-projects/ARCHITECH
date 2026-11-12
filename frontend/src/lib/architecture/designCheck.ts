@@ -1,7 +1,7 @@
 import { applyChanges, type Change } from "../ai/changes.ts";
 import { roleOf } from "./analysis.ts";
 import { DATABASE_REPLICAS_MAX, REPLICAS_MAX } from "./evaluation/capabilities.ts";
-import type { ArchitectureEvaluation, EvaluationFinding } from "./evaluation/contract.ts";
+import type { ArchitectureEvaluation, EvaluationFinding, Severity } from "./evaluation/contract.ts";
 import { createEvaluationCache, sharedEvaluationCache, type LiveSummary } from "./evaluation/liveMetrics.ts";
 import type { ArchitectureNodeType, NodeProperties } from "./types.ts";
 
@@ -247,6 +247,8 @@ export function formatAvailability(fraction: number): string {
 }
 
 // How long a year that uptime leaves the design down: "≈ 8.8 hours a year".
+export const SEVERITY_WORD: Record<Severity, string> = { high: "High", medium: "Medium", low: "Low" };
+
 export function downtimePerYear(fraction: number): string {
   const hours = Math.max(0, 1 - fraction) * 365.25 * 24;
   if (hours >= 48) return `≈ ${Math.round(hours / 24)} days a year`;
