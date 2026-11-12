@@ -40,6 +40,7 @@ export default function Panel({
   revealKey,
   collapse,
   fill = false,
+  bare = false,
   transient = false,
   hidden = false,
   headingRef,
@@ -65,6 +66,8 @@ export default function Panel({
   collapse?: PanelCollapse;
   // Takes the height left in the column, for content that scrolls inside the panel.
   fill?: boolean;
+  // No header: the body names itself and the panel never folds, like the lesson card.
+  bare?: boolean;
   // Comes and goes with a click on the canvas, so the canvas does not make room for it.
   transient?: boolean;
   hidden?: boolean;
@@ -102,7 +105,7 @@ export default function Panel({
         close();
       } : undefined}
     >
-      <header className="axp-head" onClick={(event) => toggleFromHeader(event, toggle)}>
+      {!bare && <header className="axp-head" onClick={(event) => toggleFromHeader(event, toggle)}>
         <span className="axp-icon">{icon}</span>
         <h2 ref={headingRef} tabIndex={-1}>{title}</h2>
         {status !== undefined && status !== null && <span className="axp-status" title={statusTitle}>{status}</span>}
@@ -113,8 +116,8 @@ export default function Panel({
             {closeIcon ?? <X size={15} aria-hidden="true" />}
           </button>
         )}
-      </header>
-      <div className="axp-body" hidden={collapsed}>{children}</div>
+      </header>}
+      <div className="axp-body" hidden={collapsed && !bare}>{children}</div>
     </section>
   );
 }

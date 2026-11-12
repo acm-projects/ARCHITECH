@@ -1,10 +1,11 @@
 import Image from "next/image";
 import { useEffect, useState, type CSSProperties } from "react";
-import { Check, GraduationCap, MousePointer2 } from "lucide-react";
+import { Check } from "lucide-react";
 
 import { FREE_PLAY_BODY, FREE_PLAY_TITLE, type ConnectionFeedback, type Lesson } from "./lessons";
 import type { LessonStatus } from "./useLessonEngine";
-import { ArchiePortrait } from "../workspace/ai/ArchiePanel";
+import { ArchieMessage } from "../workspace/ai/ArchieConversation";
+import "../workspace/ai/ai-panel.css";
 import ComponentGlyph from "../workspace/ComponentGlyph";
 import Panel, { PanelAction, PanelActions, PanelReveal, PanelText } from "../workspace/panel/Panel";
 import { CATEGORY_ICONS } from "../workspace/toolbox/categoryIcons";
@@ -93,17 +94,7 @@ function LessonIntro({ lesson, onStart }: { lesson: Lesson; onStart: () => void 
   );
 }
 
-function LessonProgress({ done, total }: { done: number; total: number }) {
-  return (
-    <div className="axl-progress" aria-hidden="true">
-      {Array.from({ length: total }, (_, index) => (
-        <span key={index} data-state={index < done ? "done" : index === done ? "current" : undefined} />
-      ))}
-    </div>
-  );
-}
-
-// The lesson speaks through the Archie panel. The canvas stays interactive throughout.
+// Archie speaks in a bubble; the steps below it are what to do next. The canvas stays interactive throughout.
 export default function LearnCard({
   lesson,
   stepIndex,
@@ -140,48 +131,42 @@ export default function LearnCard({
     : feedback ? feedback.explanation : step.description;
 
   return (
-    <Panel
-      label="Lesson guidance"
-      icon={<GraduationCap size={17} aria-hidden="true" />}
-      title={lesson.title}
-      status={freePlay || intro ? undefined : `${stepIndex + 1} of ${total}`}
-    >
+    <Panel label="Lesson guidance" title={lesson.title} icon={null} bare>
       <div aria-live="polite">
         {intro ? <LessonIntro lesson={lesson} onStart={() => setStarted(true)} /> : (
           <>
-            <LessonProgress done={freePlay ? total : succeeded ? stepIndex + 1 : stepIndex} total={total} />
-            <div className="axl-say">
-              <span key={`${step.id}-${status}`} className="axl-face" data-nod={succeeded || freePlay || undefined}>
-                <ArchiePortrait />
-              </span>
-              <div>
-                <p className="axl-say-title">
-                  {succeeded && <span className="axl-done"><Check size={12} strokeWidth={3} aria-hidden="true" /></span>}
-                  {heading}
-                </p>
-                <p className="axl-say-text">
+            <div className="axl-step">
+              <p className="axl-step-title">
+                {succeeded && <span className="axl-done"><Check size={12} strokeWidth={3} aria-hidden="true" /></span>}
+                {heading}
+              </p>
+              {!freePlay && <span className="axl-count">{stepIndex + 1} of {total}</span>}
+            </div>
+            <div key={`${step.id}-${status}`} className="axl-message" data-nod={succeeded || freePlay || undefined}>
+              <ArchieMessage role="assistant" showSpeaker={false}>
+                <p>
                   <span className="sr-only">Archie: </span>
                   <DialogueText key={message} text={message} />
                 </p>
-              </div>
+              </ArchieMessage>
             </div>
 
             {guided && (
-              <div className="axl-task">
-                <p className="axl-task-label">Your turn</p>
-                <ul>
-                  {CategoryIcon && category && (
-                    <li>
-                      <CategoryIcon size={16} color={FAMILY_COLORS[category]} aria-hidden="true" />
-                      <span>Open <strong>{FAMILY_LABELS[category]}</strong> in the bottom toolbar</span>
-                    </li>
-                  )}
+              <ol className="axl-steps" aria-label="Your turn">
+                {CategoryIcon && category && (
                   <li>
-                    <MousePointer2 size={16} aria-hidden="true" />
-                    <span>{step.instruction}</span>
+                    <span>
+                      <span>Open</span>
+                      <span className="axl-chip">
+                        <CategoryIcon size={16} color={FAMILY_COLORS[category]} aria-hidden="true" />
+                        {FAMILY_LABELS[category]}
+                      </span>
+                      <span>in the bottom toolbar.</span>
+                    </span>
                   </li>
-                </ul>
-              </div>
+                )}
+                <li><span>{step.instruction}</span></li>
+              </ol>
             )}
             {guided && hint && <PanelReveal label="Hint">{hint}</PanelReveal>}
 

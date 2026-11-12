@@ -40,7 +40,7 @@ export const FREE_PLAY_BODY =
 
 export const firstWebSystemLesson: Lesson = {
   id: "first-web-system",
-  title: "Build Your First Web System",
+  title: "Your first web system",
   summary: "Client → API Server → Database, with a Cache and two API Servers",
   steps: [
     {
@@ -149,7 +149,7 @@ export const firstWebSystemLesson: Lesson = {
     },
     {
       id: 7,
-      title: "Put the Cache in the Read Path",
+      title: "Put the cache in the read path",
       description:
         "A cache only helps if requests can reach it. Your server should check the cache before it asks the database.",
       instruction: "Drag from the API Server's right handle to the Cache's left handle.",
@@ -180,7 +180,7 @@ export const firstWebSystemLesson: Lesson = {
     },
     {
       id: 8,
-      title: "Run More Than One Server",
+      title: "Run more than one server",
       description:
         "If your only server fails, everything stops. Running two copies means the system keeps working when one of them fails.",
       instruction: "Select the API Server, open Configure, and set Replicas to 2.",
