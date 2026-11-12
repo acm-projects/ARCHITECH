@@ -98,13 +98,65 @@ test("no two nodes overlap and every link has a drawable path", () => {
   }
 });
 
-test("a link running along a row arcs over the nodes between", () => {
+// Every point a path visits, corners included: its runs are the straight lines between them.
+function pathPoints(path: string): [number, number][] {
+  const numbers = path.match(/-?\d+(\.\d+)?/g)!.map(Number);
+  const points: [number, number][] = [];
+  for (let index = 0; index < numbers.length; index += 2) points.push([numbers[index]!, numbers[index + 1]!]);
+  return points;
+}
+
+// No run of a link passes through a node other than its own two ends, and every run is straight.
+function assertLinksClearNodes(preview: ReturnType<typeof computePreview>) {
+  const half = PREVIEW_BOX / 2;
+  for (const link of preview.links) {
+    const points = pathPoints(link.path);
+    for (let index = 1; index < points.length; index++) {
+      const [x1, y1] = points[index - 1]!;
+      const [x2, y2] = points[index]!;
+      for (const other of preview.nodes) {
+        if (other.id === link.source || other.id === link.target) continue;
+        const crossesX = Math.min(x1, x2) < other.x + half - 0.5 && Math.max(x1, x2) > other.x - half + 0.5;
+        const crossesY = Math.min(y1, y2) < other.y + half - 0.5 && Math.max(y1, y2) > other.y - half + 0.5;
+        assert.ok(!(crossesX && crossesY), `${link.source}->${link.target} runs through ${other.id}`);
+      }
+    }
+    assert.doesNotMatch(link.path, /C/, "links are straight runs, not curves");
+    assert.match(link.arrow, /Z$/);
+  }
+}
+
+test("a link skipping a column goes around the node between instead of through it", () => {
   const preview = computePreview(
     [node("a", "client"), node("b", "server"), node("c", "database")],
     [edge("a", "b"), edge("b", "c"), edge("a", "c")],
   );
   const skipping = preview.links.find((link) => link.source === "a" && link.target === "c");
-  const a = find(preview, "a");
   assert.ok(skipping);
-  assert.match(skipping.path, new RegExp(`^M${a.x} ${a.y - PREVIEW_BOX / 2}C`));
+  const b = find(preview, "b");
+  assert.ok(pathPoints(skipping.path).some(([, y]) => Math.abs(y - b.y) > PREVIEW_BOX / 2), "leaves the row to pass b");
+  assertLinksClearNodes(preview);
+});
+
+test("next-column links on one row are a single straight line", () => {
+  const preview = computePreview([node("a", "client"), node("b", "server")], [edge("a", "b")]);
+  const [link] = preview.links;
+  assert.match(link!.path, /^M[\d.]+ [\d.]+L[\d.]+ [\d.]+$/);
+});
+
+test("breakdown and project previews route every link clear of other nodes", () => {
+  for (const [nodes, edges] of [
+    [NETFLIX_NODES, NETFLIX_CONNECTIONS],
+    [ARCHITECH_NODES, ARCHITECH_CONNECTIONS],
+    [YOUTUBE_PREVIEW.nodes, YOUTUBE_PREVIEW.edges],
+    [SPOTIFY_PREVIEW.nodes, SPOTIFY_PREVIEW.edges],
+    [DISCORD_PREVIEW.nodes, DISCORD_PREVIEW.edges],
+  ] as const) {
+    assertLinksClearNodes(computePreview(nodes, edges));
+  }
+  // Same column and backward links, from a cycle, still stay clear.
+  assertLinksClearNodes(computePreview(
+    [node("a", "client"), node("b", "server"), node("c", "database"), node("d", "cache")],
+    [edge("a", "b"), edge("b", "c"), edge("c", "a"), edge("b", "d"), edge("d", "c"), edge("c", "b")],
+  ));
 });

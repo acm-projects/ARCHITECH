@@ -6606,14 +6606,19 @@ body,
 }
 
 /* Tile previews draw the canvas in miniature: neutral boxes, with family color on the icon alone. */
+/* A link is its line and a filled head, like a connection on the canvas. */
 .ax-topology-link {
+  /* Solid, so links sharing a run do not draw darker where they overlap. */
+  --ax-topology-link: color-mix(in srgb, var(--ax-ink) 55%, var(--ax-surface));
   fill: none;
-  stroke: color-mix(in srgb, var(--ax-ink) 55%, transparent);
+  stroke: var(--ax-topology-link);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.5px;
-  vector-effect: non-scaling-stroke;
 }
+
+.ax-topology-link path { vector-effect: non-scaling-stroke; }
+.ax-topology-link .ax-topology-arrow { fill: var(--ax-topology-link); stroke: none; }
 
 .ax-topology-box {
   fill: var(--ax-surface);

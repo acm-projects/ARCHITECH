@@ -16,7 +16,10 @@ export default function TopologyPreview({ nodes, edges }: Pick<Project, "nodes" 
   return (
     <svg viewBox={`0 0 ${preview.width} ${preview.height}`} className="ax-topology-preview h-full w-full" aria-hidden="true">
       {preview.links.map(link => (
-        <path key={`${link.source}-${link.target}`} className="ax-topology-link" d={link.path} />
+        <g key={`${link.source}-${link.target}`} className="ax-topology-link">
+          <path d={link.path} />
+          <path className="ax-topology-arrow" d={link.arrow} />
+        </g>
       ))}
       {preview.nodes.map(node => {
         const left = node.x - PREVIEW_BOX / 2;

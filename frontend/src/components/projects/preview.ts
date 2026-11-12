@@ -6,15 +6,19 @@ export const PREVIEW_BOX = 18;
 const MIN_WIDTH = 200;
 const MIN_HEIGHT = 64;
 const MARGIN = 6;
-const ROW_GAP = 6;
+const ROW_GAP = 10;
 const MIN_COLUMN_GAP = 12;
 const MAX_COLUMN_GAP = 26;
-const ARROW = 2.5;
-const ARC_LIFT = 16;
+const ARROW_LENGTH = 4;
+const ARROW_HALF_WIDTH = 2.5;
+const CORNER = 3;
+// Distance from a node's edge to a lane running past it: halfway to the next node in its column.
+const LANE_GAP = ROW_GAP / 2;
 
 export type PreviewNode = { id: string; x: number; y: number };
 export type PlacedPreviewNode = PreviewNode & { type: ArchitectureNodeType; count: number };
-export type PreviewLink = EvalEdge & { path: string };
+// `path` is the line; `arrow` the filled head at the target, drawn separately like the canvas's.
+export type PreviewLink = EvalEdge & { path: string; arrow: string };
 export type Preview = { width: number; height: number; nodes: PlacedPreviewNode[]; links: PreviewLink[] };
 
 type PositionedNode = EvalNode & { position: { x: number; y: number } };
@@ -86,34 +90,159 @@ function assignColumns(nodes: readonly PositionedNode[], edges: readonly EvalEdg
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
-function chevron(x: number, y: number, dx: number, dy: number) {
-  const back = (side: number) =>
-    `${round(x - dx * ARROW + dy * side * ARROW)} ${round(y - dy * ARROW + dx * side * ARROW)}`;
-  return `M${back(-1)}L${round(x)} ${round(y)}L${back(1)}`;
+type Point = readonly [x: number, y: number];
+
+// Drops repeated points and points in the middle of a straight run, so every corner is real.
+function simplify(points: readonly Point[]): Point[] {
+  const kept: Point[] = [];
+  for (const point of points) {
+    const last = kept.at(-1);
+    if (last && last[0] === point[0] && last[1] === point[1]) continue;
+    const before = kept.at(-2);
+    const straight = before && last &&
+      ((before[0] === last[0] && last[0] === point[0]) || (before[1] === last[1] && last[1] === point[1]));
+    if (straight) kept[kept.length - 1] = point;
+    else kept.push(point);
+  }
+  return kept;
 }
 
-function vertical(x: number, startY: number, endY: number, direction: number) {
-  return `M${round(x)} ${round(startY)}L${round(x)} ${round(endY)}${chevron(x, endY, 0, direction)}`;
+// Straight runs joined by small rounded corners, like the connections on the canvas.
+function orthogonalPath(points: readonly Point[]): string {
+  let path = `M${round(points[0]![0])} ${round(points[0]![1])}`;
+  for (let index = 1; index < points.length; index++) {
+    const corner = points[index]!;
+    const next = points[index + 1];
+    if (!next) {
+      path += `L${round(corner[0])} ${round(corner[1])}`;
+      break;
+    }
+    const previous = points[index - 1]!;
+    const radius = Math.min(
+      CORNER,
+      Math.hypot(corner[0] - previous[0], corner[1] - previous[1]) / 2,
+      Math.hypot(next[0] - corner[0], next[1] - corner[1]) / 2,
+    );
+    const toward = (point: Point): Point => {
+      const length = Math.hypot(point[0] - corner[0], point[1] - corner[1]) || 1;
+      return [corner[0] + (point[0] - corner[0]) / length * radius, corner[1] + (point[1] - corner[1]) / length * radius];
+    };
+    const enter = toward(previous);
+    const leave = toward(next);
+    path += `L${round(enter[0])} ${round(enter[1])}Q${round(corner[0])} ${round(corner[1])} ${round(leave[0])} ${round(leave[1])}`;
+  }
+  return path;
 }
 
-function curve(startX: number, startY: number, endX: number, endY: number, direction: number) {
-  const middle = round((startX + endX) / 2);
-  return `M${round(startX)} ${round(startY)}C${middle} ${round(startY)} ${middle} ${round(endY)} ${round(endX)} ${round(endY)}${chevron(endX, endY, direction, 0)}`;
+// A filled head pointing along x with its tip on the target's edge, as on the canvas.
+function arrowHead(tipX: number, tipY: number, direction: number) {
+  const baseX = tipX - direction * ARROW_LENGTH;
+  return `M${round(tipX)} ${round(tipY)}L${round(baseX)} ${round(tipY - ARROW_HALF_WIDTH)}L${round(baseX)} ${round(tipY + ARROW_HALF_WIDTH)}Z`;
 }
 
-function linkPath(from: PreviewNode, to: PreviewNode, spansColumns: boolean) {
+type Route = {
+  source: PlacedPreviewNode;
+  target: PlacedPreviewNode;
+  sourceColumn: number;
+  targetColumn: number;
+  lane: number;
+  // Gaps holding the link's vertical runs; gap i follows column i, gap -1 is the left margin.
+  exitGap: number | null;
+  entryGap: number | null;
+};
+
+// Links run horizontally along lanes and vertically only in the gaps between columns, where no
+// node sits, so a link never passes behind a node. A lane is a height that no node in the
+// columns it crosses occupies; the one closest to both ends wins, so a link only leaves its row
+// to get around something.
+function routeLinks(
+  edges: readonly EvalEdge[],
+  placed: ReadonlyMap<string, PlacedPreviewNode>,
+  columnOf: ReadonlyMap<string, number>,
+  columnX: readonly number[],
+  width: number,
+): PreviewLink[] {
   const half = PREVIEW_BOX / 2;
-  if (from.x === to.x) {
-    const direction = Math.sign(to.y - from.y);
-    return vertical(from.x, from.y + direction * half, to.y - direction * half, direction);
+  const nodesByColumn = columnX.map(() => [] as PlacedPreviewNode[]);
+  for (const node of placed.values()) nodesByColumn[columnOf.get(node.id)!]!.push(node);
+  const heights = [...placed.values()].map((node) => node.y);
+  const above = Math.min(...heights) - half - LANE_GAP;
+  const below = Math.max(...heights) + half + LANE_GAP;
+
+  const laneBetween = (source: PlacedPreviewNode, target: PlacedPreviewNode, from: number, to: number) => {
+    const crossed = nodesByColumn.slice(from, to + 1).flat();
+    const candidates = [source.y, target.y, above, below,
+      ...crossed.flatMap((node) => [node.y - half - LANE_GAP, node.y + half + LANE_GAP])];
+    const free = (y: number) => crossed.every((node) => Math.abs(node.y - y) >= half + 1);
+    const cost = (y: number) => Math.abs(y - source.y) + Math.abs(y - target.y);
+    return candidates.filter(free).sort((a, b) => cost(a) - cost(b) || a - b)[0] ?? above;
+  };
+
+  const routes = edges.map(({ source: sourceId, target: targetId }): Route => {
+    const source = placed.get(sourceId)!;
+    const target = placed.get(targetId)!;
+    const sourceColumn = columnOf.get(sourceId)!;
+    const targetColumn = columnOf.get(targetId)!;
+    const base = { source, target, sourceColumn, targetColumn };
+    // Next column: one vertical run in the gap between them, or none on the same row.
+    if (targetColumn === sourceColumn + 1) {
+      return { ...base, lane: target.y, exitGap: source.y === target.y ? null : sourceColumn, entryGap: null };
+    }
+    // Same column: out to the gap on the right and back into the target's right side.
+    if (targetColumn === sourceColumn) {
+      return { ...base, lane: target.y, exitGap: sourceColumn, entryGap: null };
+    }
+    // Skipping columns, or running back: a lane across every column between the two gaps.
+    const [from, to] = targetColumn > sourceColumn ? [sourceColumn + 1, targetColumn - 1] : [targetColumn, sourceColumn];
+    const lane = laneBetween(source, target, from, to);
+    return {
+      ...base,
+      lane,
+      exitGap: lane === source.y ? null : sourceColumn,
+      entryGap: lane === target.y ? null : targetColumn - 1,
+    };
+  });
+
+  // A gap shares its width between its vertical runs: one per node leaving through it and one
+  // per node entered from it, ordered top to bottom so runs do not cross needlessly.
+  const tracks = new Map<number, { key: string; y: number }[]>();
+  const claim = (gap: number | null, key: string, y: number) => {
+    if (gap === null) return;
+    const list = tracks.get(gap) ?? [];
+    if (!list.some((track) => track.key === key)) list.push({ key, y });
+    tracks.set(gap, list);
+  };
+  for (const route of routes) {
+    claim(route.exitGap, `out:${route.source.id}`, route.source.y);
+    claim(route.entryGap, `in:${route.target.id}`, route.target.y);
   }
-  // A link running along a row would hide behind the nodes between, so it arcs over them.
-  if (from.y === to.y && spansColumns) {
-    const top = from.y - half;
-    return `M${round(from.x)} ${round(top)}C${round(from.x)} ${round(top - ARC_LIFT)} ${round(to.x)} ${round(top - ARC_LIFT)} ${round(to.x)} ${round(top)}${chevron(to.x, top, 0, 1)}`;
-  }
-  const direction = Math.sign(to.x - from.x);
-  return curve(from.x + direction * half, from.y, to.x - direction * half, to.y, direction);
+  const trackX = (gap: number, key: string) => {
+    const list = [...tracks.get(gap)!].sort((a, b) => a.y - b.y || a.key.localeCompare(b.key));
+    const left = gap < 0 ? 0 : columnX[gap]! + half;
+    const right = gap >= columnX.length - 1 ? width : columnX[gap + 1]! - half;
+    return left + (right - left) * (list.findIndex((track) => track.key === key) + 1) / (list.length + 1);
+  };
+
+  return routes.map(({ source, target, sourceColumn, targetColumn, lane, exitGap, entryGap }) => {
+    const sameColumn = targetColumn === sourceColumn;
+    const direction = sameColumn ? -1 : 1;
+    const tip: Point = [target.x + (sameColumn ? half : -half), target.y];
+    const points: Point[] = [[source.x + half, source.y]];
+    if (exitGap !== null) {
+      const x = trackX(exitGap, `out:${source.id}`);
+      points.push([x, source.y], [x, lane]);
+    }
+    if (entryGap !== null) {
+      const x = trackX(entryGap, `in:${target.id}`);
+      points.push([x, lane], [x, target.y]);
+    }
+    const line = simplify([...points, tip]);
+    // The line stops at the base of the head, so the head keeps a clean point.
+    const before = line.at(-2)!;
+    const end = direction > 0 ? Math.max(before[0], tip[0] - ARROW_LENGTH) : Math.min(before[0], tip[0] + ARROW_LENGTH);
+    line[line.length - 1] = [end, tip[1]];
+    return { source: source.id, target: target.id, path: orthogonalPath(line), arrow: arrowHead(tip[0], tip[1], direction) };
+  });
 }
 
 // The saved graph as a left-to-right flow: columns follow the connections rather than where the
@@ -136,9 +265,12 @@ export function computePreview(
   const contentWidth = columnCount * PREVIEW_BOX + (columnCount - 1) * columnGap;
   const contentHeight = tallest * PREVIEW_BOX + (tallest - 1) * ROW_GAP;
   const width = Math.max(MIN_WIDTH, contentWidth + MARGIN * 2);
-  const height = Math.max(MIN_HEIGHT, contentHeight + MARGIN * 2);
+  // Room above and below for a lane that runs around a whole column.
+  const height = Math.max(MIN_HEIGHT, contentHeight + (MARGIN + LANE_GAP) * 2);
 
   // Sweep left to right, ordering each column by its upstream nodes to limit crossings.
+  const columnX = Array.from({ length: columnCount }, (_, index) =>
+    round((width - contentWidth) / 2 + PREVIEW_BOX / 2 + index * (PREVIEW_BOX + columnGap)));
   const placed = new Map<string, PlacedPreviewNode>();
   columns.forEach((column, index) => {
     const pull = new Map(column.map((node) => {
@@ -156,22 +288,13 @@ export function computePreview(
         id: node.id,
         type: node.data.type,
         count: node.count,
-        x: round((width - contentWidth) / 2 + PREVIEW_BOX / 2 + index * (PREVIEW_BOX + columnGap)),
+        x: columnX[index]!,
         y: round(height / 2 + (row - (ordered.length - 1) / 2) * (PREVIEW_BOX + ROW_GAP)),
       });
     });
   });
 
-  const links = graph.edges.map(({ source, target }) => ({
-    source,
-    target,
-    path: linkPath(
-      placed.get(source)!,
-      placed.get(target)!,
-      Math.abs(columnOf.get(source)! - columnOf.get(target)!) > 1,
-    ),
-  }));
-
+  const links = routeLinks(graph.edges, placed, columnOf, columnX, width);
   return { width, height, nodes: [...placed.values()], links };
 }
 
