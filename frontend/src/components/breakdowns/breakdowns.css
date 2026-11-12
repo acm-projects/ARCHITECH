@@ -64,7 +64,7 @@
 }
 
 /* Live preview: red marks the active item only, and a ruled-out server keeps its ✕ and label. */
-.ax-live-preview { --ax-preview-active: #e50914; display: grid; flex: none; gap: 8px; margin: 0; padding: 10px 14px 12px; border: 1px solid var(--ax-line-strong); border-radius: 16px; background: var(--ax-surface); }
+.ax-live-preview { --ax-preview-active: var(--ax-breakdown-accent, #e50914); display: grid; flex: none; gap: 8px; margin: 0; padding: 10px 14px 12px; border: 1px solid var(--ax-line-strong); border-radius: 16px; background: var(--ax-surface); }
 .ax-live-preview-header { display: flex; align-items: center; justify-content: space-between; min-height: 30px; }
 .ax-live-preview-title { margin: 0; color: var(--ax-ink); font-size: 15px; font-weight: 500; }
 .ax-live-preview-scene > svg { display: block; width: 100%; height: auto; overflow: visible; }

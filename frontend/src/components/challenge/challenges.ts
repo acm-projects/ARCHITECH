@@ -241,3 +241,117 @@ export const netflixStreamingChallenge: Challenge = {
   ],
   definition: netflixStreamingDefinition,
 };
+
+// A diagram editor like ARCHITECH at a busy hour: 3,000 requests a second from 20,000 people,
+// most of them loading the app's static files. Saving and review are the writes that matter.
+// The dataset is projects and accounts; there are no large media files.
+export const diagramEditorDefinition: ChallengeDefinition = {
+  id: "diagram-editor",
+  title: "Design an Online Diagram Editor",
+  difficulty: "Intermediate",
+  description:
+    "Design a web app where people sign in, build diagrams that save as they edit, and ask for a review of their design.",
+  traffic: {
+    requestsPerSecond: 3_000,
+    concurrentUsers: 20_000,
+    readRatio: 80,
+    staticShare: 60,
+    datasetGb: 50,
+    networkLatencyMs: 40,
+  },
+  requirements: [
+    {
+      id: "capacity",
+      kind: "min-capacity",
+      minRps: 3_000,
+      label: "Handle peak traffic (about 3,000 requests per second)",
+      mandatory: true,
+      weight: 3,
+    },
+    {
+      id: "sign-in",
+      kind: "requires-component",
+      componentType: "auth",
+      label: "Sign people in before they reach their projects",
+      mandatory: true,
+      weight: 1,
+    },
+    {
+      id: "backend",
+      kind: "requires-component",
+      componentType: "server",
+      label: "Run an API server to save and load projects",
+      mandatory: true,
+      weight: 1,
+    },
+    {
+      id: "projects",
+      kind: "requires-component",
+      componentType: "database",
+      label: "Keep projects in a database so they survive restarts",
+      mandatory: true,
+      weight: 2,
+    },
+    {
+      id: "static-assets",
+      kind: "requires-component",
+      componentType: "cdn",
+      label: "Serve the app's files from a CDN",
+      weight: 1,
+    },
+    {
+      id: "responsive",
+      kind: "max-latency",
+      maxP95Ms: 150,
+      label: "Saving and loading feel instant (p95 under 150 ms)",
+      weight: 2,
+    },
+    {
+      id: "available",
+      kind: "min-availability",
+      minPercent: 99.9,
+      label: "Projects stay available (99.9% uptime)",
+      weight: 2,
+    },
+  ],
+  constraints: [
+    {
+      id: "budget",
+      kind: "max-cost",
+      maxMonthlyCost: 600,
+      label: "Stay under $600 a month",
+      weight: 1,
+    },
+    {
+      id: "size",
+      kind: "max-components",
+      max: 12,
+      label: "Use no more than 12 components",
+      weight: 1,
+    },
+  ],
+  scoring: DEFAULT_CHALLENGE_SCORING,
+};
+
+export const diagramEditorChallenge: Challenge = {
+  id: diagramEditorDefinition.id,
+  title: diagramEditorDefinition.title,
+  difficulty: diagramEditorDefinition.difficulty,
+  description: diagramEditorDefinition.description,
+  announcement: "Design an online diagram editor for 3,000 requests a second",
+  requirements: [
+    "People sign in and open their projects",
+    "Edits save while they work",
+    "Most requests are the app's own files",
+    "Saving and loading should feel instant",
+    "Projects must stay available",
+  ],
+  summary: ["3,000 requests / second", "20,000 people online"],
+  highlights: ["Sign-in", "Fast saves", "High availability"],
+  traffic: [
+    { label: "Peak requests", value: "3k/s" },
+    { label: "Static share", value: "60%" },
+    { label: "Read / Write", value: "4:1" },
+  ],
+  definition: diagramEditorDefinition,
+};

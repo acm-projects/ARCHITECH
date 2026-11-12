@@ -1,4 +1,4 @@
-import { netflixStreamingDefinition, urlShortenerDefinition } from "../../../components/challenge/challenges.ts";
+import { diagramEditorDefinition, netflixStreamingDefinition, urlShortenerDefinition } from "../../../components/challenge/challenges.ts";
 import type { ChallengeDefinition } from "./contract.ts";
 
 // Every challenge the server can grade, by id. Add a challenge's definition here when it is
@@ -6,6 +6,7 @@ import type { ChallengeDefinition } from "./contract.ts";
 export const CHALLENGE_DEFINITIONS: Readonly<Record<string, ChallengeDefinition>> = {
   [urlShortenerDefinition.id]: urlShortenerDefinition,
   [netflixStreamingDefinition.id]: netflixStreamingDefinition,
+  [diagramEditorDefinition.id]: diagramEditorDefinition,
 };
 
 export function challengeDefinition(id: string): ChallengeDefinition | null {

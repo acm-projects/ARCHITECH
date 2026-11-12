@@ -3,10 +3,12 @@
 //   /                       redirects to /dashboard
 //   /dashboard              project dashboard
 //   /workspace/[projectId]  a project, in Learn or Challenge mode
-//   /workspace/breakdowns/netflix  the guided Netflix example
+//   /workspace/breakdowns/netflix    the guided Netflix example
+//   /workspace/breakdowns/architech  the guided ARCHITECH example
 
 export const HOME_ROUTE = "/dashboard";
 export const NETFLIX_BREAKDOWN_ROUTE = "/workspace/breakdowns/netflix";
+export const ARCHITECH_BREAKDOWN_ROUTE = "/workspace/breakdowns/architech";
 
 // Routes that used to be standalone pages. They no longer exist; they only redirect home.
 export const RETIRED_ROUTES = ["/workspace", "/learn", "/challenge"] as const;

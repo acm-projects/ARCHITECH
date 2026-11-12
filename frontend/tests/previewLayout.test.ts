@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { PREVIEW_BOX, computePreview } from "../src/components/projects/preview.ts";
-import { YOUTUBE_PREVIEW } from "../src/components/breakdowns/upcoming.ts";
+import { DISCORD_PREVIEW, SPOTIFY_PREVIEW, YOUTUBE_PREVIEW } from "../src/components/breakdowns/upcoming.ts";
+import { ARCHITECH_CONNECTIONS, ARCHITECH_NODES } from "../src/components/breakdowns/architech.ts";
 import { NETFLIX_CONNECTIONS, NETFLIX_NODES } from "../src/components/breakdowns/netflix.ts";
 
 type NodeType = "client" | "load-balancer" | "server" | "database" | "cache";
@@ -81,7 +82,10 @@ test("cycles, self loops and repeated edges still place every node once", () => 
 test("no two nodes overlap and every link has a drawable path", () => {
   for (const [nodes, edges] of [
     [NETFLIX_NODES, NETFLIX_CONNECTIONS],
+    [ARCHITECH_NODES, ARCHITECH_CONNECTIONS],
     [YOUTUBE_PREVIEW.nodes, YOUTUBE_PREVIEW.edges],
+    [SPOTIFY_PREVIEW.nodes, SPOTIFY_PREVIEW.edges],
+    [DISCORD_PREVIEW.nodes, DISCORD_PREVIEW.edges],
   ] as const) {
     const preview = computePreview(nodes, edges);
     for (const [index, a] of preview.nodes.entries()) {

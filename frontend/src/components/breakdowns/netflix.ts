@@ -1,6 +1,5 @@
 import type { ArchitectureNodeType } from "../../lib/architecture/types.ts";
-import { ARCHITECTURE_NODE_SIZE } from "../../lib/architecture/nodeLayout.ts";
-import type { ArchitectureFlowNode } from "../workspace/nodes/ArchitectureNode";
+import { createWalkthrough, type BreakdownConnection } from "./walkthrough.ts";
 
 export const NETFLIX_SOURCES = {
   delivery: {
@@ -35,8 +34,6 @@ export const NETFLIX_SOURCES = {
 
 type SourceId = keyof typeof NETFLIX_SOURCES;
 export const NETFLIX_CHAPTERS = ["Browsing", "Playback", "Video preparation"] as const;
-
-export const NETFLIX_NODE_SIZE = ARCHITECTURE_NODE_SIZE;
 
 type NetflixComponent = {
   id: string;
@@ -169,14 +166,7 @@ export const NETFLIX_COMPONENTS = [
 
 export type NetflixComponentId = typeof NETFLIX_COMPONENTS[number]["id"];
 
-export type NetflixConnection = {
-  id: string;
-  source: NetflixComponentId;
-  target: NetflixComponentId;
-  label?: string;
-  kind: "control" | "video";
-  purpose: string;
-};
+export type NetflixConnection = BreakdownConnection<NetflixComponentId> & { kind: "control" | "video" };
 
 export const NETFLIX_CONNECTIONS: readonly NetflixConnection[] = [
   { id: "viewer-api", source: "viewer", target: "gateway", kind: "control", purpose: "Application requests" },
@@ -187,59 +177,32 @@ export const NETFLIX_CONNECTIONS: readonly NetflixConnection[] = [
   { id: "playback-data", source: "playback", target: "data", kind: "control", purpose: "Read or update viewing state" },
   { id: "playback-steering", source: "playback", target: "steering", kind: "control", purpose: "Choose delivery URLs" },
   { id: "cdn-control", source: "cdn", target: "cache-control", label: "appliance reports", kind: "control", purpose: "Report health, routes and file inventory" },
-  { id: "control-steering", source: "cache-control", target: "steering", kind: "control", purpose: "Supply appliance state for server selection" },
-  { id: "cdn-viewer", source: "cdn", target: "viewer", label: "video segments", kind: "video", purpose: "Deliver requested video to the device" },
-  { id: "encoding-assets", source: "encoding", target: "assets", label: "encoded files", kind: "video", purpose: "Store prepared video files" },
-  { id: "assets-cdn", source: "assets", target: "cdn", label: "content fill", kind: "video", purpose: "Pre-position files before playback" },
+  {
+    id: "control-steering", source: "cache-control", target: "steering", kind: "control", purpose: "Supply appliance state for server selection",
+    sourcePort: { id: "state-out", side: "top" }, targetPort: { id: "state-in", side: "bottom" },
+  },
+  {
+    id: "cdn-viewer", source: "cdn", target: "viewer", label: "video segments", kind: "video", purpose: "Deliver requested video to the device",
+    sourcePort: { id: "video-out", side: "bottom" },
+  },
+  { id: "encoding-assets", source: "encoding", target: "assets", label: "encoded files", kind: "video", purpose: "Store prepared video files", labelBelow: true },
+  { id: "assets-cdn", source: "assets", target: "cdn", label: "content fill", kind: "video", purpose: "Pre-position files before playback", labelBelow: true },
 ];
 
-export const NETFLIX_NODES: ArchitectureFlowNode[] = NETFLIX_COMPONENTS.map(component => ({
-  id: component.id,
-  type: "architecture",
-  position: { ...component.position },
-  data: { label: component.label, type: component.type },
-}));
+export const NETFLIX_REVIEW = "That's the full system. Application services handle browsing and playback setup. Open Connect sends the video. Encoding and file distribution prepare it ahead of time. Select a component to go over its connections again.";
 
-export const NETFLIX_STEPS = [...NETFLIX_COMPONENTS.map(component => component.id), "review"] as const;
+// What the walkthrough leaves out, shown above and below its sources.
+export const NETFLIX_NOTES = {
+  scope: "This is an on-demand streaming example, not Netflix's live production map. Application services and data stores are grouped. DRM, monitoring and regional failover are not drawn in full. Live previews are simulations, not Netflix data.",
+  caveat: "The API and storage articles describe earlier Netflix designs. Cache placement and the shared API edge are teaching choices.",
+} as const;
 
-// Keep focus and build progress separate: inspecting an earlier component must
-// not remove later components. Both survive refresh without writing a project.
-export function netflixStepIndex(step: string | null): number {
-  const index = NETFLIX_STEPS.findIndex(id => id === step);
-  return index < 0 ? 0 : index;
-}
+const walkthrough = createWalkthrough(NETFLIX_COMPONENTS, NETFLIX_CONNECTIONS);
 
-export type NetflixProgress = { stepIndex: number; revealedCount: number };
-export type NetflixNavigation = number | "next" | "previous" | "restart";
-
-export function netflixProgress(step: string | null, built: string | null): NetflixProgress {
-  const stepIndex = netflixStepIndex(step);
-  const builtIndex = NETFLIX_COMPONENTS.findIndex(component => component.id === built);
-  const revealedCount = Math.min(NETFLIX_COMPONENTS.length, Math.max(stepIndex, builtIndex) + 1);
-  return { stepIndex, revealedCount };
-}
-
-export function netflixScene(revealedCount: number) {
-  const nodes = NETFLIX_NODES.slice(0, revealedCount);
-  const ids = new Set(nodes.map(node => node.id));
-  return { nodes, connections: NETFLIX_CONNECTIONS.filter(edge => ids.has(edge.source) && ids.has(edge.target)) };
-}
-
-export function netflixStepQuery(query: string, step: NetflixNavigation, reset = false): string {
-  const params = new URLSearchParams(query);
-  const previous = netflixProgress(params.get("step"), params.get("built"));
-  const completed = previous.stepIndex === NETFLIX_COMPONENTS.length;
-  const requested = typeof step === "number" ? step
-    : step === "next" ? completed ? 0 : previous.revealedCount
-    : step === "previous" ? previous.stepIndex - 1 : 0;
-  const index = Number.isInteger(requested) && NETFLIX_STEPS[requested] ? requested : 0;
-  const id = NETFLIX_STEPS[index];
-  reset ||= step === "restart" || (step === "next" && completed);
-  const frontier = reset ? 0 : Math.min(NETFLIX_COMPONENTS.length - 1, Math.max(previous.revealedCount - 1, index));
-  if (index === 0) params.delete("step");
-  else params.set("step", id);
-  if (frontier > index) params.set("built", NETFLIX_STEPS[frontier]);
-  else params.delete("built");
-  const result = params.toString();
-  return result ? `?${result}` : "";
-}
+export const NETFLIX_NODES = walkthrough.nodes;
+export const NETFLIX_STEPS = walkthrough.steps;
+export const netflixStepIndex = walkthrough.stepIndex;
+export const netflixProgress = walkthrough.progress;
+export const netflixScene = walkthrough.scene;
+export const netflixStepQuery = walkthrough.stepQuery;
+export { walkthrough as NETFLIX_WALKTHROUGH };

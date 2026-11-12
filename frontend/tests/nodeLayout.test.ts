@@ -60,7 +60,7 @@ test("the starter graph and imported designs fit the node size as generated", ()
 test("breakdowns have no node or edge drawing of their own", () => {
   const stylesheet = readFileSync("src/components/breakdowns/breakdowns.css", "utf8");
   assert.doesNotMatch(stylesheet, /\.ax-node(-[a-z]+)?\s*\{/);
-  const breakdown = readFileSync("src/components/breakdowns/NetflixBreakdown.tsx", "utf8");
+  const breakdown = readFileSync("src/components/breakdowns/SystemBreakdown.tsx", "utf8");
   assert.doesNotMatch(breakdown, /MarkerType|BaseEdge|strokeWidth/);
   assert.match(breakdown, /ArchitectureEdge/);
   assert.match(breakdown, /<ArchitectureNode /);

@@ -58,3 +58,37 @@ export const YOUTUBE_PREVIEW = graph([
   ["api", "metadata"],
   ["upload", "metadata"],
 ]);
+
+export const SPOTIFY_PREVIEW = graph([
+  ["listener", "mobile-app", "Listener", 0, 60],
+  ["gateway", "api-gateway", "API gateway", 180, 60],
+  ["search", "search", "Search", 360, 0],
+  ["playlists", "server", "Playlists", 360, 120],
+  ["library", "database", "Library", 540, 120],
+  ["audio", "object-storage", "Audio files", 540, 0],
+  ["cdn", "cdn", "Audio CDN", 720, 60],
+], [
+  ["listener", "gateway"],
+  ["gateway", "search"],
+  ["gateway", "playlists"],
+  ["playlists", "library"],
+  ["audio", "cdn"],
+  ["cdn", "listener"],
+]);
+
+export const DISCORD_PREVIEW = graph([
+  ["member", "client", "Member", 0, 60],
+  ["gateway", "load-balancer", "Live gateway", 180, 60],
+  ["guilds", "server", "Servers", 360, 0],
+  ["messages", "server", "Messages", 360, 120],
+  ["fanout", "queue", "Fan-out", 540, 0],
+  ["store", "database", "Message store", 540, 120],
+  ["presence", "cache", "Presence", 720, 60],
+], [
+  ["member", "gateway"],
+  ["gateway", "guilds"],
+  ["gateway", "messages"],
+  ["messages", "store"],
+  ["messages", "fanout"],
+  ["guilds", "presence"],
+]);
