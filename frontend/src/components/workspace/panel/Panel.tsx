@@ -6,7 +6,7 @@ import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { Direction } from "../../../lib/architecture/evaluation/comparison";
 import { PanelCollapseToggle, toggleFromHeader, usePanelCollapse, type PanelCollapse } from "../PanelCollapse";
 import { columnScrollDelta } from "./columnScroll";
-import { ACTIVE_ATTRIBUTE, FOLD_EVENT } from "./stackFit";
+import { ACTIVE_ATTRIBUTE, AUTO_FOLDED_ATTRIBUTE, FOLD_EVENT, REOPEN_EVENT, REOPEN_HEIGHT_ATTRIBUTE } from "./stackFit";
 import "./panel.css";
 
 // Order in which panels were last opened or used; the column folds the oldest first.
@@ -92,16 +92,34 @@ export default function Panel({
     if (!panel || !column || collapsed || hidden || transient) return;
     column.scrollTop += columnScrollDelta(panel.getBoundingClientRect(), column.getBoundingClientRect(), COLUMN_MARGIN);
   }, [collapsed, hidden, transient, revealKey]);
-  // Opening, unfolding or being asked for again makes this the panel that stays open.
-  useEffect(() => {
-    if (!collapsed && !hidden) markActive(root.current);
-  }, [collapsed, hidden, revealKey]);
-  // The column folds this panel when the open panels no longer fit (see stackFit.ts).
+  // Opening, unfolding or being asked for again makes this the panel that stays open, unless
+  // the column itself reopened it to give back room it had borrowed.
+  const reopenedByColumn = useRef(false);
   useEffect(() => {
     const panel = root.current;
-    if (!panel || collapsed) return;
-    panel.addEventListener(FOLD_EVENT, toggle);
-    return () => panel.removeEventListener(FOLD_EVENT, toggle);
+    if (collapsed || hidden || !panel) return;
+    panel.removeAttribute(AUTO_FOLDED_ATTRIBUTE);
+    panel.removeAttribute(REOPEN_HEIGHT_ATTRIBUTE);
+    if (reopenedByColumn.current) reopenedByColumn.current = false;
+    else markActive(panel);
+  }, [collapsed, hidden, revealKey]);
+  // The column folds this panel when the open panels no longer fit, and opens it again when
+  // they do (see stackFit.ts).
+  useEffect(() => {
+    const panel = root.current;
+    if (!panel) return;
+    const fold = () => { if (!collapsed) toggle(); };
+    const reopen = () => {
+      if (!collapsed) return;
+      reopenedByColumn.current = true;
+      toggle();
+    };
+    panel.addEventListener(FOLD_EVENT, fold);
+    panel.addEventListener(REOPEN_EVENT, reopen);
+    return () => {
+      panel.removeEventListener(FOLD_EVENT, fold);
+      panel.removeEventListener(REOPEN_EVENT, reopen);
+    };
   }, [collapsed, toggle]);
   const close = () => {
     if (toolKey) focusToolButton(toolKey);

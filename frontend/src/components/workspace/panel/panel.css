@@ -48,7 +48,8 @@
 .axp-head h2:focus { outline: 0; }
 .axp-icon { display: inline-grid; flex: none; place-items: center; width: 24px; height: 24px; color: var(--ax-ink-soft); }
 .axp-icon svg { width: 22px; height: 22px; }
-.axp-icon .ax-ai-portrait { width: 24px; height: 24px; border-width: 1px; }
+/* Specific enough to beat the 40px portrait wherever stylesheets load in a different order. */
+.ax-workspace .axp-icon .ax-ai-portrait { width: 24px; height: 24px; border-width: 1px; }
 .axp-status {
   display: inline-flex;
   flex: none;
