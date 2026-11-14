@@ -78,9 +78,10 @@
 }
 
 /* ---- Right panels ----
-   Widgets in one column, in panel/panel.css. Every panel is the height of its content and the
-   column scrolls when more is open than fits. The padding keeps the panels' shadows inside the
-   scrolling column, which would clip them. */
+   Widgets in one column, in panel/panel.css. Every panel is the height of its content. The
+   column never runs past the page: when more is open than fits, the panels used longest ago
+   fold to their headers (panel/stackFit.ts). The padding keeps the panels' shadows inside the
+   column, which would clip them. */
 .ax-workspace .ax-widget-stack {
   --ax-stack-shadow-room: 32px;
   position: absolute;
@@ -98,6 +99,9 @@
   scrollbar-width: none;
   pointer-events: none;
 }
+/* Squeezed: one open panel is taller than the column by itself, so its body scrolls instead. */
+.ax-workspace .ax-widget-stack[data-squeezed] .axp:not([data-folded]) { flex: 0 1 auto; min-height: 0; }
+.ax-workspace .ax-widget-stack[data-squeezed] .axp:not([data-folded]) > .axp-body { min-height: 0; overflow-y: auto; }
 
 /* The canvas ends where the panels begin, so no component can sit behind one. A lone selection
    label is left out: it comes and goes with every click, and the canvas must not move under

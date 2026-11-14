@@ -31,6 +31,7 @@ import { snapNode, type SnapGuide } from "../../lib/architecture/nodeSnap";
 import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
 import ChallengeSubmitButton from "../challenge/ChallengeSubmitButton";
+import { useStackFit } from "./panel/stackFit";
 import type { Challenge } from "../challenge/challenges";
 import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
 import LearnCard from "../learn/LearnCard";
@@ -314,6 +315,9 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
   const [liveOpen, setLiveOpen] = useState(false);
   // Where Simulation renders from the header, so it joins the other right panels.
   const [simulationHost, setSimulationHost] = useState<HTMLDivElement | null>(null);
+  // The right column: it folds older panels instead of running past the bottom of the page.
+  const widgetStack = useRef<HTMLDivElement>(null);
+  useStackFit(widgetStack);
   const closeDesignCheck = () => {
     designCheck.setOpen(false);
     designCheck.setFocus(null);
@@ -712,8 +716,9 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                 {modeError && <p role="alert" className="ax-canvas-notice">{modeError}</p>}
               </div>
 
-              {/* Every right panel stacks here, so opening one never hides another. */}
-              <div className="ax-widget-stack">
+              {/* Every right panel stacks here, so opening one never hides another. When they
+                  stop fitting, the ones used longest ago fold (useStackFit). */}
+              <div className="ax-widget-stack" ref={widgetStack}>
                 {/* Simulation always heads the column. */}
                 <div ref={setSimulationHost} className="contents" />
                 {canRunDesign && liveOpen && (

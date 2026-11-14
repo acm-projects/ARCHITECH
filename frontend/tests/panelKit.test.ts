@@ -38,6 +38,6 @@ test("panels keep to four text styles", () => {
     "font: 400 12px/18px var(--font-sans);",
     "font: 400 14px/20px var(--font-sans);",
     "font: 500 14px/20px var(--font-sans);",
-    "font: 600 15px/20px var(--font-sans);",
+    "font: 600 17px/24px var(--font-sans);",
   ]);
 });

@@ -6,7 +6,14 @@ import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { Direction } from "../../../lib/architecture/evaluation/comparison";
 import { PanelCollapseToggle, toggleFromHeader, usePanelCollapse, type PanelCollapse } from "../PanelCollapse";
 import { columnScrollDelta } from "./columnScroll";
+import { ACTIVE_ATTRIBUTE, FOLD_EVENT } from "./stackFit";
 import "./panel.css";
+
+// Order in which panels were last opened or used; the column folds the oldest first.
+let lastActivity = 0;
+function markActive(panel: HTMLElement | null) {
+  panel?.setAttribute(ACTIVE_ATTRIBUTE, String(++lastActivity));
+}
 
 // Every right panel is built from this file, and no panel has styles of its own.
 //   Panel        the widget: a header with one status, and a body that folds away
@@ -85,6 +92,17 @@ export default function Panel({
     if (!panel || !column || collapsed || hidden || transient) return;
     column.scrollTop += columnScrollDelta(panel.getBoundingClientRect(), column.getBoundingClientRect(), COLUMN_MARGIN);
   }, [collapsed, hidden, transient, revealKey]);
+  // Opening, unfolding or being asked for again makes this the panel that stays open.
+  useEffect(() => {
+    if (!collapsed && !hidden) markActive(root.current);
+  }, [collapsed, hidden, revealKey]);
+  // The column folds this panel when the open panels no longer fit (see stackFit.ts).
+  useEffect(() => {
+    const panel = root.current;
+    if (!panel || collapsed) return;
+    panel.addEventListener(FOLD_EVENT, toggle);
+    return () => panel.removeEventListener(FOLD_EVENT, toggle);
+  }, [collapsed, toggle]);
   const close = () => {
     if (toolKey) focusToolButton(toolKey);
     onClose?.();
@@ -99,6 +117,9 @@ export default function Panel({
       data-fill={fill || undefined}
       data-folded={collapsed || undefined}
       data-transient={transient || undefined}
+      // Working in a panel keeps it open when the column has to fold others.
+      onPointerDown={() => markActive(root.current)}
+      onFocus={() => markActive(root.current)}
       onKeyDown={toolKey ? (event) => {
         if (event.key !== "Escape") return;
         event.stopPropagation();
