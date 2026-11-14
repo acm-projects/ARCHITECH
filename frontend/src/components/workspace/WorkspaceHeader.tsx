@@ -1,9 +1,9 @@
 "use client";
 
 import { useId, useRef, useState, type ReactNode } from "react";
-import { BookOpen, Check, ChevronDown, CircleAlert, Menu as MenuIcon, Pencil, RotateCcw, Trophy } from "lucide-react";
+import { BookOpen, Check, ChevronDown, CircleAlert, Menu as MenuIcon, Moon, Pencil, RotateCcw, Trophy } from "lucide-react";
 import WorkspaceHeaderShell from "./WorkspaceHeaderShell";
-import ThemeToggle from "./ThemeToggle";
+import { useAppTheme } from "../AppThemeBoundary";
 
 import type { ProjectMode } from "../projects/projectStore";
 
@@ -22,7 +22,9 @@ type WorkspaceHeaderProps = {
   // The caller supplies Run only where testing is available.
   runControl?: ReactNode;
   projectActions?: (menuId: string) => ReactNode;
-  // Header controls of the page itself, placed before the theme toggle.
+  // The canvas's zoom, fit and Auto align, where there is a canvas to look around.
+  viewControls?: ReactNode;
+  // Header controls of the page itself, placed before the mode switch.
   actions?: ReactNode;
 };
 
@@ -43,8 +45,11 @@ export default function WorkspaceHeader({
   modeStatus,
   runControl,
   projectActions,
+  viewControls,
   actions,
 }: WorkspaceHeaderProps) {
+  const { theme, toggleTheme } = useAppTheme();
+  const nightShift = theme === "dark";
   const menuId = useId();
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -53,8 +58,6 @@ export default function WorkspaceHeader({
   // Enter, Escape and blur can all end an edit; this makes only the first one count.
   const editInProgress = useRef(false);
   const closeMenu = () => menuRef.current?.hidePopover();
-  // A page without project actions or a reset (a system breakdown) has nothing to put in it.
-  const hasMenu = Boolean(projectActions || onReset);
 
   const startEditing = () => {
     editInProgress.current = true;
@@ -115,6 +118,10 @@ export default function WorkspaceHeader({
         )}
       </>}
       actions={<>
+        {viewControls && <>
+          {viewControls}
+          <span className="ax-header-divider" aria-hidden="true" />
+        </>}
         {actions}
         {/* Learn and Challenge are two ways of working on the same design, one click apart. */}
         <div className="ax-mode-switch" role="radiogroup" aria-label="Project mode">
@@ -137,8 +144,7 @@ export default function WorkspaceHeader({
           })}
         </div>
         <span className="ax-header-divider" aria-hidden="true" />
-        <ThemeToggle />
-        {hasMenu && <>
+        <>
           <button
             type="button"
             popoverTarget={menuId}
@@ -175,8 +181,16 @@ export default function WorkspaceHeader({
                 </button>
               </div>
             )}
+            {/* The menu stays open, so the switch can be flipped back while looking at it. */}
+            <div className="ax-project-menu-group">
+              <button type="button" className="ax-project-menu-item ax-night-shift" aria-pressed={nightShift} onClick={toggleTheme}>
+                <Moon size={15} aria-hidden="true" />
+                <span>Night shift</span>
+                <span className="ax-switch" aria-hidden="true" data-on={nightShift || undefined} />
+              </button>
+            </div>
           </div>
-        </>}
+        </>
         {runControl}
       </>}
     />

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { Gauge, ShieldCheck } from "lucide-react";
 import {
-  Controls,
   ReactFlow,
   ReactFlowProvider,
   useEdgesState,
@@ -32,6 +31,8 @@ import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
 import ChallengeSubmitButton from "../challenge/ChallengeSubmitButton";
 import { useStackFit } from "./panel/stackFit";
+import CanvasViewControls from "./CanvasViewControls";
+import { autoAlign } from "../../lib/architecture/autoLayout";
 import type { Challenge } from "../challenge/challenges";
 import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
 import LearnCard from "../learn/LearnCard";
@@ -73,6 +74,7 @@ import "./workspace-panels.css";
 // The canvas is the product, so no library credit sits on it.
 const HIDE_ATTRIBUTION = { hideAttribution: true };
 const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 2;
 // How close a dragged component gets, on screen, before it lines up with another.
 const SNAP_REACH_PX = 8;
 
@@ -445,6 +447,14 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
     setEdges,
   });
 
+  // Auto align is one history step too: Ctrl/Cmd+Z puts every component back where it was.
+  const alignDesign = useCallback(() => {
+    replaceGraph({ nodes: autoAlign(getNodes(), getEdges()), edges: getEdges() });
+    requestAnimationFrame(() => {
+      void fitView({ ...fitViewOptions, duration: 320 });
+    });
+  }, [replaceGraph, getNodes, getEdges, fitView, fitViewOptions]);
+
   // Reset is treated as one real history action, so the whole reset can be undone once.
   // It also clears old analysis/results so we never show feedback for a design that is gone.
   const handleReset = useCallback(() => {
@@ -616,6 +626,15 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
             expanded={inspector.section === "run"}
             onToggle={() => inspector.toggleSection("run")}
           />}
+          viewControls={
+            <CanvasViewControls
+              fitViewOptions={fitViewOptions}
+              minZoom={MIN_ZOOM}
+              maxZoom={MAX_ZOOM}
+              componentCount={nodes.length}
+              onAutoAlign={alignDesign}
+            />
+          }
           projectActions={(menuId) => (
             <div hidden={!showInspector}>
               {savedProjectId && <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />}
@@ -687,7 +706,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                   fitViewOptions={fitViewOptions}
                   defaultViewport={{ x: 0, y: 0, zoom: WORKSPACE_ZOOM }}
                   minZoom={MIN_ZOOM}
-                  maxZoom={2}
+                  maxZoom={MAX_ZOOM}
                   // Drag empty canvas to pan; dragging a component still moves it.
                   // Shift+drag draws a selection box that picks every component it touches.
                   panOnDrag
@@ -695,7 +714,6 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                   selectionMode={SelectionMode.Partial}
                   elevateEdgesOnSelect
                 >
-                  <Controls showInteractive={false} fitViewOptions={fitViewOptions} />
                   {canRunDesign && <DesignCheckBadges result={live.result} nodes={nodes} check={designCheck} />}
                   <ViewportPortal>
                     {snapGuides.map((guide) => (
