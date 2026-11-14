@@ -27,9 +27,16 @@
 
 /* A step: its title and count, Archie's line as in his own panel but inside a bubble, then
    the numbered actions on the panel itself. The card has no header, so it starts here. */
-.axl-step { display: flex; align-items: baseline; gap: 10px; padding: 16px var(--axp-inset) 12px; }
+.axl-step { display: flex; align-items: baseline; gap: 10px; padding: 16px var(--axp-inset) 10px; }
 .axl-step-title { display: flex; flex: 1 1 auto; align-items: center; gap: 8px; min-width: 0; font: 600 18px/24px var(--font-sans); }
-.axl-count { flex: none; color: var(--ax-ink-soft); font: 400 13px/18px var(--font-sans); font-variant-numeric: tabular-nums; }
+.axl-count { flex: none; color: var(--ax-ink-soft); font: 500 13px/18px var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* Progress: one segment per step. Done is Archie's blue, the current step a lighter blue, the
+   rest the line color, so how far along you are reads without counting. */
+.axl-progress { --axl-archie: #109bfd; display: flex; gap: 4px; padding: 0 var(--axp-inset) 14px; }
+.axl-progress span { flex: 1 1 0; height: 4px; border-radius: 2px; background: var(--ax-line); transition: background 240ms ease; }
+.axl-progress span[data-state="done"] { background: var(--axl-archie); }
+.axl-progress span[data-state="current"] { background: color-mix(in srgb, var(--axl-archie) 35%, var(--ax-surface)); }
 .axl-done { display: inline-grid; flex: none; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--axp-good); color: #fff; }
 
 .axl-message { padding: 0 var(--axp-inset) 12px; }
@@ -38,10 +45,10 @@
 .ax-workspace .axl-message .ax-ai-message-box {
   --axl-archie: #109bfd;
   position: relative;
-  padding: 9px 12px;
-  border: 1px solid var(--axl-archie);
-  border-radius: 3px;
-  background: var(--ax-surface);
+  padding: 10px 13px;
+  border: 1px solid color-mix(in srgb, var(--axl-archie) 30%, var(--ax-surface));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--axl-archie) 7%, var(--ax-surface));
   font: 400 15px/22px var(--font-sans);
   overflow-wrap: anywhere;
 }
@@ -53,8 +60,8 @@
   left: -5px;
   width: 8px;
   height: 8px;
-  border-bottom: 1px solid var(--axl-archie);
-  border-left: 1px solid var(--axl-archie);
+  border-bottom: 1px solid color-mix(in srgb, var(--axl-archie) 30%, var(--ax-surface));
+  border-left: 1px solid color-mix(in srgb, var(--axl-archie) 30%, var(--ax-surface));
   background: inherit;
   transform: rotate(45deg);
 }
@@ -69,8 +76,8 @@
 .axp .axl-steps { margin: 0 var(--axp-inset) 8px; font: 400 15px/22px var(--font-sans); counter-reset: axl-step; }
 .axl-steps li {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  align-items: baseline;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
   align-content: center;
   min-height: 42px;
   padding: 8px 0;
@@ -79,10 +86,17 @@
 .axl-steps li + li { border-top: 1px solid var(--ax-line); }
 /* Text and the toolbar chip share one baseline, so nothing in a row sits higher than the rest. */
 .axl-steps li > span { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px; }
+/* Each number sits in a ring, so the actions read as a checklist at a glance. */
 .axl-steps li::before {
   content: counter(axl-step);
-  color: var(--ax-ink-soft);
-  font: 500 13px/22px var(--font-mono);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 50%;
+  color: var(--ax-ink);
+  font: 600 12px/1 var(--font-mono);
 }
 /* Looks like the toolbar button it names. */
 .axl-chip {

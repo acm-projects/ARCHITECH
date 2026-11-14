@@ -142,6 +142,23 @@ export default function LearnCard({
               </p>
               {!freePlay && <span className="axl-count">{stepIndex + 1} of {total}</span>}
             </div>
+            {!freePlay && (
+              <div
+                className="axl-progress"
+                role="progressbar"
+                aria-label="Lesson progress"
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-valuenow={stepIndex + (succeeded ? 1 : 0)}
+              >
+                {lesson.steps.map((lessonStep, index) => (
+                  <span
+                    key={lessonStep.id}
+                    data-state={index < stepIndex || (index === stepIndex && succeeded) ? "done" : index === stepIndex ? "current" : undefined}
+                  />
+                ))}
+              </div>
+            )}
             <div key={`${step.id}-${status}`} className="axl-message" data-nod={succeeded || freePlay || undefined}>
               <ArchieMessage role="assistant" showSpeaker={false}>
                 <p>

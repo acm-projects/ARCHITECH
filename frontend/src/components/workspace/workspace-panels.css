@@ -110,6 +110,10 @@
 @media (min-width: 768px) {
   .ax-workspace .ax-workspace-canvas:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-diagram-viewport {
     width: calc(100% - var(--ax-panel-side-width) - 2 * var(--ax-panel-margin));
+    /* The paper carries on under the panels, so the canvas marks where it really ends:
+       nothing placed past this line would show. */
+    box-sizing: border-box;
+    border-right: 1px dashed var(--ax-line-strong);
   }
   .ax-workspace .ax-workspace-canvas:has(.ax-canvas-overlays > .ax-canvas-panel[data-side="right"]) .ax-diagram-viewport {
     width: calc(100% - 332px);

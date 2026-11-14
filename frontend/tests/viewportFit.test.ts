@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { VIEW_MARGIN, viewportAfterShrink, type Box, type Viewport } from "../src/lib/architecture/viewportFit.ts";
+import { VIEW_MARGIN, viewportAfterShrink, viewportToShow, type Box, type Viewport } from "../src/lib/architecture/viewportFit.ts";
 
 const before = { width: 1400, height: 800 };
 const after = { width: 960, height: 800 };
@@ -47,4 +47,18 @@ test("never zooms past the canvas minimum", () => {
 test("ignores components that were already out of view", () => {
   // The right-hand component is past the old edge, so the user had panned away from it.
   assert.equal(shrink([node(100), node(5000)], { x: 0, y: 0, zoom: 1 }), null);
+});
+
+test("a component that lands past the canvas edge is panned fully into view, at the same zoom", () => {
+  const size = { width: 700, height: 800 };
+  // 192 wide at x=600: its right edge is at 792, past the 700px canvas.
+  const shown = viewportToShow({ x: 600, y: 300, width: 192, height: 56 }, { x: 0, y: 0, zoom: 1 }, size);
+  assert.deepEqual(shown, { x: 700 - VIEW_MARGIN - 792, y: 0, zoom: 1 });
+  // Above the top edge, at zoom 2.
+  const above = viewportToShow({ x: 10, y: -40, width: 100, height: 50 }, { x: 0, y: 0, zoom: 2 }, size);
+  assert.deepEqual(above, { x: VIEW_MARGIN - 20, y: VIEW_MARGIN + 80, zoom: 2 });
+});
+
+test("a component already in view leaves the view alone", () => {
+  assert.equal(viewportToShow({ x: 100, y: 100, width: 192, height: 56 }, { x: 0, y: 0, zoom: 1 }, { width: 700, height: 800 }), null);
 });

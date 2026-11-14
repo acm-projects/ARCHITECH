@@ -40,3 +40,19 @@ export function viewportAfterShrink(
     zoom: nextZoom,
   };
 }
+
+// Pans just enough to show one whole component, for one that lands partly outside the canvas
+// (dropped past its edge, or added at the middle of a screen the panels have narrowed). Null
+// when it is already fully in view. The zoom never changes.
+export function viewportToShow(box: Box, viewport: Viewport, size: Size): Viewport | null {
+  const { x, y, zoom } = viewport;
+  const left = box.x * zoom + x;
+  const right = (box.x + box.width) * zoom + x;
+  const top = box.y * zoom + y;
+  const bottom = (box.y + box.height) * zoom + y;
+  const shift = (start: number, end: number, limit: number) =>
+    end + VIEW_MARGIN > limit ? limit - VIEW_MARGIN - end : start < VIEW_MARGIN ? VIEW_MARGIN - start : 0;
+  const dx = shift(left, right, size.width);
+  const dy = shift(top, bottom, size.height);
+  return dx === 0 && dy === 0 ? null : { x: x + dx, y: y + dy, zoom };
+}

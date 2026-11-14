@@ -55,7 +55,7 @@ import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
 import { useChallengeMode } from "./useChallengeMode";
 import { useGraphClipboard } from "./useGraphClipboard";
 import { useGraphHistory } from "./useGraphHistory";
-import { useKeepNodesInView } from "./useKeepNodesInView";
+import { useKeepNodesInView, useShowNewNode } from "./useKeepNodesInView";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
 import { DesignCheckBadges, DesignCheckPanel, useDesignCheck } from "./DesignCheck";
@@ -149,6 +149,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
   const [initialNodes] = useState(() => spreadOverlappingNodes(project.nodes));
   const [fitViewOptions] = useState(fitViewOptionsForScreen);
   useKeepNodesInView(MIN_ZOOM);
+  const showNewNode = useShowNewNode();
   const [nodes, setNodes, onNodesChange] =
     useNodesState<ArchitectureFlowNode>(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(project.edges);
@@ -415,8 +416,14 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
       );
 
       setNodes(next);
+      showNewNode({
+        x: center.x - ARCHITECTURE_NODE_SIZE.width / 2,
+        y: center.y - ARCHITECTURE_NODE_SIZE.height / 2,
+        width: ARCHITECTURE_NODE_SIZE.width,
+        height: ARCHITECTURE_NODE_SIZE.height,
+      });
     },
-    [getNodes, setNodes, allocateNodeId],
+    [getNodes, setNodes, allocateNodeId, showNewNode],
   );
 
   // Delete whatever is currently selected.

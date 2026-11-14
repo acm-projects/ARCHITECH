@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useReactFlow, useStore, type Edge } from "@xyflow/react";
 
 import { ARCHITECTURE_NODE_SIZE } from "../../lib/architecture/nodeLayout";
-import { viewportAfterShrink } from "../../lib/architecture/viewportFit";
+import { viewportAfterShrink, viewportToShow, type Box } from "../../lib/architecture/viewportFit";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 
 const PAN_MS = 200;
@@ -39,4 +39,18 @@ export function useKeepNodesInView(minZoom: number) {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     void setViewport(next, { duration: reduced ? 0 : PAN_MS });
   }, [width, height, minZoom, getNodes, getViewport, setViewport]);
+}
+
+// A new component lands where it was dropped or at the middle of the screen, which can be past
+// the canvas's edge while the right panels narrow it. This pans just enough to show all of it.
+export function useShowNewNode() {
+  const { getViewport, setViewport } = useReactFlow<ArchitectureFlowNode, Edge>();
+  const width = useStore((state) => state.width);
+  const height = useStore((state) => state.height);
+  return useCallback((box: Box) => {
+    const next = viewportToShow(box, getViewport(), { width, height });
+    if (!next) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    void setViewport(next, { duration: reduced ? 0 : PAN_MS });
+  }, [getViewport, setViewport, width, height]);
 }
