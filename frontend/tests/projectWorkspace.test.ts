@@ -585,7 +585,9 @@ test("Run owns traffic, metrics and reviews after Continue exploring", () => {
   const runPanel = read("src/components/workspace/RunPanel.tsx");
   assert.match(workspace, /canRunDesign && liveOpen/);
   assert.match(workspace, /const showInspector = mode === "challenge" \|\| learn\.exploring/);
-  assert.match(workspace, /runControl=\{canRunDesign && <SimulationControl/);
+  // Challenge keeps the button's place in the top bar as Submit; Learn gets Run once exploring.
+  assert.match(workspace, /runControl=\{mode === "challenge" \? \(\s*<ChallengeSubmitButton\s+onSubmit=\{challenge\.submit\}/);
+  assert.match(workspace, /\) : canRunDesign && <SimulationControl/);
   assert.match(inspector, /runs\.runAtRate\(rate\)/);
   assert.doesNotMatch(inspector, /title="Metrics"/);
   assert.match(inspector, /aria-label="Run simulation"/);

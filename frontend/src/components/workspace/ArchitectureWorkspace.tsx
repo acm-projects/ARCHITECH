@@ -30,6 +30,7 @@ import { ARCHITECTURE_NODE_SIZE, spreadOverlappingNodes } from "../../lib/archit
 import { snapNode, type SnapGuide } from "../../lib/architecture/nodeSnap";
 import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
+import ChallengeSubmitButton from "../challenge/ChallengeSubmitButton";
 import type { Challenge } from "../challenge/challenges";
 import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
 import LearnCard from "../learn/LearnCard";
@@ -597,7 +598,13 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
               : challenge.challenge.title
           }
           saveStatus={savedProjectId ? saveStatus : breakdownSaveFailed ? "error" : undefined}
-          runControl={canRunDesign && <SimulationControl
+          runControl={mode === "challenge" ? (
+            <ChallengeSubmitButton
+              onSubmit={challenge.submit}
+              running={Boolean(challenge.view?.isRunning)}
+              submitted={challenge.cardResult !== null}
+            />
+          ) : canRunDesign && <SimulationControl
             panelHost={simulationHost}
             runs={activeRuns}
             componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}

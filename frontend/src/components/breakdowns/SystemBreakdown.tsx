@@ -1,5 +1,6 @@
 "use client";
 
+import { RotateCcw } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   createContext,
@@ -207,7 +208,9 @@ function Walkthrough({ onChallenge }: { onChallenge: () => void }) {
         onModeChange={mode => { if (mode === "challenge") onChallenge(); }}
         actions={<>
           <LivePreviewToggle />
-          <button type="button" className="ax-action" onClick={() => navigate("restart")} disabled={revealedCount === 1}>Start over</button>
+          <button type="button" className="ax-action ax-header-icon-action" onClick={() => navigate("restart")} disabled={revealedCount === 1} title={revealedCount === 1 ? "Nothing built yet" : "Start the breakdown over"}>
+            <RotateCcw size={15} aria-hidden="true" /> Start over
+          </button>
         </>}
       />
 

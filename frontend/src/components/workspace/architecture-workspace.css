@@ -195,6 +195,68 @@
   anchor-name: --ax-project-menu-trigger;
 }
 .ax-workspace .ax-header-menu-trigger:is(:hover, [aria-expanded="true"]) { background: var(--ax-canvas); color: var(--ax-ink); }
+
+/* Top bar controls are one family: the same height, radius and 1px border. Secondary
+   controls are outlined; the selected mode and the primary action are filled. */
+.ax-workspace .ax-header-actions :is(.ax-theme-toggle, .ax-header-menu-trigger, .ax-header-icon-action) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--ax-header-control-height);
+  border: 1px solid var(--ax-line-strong);
+  border-radius: var(--ax-radius-dock);
+  background: var(--ax-surface);
+  color: var(--ax-ink-soft);
+  transition: background var(--ax-fast) var(--ax-ease), border-color var(--ax-fast) var(--ax-ease), color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-header-actions .ax-theme-toggle { width: var(--ax-header-control-height); padding: 0; }
+.ax-workspace .ax-header-actions :is(.ax-header-menu-trigger, .ax-header-icon-action) { padding: 0 14px; font-size: 13px; font-weight: 500; }
+.ax-workspace .ax-header-actions :is(.ax-theme-toggle, .ax-header-menu-trigger, .ax-header-icon-action):hover:not(:disabled),
+.ax-workspace .ax-header-actions .ax-header-menu-trigger[aria-expanded="true"] {
+  border-color: var(--ax-ink-soft);
+  background: var(--ax-canvas);
+  color: var(--ax-ink);
+}
+.ax-workspace .ax-header-actions .ax-header-icon-action:disabled { color: var(--ax-subtle); cursor: default; }
+
+/* Learn and Challenge: one outlined control split in two. The current mode is filled ink, so
+   it reads as selected by contrast and weight, not by color alone. */
+.ax-workspace .ax-mode-switch {
+  display: inline-flex;
+  flex: none;
+  height: var(--ax-header-control-height);
+  overflow: hidden;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: var(--ax-radius-dock);
+  background: var(--ax-surface);
+}
+.ax-workspace .ax-mode-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ax-ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--ax-fast) var(--ax-ease), color var(--ax-fast) var(--ax-ease);
+}
+.ax-workspace .ax-mode-switch button + button { border-left: 1px solid var(--ax-line-strong); }
+.ax-workspace .ax-mode-switch button:hover:not([aria-checked="true"]) { background: var(--ax-canvas); color: var(--ax-ink); }
+.ax-workspace .ax-mode-switch button[aria-checked="true"] {
+  background: var(--ax-ink);
+  color: var(--ax-surface);
+  font-weight: 600;
+  cursor: default;
+}
+.ax-workspace .ax-mode-switch button:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: -3px; }
+
+/* Separates how you work (mode) from the page's own settings and menu. */
+.ax-workspace .ax-header-divider { flex: none; width: 1px; height: 24px; margin: 0 4px; background: var(--ax-line-strong); }
 .ax-workspace .ax-project-menu {
   --ax-menu-width: 248px;
   --ax-menu-inset: 12px;
@@ -1355,7 +1417,7 @@
 /* The header runs the design model; Run as app remains a separate project action. */
 .ax-workspace .ax-header .ax-run-button {
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  min-height:36px; padding:8px 18px; border:1px solid #155dfc; border-radius:12px;
+  min-height:36px; padding:8px 18px; border:1px solid #155dfc; border-radius:var(--ax-radius-dock);
   background:#155dfc; color:#fff; font-size:13px; font-weight:600; cursor:pointer;
 }
 .ax-workspace .ax-header .ax-run-button:hover:not(:disabled) { background:#1447e6; border-color:#1447e6; }
@@ -1390,12 +1452,16 @@
   .ax-workspace .ax-title > svg { width: 15px; height: 15px; }
   .ax-workspace .ax-title small { font-size: 12px; }
   .ax-workspace .ax-header .ax-save { font-size: 14px; }
-  .ax-workspace .ax-header-menu-trigger { padding-inline: 16px; font-size: 15px; }
-  .ax-workspace .ax-header-menu-trigger svg { width: 15px; height: 15px; }
+  .ax-workspace .ax-header-actions :is(.ax-header-menu-trigger, .ax-header-icon-action) { padding-inline: 16px; font-size: 15px; }
+  .ax-workspace .ax-header-actions :is(.ax-header-menu-trigger, .ax-header-icon-action) svg { width: 16px; height: 16px; }
   .ax-workspace .ax-theme-toggle { width: 44px; height: 44px; }
   .ax-workspace .ax-theme-toggle svg { width: 20px; height: 20px; }
-  .ax-workspace .ax-header .ax-run-button { min-height: 44px; padding: 10px 24px; border-radius: 14px; font-size: 15px; }
+  .ax-workspace .ax-header .ax-run-button { min-height: 44px; padding: 10px 24px; border-radius: var(--ax-radius-dock); font-size: 15px; }
   .ax-workspace .ax-header .ax-run-button svg { width: 18px; height: 18px; }
+  .ax-workspace .ax-mode-switch button { padding-inline: 18px; font-size: 15px; }
+  .ax-workspace .ax-mode-switch button svg { width: 18px; height: 18px; }
+  .ax-workspace .ax-header-divider { height: 28px; margin-inline: 6px; }
+  .ax-workspace .ax-header .ax-save svg { width: 16px; height: 16px; }
   .ax-workspace .react-flow__controls {
     padding: 4px;
     border-radius: 14px;
