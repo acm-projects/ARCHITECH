@@ -6940,7 +6940,10 @@ body,
   --ax-announcement-muted: rgb(23 56 120);
   --ax-announcement-action-ink: rgb(255 255 255);
   --ax-announcement-action-hover: rgb(30 64 140);
-  --ax-announcement-dismiss-hover: rgb(120 176 250);
+  /* Pinned: it stays at the top even where the page itself scrolls (narrow screens). */
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   flex: none;
   justify-content: center;
@@ -6950,7 +6953,7 @@ body,
   color: var(--ax-announcement-ink);
 }
 
-/* The task and its action read as one centered group; the inset keeps it clear of the dismiss. */
+/* The task and its action read as one centered group. */
 .ax-challenge-announcement-row {
   position: relative;
   display: flex;
@@ -7015,34 +7018,10 @@ body,
 
 .ax-challenge-announcement .ax-dashboard-challenge-start:hover { background: var(--ax-announcement-action-hover); }
 
-.ax-challenge-announcement .ax-dashboard-challenge-start:focus-visible,
-.ax-challenge-announcement-dismiss:focus-visible {
+.ax-challenge-announcement .ax-dashboard-challenge-start:focus-visible {
   outline: 2px solid var(--ax-announcement-ink);
   outline-offset: 2px;
 }
-
-.ax-challenge-announcement-dismiss {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  display: grid;
-  flex: none;
-  place-items: center;
-  transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: var(--radius-panel);
-  background: transparent;
-  color: var(--ax-announcement-muted);
-}
-
-.ax-challenge-announcement-dismiss:hover {
-  background: var(--ax-announcement-dismiss-hover);
-  color: var(--ax-announcement-ink);
-}
-
-.ax-challenge-announcement-dismiss svg { width: 14px; height: 14px; }
 
 @media (min-width: 640px) {
   .ax-challenge-announcement { padding: 0 32px; }
@@ -7060,7 +7039,7 @@ body,
   .ax-challenge-announcement-row {
     display: grid;
     grid-template-areas:
-      "label level dismiss"
+      "label level ."
       "title title title"
       "action action action";
     grid-template-columns: auto 1fr auto;
@@ -7071,7 +7050,6 @@ body,
   .ax-challenge-announcement-label { grid-area: label; margin-right: 0; }
   .ax-challenge-announcement-level { grid-area: level; justify-self: start; }
   .ax-challenge-announcement-title { grid-area: title; white-space: normal; }
-  .ax-challenge-announcement-dismiss { position: static; grid-area: dismiss; margin-right: -6px; transform: none; }
   .ax-challenge-announcement-action { grid-area: action; margin: 8px 0 0; }
   .ax-challenge-announcement-action > div { flex-direction: column; align-items: stretch; gap: 6px; }
 
