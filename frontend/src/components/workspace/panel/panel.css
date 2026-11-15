@@ -338,3 +338,6 @@
 
 /* A detail that takes over a panel hides what sits underneath, even parts laid out with flex. */
 .axp-messages[hidden], .axp-compose[hidden] { display: none; }
+
+/* The design check at the top of Archie's panel, ruled off from the conversation below. */
+.axp-review { flex: none; margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--ax-line); }

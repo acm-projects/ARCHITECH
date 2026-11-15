@@ -318,7 +318,7 @@ export default function ArchitectPanel({
       closeLabel="Close Archie"
       onClose={onClose}
     >
-      {review}
+      {review && <div className="axp-review">{review}</div>}
       {focus.length > 0 && !reviewDetail && (
         <div className="axp-row">
           <span className="axp-label">About {scope}</span>
@@ -329,16 +329,11 @@ export default function ArchitectPanel({
       )}
       <div className="axp-messages" ref={list} aria-live="polite" hidden={reviewDetail}>
         {turns.length === 0 && (
-          <>
-            <p className="axp-message" data-tone="soft">
-              {focus.length > 0 ? "Ask how this part works, connects, or affects your system." : "Ask about traffic, reliability, or cost. Preview changes before applying them."}
-            </p>
-            <div>
-              {(focus.length > 0 ? FOCUS_STARTERS : STARTERS).map((question) => (
-                <PanelLink key={question} item label={question} title={question} onClick={() => void ask(question)} />
-              ))}
-            </div>
-          </>
+          <PanelGroup title={focus.length > 0 ? `Ask about ${scope}` : "Ask Archie"}>
+            {(focus.length > 0 ? FOCUS_STARTERS : STARTERS).map((question) => (
+              <PanelLink key={question} item label={question} title={question} onClick={() => void ask(question)} />
+            ))}
+          </PanelGroup>
         )}
         {turns.map((turn) =>
           turn.role === "user" ? (
