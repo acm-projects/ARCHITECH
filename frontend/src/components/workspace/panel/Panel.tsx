@@ -203,6 +203,28 @@ export function PanelRow({ label, value, lead, item, title }: RowContent) {
   );
 }
 
+// Headline numbers as small widgets, two to a row: an icon and a label above one large value.
+// For a panel whose whole point is a few numbers read at a glance (Live estimates).
+export function PanelStats({ label, children }: { label?: string; children: ReactNode }) {
+  return <div className="axp-stats" role="group" aria-label={label}>{children}</div>;
+}
+
+export function PanelStat({ icon, label, value, title, wide = false }: {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+  title?: string;
+  // Takes the whole row, for a value that is a name rather than a number.
+  wide?: boolean;
+}) {
+  return (
+    <div className="axp-stat" data-wide={wide || undefined} title={title}>
+      <span className="axp-stat-label"><span className="axp-stat-icon">{icon}</span>{label}</span>
+      <span className="axp-stat-value">{value}</span>
+    </div>
+  );
+}
+
 export function PanelLink({ label, value, lead, item, title, ...button }: RowContent & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "value" | "title">) {
   return (
     <button type="button" className="axp-row axp-link" data-item={item || undefined} title={title} {...button}>

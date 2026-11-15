@@ -2,7 +2,7 @@
 
 import type { Edge } from "@xyflow/react";
 import { ViewportPortal } from "@xyflow/react";
-import { ShieldCheck, Undo2 } from "lucide-react";
+import { MessageCircleQuestion, Undo2 } from "lucide-react";
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import {
@@ -20,13 +20,13 @@ import type { TrafficProfile } from "../../lib/architecture/evaluation/traffic";
 import { formatLatency, formatMonthlyCost, formatRate } from "../../lib/architecture/implementationStats";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 import { ARCHITECTURE_NODE_SIZE } from "../../lib/architecture/nodeLayout";
-import Panel, { PanelAction, PanelActions, PanelDetail, PanelGroup, PanelLink, PanelRow, PanelText } from "./panel/Panel";
+import { PanelAction, PanelActions, PanelDetail, PanelGroup, PanelLink, PanelRow, PanelText } from "./panel/Panel";
 import "./design-check.css";
 
 // Design check over the canvas: the engine's findings marked on the components they are about,
-// a list of them with a one-click fix where one follows from the problem
-// (lib/architecture/designCheck.ts), and where the design's uptime comes from. A fix is one
-// history step, so Undo takes it back.
+// and, inside Archie's panel, a list of them with a one-click fix where one follows from the
+// problem (lib/architecture/designCheck.ts) and where the design's uptime comes from. A fix is
+// one history step, so Undo takes it back. Any finding can be handed to Archie to explain.
 
 type Graph = { nodes: ArchitectureFlowNode[]; edges: Edge[] };
 export type DesignCheckState = ReturnType<typeof useDesignCheck>;
@@ -62,21 +62,32 @@ function subscribeEnabled(listener: () => void) {
   };
 }
 
-export function useDesignCheck() {
-  const [open, setOpen] = useState(false);
-  // The finding whose components are outlined on the canvas.
+// `onReveal` brings Archie's panel forward, where the design check lives.
+export function useDesignCheck({ onReveal }: { onReveal: () => void }) {
+  // The finding open in Archie's panel, whose components are outlined on the canvas.
   const [focus, setFocus] = useState<string | null>(null);
-  // Whether the design check shows at all: badges on the canvas and the panel.
+  // Where the uptime comes from, open in Archie's panel.
+  const [uptimeOpen, setUptimeOpen] = useState(false);
+  // Whether the design check shows at all: marks on the canvas and the list in Archie.
   const enabled = useSyncExternalStore(subscribeEnabled, readEnabled, () => true);
   const setEnabled = (on: boolean) => {
     writeEnabled(on);
     if (!on) {
-      setOpen(false);
       setFocus(null);
+      setUptimeOpen(false);
     }
   };
-  return { open, setOpen, focus, setFocus, enabled, setEnabled };
+  // A mark on the canvas opens its finding in Archie.
+  const reveal = (findingId: string) => {
+    setUptimeOpen(false);
+    setFocus(findingId);
+    onReveal();
+  };
+  return { focus, setFocus, uptimeOpen, setUptimeOpen, enabled, setEnabled, reveal };
 }
+
+// A finding or the uptime is open, which takes over Archie's panel until its back button.
+export const designCheckInDetail = (check: DesignCheckState) => check.enabled && (Boolean(check.focus) || check.uptimeOpen);
 
 // The on/off switch for the whole design check.
 function EnabledSwitch({ check }: { check: DesignCheckState }) {
@@ -87,7 +98,7 @@ function EnabledSwitch({ check }: { check: DesignCheckState }) {
       aria-checked={check.enabled}
       aria-label="Mark problems on the canvas"
       className="axp-switch"
-      title={check.enabled ? "Turn the design check off (hides its marks and this panel)" : "Turn the design check on"}
+      title={check.enabled ? "Turn the design check off (hides its marks and findings)" : "Turn the design check on"}
       onClick={() => check.setEnabled(!check.enabled)}
     >
       <span aria-hidden="true" />
@@ -177,10 +188,7 @@ export function DesignCheckBadges({ result, nodes, check }: { result: LiveResult
             style={{ transform: `translate(${x + width - 10}px, ${y - 10}px)` }}
             title={titles}
             aria-label={`${worst.severity === "high" ? "High" : "Medium"} severity: ${list.length} problem${list.length === 1 ? "" : "s"} with ${node.data.label}: ${titles}`}
-            onClick={() => {
-              check.setOpen(true);
-              check.setFocus(worst.id);
-            }}
+            onClick={() => check.reveal(worst.id)}
           >
             {list.length > 1 ? list.length : "!"}
           </button>
@@ -192,7 +200,9 @@ export function DesignCheckBadges({ result, nodes, check }: { result: LiveResult
 
 // ---- The panel ----
 
-export function DesignCheckPanel({
+// The design check inside Archie's panel: the findings, one line each, then where the uptime
+// comes from and the switch for the marks on the canvas. A finding opens in place with its fix.
+export function DesignCheckSection({
   result,
   nodes,
   edges,
@@ -200,6 +210,7 @@ export function DesignCheckPanel({
   check,
   onApply,
   onUndo,
+  onAsk,
 }: {
   result: LiveResult | null;
   nodes: ArchitectureFlowNode[];
@@ -208,16 +219,17 @@ export function DesignCheckPanel({
   check: DesignCheckState;
   onApply: (graph: Graph) => void;
   onUndo: () => void;
+  // Hands a question to Archie, below.
+  onAsk: (question: string) => void;
 }) {
-  const heading = useRef<HTMLHeadingElement>(null);
+  const anchor = useRef<HTMLDivElement>(null);
   const [applied, setApplied] = useState<{ label: string; effect: Effect[] } | null>(null);
-  const [showUptime, setShowUptime] = useState(false);
   const ready = Boolean(result?.summary.ready);
   const findings = useMemo(() => (result && ready ? [...result.evaluation.findings].sort(bySeverity) : []), [result, ready]);
 
-  // Fixes are worked out only while the panel is open (each is checked with the engine).
+  // Fixes are worked out while the section is on screen (each is checked with the engine).
   const checked = useMemo(() => {
-    if (!check.open || !result || !ready) return null;
+    if (!check.enabled || !result || !ready) return null;
     const design = { nodes, edges };
     const fixes = new Map<string, CheckedFix>();
     for (const finding of findings) {
@@ -229,36 +241,36 @@ export function DesignCheckPanel({
       uptime: uptimeBreakdown(result.evaluation, design as never),
       stronger: strengthenWeakest(result.evaluation, design as never, traffic),
     };
-  }, [check.open, result, ready, findings, nodes, edges, traffic]);
+  }, [check.enabled, result, ready, findings, nodes, edges, traffic]);
 
   if (!result || !ready) return null;
 
+  if (!check.enabled) {
+    return (
+      <PanelGroup>
+        <div className="axp-row">
+          <span className="axp-label">Design check</span>
+          <EnabledSwitch check={check} />
+        </div>
+      </PanelGroup>
+    );
+  }
+
   const apply = (fix: CheckedFix) => {
-    // A fix may remove its finding, so keep focus on a persistent panel element.
-    heading.current?.focus({ preventScroll: true });
+    // A fix may remove its finding, so keep focus on an element that stays.
+    anchor.current?.focus({ preventScroll: true });
     onApply(fix.design as unknown as Graph);
     setApplied({ label: fix.label, effect: effect(fix.before, fix.after) });
     check.setFocus(null);
-    setShowUptime(false);
+    check.setUptimeOpen(false);
   };
 
   const uptime = checked?.uptime;
   const focused = findings.find((finding) => finding.id === check.focus);
   const focusedFix = focused && checked?.fixes.get(focused.id);
-  const inDetail = Boolean(focused) || (showUptime && Boolean(uptime));
+  const inDetail = Boolean(focused) || (check.uptimeOpen && Boolean(uptime));
   return (
-    <Panel
-      toolKey="check"
-      icon={<ShieldCheck size={17} aria-hidden="true" />}
-      title="Design check"
-      status={findings.length === 0 ? "No findings" : `${findings.length} ${findings.length === 1 ? "finding" : "findings"}`}
-      revealKey={check.focus}
-      onClose={() => {
-        check.setOpen(false);
-        check.setFocus(null);
-      }}
-      headingRef={heading}
-    >
+    <div ref={anchor} tabIndex={-1}>
       {applied && (
         <PanelGroup title={`Applied: ${applied.label}`}>
           <div role="status">
@@ -267,7 +279,7 @@ export function DesignCheckPanel({
           <PanelActions>
             <PanelAction
               onClick={() => {
-                heading.current?.focus({ preventScroll: true });
+                anchor.current?.focus({ preventScroll: true });
                 onUndo();
                 setApplied(null);
               }}
@@ -279,7 +291,7 @@ export function DesignCheckPanel({
       )}
 
       <div hidden={inDetail}>
-        <PanelGroup>
+        <PanelGroup title="Design check">
           {findings.length === 0 ? (
             <PanelText>No problems found at {formatRate(traffic.requestsPerSecond)} req/s.</PanelText>
           ) : (
@@ -294,9 +306,7 @@ export function DesignCheckPanel({
               />
             ))
           )}
-        </PanelGroup>
-        <PanelGroup>
-          {uptime && <PanelLink label="Availability" value={`${uptime.percent}%`} onClick={() => setShowUptime(true)} />}
+          {uptime && <PanelLink label="Availability" value={`${uptime.percent}%`} onClick={() => check.setUptimeOpen(true)} />}
           <div className="axp-row">
             <span className="axp-label">Mark problems on the canvas</span>
             <EnabledSwitch check={check} />
@@ -311,9 +321,19 @@ export function DesignCheckPanel({
           </PanelGroup>
           <PanelText>{focused.message}</PanelText>
           {focusedFix ? <FixAction fix={focusedFix} onApply={apply} /> : <PanelText>{focused.recommendation}</PanelText>}
+          <PanelActions>
+            <PanelAction
+              onClick={() => {
+                check.setFocus(null);
+                onAsk(`Explain "${focused.title}" in my design: why it matters and what to change.`);
+              }}
+            >
+              <MessageCircleQuestion size={14} aria-hidden="true" /> Ask Archie about this
+            </PanelAction>
+          </PanelActions>
         </PanelDetail>
-      ) : showUptime && uptime && (
-        <PanelDetail title="Availability" onBack={() => setShowUptime(false)}>
+      ) : check.uptimeOpen && uptime && (
+        <PanelDetail title="Availability" onBack={() => check.setUptimeOpen(false)}>
           <PanelGroup>
             <PanelRow label="Availability" value={`${uptime.percent}%`} />
             <PanelRow label="Downtime" value={downtimePerYear(uptime.percent / 100)} />
@@ -336,7 +356,7 @@ export function DesignCheckPanel({
           {checked?.stronger && <FixAction fix={checked.stronger} onApply={apply} />}
         </PanelDetail>
       )}
-    </Panel>
+    </div>
   );
 }
 

@@ -324,3 +324,17 @@
 
 /* History opens in a frame of its own. */
 .ax-panel-content > .axp { border: 0; border-radius: 0; box-shadow: none; }
+
+/* Stat widgets, after iOS widgets: a soft tile per number, an icon and label on top, the value
+   large underneath. The fifth text style, kept to this one use. */
+.axp-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 6px var(--axp-inset) 10px; }
+.axp-stat { display: grid; gap: 4px; min-width: 0; padding: 10px 12px; border-radius: 12px; background: var(--ax-hover-fill); }
+.axp-stat[data-wide] { grid-column: 1 / -1; }
+.axp-stat-label { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; color: var(--ax-ink-soft); font: 400 12px/18px var(--font-sans); white-space: nowrap; }
+.axp-stat-icon { display: inline-grid; flex: none; place-items: center; width: 16px; height: 16px; color: var(--ax-ink-soft); }
+.axp-stat-icon svg { width: 15px; height: 15px; }
+.axp-stat-value { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; font: 600 20px/26px var(--font-sans); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.axp-stat-value .axp-change { margin-left: 0; font-size: 10px; }
+
+/* A detail that takes over a panel hides what sits underneath, even parts laid out with flex. */
+.axp-messages[hidden], .axp-compose[hidden] { display: none; }

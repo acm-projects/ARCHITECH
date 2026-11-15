@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
-import { Gauge, ShieldCheck } from "lucide-react";
+import { Gauge } from "lucide-react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -31,7 +31,6 @@ import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
 import ChallengeSubmitButton from "../challenge/ChallengeSubmitButton";
 import { useStackFit } from "./panel/stackFit";
-import CanvasViewControls from "./CanvasViewControls";
 import { autoAlign } from "../../lib/architecture/autoLayout";
 import type { Challenge } from "../challenge/challenges";
 import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
@@ -58,7 +57,7 @@ import { useGraphHistory } from "./useGraphHistory";
 import { useKeepNodesInView, useShowNewNode } from "./useKeepNodesInView";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
-import { DesignCheckBadges, DesignCheckPanel, useDesignCheck } from "./DesignCheck";
+import { DesignCheckBadges, DesignCheckSection, designCheckInDetail, useDesignCheck } from "./DesignCheck";
 import { LiveEstimatesPanel } from "./LiveMetricsBar";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
@@ -311,20 +310,22 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
   const showInspector = mode === "challenge" || learn.exploring;
   // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
   const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
-  // Problems marked on the canvas, with one-click fixes and where the uptime comes from.
-  const designCheck = useDesignCheck();
+  // Problems marked on the canvas, listed with one-click fixes inside Archie's panel. A mark
+  // on the canvas opens Archie at its finding.
+  const designCheck = useDesignCheck({ onReveal: inspector.askArchie });
   const liveReady = Boolean(live.result?.summary.ready);
-  const findingCount = liveReady ? (live.result?.evaluation.findings.length ?? 0) : 0;
+  // A design check finding handed to Archie as a question.
+  const [archieQuestion, setArchieQuestion] = useState<{ key: number; text: string } | null>(null);
+  const askArchieAbout = useCallback((text: string) => {
+    setArchieQuestion((previous) => ({ key: (previous?.key ?? 0) + 1, text }));
+    inspector.askArchie();
+  }, [inspector]);
   const [liveOpen, setLiveOpen] = useState(false);
   // Where Simulation renders from the header, so it joins the other right panels.
   const [simulationHost, setSimulationHost] = useState<HTMLDivElement | null>(null);
   // The right column: it folds older panels instead of running past the bottom of the page.
   const widgetStack = useRef<HTMLDivElement>(null);
   useStackFit(widgetStack);
-  const closeDesignCheck = () => {
-    designCheck.setOpen(false);
-    designCheck.setFocus(null);
-  };
 
   // Check a connection before React Flow lets the user create it.
   // We read the current graph directly from React Flow so this never validates
@@ -633,15 +634,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
             expanded={inspector.section === "run"}
             onToggle={() => inspector.toggleSection("run")}
           />}
-          viewControls={
-            <CanvasViewControls
-              fitViewOptions={fitViewOptions}
-              minZoom={MIN_ZOOM}
-              maxZoom={MAX_ZOOM}
-              componentCount={nodes.length}
-              onAutoAlign={alignDesign}
-            />
-          }
+          onAutoAlign={nodes.length > 1 ? alignDesign : undefined}
           projectActions={(menuId) => (
             <div hidden={!showInspector}>
               {savedProjectId && <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />}
@@ -668,22 +661,6 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                 icon: <Gauge size={16} aria-hidden="true" />,
                 open: liveOpen,
                 onToggle: () => setLiveOpen((open) => !open),
-              }, {
-                key: "check",
-                label: "Design check",
-                icon: <ShieldCheck size={16} aria-hidden="true" />,
-                badge: designCheck.enabled && liveReady ? String(findingCount) : undefined,
-                open: designCheck.enabled && designCheck.open,
-                disabled: !liveReady,
-                title: "Connect a client to check the design.",
-                onToggle: () => {
-                  if (designCheck.enabled && designCheck.open) {
-                    closeDesignCheck();
-                    return;
-                  }
-                  if (!designCheck.enabled) designCheck.setEnabled(true);
-                  designCheck.setOpen(true);
-                },
               }] : []),
             ]} />
 
@@ -755,17 +732,6 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                     onClose={() => setLiveOpen(false)}
                   />
                 )}
-                {canRunDesign && liveReady && designCheck.enabled && designCheck.open && (
-                  <DesignCheckPanel
-                    result={live.result}
-                    nodes={nodes}
-                    edges={edges}
-                    traffic={activeRuns.traffic}
-                    check={designCheck}
-                    onApply={replaceGraph}
-                    onUndo={undo}
-                  />
-                )}
                 {showInspector && (
                   <WorkspaceInspector
                     projectId={savedProjectId}
@@ -774,6 +740,20 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                     onClearSelection={clearCanvasSelection}
                     onApply={replaceGraph}
                     customTechnologies={project.customTechnologies}
+                    review={canRunDesign && liveReady ? (
+                      <DesignCheckSection
+                        result={live.result}
+                        nodes={nodes}
+                        edges={edges}
+                        traffic={activeRuns.traffic}
+                        check={designCheck}
+                        onApply={replaceGraph}
+                        onUndo={undo}
+                        onAsk={askArchieAbout}
+                      />
+                    ) : undefined}
+                    reviewDetail={canRunDesign && liveReady && designCheckInDetail(designCheck)}
+                    asked={archieQuestion}
                     guidance={mode === "challenge" ? (
                       <ChallengeCard
                         challenge={challenge.challenge}

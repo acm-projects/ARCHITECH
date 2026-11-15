@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { Edge } from "@xyflow/react";
 import { useOnSelectionChange, useReactFlow, useStore } from "@xyflow/react";
@@ -144,7 +144,16 @@ export default function ArchitectPanel({
   revealKey,
   onApply,
   customTechnologies,
+  review,
+  reviewDetail = false,
+  asked = null,
 }: {
+  // The design check, above the conversation. While one of its findings is open it takes the
+  // whole panel (`reviewDetail`), and the conversation waits underneath.
+  review?: ReactNode;
+  reviewDetail?: boolean;
+  // A question handed over from elsewhere (a design check finding), asked once per new key.
+  asked?: { key: number; text: string } | null;
   // The conversation is saved with this project and restored when the panel opens.
   // Null outside a saved project (a system breakdown): the conversation lasts as long as the page.
   projectId: string | null;
@@ -284,6 +293,14 @@ export default function ArchitectPanel({
     updateAssistant(turnId, (turn) => ({ ...turn, applied: { ...turn.applied, [suggestion.id]: "applied" } }));
   };
 
+  // A question handed over from the design check is asked once, when Archie is free.
+  const lastAsked = useRef(0);
+  useEffect(() => {
+    if (!asked || asked.key === lastAsked.current || busy || !restored) return;
+    lastAsked.current = asked.key;
+    void ask(asked.text);
+  });
+
   const scope = focusedName ?? components(focus.length);
   return (
     <Panel
@@ -292,8 +309,6 @@ export default function ArchitectPanel({
       label="Ask Archie"
       icon={<ArchiePortrait />}
       title="Archie"
-      status={usage ? (usage.remainingToday <= 5 ? <PanelDelta better={false}>{usage.remainingToday} left today</PanelDelta> : `${usage.remainingToday} left today`) : undefined}
-      statusTitle={usage ? usageLabel(usage) : undefined}
       revealKey={revealKey}
       actions={turns.length > 0 && (
         <button type="button" className="axp-icon-btn" aria-label="Start a new conversation" title="New chat" onClick={newChat} disabled={busy}>
@@ -303,7 +318,8 @@ export default function ArchitectPanel({
       closeLabel="Close Archie"
       onClose={onClose}
     >
-      {focus.length > 0 && (
+      {review}
+      {focus.length > 0 && !reviewDetail && (
         <div className="axp-row">
           <span className="axp-label">About {scope}</span>
           <button type="button" className="axp-icon-btn" aria-label="Clear the selection and ask about the whole design" onClick={clearFocus}>
@@ -311,7 +327,7 @@ export default function ArchitectPanel({
           </button>
         </div>
       )}
-      <div className="axp-messages" ref={list} aria-live="polite">
+      <div className="axp-messages" ref={list} aria-live="polite" hidden={reviewDetail}>
         {turns.length === 0 && (
           <>
             <p className="axp-message" data-tone="soft">
@@ -353,6 +369,7 @@ export default function ArchitectPanel({
       </div>
       <form
         className="axp-compose"
+        hidden={reviewDetail}
         onSubmit={(event) => {
           event.preventDefault();
           void ask(draft);
@@ -380,7 +397,7 @@ export default function ArchitectPanel({
             <Square size={12} aria-hidden="true" /> Stop
           </PanelAction>
         ) : (
-          <PanelAction type="submit" variant="primary" disabled={!draft.trim()}>
+          <PanelAction type="submit" variant="primary" disabled={!draft.trim()} title={usage ? usageLabel(usage) : undefined}>
             <Send size={13} aria-hidden="true" /> Send
           </PanelAction>
         )}

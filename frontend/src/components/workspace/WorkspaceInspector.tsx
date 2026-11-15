@@ -25,6 +25,10 @@ type WorkspaceInspectorProps = {
   onApply: ComponentProps<typeof ArchitectPanel>["onApply"];
   customTechnologies?: readonly CustomTechnology[];
   guidance: ReactNode;
+  // The design check, shown inside Archie's panel (see ArchitectPanel).
+  review?: ReactNode;
+  reviewDetail?: boolean;
+  asked?: { key: number; text: string } | null;
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate">;
 };
 
@@ -83,6 +87,7 @@ export default function WorkspaceInspector({
   projectId,
   nodes, controller, onClearSelection, onApply, customTechnologies,
   guidance,
+  review, reviewDetail, asked,
 }: Omit<WorkspaceInspectorProps, "runs">) {
   const { archieOpen, archieRequest, historyOpen, configuring, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory } = controller;
   const selectionCollapse = usePanelCollapse();
@@ -146,6 +151,9 @@ export default function WorkspaceInspector({
           onClose={closeArchie}
           onApply={onApply}
           customTechnologies={customTechnologies}
+          review={review}
+          reviewDetail={reviewDetail}
+          asked={asked}
         />
       )}
     </>

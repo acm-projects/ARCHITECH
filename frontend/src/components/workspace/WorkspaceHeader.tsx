@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, type ReactNode } from "react";
-import { BookOpen, Check, ChevronDown, CircleAlert, Menu as MenuIcon, Moon, Pencil, RotateCcw, Trophy } from "lucide-react";
+import { BookOpen, Check, ChevronDown, CircleAlert, Menu as MenuIcon, Moon, Pencil, RotateCcw, Trophy, Workflow } from "lucide-react";
 import WorkspaceHeaderShell from "./WorkspaceHeaderShell";
 import { useAppTheme } from "../AppThemeBoundary";
 
@@ -22,8 +22,8 @@ type WorkspaceHeaderProps = {
   // The caller supplies Run only where testing is available.
   runControl?: ReactNode;
   projectActions?: (menuId: string) => ReactNode;
-  // The canvas's zoom, fit and Auto align, where there is a canvas to look around.
-  viewControls?: ReactNode;
+  // Lines the design up in the direction requests travel. Absent where there is nothing to align.
+  onAutoAlign?: () => void;
   // Header controls of the page itself, placed before the mode switch.
   actions?: ReactNode;
 };
@@ -45,7 +45,7 @@ export default function WorkspaceHeader({
   modeStatus,
   runControl,
   projectActions,
-  viewControls,
+  onAutoAlign,
   actions,
 }: WorkspaceHeaderProps) {
   const { theme, toggleTheme } = useAppTheme();
@@ -118,10 +118,6 @@ export default function WorkspaceHeader({
         )}
       </>}
       actions={<>
-        {viewControls && <>
-          {viewControls}
-          <span className="ax-header-divider" aria-hidden="true" />
-        </>}
         {actions}
         {/* Learn and Challenge are two ways of working on the same design, one click apart. */}
         <div className="ax-mode-switch" role="radiogroup" aria-label="Project mode">
@@ -169,6 +165,21 @@ export default function WorkspaceHeader({
             {/* Actions target this popover directly, without depending on click bubbling. */}
             <div className="ax-project-menu-actions">
               {projectActions?.(menuId)}
+            </div>
+            <div className="ax-project-menu-group">
+              <button
+                type="button"
+                className="ax-project-menu-item"
+                disabled={!onAutoAlign}
+                title={onAutoAlign ? "Line components up in the direction requests travel (undo with Ctrl+Z)" : "Add at least two components to align"}
+                onClick={() => {
+                  closeMenu();
+                  onAutoAlign?.();
+                }}
+              >
+                <Workflow size={15} aria-hidden="true" />
+                <span>Auto align</span>
+              </button>
             </div>
             {onReset && (
               <div className="ax-project-menu-group">

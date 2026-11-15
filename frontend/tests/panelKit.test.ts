@@ -32,12 +32,13 @@ test("right panels are built from the panel kit, with no layout of their own", (
   }
 });
 
-test("panels keep to four text styles", () => {
+test("panels keep to five text styles: four for rows and one for stat widgets", () => {
   const styles = new Set(read("src/components/workspace/panel/panel.css").match(/\bfont: \d{3} [^;]+;/g));
   assert.deepEqual([...styles].sort(), [
     "font: 400 12px/18px var(--font-sans);",
     "font: 400 14px/20px var(--font-sans);",
     "font: 500 14px/20px var(--font-sans);",
     "font: 600 17px/24px var(--font-sans);",
+    "font: 600 20px/26px var(--font-sans);",
   ]);
 });

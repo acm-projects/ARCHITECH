@@ -255,35 +255,6 @@
 }
 .ax-workspace .ax-mode-switch button:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: -3px; }
 
-/* Zoom out, the zoom level, zoom in and fit: one outlined control in segments, like the mode
-   switch, so the view tools read as a single group. */
-.ax-workspace .ax-view-controls {
-  display: inline-flex;
-  flex: none;
-  height: var(--ax-header-control-height);
-  overflow: hidden;
-  border: 1px solid var(--ax-line-strong);
-  border-radius: var(--ax-radius-dock);
-  background: var(--ax-surface);
-}
-.ax-workspace .ax-view-controls button {
-  display: inline-grid;
-  place-items: center;
-  min-width: var(--ax-header-control-height);
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--ax-ink-soft);
-  cursor: pointer;
-  transition: background var(--ax-fast) var(--ax-ease), color var(--ax-fast) var(--ax-ease);
-}
-.ax-workspace .ax-view-controls button + button { border-left: 1px solid var(--ax-line-strong); }
-.ax-workspace .ax-view-controls button:hover:not(:disabled) { background: var(--ax-canvas); color: var(--ax-ink); }
-.ax-workspace .ax-view-controls button:disabled { color: var(--ax-subtle); cursor: default; }
-.ax-workspace .ax-view-controls button:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: -3px; }
-.ax-workspace .ax-view-controls .ax-zoom-level { min-width: 58px; padding: 0 8px; font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
-
 /* Night shift in the menu: an on/off switch at the end of the row. */
 .ax-workspace .ax-night-shift { width: 100%; }
 .ax-workspace .ax-night-shift > span:not(.ax-switch) { flex: 1 1 auto; text-align: left; }
@@ -308,16 +279,9 @@
   transition: transform var(--ax-fast) var(--ax-ease);
 }
 .ax-workspace .ax-project-menu-item > .ax-switch { flex: none; }
+.ax-workspace .ax-project-menu-item:disabled { color: var(--ax-subtle); cursor: default; }
 .ax-workspace .ax-switch[data-on] { background: var(--ax-ink); }
 
-/* Narrower windows keep every control but drop words before icons; phones zoom by pinching. */
-@media (max-width: 1279px) {
-  .ax-workspace .ax-header-actions .ax-action-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .ax-workspace .ax-header-actions .ax-header-icon-action:has(.ax-action-label) { width: var(--ax-header-control-height); padding: 0; }
-}
-@media (max-width: 899px) {
-  .ax-workspace .ax-view-controls { display: none; }
-}
 .ax-workspace .ax-switch[data-on]::after { transform: translateX(12px); }
 
 /* Separates how you work (mode) from the page's own settings and menu. */
@@ -365,7 +329,7 @@
 .ax-workspace .ax-project-menu-item > span { flex: 1; }
 .ax-workspace .ax-project-menu-item small { display: block; margin-top: 2px; color: var(--ax-muted); font-size: 11px; }
 .ax-workspace .ax-project-menu-item[aria-pressed="true"] { color: var(--ax-ink); font-weight: 500; }
-.ax-workspace .ax-project-menu-item:hover,
+.ax-workspace .ax-project-menu-item:hover:not(:disabled),
 .ax-workspace .ax-project-menu .ax-ai-toggle:hover { background: var(--ax-canvas); color: var(--ax-ink); }
 .ax-workspace .ax-project-menu-actions > div:not([hidden]) { padding: 4px; border-block: 1px solid var(--ax-line); }
 @supports (position-anchor: --ax-project-menu-trigger) {
@@ -1526,8 +1490,6 @@
   .ax-workspace .ax-mode-switch button { padding-inline: 18px; font-size: 15px; }
   .ax-workspace .ax-mode-switch button svg { width: 18px; height: 18px; }
   .ax-workspace .ax-header-divider { height: 28px; margin-inline: 6px; }
-  .ax-workspace .ax-view-controls button svg { width: 18px; height: 18px; }
-  .ax-workspace .ax-view-controls .ax-zoom-level { min-width: 64px; font-size: 13px; }
   .ax-workspace .ax-header .ax-save svg { width: 16px; height: 16px; }
   .ax-workspace .react-flow__controls {
     padding: 4px;
