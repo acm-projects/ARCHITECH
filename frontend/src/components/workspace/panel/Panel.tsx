@@ -21,6 +21,7 @@ function markActive(panel: HTMLElement | null) {
 //   PanelRow     one line: a label and a value
 //   PanelLink    the same line, opening a detail
 //   PanelDetail  takes over the panel's body, one level deep, with a way back
+//   PanelMeter   a bar under a row, for demand against a limit
 //   PanelField, PanelAction, PanelText, PanelReveal for what is left
 // A panel shows its rows at rest, and anything longer than one line belongs in a detail.
 
@@ -203,24 +204,33 @@ export function PanelRow({ label, value, lead, item, title }: RowContent) {
   );
 }
 
-// Headline numbers as small widgets, two to a row: an icon and a label above one large value.
-// For a panel whose whole point is a few numbers read at a glance (Live estimates).
-export function PanelStats({ label, children }: { label?: string; children: ReactNode }) {
-  return <div className="axp-stats" role="group" aria-label={label}>{children}</div>;
-}
-
-export function PanelStat({ icon, label, value, title, wide = false }: {
-  icon: ReactNode;
+// Demand against a limit, as a bar under the row that states both numbers. Up to the limit the
+// bar is the limit and the fill is the demand. Past it the bar is the demand: the fill is what
+// the limit covers and the rest, in the danger color, is what it does not.
+export function PanelMeter({ label, fraction, caption }: {
+  // Names the measurement for screen readers: "Load against capacity".
   label: string;
-  value: ReactNode;
-  title?: string;
-  // Takes the whole row, for a value that is a name rather than a number.
-  wide?: boolean;
+  // Demand as a fraction of the limit: 1 is exactly at the limit.
+  fraction: number;
+  // One line under the bar, which also reads the bar out.
+  caption: string;
 }) {
+  const over = fraction > 1;
+  const filled = Math.max(0, Math.min(1, over ? 1 / fraction : fraction));
   return (
-    <div className="axp-stat" data-wide={wide || undefined} title={title}>
-      <span className="axp-stat-label"><span className="axp-stat-icon">{icon}</span>{label}</span>
-      <span className="axp-stat-value">{value}</span>
+    <div className="axp-meter" data-over={over || undefined}>
+      <div
+        className="axp-meter-track"
+        role="meter"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(Math.min(1, fraction) * 100)}
+        aria-valuetext={caption}
+      >
+        <span style={{ width: `${filled * 100}%` }} />
+      </div>
+      <p className="axp-small">{caption}</p>
     </div>
   );
 }
