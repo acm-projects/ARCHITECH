@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>App</title>
+<title>Test Your Architecture</title>
 <!-- Where the app's API lives: empty in the Docker app (same server); filled in by ARCHITECH when
      the design runs inside it. -->
 <meta name="app-base" content="">
@@ -14,7 +14,7 @@
     color-scheme: light;
     --archie: #0096ff; --archie-soft: #e0f1ff;
     --accent: #006bc7; --accent-soft: #e8f4ff; --done: #15803d; --done-soft: #dcf2e3;
-    --fail: #b91c1c; --fail-soft: #fbe2e2; --warn: #a16207; --warn-soft: #fbf0d0;
+    --fail: #b91c1c; --fail-soft: #fbe2e2; --warn: #526b84; --warn-soft: #edf6ff;
     --radius: 12px; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --shadow: 0 6px 24px rgba(0, 0, 0, .12);
   }
@@ -134,26 +134,94 @@
   .archie { display: flex; align-items: flex-start; gap: 10px; }
   .archie-face { width: 64px; height: 52px; flex-shrink: 0; border: 0; padding: 0; background: none; cursor: pointer; margin-top: 4px; }
   .archie-face img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .2)); }
-  .archie-face.talking img { animation: bob .6s ease-in-out infinite alternate; }
-  @keyframes bob { to { transform: translateY(-4px); } }
   .bubble { position: relative; flex: 1; min-width: 0; min-height: 76px; background: var(--archie-soft); border: 1px solid #8abce5; border-radius: 16px; padding: 12px 14px; font-size: 14px; }
   .bubble::after { content: ""; position: absolute; left: -9px; top: 18px; border: 8px solid transparent; border-right-color: var(--archie); border-left: 0; }
   .bubble p { margin: 0; }
   .bubble .who-says { display: block; font-size: 12px; font-weight: 700; color: var(--archie); margin-bottom: 2px; }
   .bubble .controls { display: flex; gap: 12px; margin-top: 6px; font-size: 12px; }
   .archie-off { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
+  /* Testing workbench: status and trace data determine the visual emphasis. */
+  body { display: flex; flex-direction: column; }
+  button, input, textarea, select, .card, .item, .stage, .canvas-tools, .canvas-tools button { border-radius: 3px; box-shadow: none; }
+  .experience-header { flex: 0 0 auto; align-items: flex-start; padding: 12px 16px; }
+  .experience-heading { flex: 1; min-width: 0; }
+  .experience-header h1 { white-space: normal; font-size: 18px; }
+  .split { flex: 1; height: auto; min-height: 0; }
+  .stage { height: clamp(240px, 40dvh, 520px); background-image: radial-gradient(circle, #d5e3f0 .7px, transparent .8px); background-size: 20px 20px; }
+  .diagram .node .node-face { filter: none; }
+  .diagram .node.idle { opacity: .4; }
+  .diagram .node.active .node-face { stroke-width: 3; }
+  .diagram .node .state-label { font: 700 10px system-ui, sans-serif; }
+  .diagram .edge { transition: opacity .2s, stroke .2s; }
+  .diagram .edge.dimmed { opacity: .25; }
+  .diagram .edge.traversing { stroke-dasharray: 7 5; animation: request-flow .7s linear infinite; }
+  .diagram .edge.reverse { animation-direction: reverse; }
+  @keyframes request-flow { to { stroke-dashoffset: -24; } }
+  .state-legend { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font: 11px var(--mono); }
+  .bubble { border-radius: 16px; min-height: 0; padding: 10px 12px; font-size: 13px; }
+  .bubble::after { display: none; }
+  .archie-face { width: 42px; height: 40px; }
+  .archie-face img { filter: none; }
+  .what { margin-top: 2px; }
+  .ready { padding: 12px 0; font-size: 13px; }
+  .ready p { margin: 4px 0; color: var(--muted); }
+  .trace-toolbar { display: flex; flex-wrap: wrap; gap: 6px; }
+  .trace-toolbar button { font-size: 12px; padding: 5px 9px; }
+  .trace-progress { display: flex; align-items: center; gap: 10px; font: 12px var(--mono); }
+  .trace-progress progress { flex: 1; min-width: 50px; height: 5px; accent-color: var(--accent); }
+  .steps { list-style: none; padding: 0; max-height: 260px; gap: 0; }
+  .steps li { border-bottom: 1px solid var(--line); }
+  .steps button { text-align: left; border: 0; width: 100%; padding: 8px; background: transparent; font-size: 13px; }
+  .steps li.current { border-left: 3px solid var(--accent); background: var(--soft); }
+  .steps li.fail { border-left: 3px solid var(--fail); }
+  .steps li.current button { font-weight: 600; }
+  .steps .step-detail { display: block; margin: 3px 0 0 20px; color: var(--muted); font-weight: 400; }
+  .application-heading { padding: 14px 16px 0; }
+  .application-heading h2 { font-size: 16px; margin: 0; }
+  .application-heading p { margin: 4px 0; }
+  .app-pane header { position: static; padding: 10px 16px; }
+  .app-pane header h2 { font-size: 13px; margin: 0; flex: 1; overflow-wrap: anywhere; }
+  main { padding: 16px 16px 32px; }
+  .operation-feedback { padding: 8px 12px; margin: 0 0 12px; border-left: 2px solid var(--accent); background: var(--soft); font-size: 13px; overflow-wrap: anywhere; }
+  .operation-feedback[data-state="failed"] { border-color: var(--fail); color: var(--fail); background: var(--fail-soft); }
+  .question-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+  .question-list button { font-size: 12px; }
+  .ask-archie { border-top: 1px solid var(--line); padding-top: 12px; }
+  .ask-archie label { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .ask-archie textarea { min-height: 76px; border-radius: 10px; }
+  .ask-archie .row { justify-content: flex-end; }
+  .mobile-views { display: none; }
+  .startup-error { margin: 16px; padding: 16px; border: 1px solid var(--fail); }
+  @media (max-width: 900px) {
+    .experience-header { padding: 10px 12px; gap: 8px; }
+    .experience-header h1 { font-size: 16px; }
+    .experience-header > button { font-size: 12px; padding: 4px 7px; }
+    .mobile-views { display: flex; gap: 4px; padding: 6px 12px; border-bottom: 1px solid var(--line); }
+    .mobile-views button { flex: 1; padding: 6px; font-size: 12px; }
+    .mobile-views [aria-pressed="true"] { border-color: var(--accent); background: var(--soft); font-weight: 600; }
+    .split { display: block; overflow: hidden; }
+    .split .demo, .split .app-pane { height: 100%; max-height: none; }
+    .split[data-view="application"] .demo, .split[data-view="architecture"] .app-pane { display: none; }
+    .stage { height: clamp(220px, 38dvh, 400px); }
+    .demo { border-bottom: 0; }
+  }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
-<div class="split" id="split">
+<header class="experience-header">
+  <div class="experience-heading"><h1>Test Your Architecture</h1></div>
+</header>
+<nav class="mobile-views" aria-label="Workbench view"><button id="view-architecture" aria-pressed="false">Architecture</button><button id="view-application" aria-pressed="true">Demo App</button></nav>
+<div class="startup-error" id="startup-error" role="alert" hidden><p id="startup-message"></p><button id="retry-start">Retry loading</button></div>
+<div class="split" id="split" data-view="application">
   <!-- Left: Archie shows what each part of your design does -->
-  <aside class="demo" id="demo-pane" aria-label="How it works">
+  <aside class="demo" id="demo-pane" aria-label="Architecture">
     <div class="demo-head">
-      <h2>How it works</h2>
       <span class="map-now" id="map-now"></span>
     </div>
     <div class="stage"><div class="diagram-viewport" id="diagram-viewport" tabindex="0" role="region" aria-label="Architecture canvas. Scroll to pan when zoomed."><svg class="diagram" id="big-svg" role="group" aria-label="Architecture components and request path"></svg></div><div class="canvas-tools" role="group" aria-label="Canvas zoom"><button id="zoom-out" aria-label="Zoom out" disabled>&minus;</button><output id="zoom-level" aria-live="polite">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-fit">Fit</button></div></div>
+    <div class="state-legend" aria-label="Component states"><span>○ Idle</span><span>▶ Processing</span><span>✓ Completed</span><span>× Failed</span></div>
     <section class="node-inspector" id="node-inspector" aria-label="Component inspection" hidden>
       <div class="row"><h3 id="node-name"></h3><button id="node-close" aria-label="Close component inspection">Close</button></div>
       <dl class="inspection-fields">
@@ -163,6 +231,7 @@
         <dt>State</dt><dd id="node-state" aria-live="polite"></dd>
         <dt>Last step</dt><dd id="node-detail"></dd>
       </dl>
+      <div class="question-list" id="node-questions" role="group" aria-label="Ask Archie about this component"><button data-question="role">What does it do?</button><button data-question="need">Why is it needed?</button><button data-question="failure">What if it fails?</button><button data-question="connections">How is it connected?</button></div>
     </section>
     <div class="archie" id="archie">
       <button class="archie-face" id="face" aria-label="Archie: show or hide explanations"><img src="/archie.svg" alt=""></button>
@@ -170,15 +239,23 @@
         <span class="who-says">Archie</span>
         <p id="say"></p>
         <div class="controls">
-          <button class="link" id="skip" hidden>Skip</button>
           <button class="link" id="quiet">Hide</button>
         </div>
       </div>
       <p class="archie-off" id="archie-off" hidden>Archie is resting. Click him to turn explanations back on.</p>
     </div>
-    <details class="what" id="what">
-      <summary>What happened, step by step</summary>
+    <section class="ask-archie" aria-label="Ask Archie">
+      <form id="archie-question-form" class="stack">
+        <label for="archie-question">Ask Archie</label>
+        <textarea id="archie-question" required maxlength="1000" placeholder="What does Redis do in this architecture?"></textarea>
+        <p class="error" id="archie-question-error" role="alert"></p>
+        <div class="row"><button type="submit" class="primary" id="archie-ask" disabled>Ask Archie</button></div>
+      </form>
+    </section>
+    <!-- Trace state continues to drive diagram playback without a visible request-log panel. -->
+    <div id="what" hidden>
       <div class="stack">
+        <div class="ready" id="trace-empty"><b>Ready to test your architecture</b></div>
         <select id="history" aria-label="Pick a request" disabled><option>No requests yet</option></select>
         <div class="request-summary" id="request-summary" hidden>
           <p id="request-label"></p>
@@ -189,22 +266,26 @@
             <dt>Duration</dt><dd id="request-duration"></dd>
           </dl>
         </div>
-        <ol class="steps" id="steps"></ol>
-        <div class="row"><button id="replay" disabled>Replay with Archie</button></div>
+        <div class="trace-progress"><output id="step-position" aria-live="polite">No selected request</output><progress id="step-progress" max="1" value="0" aria-label="Request walkthrough progress"></progress></div>
+        <div class="trace-toolbar" role="group" aria-label="Request playback"><button id="previous-step" disabled>Previous Step</button><button id="play-pause" disabled>Play</button><button id="next-step" disabled>Next Step</button><button id="replay" disabled>Replay</button><button id="reset-trace" disabled>Reset</button></div>
+        <p class="note" id="trace-evidence" hidden></p>
+        <ol class="steps" id="steps" aria-label="Recorded request steps"></ol>
       </div>
-    </details>
+    </div>
   </aside>
   <div class="pane-divider" id="pane-divider" role="separator" tabindex="0" aria-label="Resize architecture and app panes" aria-orientation="vertical" aria-controls="demo-pane app-pane" aria-valuemin="25" aria-valuemax="75" aria-valuenow="46"></div>
 
   <!-- Right: the app itself -->
   <div class="app-pane" id="app-pane">
+<div class="application-heading"><h2>Demo App</h2></div>
 <header>
-  <h1 id="title">App</h1>
+  <h2 id="title">Loading application…</h2>
   <span class="who" id="who" hidden></span>
   <button id="signout" hidden>Sign out</button>
 </header>
 
 <main>
+  <p class="operation-feedback" id="operation-feedback" role="status" aria-live="polite" hidden></p>
   <section class="card" id="auth" hidden>
     <div class="tabs" role="tablist">
       <button role="tab" id="tab-signin" aria-selected="true">Sign in</button>
@@ -222,7 +303,7 @@
 
   <section id="app" hidden>
     <div class="card">
-      <h2>New item</h2>
+      <h2>Create an item</h2>
       <form id="new" class="stack">
         <label for="new-title">Title</label>
         <input id="new-title" required maxlength="200">
@@ -232,14 +313,14 @@
           <label for="new-file">Attach a file (optional, up to 5 MB)</label>
           <input id="new-file" type="file">
         </div>
-        <div class="row"><button class="primary" type="submit" id="new-go">Add</button></div>
+        <div class="row"><button class="primary" type="submit" id="new-go">Create Item</button></div>
         <p class="error" id="new-error" role="alert"></p>
       </form>
     </div>
     <div class="card">
       <div class="row" style="justify-content: space-between; margin-bottom: 12px;">
         <h2 style="margin: 0;">Your items</h2>
-        <button id="refresh">Refresh</button>
+        <button id="refresh">Refresh Items</button>
       </div>
       <form id="search" class="row" hidden style="margin-bottom: 12px;">
         <input id="q" type="search" placeholder="Search your items" aria-label="Search your items" style="flex: 1; width: auto;">
@@ -261,15 +342,15 @@
   const plain = (value) => String(value ?? "").replace(/<[^>]+>/g, "");
   let config, user = null, items = [], signup = false, page = null;
   const history = [];
-  let playing = 0, fast = false, busy = false, pendingIntro = null;
   const waiting = [];
-  const STEP_MS = 1800;
+  const STEP_MS = 1400;
   let quiet = false;
   try { quiet = localStorage.getItem("archie-quiet") === "1"; } catch {}
 
   // ---- Talking to the app's API, collecting what each part of the design did ----
   async function api(method, path, { body, raw, headers = {}, label, quiet: background = false, then = false } = {}) {
     const started = performance.now();
+    if (!background) setOperationFeedback(`${label ?? method + " " + path} — processing…`, "loading");
     let response;
     try {
       response = await fetch(BASE + path, {
@@ -279,12 +360,18 @@
       });
     } catch {
       record({ label: label ?? `${method} ${path}`, method, path, status: 0, durationMs: performance.now() - started, headers: new Headers(), steps: [] }, background, then);
-      throw new Error("The app did not answer. Is docker compose still running?");
+      const message = BASE ? "The application did not answer. Check the connection and try again." : "The application did not answer. Check that Docker Compose is running.";
+      if (!background) setOperationFeedback(message, "failed");
+      throw new Error(message);
     }
     let steps = [];
-    try { steps = JSON.parse(decodeURIComponent(response.headers.get("X-Trace-Steps") ?? "[]")); } catch { steps = []; }
+    try {
+      const decoded = JSON.parse(decodeURIComponent(response.headers.get("X-Trace-Steps") ?? "[]"));
+      steps = Array.isArray(decoded) ? decoded.slice(0, 200) : [];
+    } catch { steps = []; }
     const data = response.headers.get("Content-Type")?.includes("json") ? await response.json().catch(() => ({})) : null;
-    record({ label: label ?? `${method} ${path}`, method, path, status: response.status, durationMs: performance.now() - started, headers: response.headers, steps }, background, then);
+    record({ label: label ?? `${method} ${path}`, method, path, status: response.status, error: response.ok ? null : data?.error, durationMs: performance.now() - started, headers: response.headers, steps }, background, then);
+    if (!background) setOperationFeedback(`${label ?? method + " " + path} — ${response.ok ? response.status === 202 ? "accepted for background processing" : "completed" : data?.error ?? "failed"} (HTTP ${response.status}).`, response.ok ? "complete" : "failed");
     if (!response.ok) throw Object.assign(new Error(data?.error ?? `Request failed (${response.status}).`), { status: response.status });
     return data;
   }
@@ -365,6 +452,7 @@
         <svg x="10" y="12" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="${nodeFamily(n.type)}" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round">${nodeGlyphs[n.type] ?? nodeGlyphs.custom}</svg>
         <text x="34" y="18" class="name">${html(truncate(n.label, 12))}</text>
         <text x="34" y="29" class="type">${html(truncate(meta, 19))}</text>
+        <text x="112" y="12" class="state-label" aria-hidden="true"></text>
         ${incoming ? `<circle class="handle" cx="0" cy="${H / 2}" r="2.5"/>` : ""}
         ${outgoing ? `<circle class="handle" cx="${W}" cy="${H / 2}" r="2.5"/>` : ""}
         <title>${html(`${n.label} (${meta}${n.added ? ", added by the app" : ""})`)}</title>
@@ -382,17 +470,30 @@
     for (const el of diagramNodes(id)) {
       el.classList.remove("active", "done", "fail", "idle");
       if (state) el.classList.add(state);
+      const indicator = el.querySelector(".state-label");
+      if (indicator) indicator.textContent = { active: "▶", done: "✓", fail: "×" }[state] ?? "";
+      el.setAttribute("aria-label", `${label(id)} — ${{ active: "Processing", done: "Completed", fail: "Failed", idle: "Idle" }[state] ?? "Idle"}. Inspect component`);
     }
     renderNodeInspector();
   }
-  function lightEdge(from, to) {
+  function lightEdge(from, to, active = false) {
     if (!from || !to || from === to) return;
-    for (const el of document.querySelectorAll(`.diagram .edge[data-edge="${CSS.escape(`${from}>${to}`)}"], .diagram .edge[data-edge="${CSS.escape(`${to}>${from}`)}"]`)) el.classList.add("lit");
+    for (const el of document.querySelectorAll(`.diagram .edge[data-edge="${CSS.escape(`${from}>${to}`)}"], .diagram .edge[data-edge="${CSS.escape(`${to}>${from}`)}"]`)) {
+      el.classList.remove("dimmed");
+      el.classList.add("lit");
+      el.classList.toggle("traversing", active);
+      el.classList.toggle("reverse", el.dataset.edge !== `${from}>${to}`);
+    }
   }
   function clearDiagram() {
     nodeStates.clear();
-    for (const el of document.querySelectorAll(".diagram .node")) el.classList.remove("active", "done", "fail", "idle");
-    for (const el of document.querySelectorAll(".diagram .edge.lit")) el.classList.remove("lit");
+    for (const el of document.querySelectorAll(".diagram .node")) {
+      el.classList.remove("active", "done", "fail", "idle");
+      const indicator = el.querySelector(".state-label");
+      if (indicator) indicator.textContent = "";
+      el.setAttribute("aria-label", `Inspect ${label(el.dataset.node)} — idle`);
+    }
+    for (const el of document.querySelectorAll(".diagram .edge")) el.classList.remove("lit", "dimmed", "traversing", "reverse");
   }
 
   // ---- What each request did, part by part (from the trace headers and steps) ----
@@ -400,119 +501,114 @@
   const containerAt = (address) => config.addresses[address.replace(/:\d+$/, "")] ?? address;
   function stepsFor(trace) {
     const out = [];
-    const header = (name) => trace.headers.get(name);
-    const serverNode = config.server.node;
-    const authOnPath = config.auth.mode === "on-path" ? config.auth.node : null;
-    const firstServerStep = trace.steps.findIndex((s) => s.node === serverNode);
-    const authSteps = authOnPath ? trace.steps.slice(0, firstServerStep === -1 ? trace.steps.length : firstServerStep) : [];
-    const serverSteps = firstServerStep === -1 ? (authOnPath ? [] : trace.steps) : trace.steps.slice(firstServerStep);
-    const clientNode = config.path[0]?.node;
-    if (clientNode) out.push({ node: clientNode, kind: "client", text: `Your browser sent <code>${html(trace.method)} ${html(trace.path.split("?")[0])}</code>.` });
+    const recorded = (trace.steps ?? []).filter((step) => step && typeof step.node === "string" && typeof step.text === "string")
+      .map((step) => ({ ...step, text: html(step.text) }));
+    const serverAt = recorded.findIndex((step) => step.node === config.server.node);
+    const authEnd = config.auth.mode === "on-path" ? serverAt < 0 ? recorded.length : serverAt : 0;
+    let inserted = 0;
+    const client = config.path[0];
+    if (client) out.push({ node: client.node, kind: "client", text: `Your browser sent <code>${html(trace.method)} ${html(trace.path.split("?")[0])}</code>.` });
+    // Only trace headers prove that a proxy or DNS hop participated. Missing telemetry is not a failed hop.
     for (const hop of config.path.slice(1)) {
       if (hop.kind === "dns") {
-        const answer = ip(header(`X-Trace-${hop.resolvedBy}`));
-        if (!answer || answer === "-" || answer === "dns-failed") return [...out, { node: hop.node, kind: "dns", text: `No answer for <code>${html(hop.name)}</code>.`, ok: false }];
-        out.push({ node: hop.node, kind: "dns", name: hop.name, answer: answer.replace(/:\d+$/, ""), text: `Asked “where is <code>${html(hop.name)}</code>?” and got <code>${html(answer.replace(/:\d+$/, ""))}</code> (${html(containerAt(answer))}).` });
+        const answer = ip(trace.headers.get(`X-Trace-${hop.resolvedBy}`));
+        if (answer && answer !== "-" && answer !== "dns-failed") out.push({ node: hop.node, kind: "dns", text: `Resolved ${html(hop.name)} to ${html(answer)}.` });
       } else if (hop.kind === "proxy") {
-        const answer = ip(header(`X-Trace-${hop.container}`));
-        if (!answer || answer === "-") return [...out, { node: hop.node, kind: "proxy", text: `${html(hop.label)} could not reach the next part.`, ok: false }];
-        out.push({ node: hop.node, kind: hop.cdn ? "cdn" : "proxy", next: containerAt(answer), text: `${html(hop.does)} → <code>${html(containerAt(answer))}</code>.` });
-      } else if (hop.kind === "auth") {
-        if (!header(`X-Trace-${hop.container}`) && authSteps.length === 0) return [...out, { node: hop.node, kind: "auth", text: "The request did not get here.", ok: false }];
-        out.push(...authSteps.map((s) => ({ ...s, text: html(s.text) })));
-        if (header(`X-Trace-${hop.container}`) === "blocked" || trace.path.startsWith("/api/auth/")) return out;
-      } else if (hop.kind === "pass") {
-        out.push({ node: hop.node, kind: "pass", text: html(hop.does) });
+        const answer = ip(trace.headers.get(`X-Trace-${hop.container}`));
+        if (answer) out.push({ node: hop.node, kind: "proxy", ok: answer !== "-", text: answer === "-" ? "The proxy recorded no upstream response." : `Forwarded the request to ${html(containerAt(answer))}.` });
+      } else if (hop.kind === "auth" && config.auth.mode === "on-path") {
+        out.push(...recorded.slice(inserted, authEnd));
+        inserted = authEnd;
       } else if (hop.kind === "server") {
-        const instance = header("X-Trace-Api");
-        if (!instance) return [...out, { node: hop.node, kind: "server", text: `No API server answered (${trace.status || "no response"}).`, ok: false }];
-        out.push(...serverSteps.map((s) => ({ ...s, instance, text: html(s.text) })));
+        out.push(...recorded.slice(inserted));
+        inserted = recorded.length;
       }
     }
-    return out.filter((s) => s.node);
+    // Server steps already include database, cache, auth and queue branches in execution order.
+    // Preserve repeated visits. Never derive extra component work from the topology alone.
+    out.push(...recorded.slice(inserted));
+    out.push({ node: null, kind: "response", ok: trace.status > 0 && trace.status < 400,
+      text: trace.status === 0 ? "No response reached the browser. The failing component is not known."
+        : `The application received HTTP ${html(trace.status)}.${trace.error ? ` ${html(trace.error)}` : ""}` });
+    return out;
   }
 
   // ---- Archie: the same steps, in plain words ----
   const label = (node) => config.labels[node] ?? "this part";
   const typeOf = (node) => config.design.nodes.find((n) => n.id === node)?.type ?? (node === "__web" ? "web-app" : node === config.server.node ? "server" : "");
+  const componentRoles = {
+    client: "Starts requests and displays responses for the user.",
+    "web-app": "Serves the sample application's browser interface and forwards API requests.",
+    "mobile-app": "Provides a client interface that communicates with backend services.",
+    server: "Runs the application's request handling and coordinates its data operations.",
+    api: "Exposes operations that other components can call.",
+    "api-gateway": "Routes incoming API requests to backend services.",
+    "load-balancer": "Distributes incoming requests among configured upstream services.",
+    database: "Stores and retrieves application records.",
+    cache: "Keeps temporary copies of data so some reads can avoid the primary store.",
+    queue: "Holds work for asynchronous processing.",
+    worker: "Processes queued jobs outside the original request.",
+    "object-storage": "Stores uploaded files separately from application records.",
+    auth: "Checks identities and sessions before granting access.",
+    search: "Indexes information for text searches.",
+    dns: "Resolves service names to network addresses.",
+    cdn: "Can serve cached content closer to clients and forward other requests.",
+    custom: "Its responsibilities depend on the configured implementation.",
+  };
   function explain(step, trace) {
-    const name = `<b>${html(label(step.node))}</b>`;
-    const t = plain(step.text);
-    const has = (pattern) => pattern.test(t);
-    const action = trace.label.toLowerCase();
-    switch (typeOf(step.node)) {
-      case "client":
-        return `This is you! When you chose “${html(trace.label)}”, your browser sent a request into the system. Let's follow it.`;
-      case "web-app":
-        if (step.ok === false) break;
-        return `${name} is the web server that gave you this page. For “${html(action)}”, it hands your request to the next part.`;
-      case "cdn":
-        if (step.ok === false) break;
-        return `${name} keeps copies of pages close to people so they load fast. Your data isn't cached, so this request goes straight through.`;
-      case "dns":
-        if (step.ok === false) return `${name} is the internet's phone book, but it had no number for <code>${html(trace.path)}</code>'s next stop, so the request got lost.`;
-        return `${name} is like the internet's phone book: it looked up where <code>${html(step.name)}</code> lives and answered <code>${html(step.answer)}</code>.`;
-      case "load-balancer":
-        if (step.ok === false) break;
-        return `${name} spreads the work so no single server gets overwhelmed. This time it picked <b>${html(step.next)}</b>; next time it may pick another.`;
-      case "api-gateway":
-        if (step.ok === false) break;
-        return `${name} is the API's front door: it checks where the request should go and routes it there.`;
-      case "auth":
-        if (has(/creating an account/i)) return `${name} handles accounts. It's setting up a new one for you.`;
-        if (has(/^signing in/i)) return `${name} handles sign-in. It's checking who you are.`;
-        if (has(/rejected the form/i)) return `${name} sent the form back: ${html(t.replace(/^rejected the form:\s*/i, ""))}`;
-        if (has(/email is taken/i)) return `${name} found that email already has an account, so it can't make another. Try signing in instead.`;
-        if (has(/no such account/i)) return `${name} couldn't find an account with that email. Create one first!`;
-        if (has(/turned the password/i)) return `${name} scrambled your password into a “hash”, so the real password is never stored, not even in the database.`;
-        if (has(/hashed the password/i)) return `${name} scrambled the password you typed the same way and compared it with the saved one. ${has(/does not match/i) ? "They don't match, so you're not let in." : "They match, so it's really you!"}`;
-        if (has(/no session cookie/i)) return `${name} found no sign-in ticket, so you're not signed in yet.`;
-        if (has(/unknown|expired/i)) return `${name} didn't recognise your sign-in ticket (it may have expired), so you're not signed in.`;
-        if (has(/checked the session/i)) return `${name} checked your sign-in ticket (a cookie your browser sent along) to make sure it's really you.`;
-        if (has(/signed you in/i)) return `${name} gave your browser a sign-in ticket (a cookie), so you stay signed in.`;
-        if (has(/ended the session/i)) return `${name} signed you out by cancelling your sign-in ticket.`;
-        if (has(/let the request through/i)) return `${name} is happy it's you and lets the request continue.`;
-        if (has(/stopped/i)) return `${name} stopped the request: you need to sign in first.`;
-        break;
-      case "server":
-        if (has(/received/i)) return `${name} is where the app's own code runs. <b>${html(step.instance ?? "")}</b> got your request and works out what to do.`;
-        if (has(/passed the request to the auth/i)) return `${name} passes sign-in requests to <b>${html(label(config.auth.node))}</b>, the part of your design that handles accounts.`;
-        if (has(/asked the auth/i)) return `${name} asks <b>${html(label(config.auth.node))}</b> whether you're really signed in.`;
-        if (has(/handled sign-in itself/i)) return `${name} handles sign-in itself, because the design has no separate sign-in service.`;
-        if (has(/memory/i)) return `${name} keeps items in its own memory because the design has no database, so they'd be lost on restart.`;
-        if (has(/rejected the form/i)) return `${name} sent the form back: ${html(t.replace(/^rejected the form:\s*/i, ""))}`;
-        if (has(/on the queue/i)) return `${name} put a job on the waiting line and answered you straight away; a worker does the job in the background.`;
-        break;
-      case "database":
-        if (has(/account/i)) return `${name} looks up whether an account with that email exists. ${has(/found/i) ? "It does!" : "Not yet."}`;
-        if (has(/session/i)) return `${name} ${has(/deleted/i) ? "throws away your sign-in ticket." : has(/saved/i) ? "remembers your sign-in ticket, so you stay signed in." : "looks up your sign-in ticket to check it's valid."}`;
-        if (has(/saved user/i)) return `${name} is the app's long-term memory. It's saving your account: your email and the scrambled password, never the real one.`;
-        if (has(/saved item|saved where/i)) return `${name} is the app's long-term memory. It's saving your information now, so it's still there tomorrow, even if the app restarts.`;
-        if (has(/updated/i)) return `${name} saves your changes, so everyone sees the latest version.`;
-        if (has(/deleted/i)) return `${name} deletes the item for good.`;
-        if (has(/read/i)) return `${name} reads your items from storage so the app can show them.`;
-        break;
-      case "cache":
-        if (has(/hit/i)) return `${name} remembered this answer from a moment ago, so the database didn't have to do any work. That's why caches make apps fast!`;
-        if (has(/miss/i)) return `${name} doesn't have this answer yet, so the server asks the database.`;
-        if (has(/saved the list/i)) return `${name} keeps a copy of the answer for a minute, so the next look is instant.`;
-        if (has(/removed/i)) return `${name} forgets its old copy, because your data just changed.`;
-        break;
-      case "queue":
-        if (has(/waited in line/i)) return `Your item's job waited its turn in ${name} until a worker was free.`;
-        return `${name} is a waiting line for jobs. The app answers you straight away, and the work happens in the background.`;
-      case "worker":
-        return `${name} takes jobs off the line one at a time and does the work: here, counting your item's words.`;
-      case "search":
-        if (has(/removed/i)) return `${name} takes the item out of its search index.`;
-        if (has(/indexed/i)) return `${name} adds the item to its index, like a book's index, so searching is fast.`;
-        if (has(/searched/i)) return `${name} looked up your words in its index and found the matches in a blink, without reading every item.`;
-        break;
-      case "object-storage":
-        if (step.ok === false) break;
-        return `${name} is where files like photos and documents live. Your file is stored safely here.`;
+    if (step.kind === "response") return `<b>${html(trace.label)}</b>: ${step.text}`;
+    const role = componentRoles[typeOf(step.node)] ?? "A component in this architecture.";
+    return `<b>${html(label(step.node))}</b> — ${html(role)}<br>${step.text}`;
+  }
+  function requestOverview(trace, steps) {
+    const names = [...new Set(steps.filter((s) => s.node).map((s) => label(s.node)))];
+    const failed = steps.find((s) => s.ok === false);
+    const outcome = trace.observed ? "Background completion observed"
+      : trace.status === 0 ? "No response" : trace.status >= 400 ? `Failed · HTTP ${trace.status}` : `Completed · HTTP ${trace.status}`;
+    return `<b>${html(trace.label)} — ${html(outcome)}.</b> ${names.length ? `Recorded components: ${html(names.join(", "))}.` : "No component steps were recorded."}${failed ? ` ${failed.node ? `${html(label(failed.node))}: ` : ""}${failed.text}` : ""}`;
+  }
+  function componentAnswer(id, question) {
+    const node = config.design.nodes.find((n) => n.id === id);
+    if (!node) return "Select a component first.";
+    const role = componentRoles[node.type] ?? componentRoles.custom;
+    const connections = config.design.edges;
+    const inbound = connections.filter((e) => e.target === id).map((e) => label(e.source));
+    const outbound = connections.filter((e) => e.source === id).map((e) => label(e.target));
+    const used = (displayedTrace?.fixed ?? (displayedTrace ? stepsFor(displayedTrace) : [])).some((step) => step.node === id);
+    const name = `<b>${html(node.label)}</b>`;
+    if (question === "connections") return `${name}: ${html(inbound.length ? `Incoming from ${inbound.join(", ")}.` : "No incoming connections.")} ${html(outbound.length ? `Outgoing to ${outbound.join(", ")}.` : "No outgoing connections.")} These are design connections; a request may use only some of them.`;
+    if (question === "failure") return `${name}: if this component fails, operations that depend on it may fail or wait. ${html(outbound.length ? `Its outgoing dependencies are ${outbound.join(", ")}.` : "It has no outgoing connections in this design.")} Failover and retry behavior are not established by this trace.`;
+    if (question === "need") return `${name}: ${html(role)} ${used ? "It participated in the latest recorded request." : "No participation is recorded in the selected request. Being in the design does not mean every action uses it."}`;
+    return `${name}: ${html(role)} ${html(config.components.find((part) => part.node === id)?.what ?? "This component is not used by the generated application.")}`;
+  }
+  function answerQuestion(question) {
+    const normalize = (value) => String(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const query = normalize(question);
+    if (!query) return "Enter a question about this architecture.";
+    const contains = (term) => term.length >= 3 && ` ${query} `.includes(` ${term} `);
+    const node = config.design.nodes.find((candidate) => contains(normalize(candidate.label)))
+      ?? config.design.nodes.find((candidate) => {
+        const technology = config.components.find((part) => part.node === candidate.id)?.what ?? "";
+        return [candidate.type, ...normalize(technology).split(" ")].some((term) => contains(normalize(term)));
+      })
+      ?? (/\b(this|it|selected)\b/.test(query) ? config.design.nodes.find((candidate) => candidate.id === inspectedNodeId) : null);
+    const currentSteps = displayedTrace ? displayedTrace.fixed ?? stepsFor(displayedTrace) : [];
+    const requestAnswer = () => displayedTrace ? requestOverview(displayedTrace, currentSteps) : "No request has been recorded yet. Perform an action in the Demo App, then ask about the result.";
+    if (/\b(why|did)\b/.test(query) && /\b(fail|failed|error)\b/.test(query)) return requestAnswer();
+    if (node) {
+      if (/\b(fail|fails|failed|failure|down|unavailable)\b/.test(query)) return componentAnswer(node.id, "failure");
+      if (/\b(connect|connected|connection|connections|upstream|downstream)\b/.test(query)) return componentAnswer(node.id, "connections");
+      if (/\b(why|need|needed|used|unused|involved)\b/.test(query)) return componentAnswer(node.id, "need");
+      return componentAnswer(node.id, "role");
     }
-    return step.ok === false ? `Uh oh: ${name} couldn't do its part. ${html(t)}` : `${name}: ${html(t)}`;
+    if (/\b(store|stored|persist|persistence|save|saved)\b/.test(query) && /\b(data|item|items|record|records)\b/.test(query)) {
+      const db = config.data.database;
+      return db ? `${componentAnswer(db.node, "role")} ${displayedTrace ? requestAnswer() : "No request has been recorded to confirm a specific write."}`
+        : "This generated app has no configured database. Its item records are kept in server memory and can be lost when the server restarts.";
+    }
+    if (/\b(request|requests|last|latest|create|refresh|process|response)\b/.test(query)) return requestAnswer();
+    if (/\b(architecture|components|system|overview)\b/.test(query)) return config.design.nodes.map((part) => `<b>${html(part.label)}</b>: ${html(componentRoles[part.type] ?? componentRoles.custom)}`).join("<br>");
+    return "I can explain the components in this design, their connections, possible failure effects, and the latest recorded request. Name a component or ask what happened in the last request. Other questions need information this page does not have.";
   }
 
   function say(htmlText, talking = false) {
@@ -520,66 +616,121 @@
     $("face").classList.toggle("talking", talking);
   }
 
-  // ---- Playing a request: light up the parts, Archie explains each ----
-  // Something that happened in the background (the worker finishing) waits its turn;
-  // something you just did plays straight away.
-  async function play(trace, steps = stepsFor(trace), { background = false } = {}) {
-    if (background && busy) return void waiting.push([trace, steps]);
-    displayedTrace = trace;
-    renderTraceSummary(trace);
-    const run = ++playing;
-    pendingIntro = null;
-    fast = false;
-    busy = true;
+  // ---- Playing a request: a visual timeline, independent of API execution ----
+  let playback = { trace: null, steps: [], index: -1, running: false, completed: false };
+  let playbackTimer = null;
+  function pausePlayback() {
+    clearTimeout(playbackTimer);
+    playbackTimer = null;
+    playback.running = false;
+    for (const el of document.querySelectorAll(".diagram .edge.traversing")) el.classList.remove("traversing");
+    renderPlaybackControls();
+    $("face").classList.toggle("talking", false);
+  }
+  function renderPlaybackControls() {
+    const total = playback.steps.length, index = playback.index;
+    $("previous-step").disabled = index <= 0;
+    $("next-step").disabled = !total || index >= total - 1;
+    $("play-pause").disabled = !total;
+    $("play-pause").textContent = playback.running ? "Pause" : "Play";
+    $("reset-trace").disabled = !playback.trace;
+    $("step-position").textContent = total ? `Step ${index + 1} of ${total}` : "No selected request";
+    $("step-progress").max = Math.max(1, total);
+    $("step-progress").value = index + 1;
+  }
+  function showPlaybackStep(index) {
+    playback.index = Math.max(-1, Math.min(playback.steps.length - 1, index));
     clearDiagram();
-    for (const el of document.querySelectorAll(".diagram .node")) el.classList.add("idle");
+    if (playback.index >= 0) {
+      for (const el of document.querySelectorAll(".diagram .node")) el.classList.add("idle");
+      for (const el of document.querySelectorAll(".diagram .edge")) el.classList.add("dimmed");
+      let previous = null;
+      for (let i = 0; i <= playback.index; i++) {
+        const step = playback.steps[i];
+        const current = i === playback.index;
+        if (step.node) {
+          setState(step.node, step.ok === false ? "fail" : current && step.kind !== "observed" ? "active" : "done");
+          // A missing/unknown component breaks the visible chain rather than inventing a bridge.
+          lightEdge(previous, drawn(step.node), current && playback.running);
+        }
+        previous = step.node ? drawn(step.node) : null;
+      }
+      const step = playback.steps[playback.index];
+      $("map-now").textContent = step.node ? `${step.ok === false ? "Failed" : step.kind === "observed" ? "Observed" : "Step"}: ${label(step.node)}` : playback.trace.status === 0 ? "No response" : "Response received";
+      if (!quiet) say(explain(step, playback.trace), playback.running);
+    } else $("map-now").textContent = "Ready to replay";
+    for (const [i, item] of Array.from($("steps").children).entries()) {
+      item.classList.toggle("current", i === playback.index);
+      item.querySelector("button")?.setAttribute("aria-current", i === playback.index ? "step" : "false");
+    }
+    renderPlaybackControls();
     renderNodeInspector();
-    $("steps").innerHTML = steps
-      .map((s) => `<li data-step class="${s.ok === false ? "fail" : ""}"><b>${html(label(s.node))}.</b> ${s.text}${s.ms !== undefined ? ` <span class="meta">${s.ms} ms</span>` : ""}</li>`)
-      .join("");
-    $("skip").hidden = quiet;
-    let previous = null;
-    for (const [index, s] of steps.entries()) {
-      if (run !== playing) return;
-      const node = drawn(s.node) ?? previous;
-      setState(s.node, "active");
-      $("map-now").innerHTML = `Now: <b>${html(label(s.node))}</b>`;
-      lightEdge(previous, drawn(s.node));
-      $("steps").children[index]?.classList.add("current");
-      if (!quiet) say(explain(s, trace), true);
-      if (!fast) await new Promise((resolve) => setTimeout(resolve, quiet ? 650 : STEP_MS));
-      if (run !== playing) return;
-      setState(s.node, s.ok === false ? "fail" : "done");
-      $("steps").children[index]?.classList.remove("current");
-      previous = node;
-    }
-    $("skip").hidden = true;
-    $("map-now").textContent = "";
-    busy = false;
-    const failed = steps.find((s) => s.ok === false);
-    if (!quiet) {
-      say(
-        failed
-          ? `That one stopped at <b>${html(label(failed.node))}</b>, shown in red. Every step is listed under “What happened”.`
-          : `Done! “${html(trace.label)}” went through ${steps.length} step${steps.length === 1 ? "" : "s"}. They're all listed under “What happened”, and you can replay them.`,
-      );
-    }
-    showPage();
-    if (waiting.length) {
-      const [nextTrace, nextSteps] = waiting.shift();
-      setTimeout(() => {
-        if (run === playing) play(nextTrace, nextSteps);
-      }, 1500);
+  }
+  function schedulePlayback() {
+    clearTimeout(playbackTimer);
+    playbackTimer = setTimeout(() => {
+      playbackTimer = null;
+      if (!playback.running) return;
+      if (playback.index < playback.steps.length - 1) {
+        showPlaybackStep(playback.index + 1);
+        schedulePlayback();
+      } else {
+        pausePlayback();
+        playback.completed = true;
+        // End with completed/failed component states, not a permanently processing node.
+        const last = playback.steps.at(-1);
+        if (last?.node) setState(last.node, last.ok === false ? "fail" : "done");
+        for (const el of document.querySelectorAll(".diagram .edge.traversing")) el.classList.remove("traversing");
+        $("map-now").textContent = playback.trace.observed ? "Background result observed" : playback.trace.status === 0 || playback.trace.status >= 400 ? "Request failed" : "Request completed";
+        if (!quiet) say(requestOverview(playback.trace, playback.steps));
+        if (waiting.length) {
+          const [trace, steps] = waiting.shift();
+          play(trace, steps, { background: true });
+        }
+      }
+    }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 250 : quiet ? 650 : STEP_MS);
+  }
+  function resumePlayback() {
+    if (!playback.steps.length) return;
+    playback.completed = false;
+    playback.running = true;
+    if (playback.index < 0 || playback.index >= playback.steps.length - 1) showPlaybackStep(0);
+    else showPlaybackStep(playback.index);
+    schedulePlayback();
+  }
+  function moveStep(delta) {
+    pausePlayback();
+    playback.completed = false;
+    showPlaybackStep(playback.index + delta);
+  }
+  function resetPlayback() {
+    pausePlayback();
+    playback.completed = false;
+    waiting.length = 0;
+    showPlaybackStep(-1);
+    if (!quiet && playback.trace) say(requestOverview(playback.trace, playback.steps));
+  }
+  function play(trace, steps = stepsFor(trace), { background = false } = {}) {
+    // An observed worker result must not displace a user's paused or active inspection.
+    if (background && playback.trace && !playback.completed) {
+      waiting.push([trace, steps]);
       return;
     }
-    // A page change during the request (signing in, say): introduce the new page after.
-    if (pendingIntro) {
-      const intro = pendingIntro;
-      pendingIntro = null;
-      setTimeout(() => {
-        if (run === playing && !busy && !quiet) say(intro);
-      }, fast ? 1200 : 3500);
-    }
+    pausePlayback();
+    if (!background) waiting.length = 0;
+    displayedTrace = trace;
+    playback = { trace, steps, index: -1, running: false, completed: false };
+    renderTraceSummary(trace);
+    $("trace-empty").hidden = true;
+    $("view-architecture").textContent = `Architecture · ${steps.length} steps`;
+    $("what").open = true;
+    const selected = history.indexOf(trace);
+    if (selected >= 0) $("history").value = String(selected);
+    $("steps").innerHTML = steps.map((step, i) => `<li class="${step.ok === false ? "fail" : ""}"><button data-step="${i}" aria-current="false"><b>${i + 1}. ${html(step.node ? label(step.node) : "Response")}</b><span class="step-detail">${step.text}${Number.isFinite(step.ms) ? ` <span class="meta">${step.ms} ms</span>` : ""}</span></button></li>`).join("");
+    $("trace-evidence").hidden = false;
+    $("trace-evidence").textContent = trace.observed ? "Observed from a later item response. Worker execution timing and intermediate hops were not recorded."
+      : "Playback uses recorded component steps and proxy headers. Missing hops are omitted. Playback timing is illustrative; request duration is measured separately.";
+    resumePlayback();
   }
 
   // ---- Pages: which parts of the design serve the page you are on ----
@@ -596,19 +747,15 @@
     const parts = new Set(pageParts());
     for (const el of document.querySelectorAll(".diagram .node")) el.classList.toggle("page", parts.has(el.dataset.node));
   }
-  const pathWords = () => config.path.slice(1).filter((hop) => hop.kind !== "pass").map((hop) => `<b>${html(hop.label)}</b>`).join(" → ");
   function setPage(next) {
     if (page === next) return;
     page = next;
     showPage();
     if (quiet) return;
-    const db = config.data.database;
-    const intro =
-      next === "signin"
-        ? `Hi, I'm Archie! This sign-in page is part of your design: the parts outlined in blue in your design serve it. When you sign in, your details travel ${pathWords()} and are checked by <b>${html(label(config.auth.node))}</b>.`
-        : `${config.features.auth ? "You're in! " : "Hi, I'm Archie! "}This is the app built from your design. Everything you do travels ${pathWords()}${db ? `, and what you add is saved in <b>${html(db.label)}</b>` : ""}. Try adding an item on the right and watch your design here!`;
-    if (busy) pendingIntro = intro;
-    else {
+    const intro = next === "signin"
+      ? "Hi! I'm Archie. Sign in or create a sample account on the right, and I'll show the recorded request through your architecture."
+      : "Hi! I'm Archie. Try creating an item on the right, and I'll show you how your architecture handles the request.";
+    if (!playback.trace) {
       clearDiagram();
       say(intro);
     }
@@ -649,7 +796,7 @@
             ${item.hasFile ? `<a href="${BASE}/api/items/${item.id}/file" class="meta">📎 ${html(item.fileName)}</a>` : ""}
           </div>
           ${editDrafts.has(item.id) ? "" : `<div class="row" style="margin-top: 8px;">
-            ${config.features.queue ? `<button data-act="process" ${item.status === "queued" ? "disabled" : ""}>Process</button>` : ""}
+            ${config.features.queue ? `<button data-act="process" ${item.status === "queued" ? "disabled" : ""}>Process Item</button>` : ""}
             <button data-act="edit">Edit</button>
             <button class="destructive" data-act="delete">Delete</button>
           </div>`}
@@ -673,12 +820,10 @@
       const done = items.find((item) => item.status === "processed" && before.get(item.id) === "queued");
       if (done && config.data.worker) {
         const trace = { label: `Worker processed item #${done.id} (observed)`, method: "GET", path: "/api/items", status: 200, headers: new Headers(), steps: [], time: new Date() };
-        trace.fixed = [
-          { node: config.data.queue.node, text: `The job for item #${done.id} waited in line on the queue.` },
-          { node: config.data.worker.node, text: `${html(done.processedBy)} took the job and counted ${done.wordCount} words.` },
-          ...(config.data.database ? [{ node: config.data.database.node, text: "Saved item #" + done.id + " as processed." }] : []),
-        ];
+        trace.observed = true;
+        trace.fixed = [{ node: config.data.worker.node, kind: "observed", text: `Item #${done.id} is now processed: ${html(done.wordCount)} words, reported by ${html(done.processedBy)}.` }];
         history.unshift(trace);
+        history.length = Math.min(history.length, 25);
         renderHistory();
         play(trace, trace.fixed, { background: true });
       }
@@ -697,6 +842,8 @@
     $("history").innerHTML = !history.length ? "<option>No requests yet</option>" : history
       .map((trace, index) => `<option value="${index}">${html(trace.time.toLocaleTimeString())} · ${html(trace.label)}${trace.status ? ` · ${trace.status}` : ""}</option>`)
       .join("");
+    const selected = history.indexOf(displayedTrace);
+    if (selected >= 0) $("history").value = String(selected);
   }
 
   // ---- Workbench helpers ----
@@ -754,20 +901,24 @@
     const node = config.design.nodes.find((candidate) => candidate.id === id);
     if (!node) return null;
     let latest = null, step = null;
-    for (const trace of history) {
+    for (const trace of displayedTrace ? [displayedTrace] : history) {
       const matches = (trace.fixed ?? stepsFor(trace)).filter((candidate) => candidate.node === id);
       if (matches.length) { latest = trace; step = matches.at(-1); break; }
     }
+    const participating = Boolean(latest);
+    if (latest === displayedTrace && latest && typeof playback !== "undefined" && playback.trace === latest) {
+      step = playback.steps.slice(0, playback.index + 1).filter((candidate) => candidate.node === id).at(-1) ?? null;
+    }
     const live = latest && latest === displayedTrace ? nodeStates.get(id) : null;
     const state = live === "active" ? "Running" : live === "fail" ? "Failed" : live === "done" ? "Completed"
-      : latest === displayedTrace && latest ? "Waiting" : step ? (step.ok === false ? "Failed" : "Completed") : "No request recorded";
+      : latest === displayedTrace && latest ? "Waiting" : step ? (step.ok === false ? "Failed" : "Completed") : displayedTrace && !participating ? "Not involved in selected request" : "No request recorded";
     return {
       name: node.label,
       type: nodeTypes[node.type] ?? node.type,
       technology: config.components.find((part) => part.node === id)?.what ?? "Not used by this runnable app",
       request: latest?.label ?? "None",
       state,
-      detail: step ? plain(step.text) : "None",
+      detail: step ? plain(step.text) : participating ? "No step reached in this playback yet" : "None",
     };
   }
   function renderNodeInspector() {
@@ -872,7 +1023,36 @@
     }
   }
 
+  function setMobileView(view) {
+    $("split").dataset.view = view;
+    $("view-architecture").setAttribute("aria-pressed", String(view === "architecture"));
+    $("view-application").setAttribute("aria-pressed", String(view === "application"));
+  }
+  function setOperationFeedback(message, state) {
+    $("operation-feedback").hidden = false;
+    $("operation-feedback").textContent = message;
+    $("operation-feedback").dataset.state = state;
+  }
+
   // ---- Wiring ----
+  $("view-architecture").addEventListener("click", () => setMobileView("architecture"));
+  $("view-application").addEventListener("click", () => setMobileView("application"));
+  $("archie-question-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const question = $("archie-question").value.trim();
+    $("archie-question-error").textContent = !question ? "Enter a question." : question.length > 1000 ? "Keep your question under 1,000 characters." : "";
+    if ($("archie-question-error").textContent || !config) return;
+    pausePlayback();
+    setQuiet(false);
+    say(answerQuestion(question));
+  });
+  $("node-questions").addEventListener("click", (event) => {
+    const question = event.target.closest("button[data-question]");
+    if (!question || !inspectedNodeId) return;
+    pausePlayback();
+    setQuiet(false);
+    say(componentAnswer(inspectedNodeId, question.dataset.question));
+  });
   let splitPercent = restoreSplit();
   const divider = $("pane-divider");
   const wideLayout = matchMedia("(min-width: 901px)");
@@ -948,18 +1128,27 @@
     if (trace) play(trace, trace.fixed ?? stepsFor(trace));
   });
   $("replay").addEventListener("click", () => {
-    const trace = history[Number($("history").value) || 0];
+    const trace = displayedTrace ?? history[Number($("history").value) || 0];
     if (trace) play(trace, trace.fixed ?? stepsFor(trace));
   });
-  $("skip").addEventListener("click", () => {
-    fast = true;
+  $("previous-step").addEventListener("click", () => moveStep(-1));
+  $("next-step").addEventListener("click", () => moveStep(1));
+  $("play-pause").addEventListener("click", () => playback.running ? pausePlayback() : resumePlayback());
+  $("reset-trace").addEventListener("click", resetPlayback);
+  $("steps").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-step]");
+    const index = Number(button?.dataset.step);
+    if (!button || !Number.isInteger(index) || index < 0 || index >= playback.steps.length) return;
+    pausePlayback();
+    playback.completed = false;
+    showPlaybackStep(index);
   });
   const setQuiet = (value) => {
     quiet = value;
     try { localStorage.setItem("archie-quiet", value ? "1" : "0"); } catch {}
     $("bubble").hidden = value;
     $("archie-off").hidden = !value;
-    if (!value) say("I'm back! Do something in the app and I'll explain what each part of your design does.");
+    if (!value) say(playback.trace ? requestOverview(playback.trace, playback.steps) : "Try creating an item, and I'll explain the recorded request.");
   };
   $("quiet").addEventListener("click", () => setQuiet(true));
   $("face").addEventListener("click", () => setQuiet(!quiet));
@@ -980,16 +1169,18 @@
     }
   });
   $("signout").addEventListener("click", async () => {
-    await api("POST", "/api/auth/signout", { label: "Sign out" }).catch(() => undefined);
-    items = [];
-    signedIn(null);
+    try {
+      await api("POST", "/api/auth/signout", { label: "Sign out" });
+      items = [];
+      signedIn(null);
+    } catch (error) { setOperationFeedback(error.message, "failed"); }
   });
   $("new").addEventListener("submit", async (event) => {
     event.preventDefault();
     $("new-go").disabled = true;
     $("new-error").textContent = "";
     try {
-      const { item } = await api("POST", "/api/items", { body: { title: $("new-title").value, body: $("new-body").value }, label: "Add an item" });
+      const { item } = await api("POST", "/api/items", { body: { title: $("new-title").value, body: $("new-body").value }, label: "Create item" });
       const file = $("new-file").files?.[0];
       if (file) {
         if (file.size > 5 * 1024 * 1024) throw new Error("The item was added, but the file is over 5 MB.");
@@ -1048,9 +1239,14 @@
     }
   });
 
-  (async function start() {
-    config = await (await fetch(`${BASE}/app.config.json`, { cache: "no-store" })).json();
-    document.title = config.title;
+  async function start() {
+    $("startup-error").hidden = true;
+    $("retry-start").disabled = true;
+    try {
+    const response = await fetch(`${BASE}/app.config.json`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Application configuration could not be loaded (HTTP ${response.status}).`);
+    config = await response.json();
+    document.title = `Test Your Architecture · ${config.title}`;
     $("title").textContent = config.title;
     config.labels = Object.fromEntries([...config.components.map((part) => [part.node, part.label]), ...config.design.nodes.map((n) => [n.id, n.label])]);
     $("search").hidden = !config.features.search;
@@ -1058,8 +1254,9 @@
     $("bubble").hidden = quiet;
     $("archie-off").hidden = !quiet;
     drawDiagram($("big-svg"));
+    $("archie-ask").disabled = false;
     // The step list starts open where there is room for it.
-    $("what").open = matchMedia("(min-width: 901px)").matches;
+    $("what").open = true;
     if (config.features.auth) {
       try {
         const result = await api("GET", "/api/auth/me", { label: "Check if you're signed in", quiet: true });
@@ -1070,7 +1267,14 @@
     } else {
       signedIn(null);
     }
-  })();
+    } catch (error) {
+      $("startup-error").hidden = false;
+      $("startup-message").textContent = error.message || "The application could not be loaded.";
+      $("title").textContent = "Application unavailable";
+    } finally { $("retry-start").disabled = false; }
+  }
+  $("retry-start").addEventListener("click", start);
+  start();
 </script>
 </body>
 </html>

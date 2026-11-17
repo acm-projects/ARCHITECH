@@ -614,7 +614,7 @@ function defineTests(dbUrl: string) {
     assert.equal(page.status, 200);
     const html = await page.text();
     assert.ok(html.includes(`<meta name="app-base" content="${runBase}">`), "the page knows where its API is");
-    assert.ok(html.includes("Shop · running in ARCHITECH"));
+    assert.ok(html.includes("Test Your Architecture · Shop"));
     const stranger = await register("Not the owner");
     assert.equal((await fetch(`${base}/workspace/${id}/run`, { headers: { Cookie: `next-auth.session-token=${stranger.cookie}` } })).status, 404);
     assert.equal((await call("GET", `${runBase}/app.config.json`, { cookie: stranger.cookie })).status, 404);

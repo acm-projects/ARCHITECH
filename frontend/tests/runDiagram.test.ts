@@ -50,7 +50,7 @@ test("zoom stays bounded and fit resets the viewport", () => {
 test("request history starts disabled and enables replay when a request arrives", () => {
   const elements = { history: { innerHTML: "", disabled: false }, replay: { disabled: false } };
   const history: object[] = [];
-  const context = { $: (id: keyof typeof elements) => elements[id], history, html: String };
+  const context = { $: (id: keyof typeof elements) => elements[id], history, displayedTrace: null, html: String };
   const fn = page.slice(page.indexOf("  function renderHistory()"), page.indexOf("  // ---- Workbench helpers ----"));
   runInNewContext(fn + "; renderHistory();", context);
   assert.equal(elements.history.disabled, true);

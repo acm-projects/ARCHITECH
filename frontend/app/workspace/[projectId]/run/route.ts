@@ -5,7 +5,7 @@ import { requireOwnedProject } from "@/lib/projects/access";
 
 // GET /workspace/[projectId]/run: the project's saved design running as an app, inside ARCHITECH.
 // The page is the Docker app's own page (export-templates/runnable-app/web/index.html): Archie's
-// "How it works" on the left, the app on the right. It talks to /api/projects/[id]/run/... .
+// architecture walkthrough on the left, the sample app on the right. It talks to /api/projects/[id]/run/... .
 type Context = { params: Promise<{ projectId: string }> };
 
 const PAGE = path.join(process.cwd(), "export-templates", "runnable-app", "web", "index.html");
@@ -25,6 +25,6 @@ export async function GET(_request: Request, { params }: Context) {
   const base = `/api/projects/${encodeURIComponent(projectId)}/run`;
   const page = readFileSync(PAGE, "utf8")
     .replace('<meta name="app-base" content="">', `<meta name="app-base" content="${escape(base)}">`)
-    .replace("<title>App</title>", `<title>${escape(owner.project.title || "App")} · running in ARCHITECH</title>`);
+    .replace("<title>Test Your Architecture</title>", `<title>Test Your Architecture · ${escape(owner.project.title || "App")}</title>`);
   return new Response(page, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
 }

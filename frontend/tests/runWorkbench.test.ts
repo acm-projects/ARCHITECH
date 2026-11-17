@@ -214,7 +214,7 @@ test("API trace duration measures round trips including network failures", async
   const traces: any[] = [];
   let tick = 100;
   const context: any = {
-    BASE: "", Headers, performance: { now: () => { const value = tick; tick += 25; return value; } },
+    BASE: "", Headers, setOperationFeedback: () => {}, performance: { now: () => { const value = tick; tick += 25; return value; } },
     record: (trace: unknown) => traces.push(trace),
     fetch: async () => ({ ok: true, status: 200, headers: new Headers({ "Content-Type": "application/json" }), json: async () => ({ items: [] }) }),
   };
@@ -234,6 +234,17 @@ test("node inspection updates running and failed playback state", () => {
   assert.equal(w.nodeInspectionData("db").state, "Running");
   runInNewContext('nodeStates.set("db", "fail");', context);
   assert.equal(w.nodeInspectionData("db").state, "Failed");
+});
+
+test("component inspection follows the selected request instead of a newer history entry", () => {
+  const { context, workbench: w } = harness();
+  context.history.push(
+    { label: "New save", steps: [{ node: "db", text: "Saved new item" }] },
+    { label: "Earlier read", steps: [{ node: "db", text: "Read old items" }] },
+  );
+  runInNewContext("displayedTrace = history[1];", context);
+  assert.equal(w.nodeInspectionData("db").request, "Earlier read");
+  assert.equal(w.nodeInspectionData("db").detail, "Read old items");
 });
 
 test("polling preserves focus on the editor Save button", () => {
