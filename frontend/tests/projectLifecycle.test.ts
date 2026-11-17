@@ -243,6 +243,16 @@ test("tutorial skip survives autosave, mode changes, reload and reopen without c
   assert.equal(reopen(storage).getProject(project.id)?.learnSkipped, false);
 });
 
+test("the tutorial runs once: new projects skip it after any project finished or skipped it", () => {
+  const storage = fakeStorage();
+  const store = makeStore(storage);
+  const first = store.createProject({ nodes: [], edges: [] });
+  assert.equal(first.learnSkipped, undefined);
+  store.setLearnSkipped(first.id, true);
+  assert.equal(store.createProject({ nodes: [], edges: [] }).learnSkipped, true);
+  assert.equal(reopen(storage).createProject().learnSkipped, true);
+});
+
 test("tutorial skip validates stored preferences and does not write unchanged values", () => {
   const storage = fakeStorage();
   const store = makeStore(storage);

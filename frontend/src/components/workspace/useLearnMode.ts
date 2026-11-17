@@ -1,5 +1,5 @@
 import type { Edge } from "@xyflow/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   firstWebSystemLesson,
@@ -57,6 +57,15 @@ export function useLearnMode({
     enabled && !skipped,
   );
 
+  // Finishing the tutorial counts as having seen it: the project reopens in free play and new
+  // projects skip it. The completion card still shows now, so only the saved flag changes.
+  const finished = enabled && !skipped && engine.freePlay;
+  useEffect(() => {
+    if (!finished || !scopeKey) return;
+    const result = projectActions.setLearnSkipped(scopeKey, true);
+    if (!result.ok) setTutorialError(result.message);
+  }, [finished, scopeKey]);
+
   // A project that opens with the tutorial already finished (or skipped) goes straight to
   // exploring, so the inspector, live metrics and run tools are there after a reload. The
   // "Continue exploring" card only shows right after finishing the tutorial.
@@ -100,6 +109,7 @@ export function useLearnMode({
     skipped,
     tutorialError,
     // Persist the return to guidance before the workspace replaces the graph.
-    prepareReset: () => !skipped || setTutorialSkipped(false),
+    // A tutorial finished this session is saved as seen while still shown, so always clear it.
+    prepareReset: () => setTutorialSkipped(false),
   };
 }

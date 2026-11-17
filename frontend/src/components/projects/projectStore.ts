@@ -543,6 +543,8 @@ export function createProjectStore(options: ProjectStoreOptions) {
       createdAt: timestamp,
       updatedAt: timestamp,
       lastOpenedAt: timestamp,
+      // The tutorial runs once: after it is finished or skipped on any project, new ones open without it.
+      ...(loaded.projects.some((existing) => existing.learnSkipped) ? { learnSkipped: true } : {}),
     };
     write([project, ...loaded.projects]);
     return project;
