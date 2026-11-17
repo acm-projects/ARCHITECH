@@ -162,7 +162,9 @@ export default function Panel({
   );
 }
 
-export function PanelGroup({ title, meta, children }: { title?: ReactNode; meta?: ReactNode; children: ReactNode }) {
+// `meta` sits at the end of the title's line: a count, or the one control that acts on the
+// whole group.
+export function PanelGroup({ title, meta, children }: { title?: ReactNode; meta?: ReactNode; children?: ReactNode }) {
   return (
     <div className="axp-group">
       {title !== undefined && (

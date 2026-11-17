@@ -103,6 +103,9 @@
 }
 
 .axp-group-head strong { color: var(--ax-ink); font-weight: 400; }
+.axp-group-head > span:last-child:not(:first-child) { display: inline-flex; flex: none; align-items: center; }
+/* A control on the title's line keeps to the line's height. */
+.axp-group-head .axp-icon-btn { width: 24px; height: 24px; margin-right: -5px; }
 
 /* The row. */
 .axp-row {

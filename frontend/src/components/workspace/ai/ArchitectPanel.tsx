@@ -48,7 +48,8 @@ type AssistantTurn = {
 type Turn = { id: number; role: "user"; text: string; focusCount: number } | AssistantTurn;
 
 const STARTERS = ["What breaks first as traffic grows?", "How can I make this more reliable?", "How can I make this cheaper?"];
-const FOCUS_STARTERS = ["Explain this part of the system", "What goes in and out of this part?", "Is this part a bottleneck or a single point of failure?"];
+// Short enough to read whole in the panel's width.
+const FOCUS_STARTERS = ["Explain this part of the system", "What goes in and out of this part?", "Bottleneck or single point of failure?"];
 
 const components = (count: number) => `${count} component${count === 1 ? "" : "s"}`;
 
@@ -302,6 +303,14 @@ export default function ArchitectPanel({
   });
 
   const scope = focusedName ?? components(focus.length);
+  const scoped = focus.length > 0;
+  // The scope is named once: on the title of the suggested questions, or, once the conversation
+  // has started, on a line above the field. Either carries the way back to the whole design.
+  const clearScope = (
+    <button type="button" className="axp-icon-btn" aria-label="Clear the selection and ask about the whole design" title="Ask about the whole design" onClick={clearFocus}>
+      <X size={13} aria-hidden="true" />
+    </button>
+  );
   return (
     <Panel
       fill
@@ -319,18 +328,10 @@ export default function ArchitectPanel({
       onClose={onClose}
     >
       {review && <div className="axp-review">{review}</div>}
-      {focus.length > 0 && !reviewDetail && (
-        <div className="axp-row">
-          <span className="axp-label">About {scope}</span>
-          <button type="button" className="axp-icon-btn" aria-label="Clear the selection and ask about the whole design" onClick={clearFocus}>
-            <X size={13} aria-hidden="true" />
-          </button>
-        </div>
-      )}
       <div className="axp-messages" ref={list} aria-live="polite" hidden={reviewDetail}>
         {turns.length === 0 && (
-          <PanelGroup title={focus.length > 0 ? `Ask about ${scope}` : "Ask Archie"}>
-            {(focus.length > 0 ? FOCUS_STARTERS : STARTERS).map((question) => (
+          <PanelGroup title={scoped ? `Ask about ${scope}` : "Ask about the whole design"} meta={scoped ? clearScope : undefined}>
+            {(scoped ? FOCUS_STARTERS : STARTERS).map((question) => (
               <PanelLink key={question} item label={question} title={question} onClick={() => void ask(question)} />
             ))}
           </PanelGroup>
@@ -362,6 +363,9 @@ export default function ArchitectPanel({
           ),
         )}
       </div>
+      {scoped && turns.length > 0 && !reviewDetail && (
+        <PanelGroup title={`About ${scope}`} meta={clearScope} />
+      )}
       <form
         className="axp-compose"
         hidden={reviewDetail}
@@ -376,7 +380,7 @@ export default function ArchitectPanel({
           value={draft}
           disabled={busy}
           maxLength={4_000}
-          placeholder={focus.length > 0 ? `Ask about ${scope}…` : "Ask about your whole design…"}
+          placeholder={scoped ? `Ask about ${scope}…` : "Ask about the design…"}
           aria-label="Ask Archie"
           title="Enter to send · Shift+Enter for a new line · Shift+drag on the canvas to ask about part of the design"
           onChange={(event) => setDraft(event.target.value)}

@@ -89,16 +89,16 @@ export function useDesignCheck({ onReveal }: { onReveal: () => void }) {
 // A finding or the uptime is open, which takes over Archie's panel until its back button.
 export const designCheckInDetail = (check: DesignCheckState) => check.enabled && (Boolean(check.focus) || check.uptimeOpen);
 
-// The on/off switch for the whole design check.
+// The on/off switch for the whole design check, beside its title.
 function EnabledSwitch({ check }: { check: DesignCheckState }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={check.enabled}
-      aria-label="Mark problems on the canvas"
+      aria-label="Design check"
       className="axp-switch"
-      title={check.enabled ? "Turn the design check off (hides its marks and findings)" : "Turn the design check on"}
+      title={check.enabled ? "Turn the design check off (hides its findings and their marks on the canvas)" : "Turn the design check on (lists problems and marks them on the canvas)"}
       onClick={() => check.setEnabled(!check.enabled)}
     >
       <span aria-hidden="true" />
@@ -200,8 +200,8 @@ export function DesignCheckBadges({ result, nodes, check }: { result: LiveResult
 
 // ---- The panel ----
 
-// The design check inside Archie's panel: the findings, one line each, then where the uptime
-// comes from and the switch for the marks on the canvas. A finding opens in place with its fix.
+// The design check inside Archie's panel: its title with the switch that turns it off, the
+// findings, one line each, then where the uptime comes from. A finding opens in place with its fix.
 export function DesignCheckSection({
   result,
   nodes,
@@ -246,14 +246,7 @@ export function DesignCheckSection({
   if (!result || !ready) return null;
 
   if (!check.enabled) {
-    return (
-      <PanelGroup>
-        <div className="axp-row">
-          <span className="axp-label">Design check</span>
-          <EnabledSwitch check={check} />
-        </div>
-      </PanelGroup>
-    );
+    return <PanelGroup title="Design check" meta={<EnabledSwitch check={check} />} />;
   }
 
   const apply = (fix: CheckedFix) => {
@@ -291,7 +284,7 @@ export function DesignCheckSection({
       )}
 
       <div hidden={inDetail}>
-        <PanelGroup title="Design check">
+        <PanelGroup title="Design check" meta={<EnabledSwitch check={check} />}>
           {findings.length === 0 ? (
             <PanelText>No problems found at {formatRate(traffic.requestsPerSecond)} req/s.</PanelText>
           ) : (
@@ -306,11 +299,7 @@ export function DesignCheckSection({
               />
             ))
           )}
-          {uptime && <PanelLink label="Availability" value={`${uptime.percent}%`} onClick={() => check.setUptimeOpen(true)} />}
-          <div className="axp-row">
-            <span className="axp-label">Mark problems on the canvas</span>
-            <EnabledSwitch check={check} />
-          </div>
+          {uptime && <PanelLink item label="Availability breakdown" value={`${uptime.percent}%`} onClick={() => check.setUptimeOpen(true)} />}
         </PanelGroup>
       </div>
 
