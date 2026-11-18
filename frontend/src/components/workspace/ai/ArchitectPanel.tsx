@@ -514,12 +514,13 @@ export default function ArchitectPanel({
           }
           const { turn } = entry;
           return turn.role === "user" ? (
-            <p key={turn.id} className="axp-message" data-role="user">
-              {turn.focusCount > 0 && <small>About {components(turn.focusCount)}</small>}
-              {turn.text}
-            </p>
+            <div key={turn.id} className="axp-turn" data-role="user">
+              <span className="axp-turn-label">You{turn.focusCount > 0 && ` · ${components(turn.focusCount)}`}</span>
+              <p className="axp-message" data-role="user">{turn.text}</p>
+            </div>
           ) : (
-            <div key={turn.id}>
+            <div key={turn.id} className="axp-turn" data-role="assistant">
+              <span className="axp-turn-label">Archie</span>
               {turn.text && <p className="axp-message">{turn.text}</p>}
               {!turn.text && !turn.done && !turn.error && <p className="axp-message" data-tone="soft">Looking at your design…</p>}
               {turn.suggestions.map((suggestion) => (
@@ -545,7 +546,7 @@ export default function ArchitectPanel({
         )}
       </div>
       {scoped && turns.length > 0 && !reviewDetail && (
-        <PanelGroup title={`About ${scope}`} meta={clearScope} />
+        <div className="axp-compose-scope"><PanelGroup title={`About ${scope}`} meta={clearScope} /></div>
       )}
       <form
         className="axp-compose"
