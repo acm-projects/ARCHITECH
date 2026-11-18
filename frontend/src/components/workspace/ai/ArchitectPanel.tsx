@@ -200,13 +200,15 @@ function NoticeMessage({ notice, open, onToggle, onOpenFinding }: {
             />
           ))}
           {resolved.length > 0 && (
-            <PanelRow
-              item
-              lead={<PanelDelta better><Check size={14} aria-hidden="true" /></PanelDelta>}
-              label={resolved.join(", ")}
-              value={`${resolved.length} resolved`}
-              title={`Resolved:\n${resolved.join("\n")}`}
-            />
+            <div className="axp-notice-resolved">
+              <PanelRow
+                item
+                lead={<PanelDelta better><Check size={14} aria-hidden="true" /></PanelDelta>}
+                label={resolved.join(", ")}
+                value={`${resolved.length} resolved`}
+                title={`Resolved:\n${resolved.join("\n")}`}
+              />
+            </div>
           )}
         </>
       )}
@@ -501,6 +503,7 @@ export default function ArchitectPanel({
             const runOpen = openRuns.has(entry.key);
             return (
               <div key={entry.key} className="axp-notice-run">
+                <div className="axp-notice-author"><ArchiePortrait /><span>Archie · Design changes</span></div>
                 {older.length > 0 && (
                   <button type="button" className="axp-notice-more" aria-expanded={runOpen} onClick={() => setOpenRuns((set) => flip(set, entry.key))}>
                     <span>{older.length} earlier change{older.length === 1 ? "" : "s"}</span>
@@ -520,7 +523,7 @@ export default function ArchitectPanel({
             </div>
           ) : (
             <div key={turn.id} className="axp-turn" data-role="assistant">
-              <span className="axp-turn-label">Archie</span>
+              <span className="axp-turn-label"><ArchiePortrait />Archie</span>
               {turn.text && <p className="axp-message">{turn.text}</p>}
               {!turn.text && !turn.done && !turn.error && <p className="axp-message" data-tone="soft">Looking at your design…</p>}
               {turn.suggestions.map((suggestion) => (

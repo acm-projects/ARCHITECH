@@ -323,20 +323,29 @@
 .axp-message strong { font-weight: 500; }
 .axp-turn { display: flex; flex-direction: column; min-width: 0; }
 .axp-turn-label { display: none; }
+.axp-notice-author { display: none; }
 
 /* Archie reads as a design activity log on desktop, with the composer anchored below it. */
 @media (min-width: 769px) {
   .axp[data-tool="archie"] .axp-review { margin-bottom: 0; padding-bottom: 2px; }
   .axp[data-tool="archie"] .axp-messages { gap: 0; padding: 4px 0 12px; }
   .axp[data-tool="archie"] .axp-turn { gap: 5px; padding: 12px var(--axp-inset); border-bottom: 1px solid var(--ax-line); }
-  .axp[data-tool="archie"] .axp-turn-label { display: block; color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+  .axp[data-tool="archie"] .axp-turn-label, .axp[data-tool="archie"] .axp-notice-author { display: flex; align-items: center; gap: 8px; color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+  .ax-workspace .axp[data-tool="archie"] :is(.axp-turn-label, .axp-notice-author) .ax-ai-portrait { width: 22px; height: 22px; border-width: 1px; }
   .axp[data-tool="archie"] .axp-turn .axp-message { padding: 0; line-height: 1.5; }
   .axp[data-tool="archie"] .axp-turn .axp-message[data-role="user"] { align-self: stretch; max-width: none; margin: 0; border-radius: 0; background: transparent; }
   .axp[data-tool="archie"] .axp-turn .axp-message[data-tone="danger"] { padding-left: 9px; border-left: 2px solid var(--ax-danger); }
-  .axp[data-tool="archie"] .axp-notice-run { padding-block: 4px 8px; border-bottom: 1px solid var(--ax-line); }
+  .axp[data-tool="archie"] .axp-notice-run { gap: 4px; padding-block: 12px; border-bottom: 1px solid var(--ax-line); }
+  .axp[data-tool="archie"] .axp-notice-author { padding-inline: var(--axp-inset); }
   .axp[data-tool="archie"] .axp-notice { margin-inline: var(--axp-inset); }
-  .axp[data-tool="archie"] .axp-notice-head, .axp[data-tool="archie"] .axp-notice-more { min-height: 34px; }
-  .axp[data-tool="archie"] .axp-notice .axp-stats { padding-block: 4px 8px; }
+  .axp[data-tool="archie"] .axp-notice-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; padding-block: 6px; }
+  .axp[data-tool="archie"] .axp-notice-head .axp-notice-title { white-space: normal; }
+  .axp[data-tool="archie"] .axp-notice-head > .axp-small { grid-column: 1; grid-row: 2; }
+  .axp[data-tool="archie"] .axp-notice-head > .axp-go { grid-column: 2; grid-row: 1; }
+  .axp[data-tool="archie"] .axp-notice-more { min-height: 34px; }
+  .axp[data-tool="archie"] .axp-notice .axp-stats { grid-template-columns: repeat(var(--axp-stats-count, 4), minmax(0, 1fr)); padding-block: 6px 10px; border-bottom: 1px solid var(--ax-line); }
+  .axp[data-tool="archie"] .axp-notice-resolved .axp-row { align-items: flex-start; }
+  .axp[data-tool="archie"] .axp-notice-resolved .axp-label { overflow: visible; white-space: normal; }
   .axp[data-tool="archie"] .axp-compose-scope { border-top: 1px solid var(--ax-line); }
   .axp[data-tool="archie"] .axp-compose-scope .axp-group { padding-top: 6px; }
   .axp[data-tool="archie"] .axp-compose { padding-block: 8px 4px; }
