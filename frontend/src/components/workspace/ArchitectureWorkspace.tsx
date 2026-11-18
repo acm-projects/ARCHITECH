@@ -31,6 +31,7 @@ import { clearSelection, getSelection } from "../../lib/architecture/selection";
 import ChallengeCard from "../challenge/ChallengeCard";
 import ChallengeSubmitButton from "../challenge/ChallengeSubmitButton";
 import { useStackFit } from "./panel/stackFit";
+import { isPanelBehind } from "./panel/Panel";
 import { autoAlign } from "../../lib/architecture/autoLayout";
 import type { Challenge } from "../challenge/challenges";
 import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
@@ -336,15 +337,11 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
     result: live.result,
     nodes,
     edges,
-    enabled: (canRunDesign && designCheck.enabled) || mode === "challenge",
+    enabled: canRunDesign || mode === "challenge",
     includeFindings: mode !== "challenge",
     archieOpen: inspector.archieOpen,
   });
-  const openFinding = useCallback((findingId: string) => {
-    designCheck.setListOpen(false);
-    designCheck.setUptimeOpen(false);
-    designCheck.setFocus(findingId);
-  }, [designCheck]);
+  const { setFocus: openFinding } = designCheck;
   // A design check finding handed to Archie as a question.
   const [archieQuestion, setArchieQuestion] = useState<{ key: number; text: string } | null>(null);
   const askArchieAbout = useCallback((text: string) => {
@@ -353,6 +350,8 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
   }, [inspector]);
   // Where Simulation renders from the header, so it joins the other right panels.
   const [simulationHost, setSimulationHost] = useState<HTMLDivElement | null>(null);
+  // Where the project menu opens, as one of the right panels.
+  const [menuHost, setMenuHost] = useState<HTMLDivElement | null>(null);
   // The right column: it folds older panels instead of running past the bottom of the page.
   const widgetStack = useRef<HTMLDivElement>(null);
   useStackFit(widgetStack);
@@ -694,18 +693,19 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
             }
           />}
           onAutoAlign={nodes.length > 1 ? alignDesign : undefined}
-          projectActions={(menuId) => (
+          menuHost={menuHost}
+          projectActions={(closeMenu) => (
             <div hidden={!showInspector}>
               <div className="ax-project-menu-group" role="group" aria-label="Run and export">
                 <p className="ax-project-menu-label" aria-hidden="true">Run and export</p>
-                {savedProjectId && <RunnableAppButton projectId={savedProjectId} popoverTarget={menuId} onBeforeOpen={saveNow} />}
-                <ExportButton title={title} popoverTarget={menuId} />
+                {savedProjectId && <RunnableAppButton projectId={savedProjectId} onDone={closeMenu} onBeforeOpen={saveNow} />}
+                <ExportButton title={title} onDone={closeMenu} />
               </div>
               {savedProjectId && (
                 <div className="ax-project-menu-group" role="group" aria-label="Project">
                   <p className="ax-project-menu-label" aria-hidden="true">Project</p>
-                  <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />
-                  <button type="button" className="ax-project-menu-item" onClick={startTutorial} popoverTarget={menuId} popoverTargetAction="hide">
+                  <HistoryToggle open={false} onToggle={inspector.openHistory} onDone={closeMenu} />
+                  <button type="button" className="ax-project-menu-item" onClick={() => { closeMenu(); startTutorial(); }}>
                     <GraduationCap size={15} aria-hidden="true" />
                     <span>Tutorial</span>
                   </button>
@@ -725,7 +725,8 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                 icon: <ArchiePortrait />,
                 open: inspector.archieOpen,
                 ...(archieNotices.unread > 0 ? { badge: String(archieNotices.unread) } : {}),
-                onToggle: inspector.archieOpen ? inspector.closeArchie : inspector.askArchie,
+                // Open but behind another panel: the button brings Archie forward.
+                onToggle: inspector.archieOpen && !isPanelBehind("archie") ? inspector.closeArchie : inspector.askArchie,
               }] : []),
             ]} />
 
@@ -790,6 +791,8 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
               <div className="ax-widget-stack" ref={widgetStack}>
                 {/* Simulation always heads the column. */}
                 <div ref={setSimulationHost} className="contents" />
+                {/* The project menu opens here, as a right panel of its own. */}
+                <div ref={setMenuHost} className="contents" />
                 {failure.downId !== null && (
                   <FailureTestPanel
                     impact={failure.impact}
@@ -819,7 +822,6 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                       />
                     ) : undefined}
                     reviewDetail={canRunDesign && liveReady && designCheckInDetail(designCheck)}
-                    reviewActive={canRunDesign && liveReady && designCheck.enabled}
                     asked={archieQuestion}
                     notices={archieNotices.notices}
                     onClearNotices={archieNotices.clear}

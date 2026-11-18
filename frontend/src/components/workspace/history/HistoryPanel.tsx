@@ -28,10 +28,10 @@ import type { ArchitectureFlowNode } from "../nodes/ArchitectureNode";
 // version at a time.
 // Restoring saves the current design as a version first, then loads the old one as one undo step.
 
-export function HistoryToggle({ open, onToggle, popoverTarget }: { open: boolean; onToggle: () => void; popoverTarget?: string }) {
+export function HistoryToggle({ open, onToggle, onDone }: { open: boolean; onToggle: () => void; onDone?: () => void }) {
   if (open) return null;
   return (
-    <button type="button" className="ax-project-menu-item" onClick={onToggle} popoverTarget={popoverTarget} popoverTargetAction="hide" aria-label="Open the version history">
+    <button type="button" className="ax-project-menu-item" onClick={() => { onDone?.(); onToggle(); }} aria-label="Open the version history">
       <History size={15} aria-hidden="true" />
       <span>Version history</span>
     </button>

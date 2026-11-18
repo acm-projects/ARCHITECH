@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { requireOwnedProject } from "@/lib/projects/access";
+import { log, requestIdOf } from "@/lib/server/log";
 
 // GET /workspace/[projectId]/run: the project's saved design running as an app, inside ARCHITECH.
 // The page is the Docker app's own page (export-templates/runnable-app/web/index.html): Archie's
@@ -18,9 +19,16 @@ function message(status: number, text: string) {
   );
 }
 
-export async function GET(_request: Request, { params }: Context) {
+export async function GET(request: Request, { params }: Context) {
   const { projectId } = await params;
-  const owner = await requireOwnedProject(projectId);
+  let owner: Awaited<ReturnType<typeof requireOwnedProject>>;
+  try {
+    owner = await requireOwnedProject(projectId);
+  } catch (error) {
+    // The database is unreachable: say so on the page instead of failing with a bare 500.
+    log.error("Opening Run as app failed.", error, { requestId: requestIdOf(request), projectId });
+    return message(503, "The app could not start because ARCHITECH could not read your project from its database. Try again in a moment.");
+  }
   if (!owner.ok) return owner.response.status === 401 ? message(401, "Sign in to run this app.") : message(404, "This project was not found, or it is not yours.");
   const base = `/api/projects/${encodeURIComponent(projectId)}/run`;
   const page = readFileSync(PAGE, "utf8")

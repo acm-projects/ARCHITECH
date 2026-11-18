@@ -26,11 +26,30 @@ function markActive(panel: HTMLElement | null) {
 //   PanelField, PanelAction, PanelText, PanelReveal for what is left
 // A panel shows its rows at rest, and anything longer than one line belongs in a detail.
 
-// One panel at a time: a panel that opens (or is asked for again) tells the column, and every
-// other open panel gets out of the way. One with its own close closes; one whose folding means
-// something (a component's configuration) or that has no close (the challenge) folds to its
-// header. Panels that come and go with canvas clicks, and the headerless lesson card, stay.
+// One panel on screen at a time, kept as a stack. A panel that opens (or is asked for again)
+// tells the column, and every other open panel steps behind it: still open, out of sight. When
+// the panel in front closes, the one that was in front before it comes back. A panel that comes
+// and goes with canvas clicks (a selected component's label) stays out of this, and only shows
+// while no other panel is in front.
 export const EXCLUSIVE_EVENT = "axp:exclusive";
+export const BEHIND_ATTRIBUTE = "data-behind";
+
+// Whether the panel for a bar or header button is open but behind another, so that pressing
+// the button brings it forward rather than closing it.
+export function isPanelBehind(toolKey: string): boolean {
+  return Boolean(document.querySelector(`.ax-widget-stack .axp[data-tool="${toolKey}"]`)?.hasAttribute(BEHIND_ATTRIBUTE));
+}
+
+// The panel in front closed: bring back the one that was in front before it, if nothing else
+// stands in front already.
+function bringBackLast(column: Element) {
+  const open = [...column.querySelectorAll<HTMLElement>(".axp")].filter((panel) => !panel.hidden && panel.isConnected);
+  if (open.some((panel) => !panel.hasAttribute(BEHIND_ATTRIBUTE) && !panel.hasAttribute("data-transient"))) return;
+  const last = open
+    .filter((panel) => panel.hasAttribute(BEHIND_ATTRIBUTE))
+    .sort((a, b) => Number(b.getAttribute(ACTIVE_ATTRIBUTE) ?? 0) - Number(a.getAttribute(ACTIVE_ATTRIBUTE) ?? 0))[0];
+  last?.removeAttribute(BEHIND_ATTRIBUTE);
+}
 
 // Gives focus back to the tool's bottom-bar button, which stays mounted when its panel closes.
 function focusToolButton(toolKey: string) {
@@ -113,12 +132,14 @@ export default function Panel({
       return;
     }
     markActive(panel);
-    if (!transient) panel.closest(".ax-widget-stack")?.dispatchEvent(new CustomEvent(EXCLUSIVE_EVENT, { detail: panel }));
+    if (transient) return;
+    panel.removeAttribute(BEHIND_ATTRIBUTE);
+    panel.closest(".ax-widget-stack")?.dispatchEvent(new CustomEvent(EXCLUSIVE_EVENT, { detail: panel }));
   }, [collapsed, hidden, revealKey, transient]);
-  // Another panel opened: make way for it (see EXCLUSIVE_EVENT).
-  const latest = useRef({ collapsed, toggle, onClose, ownsFold: Boolean(collapse), transient, hidden, bare });
+  // Another panel opened: step behind it (see EXCLUSIVE_EVENT).
+  const latest = useRef({ collapsed, toggle, transient, hidden });
   useEffect(() => {
-    latest.current = { collapsed, toggle, onClose, ownsFold: Boolean(collapse), transient, hidden, bare };
+    latest.current = { collapsed, toggle, transient, hidden };
   });
   useEffect(() => {
     const column = root.current?.closest(".ax-widget-stack");
@@ -126,20 +147,23 @@ export default function Panel({
     const makeWay = (event: Event) => {
       const opened = (event as CustomEvent<HTMLElement>).detail;
       const self = latest.current;
-      if (opened === root.current || self.hidden || self.transient || self.bare) return;
-      // Handled until the next render reports the panel's new state, so a second request in
-      // the same moment cannot toggle it back.
-      if (self.onClose && !self.ownsFold) {
-        latest.current = { ...self, hidden: true };
-        self.onClose();
-      } else if (!self.collapsed) {
-        latest.current = { ...self, collapsed: true };
-        self.toggle();
-      }
+      if (opened === root.current || self.hidden || self.transient) return;
+      root.current?.setAttribute(BEHIND_ATTRIBUTE, "");
     };
     column.addEventListener(EXCLUSIVE_EVENT, makeWay);
     return () => column.removeEventListener(EXCLUSIVE_EVENT, makeWay);
   }, []);
+  // Closing (or turning back into a canvas-click label) brings back the panel that was in front
+  // before this one. Measured after the close has reached the page.
+  useEffect(() => {
+    const panel = root.current;
+    const column = panel?.closest(".ax-widget-stack");
+    if (!panel || !column || hidden || transient) return;
+    return () => {
+      panel.removeAttribute(BEHIND_ATTRIBUTE);
+      requestAnimationFrame(() => bringBackLast(column));
+    };
+  }, [hidden, transient]);
   // A panel shown again (Simulation from its Run button) opens unfolded.
   const wasHidden = useRef(hidden);
   useEffect(() => {
@@ -184,6 +208,7 @@ export default function Panel({
       id={id}
       className="axp ax-widget"
       aria-label={label ?? title}
+      data-tool={toolKey}
       hidden={hidden}
       data-fill={fill || undefined}
       data-folded={collapsed || undefined}

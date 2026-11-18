@@ -99,6 +99,21 @@
   scrollbar-width: none;
   pointer-events: none;
 }
+/* One panel on screen at a time (Panel.tsx): the others stay open behind it, out of sight, and
+   come back in order as the one in front closes. A selected component's label shows only while
+   nothing else is in front. A button whose panel is behind reads as closed, since pressing it
+   brings the panel forward. */
+.ax-workspace .ax-widget-stack .axp[data-behind] { display: none; }
+.ax-workspace .ax-widget-stack:has(.axp:not([hidden], [data-transient], [data-behind])) .axp[data-transient] { display: none; }
+.ax-workspace:has(.ax-widget-stack .axp[data-tool="archie"][data-behind]) .ax-panel-handle[data-tool="archie"][aria-expanded="true"] {
+  border-color: transparent;
+  background: transparent;
+}
+.ax-workspace:has(.ax-widget-stack .axp[data-tool="menu"][data-behind]) .ax-header-actions .ax-header-menu-trigger[aria-expanded="true"] {
+  border-color: var(--ax-line-strong);
+  background: var(--ax-surface);
+  color: var(--ax-ink-soft);
+}
 /* Squeezed: one open panel is taller than the column by itself, so its body scrolls instead. */
 .ax-workspace .ax-widget-stack[data-squeezed] .axp:not([data-folded]) { flex: 0 1 auto; min-height: 0; }
 .ax-workspace .ax-widget-stack[data-squeezed] .axp:not([data-folded]) > .axp-body { min-height: 0; overflow-y: auto; }
@@ -127,18 +142,14 @@
   .ax-workspace:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) {
     --ax-popup-width: min(var(--ax-panel-bar-width, 640px), calc(100vw - var(--ax-panel-side-width) - 4 * var(--ax-panel-margin)));
     width: var(--ax-popup-width);
-    /* The bar is already centered beside the column, so the popup centers on it. */
-    transform: translateX(-50%);
+    transform: translateX(calc(-50% - max(0px, var(--ax-popup-width) / 2 + var(--ax-panel-side-width) + 3 * var(--ax-panel-margin) - 50vw)));
   }
 }
 
-/* The column always runs to the bottom of the page. While a panel is open, the bottom bar and
-   the canvas notices center in the canvas beside the column instead of the page, so the bar
-   never reaches under a panel and cuts it off. */
-@media (min-width: 768px) {
-  .ax-workspace:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) :is(.ax-canvas-panel[data-side="left"], .ax-canvas-notices) {
-    left: calc((100% - var(--ax-panel-side-width) - 2 * var(--ax-panel-margin)) / 2);
-  }
+/* The bottom bar stays in the center of the page. Where the window is narrow enough for the bar
+   to reach under the column, the column stops above the bar instead. */
+@media (min-width: 768px) and (max-width: 1099px) {
+  .ax-workspace .ax-widget-stack { bottom: calc(var(--ax-bar-height, 52px) + var(--ax-panel-margin)); }
 }
 
 /* Archie sits in the bar at the size of the other tools. */

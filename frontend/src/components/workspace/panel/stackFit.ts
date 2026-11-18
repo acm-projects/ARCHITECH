@@ -49,7 +49,7 @@ let foldOrder = 0;
 
 function panelsIn(stack: HTMLElement): { panels: StackPanel[]; elements: Map<string, HTMLElement> } {
   const elements = new Map<string, HTMLElement>();
-  const panels = [...stack.querySelectorAll<HTMLElement>(".axp:not([hidden])")].map((element, index) => {
+  const panels = [...stack.querySelectorAll<HTMLElement>(".axp:not([hidden], [data-behind])")].map((element, index) => {
     const id = `${index}`;
     elements.set(id, element);
     const autoFolded = element.getAttribute(AUTO_FOLDED_ATTRIBUTE);
@@ -78,7 +78,7 @@ function spareHeight(stack: HTMLElement): number {
   let used = 0;
   let slack = 0;
   const gap = parseFloat(style.rowGap) || 0;
-  const children = [...stack.querySelectorAll<HTMLElement>(".axp:not([hidden])")];
+  const children = [...stack.querySelectorAll<HTMLElement>(".axp:not([hidden], [data-behind])")];
   for (const panel of children) {
     const height = panel.getBoundingClientRect().height;
     used += height;
@@ -118,7 +118,7 @@ export function useStackFit(stackRef: RefObject<HTMLElement | null>) {
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(fit); };
     const mutations = new MutationObserver(schedule);
-    mutations.observe(stack, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["hidden", "data-folded"] });
+    mutations.observe(stack, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["hidden", "data-folded", "data-behind"] });
     const sizes = new ResizeObserver(schedule);
     sizes.observe(stack);
     schedule();

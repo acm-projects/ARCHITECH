@@ -344,17 +344,9 @@
     right: clamp(var(--ax-menu-inset), anchor(right), var(--ax-menu-max-right));
   }
 }
-/* The menu is not a right panel: while the panel column is open it opens beside the column,
-   over the canvas, instead of dropping onto the panels under its button. A phone has no room
-   beside the column, so the menu keeps its place there. */
-@media (min-width: 768px) {
-  .ax-workspace:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-project-menu {
-    right: max(var(--ax-menu-inset), min(calc(var(--ax-panel-side-width) + 2 * var(--ax-panel-margin)), var(--ax-menu-max-right)));
-  }
-  .ax-workspace:has(.ax-canvas-overlays > .ax-canvas-panel[data-side="right"]) .ax-project-menu {
-    right: max(var(--ax-menu-inset), min(calc(332px + var(--ax-panel-margin)), var(--ax-menu-max-right)));
-  }
-}
+/* In a project the menu is a right panel (WorkspaceHeader's menuHost); its rows keep the same
+   look there, with the group padding taking the place of the popover's. */
+.ax-workspace .axp .ax-project-menu-body { padding-inline: 4px; }
 @media (max-width: 600px) {
   .ax-workspace .ax-header { gap: 8px; padding-left: 12px; }
   .ax-workspace .ax-header-project { gap: 10px; flex: 1; }
@@ -1290,15 +1282,33 @@
   .ax-workspace .ax-canvas-panel[data-hover-flyout]:has(.ax-panel-content:not([hidden]))::after { left: 0; top: 100%; width: 100%; height: 8px; }
 }
 
-/* Simulation controls use the same compact treatment as the canvas tools. */
-/* The top bar floats over the canvas with rounded corners, like the bottom bar. */
+/* The top bar runs the full width of the page, ruled off from the canvas by its bottom border.
+   The controls inside it are rounded, like the tools in the bottom bar. */
 @media (min-width: 1000px) {
   .ax-workspace .ax-header {
-    inset: var(--ax-header-inset) var(--ax-header-inset) auto;
-    border-width: 1px;
-    border-radius: 14px;
+    inset: 0 0 auto;
+    border-width: 0 0 1px;
+    border-radius: 0;
   }
 }
+.ax-workspace .ax-header {
+  --ax-header-radius: 10px;
+}
+.ax-workspace .ax-header-actions :is(.ax-header-menu-trigger, .ax-header-icon-action),
+.ax-workspace .ax-header .ax-run-button,
+.ax-workspace .ax-header .ax-action-primary {
+  border-radius: var(--ax-header-radius);
+}
+/* Learn and Challenge: a rounded track with the chosen mode as a rounded block inside it. */
+.ax-workspace .ax-header .ax-mode-switch {
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--ax-header-radius);
+}
+.ax-workspace .ax-header .ax-mode-switch button { border-radius: 7px; }
+.ax-workspace .ax-header .ax-mode-switch button + button { border-left: 0; }
+.ax-workspace .ax-header .ax-title { border-radius: 0; }
+.ax-workspace .ax-header .ax-header-title-input { border-radius: 8px; }
 
 /* Insertion below the canvas; analysis on the left; simulation in the header. */
 .ax-workspace .ax-canvas-panel[data-side="left"] { top: auto; bottom: 12px; left: 50%; margin: 0; transform: translateX(-50%); }
@@ -1508,7 +1518,7 @@
    Sized to read at 100% browser zoom. The top bar and the bottom bar share one height; the
    controls in both, and around the canvas, are the size of ordinary desktop controls. */
 @media (min-width: 1000px) {
-  .ax-workspace { --ax-bar-height: 52px; --ax-header-inset: 8px; --ax-header-clearance: calc(var(--ax-bar-height) + var(--ax-header-inset)); }
+  .ax-workspace { --ax-bar-height: 52px; --ax-header-clearance: var(--ax-bar-height); }
   .ax-workspace .ax-header {
     --ax-header-control-height: 34px;
     height: var(--ax-bar-height);
@@ -1529,7 +1539,7 @@
   .ax-workspace .ax-header-actions :is(.ax-header-menu-trigger, .ax-header-icon-action) svg { width: 14px; height: 14px; }
   .ax-workspace .ax-theme-toggle { width: 34px; height: 34px; }
   .ax-workspace .ax-theme-toggle svg { width: 16px; height: 16px; }
-  .ax-workspace .ax-header .ax-run-button { min-height: 34px; padding: 6px 16px; border-radius: 8px; font-size: 13px; }
+  .ax-workspace .ax-header .ax-run-button { min-height: 34px; padding: 6px 16px; border-radius: var(--ax-header-radius); font-size: 13px; }
   .ax-workspace .ax-header .ax-run-button svg { width: 14px; height: 14px; }
   .ax-workspace .ax-mode-switch button { padding-inline: 12px; font-size: 13px; }
   .ax-workspace .ax-mode-switch button svg { width: 14px; height: 14px; }

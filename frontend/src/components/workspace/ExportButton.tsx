@@ -12,9 +12,10 @@ import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 
 // Downloads the design on the canvas as a starter docker-compose.yml (generated in the browser,
 // so it works offline and includes unsaved changes).
-export function ExportButton({ title, popoverTarget }: { title: string; popoverTarget?: string }) {
+export function ExportButton({ title, onDone }: { title: string; onDone?: () => void }) {
   const { getNodes, getEdges } = useReactFlow<ArchitectureFlowNode, Edge>();
   const download = () => {
+    onDone?.();
     const { yaml } = toDockerCompose({ title, nodes: getNodes(), edges: getEdges() });
     const url = URL.createObjectURL(new Blob([yaml], { type: "text/yaml" }));
     const link = document.createElement("a");
@@ -24,7 +25,7 @@ export function ExportButton({ title, popoverTarget }: { title: string; popoverT
     setTimeout(() => URL.revokeObjectURL(url), 1_000);
   };
   return (
-    <button type="button" className="ax-project-menu-item" onClick={download} popoverTarget={popoverTarget} popoverTargetAction="hide" title="Download a starter docker-compose.yml for this design">
+    <button type="button" className="ax-project-menu-item" onClick={download} title="Download a starter docker-compose.yml for this design">
       <FileCode2 size={15} aria-hidden="true" />
       <span>Export compose file<small>docker-compose.yml, with unsaved edits</small></span>
     </button>
@@ -38,16 +39,13 @@ export function ExportButton({ title, popoverTarget }: { title: string; popoverT
 // Both are built on the server from the saved project. Run as app first saves the design and
 // waits for the server to have it, so it opens what is on the canvas; if the save does not get
 // through in time, it opens the last saved version and the page says so.
-export function RunnableAppButton({ projectId, popoverTarget, onBeforeOpen }: {
+export function RunnableAppButton({ projectId, onDone, onBeforeOpen }: {
   projectId: string;
-  popoverTarget?: string;
+  // Closes the menu these rows sit in.
+  onDone?: () => void;
   // Writes any edit still waiting for autosave.
   onBeforeOpen?: () => void;
 }) {
-  const closeMenu = (element: HTMLElement) => {
-    const target = element.ownerDocument.getElementById(popoverTarget ?? "");
-    if (target && "hidePopover" in target) (target as HTMLElement & { hidePopover: () => void }).hidePopover();
-  };
   const id = encodeURIComponent(projectId);
   const runUrl = `/workspace/${id}/run`;
   const runLatest = () => {
@@ -86,7 +84,7 @@ export function RunnableAppButton({ projectId, popoverTarget, onBeforeOpen }: {
           // A plain click saves first; Ctrl/Cmd/middle-click keep the browser's own behavior.
           if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
           event.preventDefault();
-          closeMenu(event.currentTarget);
+          onDone?.();
           runLatest();
         }}
         title="Use this design as a working app, while Archie shows what each part does"
@@ -99,7 +97,7 @@ export function RunnableAppButton({ projectId, popoverTarget, onBeforeOpen }: {
         className="ax-project-menu-item"
         href={`/api/projects/${id}/export/runnable-app`}
         download
-        onClick={(event) => closeMenu(event.currentTarget)}
+        onClick={() => onDone?.()}
         title="Download this design as an app that runs every part in its own container (docker compose)"
       >
         <Download size={15} aria-hidden="true" />

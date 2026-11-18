@@ -146,13 +146,11 @@ function SuggestionCard({ suggestion, status, onApply, streaming }: {
   );
 }
 
-// The first look names only the most serious problems; "open problems" above lists them all.
-const CHECK_NOTICE_FINDINGS = 3;
-
 const clock = (at: number) => new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
 // A notice from Archie about the last edit: one sentence, then what changed, the numbers that
-// moved, and the problems it found or resolved. A problem opens in the design check above.
+// moved, and the problems it found or resolved. The first look at a design lists every open
+// problem, most serious first. A problem opens in place, with its fix.
 function NoticeMessage({ notice, onOpenFinding }: { notice: PostedNotice; onOpenFinding?: (findingId: string) => void }) {
   const tone = notice.kind === "check" ? undefined :
     notice.added.some((finding) => finding.severity !== "low") ? "worse"
@@ -168,7 +166,7 @@ function NoticeMessage({ notice, onOpenFinding }: { notice: PostedNotice; onOpen
       {notice.metrics.map((metric) => (
         <PanelRow key={metric.label} label={metric.label} value={<>{metric.before} → <PanelDelta better={metric.better}>{metric.after}</PanelDelta></>} />
       ))}
-      {(notice.kind === "check" ? notice.added.slice(0, CHECK_NOTICE_FINDINGS) : notice.added).map((finding) => (
+      {notice.added.map((finding) => (
         <PanelLink
           key={`added-${finding.id}`}
           item
@@ -194,7 +192,6 @@ export default function ArchitectPanel({
   customTechnologies,
   review,
   reviewDetail = false,
-  reviewActive = false,
   asked = null,
   notices = [],
   onOpenFinding,
@@ -204,15 +201,12 @@ export default function ArchitectPanel({
   onClearNotices?: () => void;
   // What each edit did to the design, posted among the answers (see useArchieNotices).
   notices?: readonly PostedNotice[];
-  // Opens a finding from a notice in the design check above.
+  // Opens a problem from a notice: what it is, its fix, and a question for Archie about it.
   onOpenFinding?: (findingId: string) => void;
-  // The design check is on and listing findings, which already say what to ask about, so the
-  // generic starter questions for the whole design are left out.
-  // The design check, above the conversation. While one of its findings is open it takes the
-  // whole panel (`reviewDetail`), and the conversation waits underneath.
+  // The design's numbers and an applied fix, above the conversation. While a problem is open
+  // it takes the whole panel (`reviewDetail`), and the conversation waits underneath.
   review?: ReactNode;
   reviewDetail?: boolean;
-  reviewActive?: boolean;
   // A question handed over from elsewhere (a design check finding), asked once per new key.
   asked?: { key: number; text: string } | null;
   // The conversation is saved with this project and restored when the panel opens.
@@ -398,7 +392,7 @@ export default function ArchitectPanel({
     >
       {review && <div className="axp-review">{review}</div>}
       <div className="axp-messages" ref={list} aria-live="polite" hidden={reviewDetail}>
-        {turns.length === 0 && shownNotices.length === 0 && (scoped || !reviewActive) && (
+        {turns.length === 0 && shownNotices.length === 0 && (
           <PanelGroup title={scoped ? `Ask about ${scope}` : "Ask about the whole design"} meta={scoped ? clearScope : undefined}>
             {(scoped ? FOCUS_STARTERS : STARTERS).map((question) => (
               <PanelLink key={question} item label={question} title={question} onClick={() => void ask(question)} />
