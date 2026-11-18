@@ -92,6 +92,8 @@ export type ProjectContent = Pick<Project, "title" | "nodes" | "edges">;
 export type NewProjectInit = Partial<ProjectContent> & {
   mode?: ProjectMode;
   source?: ProjectSource;
+  // Opens straight into free play, without the guided tutorial (the landing page's demo).
+  skipTutorial?: boolean;
 };
 
 // These limits keep locally saved project data predictable.
@@ -544,7 +546,10 @@ export function createProjectStore(options: ProjectStoreOptions) {
       updatedAt: timestamp,
       lastOpenedAt: timestamp,
       // The tutorial runs once: after it is finished or skipped on any project, new ones open without it.
-      ...(loaded.projects.some((existing) => existing.learnSkipped) ? { learnSkipped: true } : {}),
+      // The demo opens without it but does not count: the first project after it still teaches.
+      ...(init.skipTutorial || loaded.projects.some((existing) => existing.learnSkipped && existing.source !== "template")
+        ? { learnSkipped: true }
+        : {}),
     };
     write([project, ...loaded.projects]);
     return project;

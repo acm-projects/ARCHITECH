@@ -1,16 +1,16 @@
 "use client";
 
-import { Activity, CircleDollarSign, Gauge, Hourglass, ShieldCheck, Timer } from "lucide-react";
+import { Activity, CircleDollarSign, Hourglass, ShieldCheck, Timer } from "lucide-react";
 
 import { downtimePerYear } from "../../lib/architecture/designCheck";
 import type { ArchitectureEvaluation, NodeEvaluation } from "../../lib/architecture/evaluation/contract";
 import type { LiveChanges, LiveResult } from "../../lib/architecture/evaluation/liveMetrics";
 import { demandVsCapacity } from "../../lib/architecture/evaluation/resultsView";
 import { formatLatency, formatRate } from "../../lib/architecture/implementationStats";
-import Panel, { PanelChange, PanelHealth, PanelText, PanelTile, PanelTiles, type PanelTileHue } from "./panel/Panel";
+import { PanelChange, PanelGroup, PanelHealth, PanelText, PanelTile, PanelTiles, type PanelTileHue } from "./panel/Panel";
 
 // Live estimates: what the design does at the current traffic, re-read on every edit (no Run
-// needed), as widget tiles read at a glance. Load leads, across the full width with its ring;
+// needed), inside the Simulation panel, as widget tiles read at a glance. Load leads, across the full width with its ring;
 // latency, availability, cost and the bottleneck sit two to a row under it. Load and the
 // bottleneck take their color from how full they are; the others keep one color each so they
 // can be told apart. Hovering or focusing a tile shows where its number comes from. The score
@@ -86,19 +86,19 @@ function limitDetail(node: NodeEvaluation | undefined, name: (id: string) => str
   return `${name(node.nodeId)} serves ${formatRate(node.demandRps)} of ${capacity} on ${instances}. It caps the whole design.`;
 }
 
-export function LiveEstimatesPanel({
+// Live estimates sit at the top of the Simulation panel: what the design does right now, before
+// (and while) a run checks it.
+export function LiveEstimates({
   result,
   changes,
   requestsPerSecond,
   componentName,
-  onClose,
 }: {
   result: LiveResult | null;
   changes: LiveChanges | null;
   requestsPerSecond: number;
   // Display name for a component id (the limiting component).
   componentName: (id: string) => string;
-  onClose: () => void;
 }) {
   const summary = result?.summary.ready ? result.summary : null;
   const evaluation = summary ? result?.evaluation : undefined;
@@ -109,12 +109,9 @@ export function LiveEstimatesPanel({
   const limiting = evaluation?.nodes.find((node) => node.nodeId === summary?.limitingNodeId);
   const limitState = fullness(limiting ? limiting.utilization : null, false);
   return (
-    <Panel
-      toolKey="live"
-      icon={<Gauge size={17} aria-hidden="true" />}
+    <PanelGroup
       title="Live estimates"
-      status={summary && <><PanelHealth status={summary.health}>Score {summary.score}</PanelHealth><PanelChange direction={changes?.score} /></>}
-      onClose={onClose}
+      meta={summary && <><PanelHealth status={summary.health}>Score {summary.score}</PanelHealth><PanelChange direction={changes?.score} /></>}
     >
       {summary && evaluation ? (
         <div aria-live="polite" title={`At ${formatRate(requestsPerSecond)} req/s. ${EXPLANATION}`}>
@@ -183,6 +180,6 @@ export function LiveEstimatesPanel({
       ) : (
         <PanelText>No request path yet. Connect a client to a component.</PanelText>
       )}
-    </Panel>
+    </PanelGroup>
   );
 }

@@ -38,7 +38,14 @@ test("panels keep to five text styles: the title, a row, a row's value, small te
     "font: 400 12px/18px var(--font-sans);",
     "font: 400 14px/20px var(--font-sans);",
     "font: 500 14px/20px var(--font-sans);",
-    "font: 600 17px/24px var(--font-sans);",
-    "font: 600 24px/30px var(--font-sans);",
+    "font: 600 15px/22px var(--font-sans);",
+    "font: 600 20px/26px var(--font-sans);",
   ]);
+});
+
+test("one right panel at a time: opening a panel closes or folds the others", () => {
+  const panel = read("src/components/workspace/panel/Panel.tsx");
+  assert.match(panel, /export const EXCLUSIVE_EVENT = "axp:exclusive"/);
+  assert.match(panel, /dispatchEvent\(new CustomEvent\(EXCLUSIVE_EVENT/);
+  assert.match(panel, /addEventListener\(EXCLUSIVE_EVENT, makeWay\)/);
 });

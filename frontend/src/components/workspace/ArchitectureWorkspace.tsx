@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { Gauge, GraduationCap } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -58,7 +58,8 @@ import { useKeepNodesInView, useShowNewNode } from "./useKeepNodesInView";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
 import { DesignCheckBadges, DesignCheckSection, designCheckInDetail, useDesignCheck } from "./DesignCheck";
-import { LiveEstimatesPanel } from "./LiveMetricsBar";
+import { useArchieNotices } from "./useArchieNotices";
+import { LiveEstimates } from "./LiveMetricsBar";
 import { FailureContext } from "./FailureContext";
 import { FailureTestPanel } from "./FailureTestPanel";
 import { useFailureTest } from "./useFailureTest";
@@ -87,8 +88,8 @@ const nodeTypes = {
   architecture: ArchitectureNode,
 };
 
-// Components open at the scale of the bottom bar, whether the view is fitted or starts empty.
-const WORKSPACE_ZOOM = 1.4;
+// Components open at their own size (100%), whether the view is fitted or starts empty.
+const WORKSPACE_ZOOM = 1;
 const DESKTOP_FIT_VIEW_OPTIONS = {
   padding: 0.2,
   maxZoom: WORKSPACE_ZOOM,
@@ -326,13 +327,26 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
   // on the canvas opens Archie at its finding.
   const designCheck = useDesignCheck({ onReveal: inspector.askArchie });
   const liveReady = Boolean(live.result?.summary.ready);
+  // Archie posts what each edit did to the design into its conversation, from the same live
+  // evaluation as the design check, and counts the ones that came in while it was closed.
+  const archieNotices = useArchieNotices({
+    result: live.result,
+    nodes,
+    edges,
+    enabled: canRunDesign && designCheck.enabled,
+    archieOpen: inspector.archieOpen,
+  });
+  const openFinding = useCallback((findingId: string) => {
+    designCheck.setListOpen(false);
+    designCheck.setUptimeOpen(false);
+    designCheck.setFocus(findingId);
+  }, [designCheck]);
   // A design check finding handed to Archie as a question.
   const [archieQuestion, setArchieQuestion] = useState<{ key: number; text: string } | null>(null);
   const askArchieAbout = useCallback((text: string) => {
     setArchieQuestion((previous) => ({ key: (previous?.key ?? 0) + 1, text }));
     inspector.askArchie();
   }, [inspector]);
-  const [liveOpen, setLiveOpen] = useState(false);
   // Where Simulation renders from the header, so it joins the other right panels.
   const [simulationHost, setSimulationHost] = useState<HTMLDivElement | null>(null);
   // The right column: it folds older panels instead of running past the bottom of the page.
@@ -666,6 +680,14 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
             onShowResults={inspector.showResults}
             expanded={inspector.section === "run"}
             onToggle={() => inspector.toggleSection("run")}
+            live={
+              <LiveEstimates
+                result={live.result}
+                changes={live.changes}
+                requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+              />
+            }
           />}
           onAutoAlign={nodes.length > 1 ? alignDesign : undefined}
           projectActions={(menuId) => (
@@ -692,14 +714,8 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                 label: "Ask Archie",
                 icon: <ArchiePortrait />,
                 open: inspector.archieOpen,
+                ...(archieNotices.unread > 0 ? { badge: String(archieNotices.unread) } : {}),
                 onToggle: inspector.archieOpen ? inspector.closeArchie : inspector.askArchie,
-              }] : []),
-              ...(canRunDesign ? [{
-                key: "live",
-                label: "Live estimates",
-                icon: <Gauge size={16} aria-hidden="true" />,
-                open: liveOpen,
-                onToggle: () => setLiveOpen((open) => !open),
               }] : []),
             ]} />
 
@@ -772,15 +788,6 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                     onRestore={failure.restore}
                   />
                 )}
-                {canRunDesign && liveOpen && (
-                  <LiveEstimatesPanel
-                    result={live.result}
-                    changes={live.changes}
-                    requestsPerSecond={activeRuns.traffic.requestsPerSecond}
-                    componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
-                    onClose={() => setLiveOpen(false)}
-                  />
-                )}
                 {showInspector && (
                   <WorkspaceInspector
                     projectId={savedProjectId}
@@ -804,6 +811,8 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                     reviewDetail={canRunDesign && liveReady && designCheckInDetail(designCheck)}
                     reviewActive={canRunDesign && liveReady && designCheck.enabled}
                     asked={archieQuestion}
+                    notices={archieNotices.notices}
+                    onOpenFinding={openFinding}
                     guidance={mode === "challenge" ? (
                       <ChallengeCard
                         challenge={challenge.challenge}

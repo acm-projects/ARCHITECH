@@ -3,9 +3,9 @@
    control height, one divider between groups. No fills behind content, and no line between
    rows. A hover or a selection is the only thing that fills a row. */
 .axp {
-  --axp-inset: 14px;
-  --axp-row: 34px;
-  --axp-control: 36px;
+  --axp-inset: 12px;
+  --axp-row: 30px;
+  --axp-control: 32px;
   --axp-radius: 8px;
   --axp-good: #16a34a;
   display: flex;
@@ -33,23 +33,23 @@
   flex: none;
   align-items: center;
   gap: 10px;
-  min-height: 54px;
-  padding: 6px 10px 6px var(--axp-inset);
+  min-height: 44px;
+  padding: 4px 8px 4px var(--axp-inset);
   cursor: pointer;
 }
 .axp-head h2 {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  font: 600 17px/24px var(--font-sans);
+  font: 600 15px/22px var(--font-sans);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .axp-head h2:focus { outline: 0; }
 .axp-icon { display: inline-grid; flex: none; place-items: center; width: 24px; height: 24px; color: var(--ax-ink-soft); }
-.axp-icon svg { width: 22px; height: 22px; }
+.axp-icon svg { width: 17px; height: 17px; }
 /* Specific enough to beat the 40px portrait wherever stylesheets load in a different order. */
-.ax-workspace .axp-icon .ax-ai-portrait { width: 24px; height: 24px; border-width: 1px; }
+.ax-workspace .axp-icon .ax-ai-portrait { width: 20px; height: 20px; border-width: 1px; }
 .axp-status {
   display: inline-flex;
   flex: none;
@@ -103,7 +103,7 @@
 }
 
 .axp-group-head strong { color: var(--ax-ink); font-weight: 400; }
-.axp-group-head > span:last-child:not(:first-child) { display: inline-flex; flex: none; align-items: center; }
+.axp-group-head > span:last-child:not(:first-child) { display: inline-flex; flex: none; align-items: center; gap: 6px; }
 /* A control on the title's line keeps to the line's height. */
 .axp-group-head .axp-icon-btn { width: 24px; height: 24px; margin-right: -5px; }
 
@@ -416,7 +416,7 @@
 .axp-tile-figure {
   overflow: hidden;
   color: var(--ax-ink);
-  font: 600 24px/30px var(--font-sans);
+  font: 600 20px/26px var(--font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
@@ -459,3 +459,27 @@
 @media (prefers-reduced-motion: reduce) {
   .axp-ring-fill, .axp-tile, .axp-tile-detail { transition: none; }
 }
+
+/* A few numbers side by side, for reading at a glance: the label small, the number as a value. */
+.axp-stats {
+  display: grid;
+  grid-template-columns: repeat(var(--axp-stats-count, 4), minmax(0, 1fr));
+  padding: 6px var(--axp-inset) 8px;
+  border-bottom: 1px solid var(--ax-line);
+}
+.axp-stats > div { min-width: 0; }
+.axp-stats .axp-small { display: block; }
+.axp-stats .axp-value { display: block; overflow: hidden; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Archie's notices: what an edit changed, posted into the conversation. */
+.axp-notice {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0;
+  border-left: 2px solid var(--ax-line-strong);
+}
+.axp-notice[data-tone="worse"] { border-left-color: var(--ax-danger); }
+.axp-notice[data-tone="better"] { border-left-color: var(--axp-good); }
+.axp-notice-edits { padding: 0 var(--axp-inset); }
+.axp-notice time { margin-left: 4px; }
+.axp-notice > * { min-width: 0; }

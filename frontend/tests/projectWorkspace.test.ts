@@ -583,7 +583,10 @@ test("Run owns traffic, metrics and reviews after Continue exploring", () => {
   const inspector = read("src/components/workspace/WorkspaceInspector.tsx");
   const control = read("src/components/workspace/StressTestPanel.tsx");
   const runPanel = read("src/components/workspace/RunPanel.tsx");
-  assert.match(workspace, /canRunDesign && liveOpen/);
+  // Live estimates sit inside the Simulation panel, not in a panel of their own.
+  assert.match(workspace, /live=\{\s*<LiveEstimates/);
+  assert.doesNotMatch(workspace, /LiveEstimatesPanel|key: "live"/);
+  assert.match(runPanel, /\{props\.live\}/);
   assert.match(workspace, /const showInspector = mode === "challenge" \|\| learn\.exploring/);
   // Challenge keeps the button's place in the top bar as Submit; Learn gets Run once exploring.
   assert.match(workspace, /runControl=\{mode === "challenge" \? \(\s*<ChallengeSubmitButton\s+onSubmit=\{challenge\.submit\}/);

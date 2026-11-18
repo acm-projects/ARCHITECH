@@ -53,7 +53,8 @@ export type ChatEvent =
 
 export const MAX_MESSAGES = 4;
 export const MAX_MESSAGE_LENGTH = 4_000;
-export const MAX_REPLY_TOKENS = 1_500;
+// One sentence plus at most one proposed change.
+export const MAX_REPLY_TOKENS = 800;
 export const MAX_SUGGESTIONS = 2;
 
 export type ChatRequest = {

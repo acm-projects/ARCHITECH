@@ -1,6 +1,6 @@
 .ax-workspace {
   --ax-panel-margin: 12px;
-  --ax-panel-side-width: 360px;
+  --ax-panel-side-width: 340px;
   --ax-control-radius: 8px;
   --ax-primary: #155dfc;
   --ax-primary-hover: #1447e6;
@@ -15,8 +15,8 @@
    nothing inside falls behind. Lengths set on a zoomed element are divided by the zoom. */
 @media (min-width: 768px) {
   .ax-workspace {
-    --ax-panel-zoom: 1.25;
-    --ax-panel-radius: 20px;
+    --ax-panel-zoom: 1;
+    --ax-panel-radius: 14px;
     --ax-panel-shadow: 0 8px 24px rgb(0 0 0 / 18%);
     --ax-panel-bar-width: 640px;
   }
@@ -60,21 +60,21 @@
     border-radius: var(--ax-panel-radius);
     box-shadow: var(--ax-panel-shadow);
   }
-  .ax-workspace .ax-project-menu-label { padding: 6px 12px; font-size: 13px; }
+  .ax-workspace .ax-project-menu-label { padding: 4px 10px; font-size: 12px; }
   .ax-workspace .ax-project-menu-item,
   .ax-workspace .ax-project-menu .ax-ai-toggle {
-    min-height: 44px;
-    padding: 8px 12px;
-    gap: 12px;
-    border-radius: 10px;
-    font-size: 15px;
+    min-height: 36px;
+    padding: 6px 10px;
+    gap: 10px;
+    border-radius: 8px;
+    font-size: 13px;
   }
-  .ax-workspace .ax-project-menu-item small { font-size: 13px; }
-  .ax-workspace .ax-project-menu :is(.ax-project-menu-item, .ax-ai-toggle) svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .ax-workspace .ax-project-menu-item small { font-size: 12px; }
+  .ax-workspace .ax-project-menu :is(.ax-project-menu-item, .ax-ai-toggle) svg { width: 15px; height: 15px; flex-shrink: 0; }
 
   /* The bar on a selected component is the way into these panels, so it reads at their size. */
-  .ax-workspace .ax-nodebar { height: 40px; padding: 4px; border-color: var(--ax-line-strong); border-radius: 12px; box-shadow: var(--ax-shadow-float); }
-  .ax-workspace .ax-nodebar button { height: 30px; padding: 0 12px; border-radius: 8px; font-size: 14px; }
+  .ax-workspace .ax-nodebar { height: 34px; padding: 3px; border-color: var(--ax-line-strong); border-radius: 10px; box-shadow: var(--ax-shadow-float); }
+  .ax-workspace .ax-nodebar button { height: 26px; padding: 0 10px; border-radius: 7px; font-size: 12px; }
 }
 
 /* ---- Right panels ----
@@ -127,17 +127,22 @@
   .ax-workspace:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) {
     --ax-popup-width: min(var(--ax-panel-bar-width, 640px), calc(100vw - var(--ax-panel-side-width) - 4 * var(--ax-panel-margin)));
     width: var(--ax-popup-width);
-    transform: translateX(calc(-50% - max(0px, var(--ax-popup-width) / 2 + var(--ax-panel-side-width) + 3 * var(--ax-panel-margin) - 50vw)));
+    /* The bar is already centered beside the column, so the popup centers on it. */
+    transform: translateX(-50%);
   }
 }
 
-/* The bar reaches under the column on narrower windows, so the column stops above it. */
-@media (max-width: 1399px) {
-  .ax-workspace .ax-widget-stack { bottom: calc(var(--ax-bar-height, 68px) + var(--ax-panel-margin)); }
+/* The column always runs to the bottom of the page. While a panel is open, the bottom bar and
+   the canvas notices center in the canvas beside the column instead of the page, so the bar
+   never reaches under a panel and cuts it off. */
+@media (min-width: 768px) {
+  .ax-workspace:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) :is(.ax-canvas-panel[data-side="left"], .ax-canvas-notices) {
+    left: calc((100% - var(--ax-panel-side-width) - 2 * var(--ax-panel-margin)) / 2);
+  }
 }
 
 /* Archie sits in the bar at the size of the other tools. */
-.ax-workspace .ax-panel-handle[data-tool="archie"] .ax-ai-portrait { width: 34px; height: 34px; }
+.ax-workspace .ax-panel-handle[data-tool="archie"] .ax-ai-portrait { width: 24px; height: 24px; }
 
 /* ---- Component folders ----
    A category popup is a file folder: a tab at the left holds the name and close control where

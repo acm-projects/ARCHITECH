@@ -6,6 +6,7 @@ import DashboardMotion from "@/components/dashboard/DashboardMotion";
 import ChallengeAnnouncement from "@/components/dashboard/ChallengeAnnouncement";
 import RecentProjects from "@/components/dashboard/RecentProjects";
 import SystemTutorials from "@/components/dashboard/SystemTutorials";
+import PendingDemo from "@/components/dashboard/PendingDemo";
 import { HOME_ROUTE } from "@/lib/routes";
 import { urlShortenerChallenge } from "@/components/challenge/challenges";
 
@@ -29,6 +30,7 @@ export default function DashboardPage() {
         </nav>
       </header>
 
+      <PendingDemo />
       <DashboardMotion className="ax-dashboard-content">
         <RecentProjects />
         <SystemTutorials />

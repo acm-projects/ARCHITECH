@@ -24,6 +24,9 @@ import { ArchieEnabledContext } from "../ArchieContext";
 import type { ArchitectureFlowNode } from "../nodes/ArchitectureNode";
 import Panel, { PanelAction, PanelActions, PanelDelta, PanelGroup, PanelLink, PanelRow, PanelText } from "../panel/Panel";
 import { ArchiePortrait } from "./ArchiePanel";
+import { noticeHeadline } from "../../../lib/architecture/archie/notices";
+import { SEVERITY_WORD } from "../../../lib/architecture/designCheck";
+import type { PostedNotice } from "../useArchieNotices";
 
 // The AI Architect: a chat docked to the right of the canvas. It sends the current design,
 // traffic and conversation to POST /api/ai/chat, shows the answer as it streams in, and shows
@@ -44,8 +47,12 @@ type AssistantTurn = {
   done: boolean;
   // Suggestion id -> "applied", or why it could not be applied.
   applied: Record<string, string>;
+  at: number;
 };
-type Turn = { id: number; role: "user"; text: string; focusCount: number } | AssistantTurn;
+type Turn = ({ id: number; role: "user"; text: string; focusCount: number } | AssistantTurn) & {
+  // When the turn was asked, to place it among the design notices. Restored turns come first.
+  at: number;
+};
 
 const STARTERS = ["What breaks first as traffic grows?", "How can I make this more reliable?", "How can I make this cheaper?"];
 // Short enough to read whole in the panel's width.
@@ -66,8 +73,8 @@ function toSaved(turns: readonly Turn[]): SavedTurn[] {
 function fromSaved(saved: readonly SavedTurn[], nextId: () => number): Turn[] {
   return saved.map((turn) =>
     turn.role === "user"
-      ? { id: nextId(), role: "user", text: turn.text, focusCount: turn.focusCount }
-      : { id: nextId(), role: "assistant", text: turn.text, suggestions: turn.suggestions, notes: turn.notes, applied: turn.applied, done: true, ...(turn.error ? { error: turn.error } : {}) },
+      ? { id: nextId(), role: "user", text: turn.text, focusCount: turn.focusCount, at: 0 }
+      : { id: nextId(), role: "assistant", text: turn.text, suggestions: turn.suggestions, notes: turn.notes, applied: turn.applied, done: true, at: 0, ...(turn.error ? { error: turn.error } : {}) },
   );
 }
 
@@ -139,6 +146,42 @@ function SuggestionCard({ suggestion, status, onApply, streaming }: {
   );
 }
 
+const clock = (at: number) => new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+// A notice from Archie about the last edit: one sentence, then what changed, the numbers that
+// moved, and the problems it found or resolved. A problem opens in the design check above.
+function NoticeMessage({ notice, onOpenFinding }: { notice: PostedNotice; onOpenFinding?: (findingId: string) => void }) {
+  const tone = notice.kind === "check" ? undefined :
+    notice.added.some((finding) => finding.severity !== "low") ? "worse"
+      : notice.resolved.length > 0 && notice.added.length === 0 ? "better"
+        : undefined;
+  return (
+    <div className="axp-notice" data-tone={tone} role="status">
+      <p className="axp-message">
+        <strong>{noticeHeadline(notice)}</strong> <time dateTime={new Date(notice.at).toISOString()}>{clock(notice.at)}</time>
+      </p>
+      {notice.edits.length > 0 && <p className="axp-notice-edits">{notice.edits.join(" · ")}</p>}
+      {notice.metrics.map((metric) => (
+        <PanelRow key={metric.label} label={metric.label} value={<>{metric.before} → <PanelDelta better={metric.better}>{metric.after}</PanelDelta></>} />
+      ))}
+      {notice.added.map((finding) => (
+        <PanelLink
+          key={`added-${finding.id}`}
+          item
+          label={finding.title}
+          value={notice.kind === "check" ? SEVERITY_WORD[finding.severity] : `New · ${SEVERITY_WORD[finding.severity]}`}
+          title={finding.title}
+          disabled={!onOpenFinding}
+          onClick={() => onOpenFinding?.(finding.id)}
+        />
+      ))}
+      {notice.resolved.map((finding) => (
+        <PanelRow key={`resolved-${finding.id}`} item label={finding.title} value={<PanelDelta better>Resolved</PanelDelta>} />
+      ))}
+    </div>
+  );
+}
+
 export default function ArchitectPanel({
   projectId,
   onClose,
@@ -149,7 +192,13 @@ export default function ArchitectPanel({
   reviewDetail = false,
   reviewActive = false,
   asked = null,
+  notices = [],
+  onOpenFinding,
 }: {
+  // What each edit did to the design, posted among the answers (see useArchieNotices).
+  notices?: readonly PostedNotice[];
+  // Opens a finding from a notice in the design check above.
+  onOpenFinding?: (findingId: string) => void;
   // The design check is on and listing findings, which already say what to ask about, so the
   // generic starter questions for the whole design are left out.
   // The design check, above the conversation. While one of its findings is open it takes the
@@ -188,9 +237,10 @@ export default function ArchitectPanel({
   const nextId = useRef(1);
   const list = useRef<HTMLDivElement | null>(null);
 
+  const noticeCount = notices.length;
   useEffect(() => {
-    if (turns.length > 0) list.current?.scrollTo({ top: list.current.scrollHeight });
-  }, [turns]);
+    if (turns.length > 0 || noticeCount > 0) list.current?.scrollTo({ top: list.current.scrollHeight });
+  }, [turns, noticeCount]);
   useEffect(() => () => abort.current?.abort(), []);
 
   // Restore the saved conversation once, then save after each finished answer or applied
@@ -223,10 +273,19 @@ export default function ArchitectPanel({
     }, SAVE_DELAY_MS);
     return () => clearTimeout(timer);
   }, [turns, busy, restored, projectId]);
+  // Notices from before a new chat stay out of it.
+  const [clearedAt, setClearedAt] = useState(0);
   const newChat = () => {
     abort.current?.abort();
     setTurns([]);
+    setClearedAt(Date.now());
   };
+  const shownNotices = notices.filter((notice) => notice.at > clearedAt);
+  // Answers and notices in the order they happened.
+  const feed = [
+    ...turns.map((turn) => ({ at: turn.at, turn, notice: null })),
+    ...shownNotices.map((notice) => ({ at: notice.at, turn: null, notice })),
+  ].sort((a, b) => a.at - b.at);
   // Questions left today: read when the panel opens, then from each answer's headers.
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   useEffect(() => {
@@ -246,10 +305,11 @@ export default function ArchitectPanel({
     const messages = buildChatHistory(turns, text);
     const userId = nextId.current++;
     const answerId = nextId.current++;
+    const at = Date.now();
     setTurns((all) => [
       ...all,
-      { id: userId, role: "user", text, focusCount: focus.length },
-      { id: answerId, role: "assistant", text: "", suggestions: [], notes: [], done: false, applied: {} },
+      { id: userId, role: "user", text, focusCount: focus.length, at },
+      { id: answerId, role: "assistant", text: "", suggestions: [], notes: [], done: false, applied: {}, at },
     ]);
     setDraft("");
     setBusy(true);
@@ -333,15 +393,17 @@ export default function ArchitectPanel({
     >
       {review && <div className="axp-review">{review}</div>}
       <div className="axp-messages" ref={list} aria-live="polite" hidden={reviewDetail}>
-        {turns.length === 0 && (scoped || !reviewActive) && (
+        {turns.length === 0 && shownNotices.length === 0 && (scoped || !reviewActive) && (
           <PanelGroup title={scoped ? `Ask about ${scope}` : "Ask about the whole design"} meta={scoped ? clearScope : undefined}>
             {(scoped ? FOCUS_STARTERS : STARTERS).map((question) => (
               <PanelLink key={question} item label={question} title={question} onClick={() => void ask(question)} />
             ))}
           </PanelGroup>
         )}
-        {turns.map((turn) =>
-          turn.role === "user" ? (
+        {feed.map(({ turn, notice }) =>
+          notice ? (
+            <NoticeMessage key={`notice-${notice.id}`} notice={notice} onOpenFinding={onOpenFinding} />
+          ) : !turn ? null : turn.role === "user" ? (
             <p key={turn.id} className="axp-message" data-role="user">
               {turn.focusCount > 0 && <small>About {components(turn.focusCount)}</small>}
               {turn.text}

@@ -31,10 +31,12 @@ type WorkspaceInspectorProps = {
   // The design check is switched on.
   reviewActive?: boolean;
   asked?: { key: number; text: string } | null;
-  runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate">;
+  notices?: ComponentProps<typeof ArchitectPanel>["notices"];
+  onOpenFinding?: (findingId: string) => void;
+  runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate" | "simulation">;
 };
 
-export function SimulationControl({ panelHost, expanded, onToggle, runs, componentName, onShowResults }: {
+export function SimulationControl({ panelHost, expanded, onToggle, runs, componentName, onShowResults, live }: {
   // The Run button stays in the header; its panel joins the right panels.
   panelHost: HTMLElement | null;
   expanded: boolean;
@@ -42,6 +44,8 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, compone
   runs: WorkspaceInspectorProps["runs"];
   componentName: (id: string) => string;
   onShowResults: (action: () => void) => void;
+  // Live estimates, at the top of the panel.
+  live?: ReactNode;
 }) {
   const anchor = useRef<HTMLDivElement>(null);
   const running = runs.view.isRunning;
@@ -78,7 +82,7 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, compone
         <RunPanel view={runs.view} completedRun={runs.state.current} traffic={runs.traffic}
           onRateChange={runs.setRequestRate} onRun={() => onShowResults(runs.run)}
           onRunAtRate={(rate) => onShowResults(() => runs.runAtRate(rate))}
-          componentName={componentName} />
+          componentName={componentName} live={live} simulation={runs.simulation} />
       </Panel>,
       panelHost,
     )}
@@ -89,7 +93,7 @@ export default function WorkspaceInspector({
   projectId,
   nodes, controller, onClearSelection, onApply, customTechnologies,
   guidance,
-  review, reviewDetail, reviewActive, asked,
+  review, reviewDetail, reviewActive, asked, notices, onOpenFinding,
 }: Omit<WorkspaceInspectorProps, "runs">) {
   const { archieOpen, archieRequest, historyOpen, configuring, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory } = controller;
   const selectionCollapse = usePanelCollapse();
@@ -157,6 +161,8 @@ export default function WorkspaceInspector({
           reviewDetail={reviewDetail}
           reviewActive={reviewActive}
           asked={asked}
+          notices={notices}
+          onOpenFinding={onOpenFinding}
         />
       )}
     </>

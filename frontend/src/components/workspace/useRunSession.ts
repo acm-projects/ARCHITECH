@@ -9,7 +9,7 @@ import {
 import type { Edge } from "@xyflow/react";
 
 import { buildArchieView } from "../../lib/architecture/archie/view";
-import { evaluateDesign } from "../../lib/architecture/evaluation/evaluationService";
+import { evaluateDesign, simulationDuration, withSimulationDelay } from "../../lib/architecture/evaluation/evaluationService";
 import { fingerprintEvaluationInput } from "../../lib/architecture/evaluation/fingerprint";
 import { buildResultsView } from "../../lib/architecture/evaluation/resultsView";
 import { createRunSession } from "../../lib/architecture/evaluation/runSession";
@@ -48,8 +48,15 @@ export function useRunSession({
 }) {
   // One run session keeps track of things like running state, current result,
   // previous result, and errors for this mounted controller.
+  // Each run takes a few seconds, like a real simulation (see withSimulationDelay). Its length is
+  // chosen as the run starts and kept here, so the panel can show how far along it is.
+  const [simulation, setSimulation] = useState<{ startedAt: number; durationMs: number } | null>(null);
   const [session] = useState(() =>
-    createRunSession(evaluateDesign),
+    createRunSession(withSimulationDelay(evaluateDesign, () => {
+      const durationMs = simulationDuration();
+      setSimulation({ startedAt: Date.now(), durationMs });
+      return durationMs;
+    })),
   );
 
   // Rerender whenever the run session changes.
@@ -233,6 +240,8 @@ export function useRunSession({
   // Learn and Challenge both use this same interface, but each gets its own session.
   return {
     view,
+    // The run in progress: when it started and how long it takes. Null when nothing is running.
+    simulation: view.isRunning ? simulation : null,
     state,
     fingerprint,
     labels,

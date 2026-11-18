@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode, type Ref } from "react";
+import { useEffect, useRef, type ButtonHTMLAttributes, type CSSProperties, type ReactNode, type Ref } from "react";
 import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 
 import type { Direction } from "../../../lib/architecture/evaluation/comparison";
@@ -21,9 +21,16 @@ function markActive(panel: HTMLElement | null) {
 //   PanelRow     one line: a label and a value
 //   PanelLink    the same line, opening a detail
 //   PanelDetail  takes over the panel's body, one level deep, with a way back
-//   PanelMeter   a bar under a row, for demand against a limit
+//   PanelMeter   a bar under a row, for demand against a limit (or a run's progress)
+//   PanelStats   a few numbers side by side
 //   PanelField, PanelAction, PanelText, PanelReveal for what is left
 // A panel shows its rows at rest, and anything longer than one line belongs in a detail.
+
+// One panel at a time: a panel that opens (or is asked for again) tells the column, and every
+// other open panel gets out of the way. One with its own close closes; one whose folding means
+// something (a component's configuration) or that has no close (the challenge) folds to its
+// header. Panels that come and go with canvas clicks, and the headerless lesson card, stay.
+export const EXCLUSIVE_EVENT = "axp:exclusive";
 
 // Gives focus back to the tool's bottom-bar button, which stays mounted when its panel closes.
 function focusToolButton(toolKey: string) {
@@ -101,9 +108,38 @@ export default function Panel({
     if (collapsed || hidden || !panel) return;
     panel.removeAttribute(AUTO_FOLDED_ATTRIBUTE);
     panel.removeAttribute(REOPEN_HEIGHT_ATTRIBUTE);
-    if (reopenedByColumn.current) reopenedByColumn.current = false;
-    else markActive(panel);
-  }, [collapsed, hidden, revealKey]);
+    if (reopenedByColumn.current) {
+      reopenedByColumn.current = false;
+      return;
+    }
+    markActive(panel);
+    if (!transient) panel.closest(".ax-widget-stack")?.dispatchEvent(new CustomEvent(EXCLUSIVE_EVENT, { detail: panel }));
+  }, [collapsed, hidden, revealKey, transient]);
+  // Another panel opened: make way for it (see EXCLUSIVE_EVENT).
+  const latest = useRef({ collapsed, toggle, onClose, ownsFold: Boolean(collapse), transient, hidden, bare });
+  useEffect(() => {
+    latest.current = { collapsed, toggle, onClose, ownsFold: Boolean(collapse), transient, hidden, bare };
+  });
+  useEffect(() => {
+    const column = root.current?.closest(".ax-widget-stack");
+    if (!column) return;
+    const makeWay = (event: Event) => {
+      const opened = (event as CustomEvent<HTMLElement>).detail;
+      const self = latest.current;
+      if (opened === root.current || self.hidden || self.transient || self.bare) return;
+      // Handled until the next render reports the panel's new state, so a second request in
+      // the same moment cannot toggle it back.
+      if (self.onClose && !self.ownsFold) {
+        latest.current = { ...self, hidden: true };
+        self.onClose();
+      } else if (!self.collapsed) {
+        latest.current = { ...self, collapsed: true };
+        self.toggle();
+      }
+    };
+    column.addEventListener(EXCLUSIVE_EVENT, makeWay);
+    return () => column.removeEventListener(EXCLUSIVE_EVENT, makeWay);
+  }, []);
   // The column folds this panel when the open panels no longer fit, and opens it again when
   // they do (see stackFit.ts).
   useEffect(() => {
@@ -209,6 +245,20 @@ export function PanelRow({ label, value, lead, item, title }: RowContent) {
 // Demand against a limit, as a bar under the row that states both numbers. Up to the limit the
 // bar is the limit and the fill is the demand. Past it the bar is the demand: the fill is what
 // the limit covers and the rest, in the danger color, is what it does not.
+// A few numbers side by side, read at a glance: "Score 91 · p95 73 ms · …".
+export function PanelStats({ label, stats }: { label: string; stats: readonly { label: string; value: ReactNode }[] }) {
+  return (
+    <div className="axp-stats" role="group" aria-label={label} style={{ "--axp-stats-count": stats.length } as CSSProperties}>
+      {stats.map((stat) => (
+        <div key={stat.label}>
+          <span className="axp-small">{stat.label}</span>
+          <span className="axp-value">{stat.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function PanelMeter({ label, fraction, caption }: {
   // Names the measurement for screen readers: "Load against capacity".
   label: string;

@@ -20,7 +20,7 @@ import type { TrafficProfile } from "../../lib/architecture/evaluation/traffic";
 import { formatLatency, formatMonthlyCost, formatRate } from "../../lib/architecture/implementationStats";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 import { ARCHITECTURE_NODE_SIZE } from "../../lib/architecture/nodeLayout";
-import { PanelAction, PanelActions, PanelDetail, PanelGroup, PanelLink, PanelRow, PanelText } from "./panel/Panel";
+import { PanelAction, PanelActions, PanelDetail, PanelGroup, PanelLink, PanelRow, PanelStats, PanelText } from "./panel/Panel";
 import "./design-check.css";
 
 // Design check over the canvas: the engine's findings marked on the components they are about,
@@ -68,6 +68,8 @@ export function useDesignCheck({ onReveal }: { onReveal: () => void }) {
   const [focus, setFocus] = useState<string | null>(null);
   // Where the uptime comes from, open in Archie's panel.
   const [uptimeOpen, setUptimeOpen] = useState(false);
+  // Every open problem at once, open in Archie's panel.
+  const [listOpen, setListOpen] = useState(false);
   // Whether the design check shows at all: marks on the canvas and the list in Archie.
   const enabled = useSyncExternalStore(subscribeEnabled, readEnabled, () => true);
   const setEnabled = (on: boolean) => {
@@ -75,6 +77,7 @@ export function useDesignCheck({ onReveal }: { onReveal: () => void }) {
     if (!on) {
       setFocus(null);
       setUptimeOpen(false);
+      setListOpen(false);
     }
   };
   // A mark on the canvas opens its finding in Archie.
@@ -83,11 +86,11 @@ export function useDesignCheck({ onReveal }: { onReveal: () => void }) {
     setFocus(findingId);
     onReveal();
   };
-  return { focus, setFocus, uptimeOpen, setUptimeOpen, enabled, setEnabled, reveal };
+  return { focus, setFocus, uptimeOpen, setUptimeOpen, listOpen, setListOpen, enabled, setEnabled, reveal };
 }
 
 // A finding or the uptime is open, which takes over Archie's panel until its back button.
-export const designCheckInDetail = (check: DesignCheckState) => check.enabled && (Boolean(check.focus) || check.uptimeOpen);
+export const designCheckInDetail = (check: DesignCheckState) => check.enabled && (Boolean(check.focus) || check.uptimeOpen || check.listOpen);
 
 // The on/off switch for the whole design check, beside its title.
 function EnabledSwitch({ check }: { check: DesignCheckState }) {
@@ -246,7 +249,12 @@ export function DesignCheckSection({
   if (!result || !ready) return null;
 
   if (!check.enabled) {
-    return <PanelGroup title="Design check" meta={<EnabledSwitch check={check} />} />;
+    return (
+      <>
+        <DesignStats summary={result.summary} />
+        <PanelGroup title="Design check" meta={<EnabledSwitch check={check} />} />
+      </>
+    );
   }
 
   const apply = (fix: CheckedFix) => {
@@ -256,12 +264,13 @@ export function DesignCheckSection({
     setApplied({ label: fix.label, effect: effect(fix.before, fix.after) });
     check.setFocus(null);
     check.setUptimeOpen(false);
+    check.setListOpen(false);
   };
 
   const uptime = checked?.uptime;
   const focused = findings.find((finding) => finding.id === check.focus);
   const focusedFix = focused && checked?.fixes.get(focused.id);
-  const inDetail = Boolean(focused) || (check.uptimeOpen && Boolean(uptime));
+  const inDetail = Boolean(focused) || (check.uptimeOpen && Boolean(uptime)) || check.listOpen;
   return (
     <div ref={anchor} tabIndex={-1}>
       {applied && (
@@ -284,20 +293,18 @@ export function DesignCheckSection({
       )}
 
       <div hidden={inDetail}>
+        <DesignStats summary={result.summary} />
         <PanelGroup title="Design check" meta={<EnabledSwitch check={check} />}>
           {findings.length === 0 ? (
             <PanelText>No problems found at {formatRate(traffic.requestsPerSecond)} req/s.</PanelText>
           ) : (
-            findings.map((finding) => (
-              <PanelLink
-                key={finding.id}
-                item
-                label={finding.title}
-                value={SEVERITY_WORD[finding.severity]}
-                title={finding.title}
-                onClick={() => check.setFocus(finding.id)}
-              />
-            ))
+            <PanelLink
+              item
+              label={`${findings.length} open problem${findings.length === 1 ? "" : "s"}`}
+              value={SEVERITY_WORD[findings[0]!.severity]}
+              title="Every problem the design check found"
+              onClick={() => check.setListOpen(true)}
+            />
           )}
           {uptime && <PanelLink item label="Availability breakdown" value={`${uptime.percent}%`} onClick={() => check.setUptimeOpen(true)} />}
         </PanelGroup>
@@ -320,6 +327,24 @@ export function DesignCheckSection({
               <MessageCircleQuestion size={14} aria-hidden="true" /> Ask Archie about this
             </PanelAction>
           </PanelActions>
+        </PanelDetail>
+      ) : check.listOpen ? (
+        <PanelDetail title="Open problems" onBack={() => check.setListOpen(false)}>
+          <PanelGroup>
+            {findings.map((finding) => (
+              <PanelLink
+                key={finding.id}
+                item
+                label={finding.title}
+                value={SEVERITY_WORD[finding.severity]}
+                title={finding.title}
+                onClick={() => {
+                  check.setListOpen(false);
+                  check.setFocus(finding.id);
+                }}
+              />
+            ))}
+          </PanelGroup>
         </PanelDetail>
       ) : check.uptimeOpen && uptime && (
         <PanelDetail title="Availability" onBack={() => check.setUptimeOpen(false)}>
@@ -346,6 +371,22 @@ export function DesignCheckSection({
         </PanelDetail>
       )}
     </div>
+  );
+}
+
+// The design's numbers right now, one line at the top of Archie's panel, so every answer and
+// notice below reads against them.
+function DesignStats({ summary }: { summary: LiveSummary }) {
+  return (
+    <PanelStats
+      label="Design right now"
+      stats={[
+        { label: "Score", value: summary.score },
+        { label: "p95", value: formatLatency(summary.p95LatencyMs) },
+        { label: "Uptime", value: `${summary.uptimePercent}%` },
+        { label: "Cost", value: formatMonthlyCost(summary.monthlyCost) },
+      ]}
+    />
   );
 }
 

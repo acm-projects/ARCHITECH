@@ -87,6 +87,9 @@ test("the prompt carries the design with ids, the engine's numbers, the library 
   assert.match(prompt, /do not add unrelated advice or code suggestions/);
   assert.match(prompt, /illustrative rather than part of the user's actual design/);
   assert.match(prompt, /friendly, encouraging, and analytical/i);
+  // Archie answers in one sentence.
+  assert.match(prompt, /Output exactly one sentence/);
+  assert.match(prompt, /Call it at most once per answer/);
 });
 
 test("component names stay data inside the design block", () => {
@@ -204,7 +207,7 @@ test("a turn streams the answer, then checked suggestions with a before/after pr
 
   assert.equal(calls.length, 1);
   assert.deepEqual(calls[0].tools, [PROPOSE_CHANGES_TOOL]);
-  assert.match(calls[0].system, /deeper trade-offs only when the user asks/i);
+  assert.match(calls[0].system, /name the trade-off directly, still in one sentence/i);
   assert.deepEqual(calls[0].messages, ask());
 });
 

@@ -60,3 +60,53 @@ export const evaluateDesign: EvaluateDesign = async (
     traffic: request.traffic,
   });
 };
+// ---- Simulated run time ----
+// Run reads as a simulation, not an instant recalculation: each run takes a few seconds before
+// its result arrives. The numbers come from the same evaluator; only their arrival is delayed.
+export const SIMULATION_DURATION_MS = { min: 5_000, max: 10_000 } as const;
+
+// A run's length, somewhere in the range. `random` returns [0, 1), like Math.random.
+export function simulationDuration(random: () => number = Math.random): number {
+  const { min, max } = SIMULATION_DURATION_MS;
+  const fraction = Math.min(Math.max(random(), 0), 1);
+  return Math.round(min + fraction * (max - min));
+}
+
+const abortError = () => {
+  const error = new Error("The evaluation was cancelled.");
+  error.name = "AbortError";
+  return error;
+};
+
+// Resolves after `ms`, or rejects at once with an AbortError when the run is cancelled.
+export function waitFor(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(abortError());
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", cancel);
+      resolve();
+    }, ms);
+    const cancel = () => {
+      clearTimeout(timer);
+      reject(abortError());
+    };
+    signal?.addEventListener("abort", cancel, { once: true });
+  });
+}
+
+// The evaluator, holding each result back for `duration()` milliseconds. The design is
+// evaluated as the run starts, so later edits never leak into it.
+export function withSimulationDelay(
+  evaluate: EvaluateDesign,
+  duration: () => number,
+  wait: (ms: number, signal?: AbortSignal) => Promise<void> = waitFor,
+): EvaluateDesign {
+  return async (request, options) => {
+    const result = await evaluate(request, options);
+    await wait(duration(), options?.signal);
+    return result;
+  };
+}

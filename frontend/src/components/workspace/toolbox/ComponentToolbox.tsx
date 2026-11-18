@@ -162,7 +162,7 @@ export default function ComponentToolbox({
                 onPointerEnter={event => { if (event.pointerType === "mouse") selectCategory(key); }}
                 onFocus={() => selectCategory(key)}
                 onClick={() => selectCategory(key)}>
-                <Icon size={38.4} color={key === "all" || key === "repo" ? undefined : FAMILY_COLORS[key]} aria-hidden="true" />
+                <Icon size={22} color={key === "all" || key === "repo" ? undefined : FAMILY_COLORS[key]} aria-hidden="true" />
                 <span className="ax-rail-name" aria-hidden="true">{label}</span>
               </button>
             </li>

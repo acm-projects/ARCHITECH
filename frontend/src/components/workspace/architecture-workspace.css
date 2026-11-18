@@ -1286,16 +1286,21 @@
 }
 
 /* Simulation controls use the same compact treatment as the canvas tools. */
+/* The top bar floats over the canvas with rounded corners, like the bottom bar. */
 @media (min-width: 1000px) {
-  .ax-workspace { --ax-header-clearance: 52px; }
-  .ax-workspace .ax-header { inset: 0 0 auto; border-width: 0 0 1px; border-radius: 0; padding-inline: 16px; }
+  .ax-workspace .ax-header {
+    inset: var(--ax-header-inset) var(--ax-header-inset) auto;
+    border-width: 1px;
+    border-radius: 14px;
+  }
 }
 
 /* Insertion below the canvas; analysis on the left; simulation in the header. */
 .ax-workspace .ax-canvas-panel[data-side="left"] { top: auto; bottom: 12px; left: 50%; margin: 0; transform: translateX(-50%); }
-.ax-workspace [data-side="left"] .ax-panel-rail { border-radius: 24px; padding: 10px; max-width: calc(100vw - 24px); overflow-x: auto; scrollbar-width: thin; }
-.ax-workspace [data-side="left"] .ax-panel-rail > ul { display: flex; gap: 4px; width: max-content; }
-.ax-workspace [data-side="left"] .ax-panel-handle { width: 54px; height: 46px; }
+.ax-workspace [data-side="left"] .ax-panel-rail { border-radius: 14px; padding: 5px; max-width: calc(100vw - 24px); overflow-x: auto; scrollbar-width: thin; }
+.ax-workspace [data-side="left"] .ax-panel-rail > ul { display: flex; gap: 2px; width: max-content; }
+.ax-workspace [data-side="left"] .ax-panel-handle { width: 40px; height: 40px; border-radius: 9px; }
+.ax-workspace [data-side="left"] .ax-panel-handle svg { width: 22px; height: 22px; }
 .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content {
   position: absolute; left: 50%; top: auto; bottom: calc(100% + 8px); transform: translateX(-50%);
   width: min(540px, calc(100vw - 24px)); max-height: min(300px, calc(100dvh - 150px)); animation: none;
@@ -1438,15 +1443,15 @@
 
 /* Canvas tools after the categories: a hairline separates them from the library. */
 .ax-workspace [data-side="left"] .ax-panel-rail .ax-rail-separator {
-  align-self: center; width: 1px; height: 22px; margin: 0 4px; background: var(--ax-line-strong);
+  align-self: center; width: 1px; height: 20px; margin: 0 4px; background: var(--ax-line-strong);
 }
 .ax-workspace .ax-panel-handle .ax-ai-portrait { width: 20px; height: 20px; border-width: 1px; }
 .ax-workspace .ax-panel-handle:disabled { opacity: .45; cursor: default; }
 .ax-workspace .ax-panel-handle:disabled:hover { background: transparent; }
 /* Design check's finding count: real state, kept small and neutral. */
 .ax-workspace .ax-rail-badge {
-  position: absolute; top: 2px; right: 2px; min-width: 18px; height: 18px; padding: 0 4px;
-  border-radius: 9px; background: var(--ax-ink); color: var(--ax-surface);
+  position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 8px; font-size: 10px; line-height: 16px; background: var(--ax-ink); color: var(--ax-surface);
   font: 600 11px/18px var(--font-mono); font-variant-numeric: tabular-nums; text-align: center;
   pointer-events: none;
 }
@@ -1462,20 +1467,20 @@
 
 .ax-workspace .ax-header { box-shadow: 0 3px 12px rgb(0 0 0 / 12%); }
 .ax-workspace .ax-theme-toggle { border-radius: 50%; }
-.ax-workspace .ax-title { font-size: 19.5px; font-weight: 700; }
-.ax-workspace .ax-header-title-input { font-size: 19.5px; font-weight: 700; }
+.ax-workspace .ax-title { font-size: 15px; font-weight: 600; }
+.ax-workspace .ax-header-title-input { font-size: 15px; font-weight: 600; }
 .ax-workspace .ax-panel-rail { box-shadow: 0 4px 14px rgb(0 0 0 / 12%); }
 .ax-workspace .ax-panel-content { box-shadow: 0 8px 24px rgb(0 0 0 / 18%); }
 .ax-workspace .ax-node { box-shadow: 0 2px 8px rgb(0 0 0 / 14%); }
 
 @media (max-width: 600px) {
   .ax-workspace .ax-title,
-  .ax-workspace .ax-header-title-input { font-size: 18px; }
+  .ax-workspace .ax-header-title-input { font-size: 14px; }
 }
 
 /* Component categories open on hover, with a safe gap into the flyout. */
 .ax-workspace .ax-canvas-panel[data-side="left"] .ax-panel-content:has(.ax-component-menu) { border-radius:20px; }
-.ax-workspace .ax-panel-content .ax-component-menu .ax-panel-title { font-size:15px; line-height:22px; font-weight:600; }
+.ax-workspace .ax-panel-content .ax-component-menu .ax-panel-title { font-size:13px; line-height:20px; font-weight:600; }
 
 /* The header runs the design model; Run as app remains a separate project action. */
 .ax-workspace .ax-header .ax-run-button {
@@ -1495,45 +1500,45 @@
 .ax-workspace .ax-workspace-canvas .ax-diagram-viewport .react-flow__controls { top:calc(var(--ax-header-clearance) + 12px); }
 
 /* ---- Scale ----
-   The bottom bar is the reference size for the workspace: the top bar matches its height, and
-   the controls around the canvas are sized to read at the same scale as its icons. */
+   Sized to read at 100% browser zoom. The top bar and the bottom bar share one height; the
+   controls in both, and around the canvas, are the size of ordinary desktop controls. */
 @media (min-width: 1000px) {
-  .ax-workspace { --ax-bar-height: 68px; --ax-header-clearance: var(--ax-bar-height); }
+  .ax-workspace { --ax-bar-height: 52px; --ax-header-inset: 8px; --ax-header-clearance: calc(var(--ax-bar-height) + var(--ax-header-inset)); }
   .ax-workspace .ax-header {
-    --ax-header-control-height: 44px;
+    --ax-header-control-height: 34px;
     height: var(--ax-bar-height);
     min-height: var(--ax-bar-height);
-    gap: 20px;
-    padding: 0 12px 0 20px;
+    gap: 16px;
+    padding: 0 8px 0 16px;
   }
-  .ax-workspace .ax-header-project { gap: 22px; }
-  .ax-workspace .ax-header .brand-wordmark-header { width: 176px; height: 42px; }
-  .ax-workspace .ax-header-actions { gap: 10px; }
-  .ax-workspace .ax-title { gap: 10px; padding-left: 22px; }
+  .ax-workspace .ax-header-project { gap: 16px; }
+  .ax-workspace .ax-header .brand-wordmark-header { width: 128px; height: 30px; }
+  .ax-workspace .ax-header-actions { gap: 8px; }
+  .ax-workspace .ax-title { gap: 8px; padding-left: 16px; }
   .ax-workspace .ax-title,
-  .ax-workspace .ax-header-title-input { font-size: 22px; }
-  .ax-workspace .ax-title > svg { width: 15px; height: 15px; }
-  .ax-workspace .ax-title small { font-size: 12px; }
-  .ax-workspace .ax-header .ax-save { font-size: 14px; }
-  .ax-workspace .ax-header-actions :is(.ax-header-menu-trigger, .ax-header-icon-action) { padding-inline: 16px; font-size: 15px; }
-  .ax-workspace .ax-header-actions :is(.ax-header-menu-trigger, .ax-header-icon-action) svg { width: 16px; height: 16px; }
-  .ax-workspace .ax-theme-toggle { width: 44px; height: 44px; }
-  .ax-workspace .ax-theme-toggle svg { width: 20px; height: 20px; }
-  .ax-workspace .ax-header .ax-run-button { min-height: 44px; padding: 10px 24px; border-radius: var(--ax-radius-dock); font-size: 15px; }
-  .ax-workspace .ax-header .ax-run-button svg { width: 18px; height: 18px; }
-  .ax-workspace .ax-mode-switch button { padding-inline: 18px; font-size: 15px; }
-  .ax-workspace .ax-mode-switch button svg { width: 18px; height: 18px; }
-  .ax-workspace .ax-header-divider { height: 28px; margin-inline: 6px; }
-  .ax-workspace .ax-header .ax-save svg { width: 16px; height: 16px; }
+  .ax-workspace .ax-header-title-input { font-size: 15px; }
+  .ax-workspace .ax-title > svg { width: 13px; height: 13px; }
+  .ax-workspace .ax-title small { font-size: 11px; }
+  .ax-workspace .ax-header .ax-save { font-size: 12px; }
+  .ax-workspace .ax-header-actions :is(.ax-header-menu-trigger, .ax-header-icon-action) { padding-inline: 12px; font-size: 13px; }
+  .ax-workspace .ax-header-actions :is(.ax-header-menu-trigger, .ax-header-icon-action) svg { width: 14px; height: 14px; }
+  .ax-workspace .ax-theme-toggle { width: 34px; height: 34px; }
+  .ax-workspace .ax-theme-toggle svg { width: 16px; height: 16px; }
+  .ax-workspace .ax-header .ax-run-button { min-height: 34px; padding: 6px 16px; border-radius: 8px; font-size: 13px; }
+  .ax-workspace .ax-header .ax-run-button svg { width: 14px; height: 14px; }
+  .ax-workspace .ax-mode-switch button { padding-inline: 12px; font-size: 13px; }
+  .ax-workspace .ax-mode-switch button svg { width: 14px; height: 14px; }
+  .ax-workspace .ax-header-divider { height: 22px; margin-inline: 4px; }
+  .ax-workspace .ax-header .ax-save svg { width: 13px; height: 13px; }
   .ax-workspace .react-flow__controls {
-    padding: 4px;
-    border-radius: 14px;
+    padding: 3px;
+    border-radius: 10px;
     box-shadow: var(--ax-shadow-float);
   }
-  .ax-workspace .react-flow__controls-button { width: 40px; height: 40px; border-radius: 10px; }
-  .ax-workspace .react-flow__controls-button svg { width: 16px; height: 16px; }
-  .ax-workspace .ax-rail-name { padding: 6px 10px; border-radius: 8px; box-shadow: var(--ax-shadow-float); font-size: 14px; }
-  .ax-workspace .ax-canvas-notice { font-size: 14px; }
+  .ax-workspace .react-flow__controls-button { width: 30px; height: 30px; border-radius: 7px; }
+  .ax-workspace .react-flow__controls-button svg { width: 13px; height: 13px; }
+  .ax-workspace .ax-rail-name { padding: 4px 8px; border-radius: 6px; box-shadow: var(--ax-shadow-float); font-size: 12px; }
+  .ax-workspace .ax-canvas-notice { font-size: 13px; }
 }
 
 /* ---- Connections ----

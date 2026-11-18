@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 
 import type { ResultsView } from "../../lib/architecture/evaluation/resultsView"
 import type { RunResult } from "../../lib/architecture/evaluation/runSession"
@@ -19,7 +19,8 @@ import {
   type ReviewSelection,
   type ReviewView,
 } from "./inspectorState"
-import { PanelDetail, PanelGroup } from "./panel/Panel"
+import { formatRate } from "../../lib/architecture/implementationStats"
+import { PanelDetail, PanelGroup, PanelMeter, PanelText } from "./panel/Panel"
 import StressTestPanel from "./StressTestPanel"
 
 type RunPanelProps = {
@@ -30,6 +31,32 @@ type RunPanelProps = {
   onRun: () => void
   onRunAtRate: (rate: number) => void
   componentName: (id: string) => string
+  // Live estimates, shown above the run so the current numbers and the last run read together.
+  live?: ReactNode
+  // The run in progress, for its progress bar.
+  simulation?: { startedAt: number; durationMs: number } | null
+}
+
+// How far the run in progress is: a bar that fills over the run's length, and the seconds left.
+function SimulationProgress({ startedAt, durationMs, requestsPerSecond }: { startedAt: number; durationMs: number; requestsPerSecond: number }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 250)
+    return () => window.clearInterval(timer)
+  }, [])
+  const elapsed = Math.min(Math.max(now - startedAt, 0), durationMs)
+  const fraction = durationMs > 0 ? elapsed / durationMs : 1
+  const left = Math.max(0, Math.ceil((durationMs - elapsed) / 1000))
+  return (
+    <PanelGroup title="Simulating" meta={`${left} s left`}>
+      <PanelMeter
+        label="Simulation progress"
+        fraction={fraction}
+        caption={`${formatRate(requestsPerSecond)} req/s through every component on the request path`}
+      />
+      <PanelText role="status">Results arrive when the run finishes.</PanelText>
+    </PanelGroup>
+  )
 }
 
 // The Simulation panel: the traffic to run and what the last run found. Scores, findings and
@@ -56,6 +83,7 @@ export default function RunPanel(props: RunPanelProps) {
     <div aria-live="polite" data-run-state={view.runButtonState}>
       {/* Keep the form mounted so looking at a detail preserves what was typed. */}
       <div hidden={Boolean(detail)}>
+        {props.live}
         <StressTestPanel
           traffic={traffic}
           runLabel={view.isRunning ? "Running…" : "Run simulation"}
@@ -64,6 +92,9 @@ export default function RunPanel(props: RunPanelProps) {
           onRun={props.onRun}
           onRunAtRate={props.onRunAtRate}
         />
+        {props.simulation && (
+          <SimulationProgress {...props.simulation} requestsPerSecond={traffic.requestsPerSecond} />
+        )}
         <RunNotices view={view} onRun={props.onRun} />
         {result && (
           <PanelGroup title="Last run" meta={stale && <strong role="status">{stale}</strong>}>

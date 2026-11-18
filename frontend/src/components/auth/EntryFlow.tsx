@@ -17,8 +17,8 @@ import { nextEntryStep, type EntryEvent, type EntryStep } from "../../lib/entryF
 import { AuthPage, Onboarding } from "../../screens/Auth";
 import { Landing } from "../../screens/Marketing";
 import type { ExperienceLevel } from "../../types";
-// Project creation - useStartProject
-import { useStartProject } from "../projects/useStartProject";
+// The demo waits for a new account - requestDemoAfterSignUp
+import { requestDemoAfterSignUp } from "../../lib/demoProject";
 
 /* Controls the full entry flow for '/': landing, auth, and onboarding.
    The screens handle their own UI while this compoenent owns navigation
@@ -27,7 +27,6 @@ import { useStartProject } from "../projects/useStartProject";
 export default function EntryFlow() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const startProject = useStartProject();
   const [step, setStep] = useState<EntryStep>("landing"); // step = where the user is
   const signedIn = status === "authenticated";
   const needsOnboarding = signedIn && !session?.user.experienceLevel;
@@ -53,9 +52,11 @@ export default function EntryFlow() {
     setStep(result.step);
   };
 
-  // The landing page demo bypasses onboarding and opens a preconfigured learn project
+  // The landing page demo needs an account first: it goes through sign-up (and onboarding),
+  // and the dashboard opens the demo, without the tutorial, once the account exists.
   const demo = () => {
-    startProject({ title: "Netflix streaming architecture", mode: "learn", source: "template" });
+    requestDemoAfterSignUp();
+    go("sign-up");
   };
 
   // return nothing bc the useEffect above is about to redirect them to the dashboard
