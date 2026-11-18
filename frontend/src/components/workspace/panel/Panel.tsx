@@ -243,7 +243,16 @@ export function PanelTiles({ label, children }: { label?: string; children: Reac
   return <div className="axp-tiles" role="group" aria-label={label}>{children}</div>;
 }
 
-export function PanelTile({ label, value, unit, caption, change, gauge, wide = false, tone, title }: {
+// A tile's color. Status hues follow the measurement's state (good, tight, over); the metric
+// hues tell latency, uptime and cost apart at a glance and always go with the label and icon.
+export type PanelTileHue = "good" | "warn" | "over" | "latency" | "uptime" | "cost";
+
+export function PanelTile({ label, value, unit, caption, change, gauge, wide = false, tone, title, icon, hue, detail }: {
+  // Small glyph before the label, in the tile's hue.
+  icon?: ReactNode;
+  hue?: PanelTileHue;
+  // Where the number comes from. Shown under the tile on hover or keyboard focus.
+  detail?: ReactNode;
   label: ReactNode;
   value: ReactNode;
   // Small after the figure: "ms", "/mo".
@@ -259,15 +268,28 @@ export function PanelTile({ label, value, unit, caption, change, gauge, wide = f
   title?: string;
 }) {
   return (
-    <div className="axp-tile" data-wide={wide || undefined} data-tone={tone} title={title}>
+    <div
+      className="axp-tile"
+      data-wide={wide || undefined}
+      data-tone={tone}
+      data-hue={hue}
+      title={title}
+      // A tile with detail opens it on focus as well as hover, so the keyboard reaches it.
+      tabIndex={detail ? 0 : undefined}
+    >
       <div className="axp-tile-text">
-        <span className="axp-tile-label">{label}</span>
+        <span className="axp-tile-label">{icon && <span className="axp-tile-icon" aria-hidden="true">{icon}</span>}{label}</span>
         <span className="axp-tile-figure">
           {value}
           {unit && <span className="axp-tile-unit">{unit}</span>}
           {change}
         </span>
         {caption && <span className="axp-tile-caption">{caption}</span>}
+        {detail && (
+          <span className="axp-tile-detail">
+            <span>{detail}</span>
+          </span>
+        )}
       </div>
       {gauge && <PanelRing {...gauge} />}
     </div>

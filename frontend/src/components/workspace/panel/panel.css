@@ -344,27 +344,63 @@
 /* The design check at the top of Archie's panel, ruled off from the conversation below. */
 .axp-review { flex: none; margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--ax-line); }
 
-/* Widget tiles: a few numbers read at a glance. Each tile is a soft filled block, its name in
-   small text above one large figure. The fill is the one exception to "no fills behind
-   content": a tile is the content. */
+
+/* Widget tiles: a few numbers read at a glance, in the manner of a phone's widgets. Each tile
+   is a block tinted in its hue, with an icon and name in that hue above one large figure.
+   Status hues (good, warn, over) follow the measurement's state; the metric hues only tell
+   latency, uptime and cost apart, and always come with the label and icon, never alone.
+   The fill is the one exception to "no fills behind content": a tile is the content. */
+.axp {
+  --axp-hue-good: #1f9d4c;
+  --axp-hue-warn: #d97706;
+  --axp-hue-over: #d63a3a;
+  --axp-hue-latency: #0a6cdf;
+  --axp-hue-uptime: #0e8f9e;
+  --axp-hue-cost: #8a4bd1;
+}
+.ax-dark-app .axp {
+  --axp-hue-good: #34c759;
+  --axp-hue-warn: #ff9f0a;
+  --axp-hue-over: #ff6961;
+  --axp-hue-latency: #409cff;
+  --axp-hue-uptime: #40c8e0;
+  --axp-hue-cost: #bf8cff;
+}
 .axp-tiles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 8px;
   padding: 4px var(--axp-inset) 12px;
 }
 .axp-tile {
+  --axp-tile-hue: var(--ax-ink-soft);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   min-width: 0;
-  min-height: 76px;
+  min-height: 84px;
   box-sizing: border-box;
   padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--ax-hover-fill);
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--axp-tile-hue) 9%, var(--ax-surface));
+  transition: border-color 120ms ease-out, background-color 120ms ease-out;
 }
+.axp-tile[data-hue="good"] { --axp-tile-hue: var(--axp-hue-good); }
+.axp-tile[data-hue="warn"] { --axp-tile-hue: var(--axp-hue-warn); }
+.axp-tile[data-hue="over"] { --axp-tile-hue: var(--axp-hue-over); }
+.axp-tile[data-hue="latency"] { --axp-tile-hue: var(--axp-hue-latency); }
+.axp-tile[data-hue="uptime"] { --axp-tile-hue: var(--axp-hue-uptime); }
+.axp-tile[data-hue="cost"] { --axp-tile-hue: var(--axp-hue-cost); }
 .axp-tile[data-wide] { grid-column: 1 / -1; }
+.axp-tile[tabindex] { cursor: default; }
+.axp-tile[tabindex]:hover,
+.axp-tile[tabindex]:focus-visible {
+  border-color: color-mix(in srgb, var(--axp-tile-hue) 35%, transparent);
+  background: color-mix(in srgb, var(--axp-tile-hue) 14%, var(--ax-surface));
+}
+.axp-tile[tabindex]:focus-visible { outline: 2px solid var(--axp-tile-hue); outline-offset: 1px; }
 .axp-tile-text { display: grid; flex: 1 1 auto; align-content: start; gap: 2px; min-width: 0; }
 .axp-tile-label,
 .axp-tile-caption {
@@ -374,6 +410,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.axp-tile-label { display: flex; align-items: center; gap: 5px; color: var(--axp-tile-hue); font-weight: 600; }
+.axp-tile-icon { display: inline-grid; flex: none; place-items: center; }
+.axp-tile-icon svg { width: 13px; height: 13px; stroke-width: 2.4; }
 .axp-tile-figure {
   overflow: hidden;
   color: var(--ax-ink);
@@ -386,10 +425,37 @@
 .axp-tile-unit { margin-left: 2px; color: var(--ax-muted); font: 400 14px/20px var(--font-sans); }
 .axp-tile-figure .axp-change { font-size: 11px; vertical-align: 4px; }
 .axp-tile-caption { font-variant-numeric: tabular-nums; }
-.axp-tile[data-tone="danger"] .axp-tile-caption { color: var(--ax-danger); }
-.axp-ring { flex: none; width: 56px; height: 56px; }
-.axp-ring circle { fill: none; stroke-width: 6; }
-.axp-ring-track { stroke: var(--ax-line-strong); }
-.axp-ring-fill { stroke: var(--ax-ink); stroke-linecap: round; transition: stroke-dashoffset 240ms ease-out; }
-.axp-ring[data-over] .axp-ring-fill { stroke: var(--ax-danger); }
-@media (prefers-reduced-motion: reduce) { .axp-ring-fill { transition: none; } }
+.axp-tile[data-tone="danger"] .axp-tile-caption { color: var(--axp-hue-over); }
+
+/* Detail opens under the tile on hover or focus: the rows grow from nothing, so the tile
+   grows with it instead of covering its neighbors. */
+.axp-tile-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 160ms ease-out;
+}
+.axp-tile-detail > span {
+  min-height: 0;
+  overflow: hidden;
+  color: var(--ax-ink-soft);
+  font: 400 12px/18px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: normal;
+}
+.axp-tile:hover .axp-tile-detail,
+.axp-tile:focus-within .axp-tile-detail { grid-template-rows: 1fr; }
+.axp-tile:hover .axp-tile-detail > span,
+.axp-tile:focus-within .axp-tile-detail > span {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--axp-tile-hue) 25%, transparent);
+}
+
+.axp-ring { flex: none; align-self: center; width: 56px; height: 56px; }
+.axp-ring circle { fill: none; stroke-width: 7; }
+.axp-ring-track { stroke: color-mix(in srgb, var(--axp-tile-hue, var(--ax-ink)) 18%, transparent); }
+.axp-ring-fill { stroke: var(--axp-tile-hue, var(--ax-ink)); stroke-linecap: round; transition: stroke-dashoffset 240ms ease-out; }
+.axp-ring[data-over] .axp-ring-fill { stroke: var(--axp-hue-over); }
+@media (prefers-reduced-motion: reduce) {
+  .axp-ring-fill, .axp-tile, .axp-tile-detail { transition: none; }
+}
