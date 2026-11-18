@@ -339,6 +339,17 @@
     right: clamp(var(--ax-menu-inset), anchor(right), var(--ax-menu-max-right));
   }
 }
+/* The menu is not a right panel: while the panel column is open it opens beside the column,
+   over the canvas, instead of dropping onto the panels under its button. A phone has no room
+   beside the column, so the menu keeps its place there. */
+@media (min-width: 768px) {
+  .ax-workspace:has(.ax-widget-stack .ax-widget:not([hidden], [data-transient])) .ax-project-menu {
+    right: max(var(--ax-menu-inset), min(calc(var(--ax-panel-side-width) + 2 * var(--ax-panel-margin)), var(--ax-menu-max-right)));
+  }
+  .ax-workspace:has(.ax-canvas-overlays > .ax-canvas-panel[data-side="right"]) .ax-project-menu {
+    right: max(var(--ax-menu-inset), min(calc(332px + var(--ax-panel-margin)), var(--ax-menu-max-right)));
+  }
+}
 @media (max-width: 600px) {
   .ax-workspace .ax-header { gap: 8px; padding-left: 12px; }
   .ax-workspace .ax-header-project { gap: 10px; flex: 1; }
