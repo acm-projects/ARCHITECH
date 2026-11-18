@@ -331,7 +331,12 @@
 .ax-workspace .ax-project-menu-item[aria-pressed="true"] { color: var(--ax-ink); font-weight: 500; }
 .ax-workspace .ax-project-menu-item:hover:not(:disabled),
 .ax-workspace .ax-project-menu .ax-ai-toggle:hover { background: var(--ax-canvas); color: var(--ax-ink); }
-.ax-workspace .ax-project-menu-actions > div:not([hidden]) { padding: 4px; border-block: 1px solid var(--ax-line); }
+/* Groups, each with its small label, divided by a hairline. */
+.ax-workspace .ax-project-menu-group + .ax-project-menu-group,
+.ax-workspace .ax-project-menu-actions:has(> div:not([hidden]) .ax-project-menu-group) + .ax-project-menu-group { border-top: 1px solid var(--ax-line); }
+.ax-workspace .ax-project-menu-item .ax-project-menu-trail { flex: none; color: var(--ax-muted); }
+.ax-workspace .ax-project-menu-item[data-tone="danger"]:hover { color: var(--ax-danger); }
+.ax-workspace a.ax-project-menu-item { text-decoration: none; }
 @supports (position-anchor: --ax-project-menu-trigger) {
   .ax-workspace .ax-project-menu {
     position-anchor: --ax-project-menu-trigger;

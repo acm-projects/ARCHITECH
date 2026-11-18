@@ -2,7 +2,7 @@
 
 import type { Edge } from "@xyflow/react";
 import { useReactFlow } from "@xyflow/react";
-import { Download, Play } from "lucide-react";
+import { Download, ExternalLink, FileCode2, Play } from "lucide-react";
 
 import { toDockerCompose } from "../../lib/architecture/export/dockerCompose";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
@@ -21,9 +21,9 @@ export function ExportButton({ title, popoverTarget }: { title: string; popoverT
     setTimeout(() => URL.revokeObjectURL(url), 1_000);
   };
   return (
-    <button type="button" className="ax-ai-toggle" onClick={download} popoverTarget={popoverTarget} popoverTargetAction="hide" title="Download a starter docker-compose.yml for this design">
-      <Download size={15} aria-hidden="true" />
-      Export
+    <button type="button" className="ax-project-menu-item" onClick={download} popoverTarget={popoverTarget} popoverTargetAction="hide" title="Download a starter docker-compose.yml for this design">
+      <FileCode2 size={15} aria-hidden="true" />
+      <span>Export compose file<small>docker-compose.yml, with unsaved edits</small></span>
     </button>
   );
 }
@@ -42,25 +42,26 @@ export function RunnableAppButton({ projectId, popoverTarget }: { projectId: str
   return (
     <>
       <a
-        className="ax-ai-toggle"
+        className="ax-project-menu-item"
         href={`/workspace/${id}/run`}
         target="_blank"
         rel="noopener"
         onClick={(event) => closeMenu(event.currentTarget)}
-        title="Use this design as a working app, right here, while Archie shows what each part does"
+        title="Use this design as a working app, while Archie shows what each part does"
       >
         <Play size={15} aria-hidden="true" />
-        Run as app
+        <span>Run as app<small>The saved design, live, in a new tab</small></span>
+        <ExternalLink size={13} aria-hidden="true" className="ax-project-menu-trail" />
       </a>
       <a
-        className="ax-ai-toggle"
+        className="ax-project-menu-item"
         href={`/api/projects/${id}/export/runnable-app`}
         download
         onClick={(event) => closeMenu(event.currentTarget)}
         title="Download this design as an app that runs every part in its own container (docker compose)"
       >
         <Download size={15} aria-hidden="true" />
-        Download app (Docker)
+        <span>Download app<small>.zip · runs with docker compose up</small></span>
       </a>
     </>
   );

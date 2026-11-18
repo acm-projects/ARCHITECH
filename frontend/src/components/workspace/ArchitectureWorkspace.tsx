@@ -692,14 +692,20 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
           onAutoAlign={nodes.length > 1 ? alignDesign : undefined}
           projectActions={(menuId) => (
             <div hidden={!showInspector}>
-              {savedProjectId && <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />}
-              <ExportButton title={title} popoverTarget={menuId} />
-              {savedProjectId && <RunnableAppButton projectId={savedProjectId} popoverTarget={menuId} />}
+              <div className="ax-project-menu-group" role="group" aria-label="Run and export">
+                <p className="ax-project-menu-label" aria-hidden="true">Run and export</p>
+                {savedProjectId && <RunnableAppButton projectId={savedProjectId} popoverTarget={menuId} />}
+                <ExportButton title={title} popoverTarget={menuId} />
+              </div>
               {savedProjectId && (
-                <button type="button" className="ax-ai-toggle" onClick={startTutorial} popoverTarget={menuId} popoverTargetAction="hide">
-                  <GraduationCap size={15} aria-hidden="true" />
-                  Tutorial
-                </button>
+                <div className="ax-project-menu-group" role="group" aria-label="Project">
+                  <p className="ax-project-menu-label" aria-hidden="true">Project</p>
+                  <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />
+                  <button type="button" className="ax-project-menu-item" onClick={startTutorial} popoverTarget={menuId} popoverTargetAction="hide">
+                    <GraduationCap size={15} aria-hidden="true" />
+                    <span>Tutorial</span>
+                  </button>
+                </div>
               )}
             </div>
           )}

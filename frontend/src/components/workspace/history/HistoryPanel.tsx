@@ -31,9 +31,9 @@ import type { ArchitectureFlowNode } from "../nodes/ArchitectureNode";
 export function HistoryToggle({ open, onToggle, popoverTarget }: { open: boolean; onToggle: () => void; popoverTarget?: string }) {
   if (open) return null;
   return (
-    <button type="button" className="ax-ai-toggle" onClick={onToggle} popoverTarget={popoverTarget} popoverTargetAction="hide" aria-label="Open the version history">
+    <button type="button" className="ax-project-menu-item" onClick={onToggle} popoverTarget={popoverTarget} popoverTargetAction="hide" aria-label="Open the version history">
       <History size={15} aria-hidden="true" />
-      History
+      <span>Version history</span>
     </button>
   );
 }

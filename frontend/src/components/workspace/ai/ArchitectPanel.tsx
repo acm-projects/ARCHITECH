@@ -146,6 +146,9 @@ function SuggestionCard({ suggestion, status, onApply, streaming }: {
   );
 }
 
+// The first look names only the most serious problems; "open problems" above lists them all.
+const CHECK_NOTICE_FINDINGS = 3;
+
 const clock = (at: number) => new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
 // A notice from Archie about the last edit: one sentence, then what changed, the numbers that
@@ -164,7 +167,7 @@ function NoticeMessage({ notice, onOpenFinding }: { notice: PostedNotice; onOpen
       {notice.metrics.map((metric) => (
         <PanelRow key={metric.label} label={metric.label} value={<>{metric.before} → <PanelDelta better={metric.better}>{metric.after}</PanelDelta></>} />
       ))}
-      {notice.added.map((finding) => (
+      {(notice.kind === "check" ? notice.added.slice(0, CHECK_NOTICE_FINDINGS) : notice.added).map((finding) => (
         <PanelLink
           key={`added-${finding.id}`}
           item

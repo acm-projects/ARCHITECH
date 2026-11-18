@@ -166,7 +166,8 @@ export default function WorkspaceHeader({
             <div className="ax-project-menu-actions">
               {projectActions?.(menuId)}
             </div>
-            <div className="ax-project-menu-group">
+            <div className="ax-project-menu-group" role="group" aria-label="Canvas">
+              <p className="ax-project-menu-label" aria-hidden="true">Canvas</p>
               <button
                 type="button"
                 className="ax-project-menu-item"
@@ -180,18 +181,16 @@ export default function WorkspaceHeader({
                 <Workflow size={15} aria-hidden="true" />
                 <span>Auto align</span>
               </button>
-            </div>
-            {onReset && (
-              <div className="ax-project-menu-group">
-                <button type="button" className="ax-project-menu-item" onClick={() => {
+              {onReset && (
+                <button type="button" className="ax-project-menu-item" data-tone="danger" onClick={() => {
                   closeMenu();
                   onReset();
                 }}>
                   <RotateCcw size={15} aria-hidden="true" />
                   <span>Reset design</span>
                 </button>
-              </div>
-            )}
+              )}
+            </div>
             {/* The menu stays open, so the switch can be flipped back while looking at it. */}
             <div className="ax-project-menu-group">
               <button type="button" className="ax-project-menu-item ax-night-shift" aria-pressed={nightShift} onClick={toggleTheme}>

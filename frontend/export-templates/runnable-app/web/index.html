@@ -10,199 +10,296 @@
 <link rel="icon" href="/archie.svg">
 <style>
   :root {
-    --bg: #f6f6f4; --panel: #ffffff; --ink: #18181b; --muted: #6b6b70; --line: #dcdcd8; --soft: #efefec;
-    --archie: #0096ff; --archie-soft: #e0f1ff;
-    --accent: #2563eb; --accent-soft: #dbe6fd; --done: #15803d; --done-soft: #dcf2e3;
+    --bg: #f5f5f4; --panel: #ffffff; --ink: #18181b; --muted: #6b6b70; --subtle: #a1a1a6; --line: #e2e2de; --line-strong: #d3d3ce; --soft: #f0f0ed;
+    --archie: #0096ff; --archie-soft: #e6f4ff;
+    --accent: #155dfc; --accent-hover: #1447e6; --accent-soft: #dbe6fd; --done: #15803d; --done-soft: #dcf2e3;
     --fail: #b91c1c; --fail-soft: #fbe2e2; --warn: #a16207; --warn-soft: #fbf0d0;
-    --radius: 10px; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    --shadow: 0 6px 24px rgba(0, 0, 0, .12);
+    --radius: 12px; --control: 8px; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 4px 14px rgba(0, 0, 0, .06);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #111113; --panel: #1b1b1e; --ink: #ededee; --muted: #9a9aa1; --line: #313136; --soft: #232327;
+      --bg: #111113; --panel: #1b1b1e; --ink: #ededee; --muted: #9a9aa1; --subtle: #6b6b72; --line: #2a2a2f; --line-strong: #37373d; --soft: #232327;
       --archie: #3aaaff; --archie-soft: #10283d;
-      --accent: #7aa2ff; --accent-soft: #1e2a4a; --done: #4ade80; --done-soft: #15301f;
+      --accent: #5b8cff; --accent-hover: #7aa2ff; --accent-soft: #1e2a4a; --done: #4ade80; --done-soft: #15301f;
       --fail: #f87171; --fail-soft: #3a1717; --warn: #facc15; --warn-soft: #362d0b;
-      --shadow: 0 6px 24px rgba(0, 0, 0, .5);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 14px rgba(0, 0, 0, .35);
     }
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  html, body { height: 100%; }
+  body { margin: 0; overflow: hidden; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  a { color: inherit; }
   button, input, textarea, select { font: inherit; color: inherit; }
-  button { cursor: pointer; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); padding: 7px 12px; }
-  button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
-  button.link { border: 0; background: none; padding: 0; color: var(--archie); text-decoration: underline; text-underline-offset: 2px; }
+  button { cursor: pointer; border-radius: var(--control); border: 1px solid var(--line-strong); background: var(--panel); padding: 6px 12px; min-height: 32px; }
+  button:hover:not(:disabled) { background: var(--soft); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  button.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+  button.ghost { border-color: transparent; background: none; color: var(--muted); }
+  button.ghost:hover:not(:disabled) { background: var(--soft); color: var(--ink); }
+  button.danger:hover:not(:disabled) { border-color: var(--fail); background: var(--fail-soft); color: var(--fail); }
+  button.small { min-height: 28px; padding: 3px 10px; font-size: 13px; }
+  button.link { min-height: 0; border: 0; background: none; padding: 0; color: var(--archie); font-size: 12px; text-decoration: underline; text-underline-offset: 2px; }
+  button.link:hover:not(:disabled) { background: none; }
   button:disabled { opacity: .55; cursor: default; }
-  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  input, textarea, select { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
-  textarea { resize: vertical; min-height: 70px; }
-  label { font-size: 13px; color: var(--muted); }
+  :is(a, button, input, textarea, select):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input, textarea, select { width: 100%; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: var(--control); background: var(--panel); }
+  input:hover, textarea:hover { border-color: var(--muted); }
+  textarea { resize: vertical; min-height: 72px; }
+  input[type="file"] { padding: 6px; font-size: 13px; }
+  label { font-size: 13px; font-weight: 500; color: var(--muted); }
+  code { font-family: var(--mono); font-size: 12px; }
 
-  header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; }
-  header h1 { font-size: 17px; margin: 0; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  header .who { color: var(--muted); font-size: 13px; }
-  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+  /* ---- Frame: one bar across the top, the design on the left, the app on the right ---- */
+  .shell { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
+  .topbar { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 12px 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .brand { display: inline-flex; align-items: center; gap: 8px; flex: none; text-decoration: none; font-weight: 800; letter-spacing: .02em; }
+  .brand img { width: 26px; height: 22px; object-fit: contain; }
+  .topbar .divider { width: 1px; height: 22px; background: var(--line-strong); flex: none; }
+  .topbar h1 { margin: 0; min-width: 0; overflow: hidden; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .live { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 2px 10px; border-radius: 999px; background: var(--done-soft); color: var(--done); font-size: 12px; font-weight: 600; }
+  .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .topbar .grow { flex: 1; }
+  .who { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .back { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 32px; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: var(--control); font-size: 13px; font-weight: 500; text-decoration: none; }
+  .back:hover { background: var(--soft); }
 
-  /* Split screen: Archie's demo on the left, the app on the right. One page, one port. */
-  body { height: 100dvh; overflow: hidden; }
-  .split { display: grid; grid-template-columns: minmax(380px, 46%) minmax(0, 1fr); height: 100dvh; }
-  .demo { display: flex; flex-direction: column; gap: 12px; padding: 16px; min-height: 0; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); }
-  .app-pane { min-height: 0; overflow-y: auto; }
-  .demo-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-  .demo-head h2 { font-size: 16px; margin: 0; white-space: nowrap; }
-  .map-now { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .split { display: grid; grid-template-columns: minmax(420px, 52%) minmax(0, 1fr); min-height: 0; }
+
+  /* ---- Left: the design, Archie, and every request ---- */
+  .demo { display: grid; grid-template-rows: minmax(240px, 1fr) auto minmax(170px, 32%); gap: 12px; min-height: 0; padding: 12px; overflow: hidden; border-right: 1px solid var(--line); }
+  .pane { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+  .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 6px 8px 6px 14px; border-bottom: 1px solid var(--line); }
+  .pane-head h2 { margin: 0; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .map-now { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
   .map-now b { color: var(--archie); }
-  .stage { flex: 0 0 auto; height: clamp(220px, 44dvh, 520px); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); }
+  .stage { flex: 1 1 auto; min-height: 0; background-image: radial-gradient(var(--line-strong) 1px, transparent 1px); background-size: 16px 16px; }
   .stage svg { display: block; width: 100%; height: 100%; }
-  .what { border-top: 1px solid var(--line); padding-top: 10px; }
-  .what summary { cursor: pointer; font-weight: 600; font-size: 14px; }
-  .what[open] summary { margin-bottom: 8px; }
-  .what .stack { gap: 10px; }
-  @media (max-width: 900px) {
-    .split { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
-    .demo { max-height: 50dvh; border-right: 0; border-bottom: 1px solid var(--line); padding: 12px; gap: 8px; }
-    .stage { height: 150px; }
-  }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
-  .card h2 { font-size: 16px; margin: 0 0 12px; }
-  .stack { display: grid; gap: 8px; }
-  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
-  .tabs button[aria-selected="true"] { background: var(--soft); font-weight: 600; }
-  .error { color: var(--fail); margin: 0; }
-  .note { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
-  .items { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-  .item { border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
-  .item h3 { margin: 0 0 4px; font-size: 15px; overflow-wrap: anywhere; }
-  .item p { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .badge { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); }
-  .badge.queued { background: var(--warn-soft); color: var(--warn); }
-  .badge.processed { background: var(--done-soft); color: var(--done); }
-  .meta { font-size: 12px; color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 8px 14px; border-top: 1px solid var(--line); list-style: none; color: var(--muted); font-size: 12px; }
+  .legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 14px; height: 10px; border: 2px solid var(--line-strong); border-radius: 3px; background: var(--panel); }
+  .legend .k-page { border-color: var(--archie); }
+  .legend .k-active { border-color: var(--archie); background: var(--archie-soft); }
+  .legend .k-done { border-color: var(--done); background: var(--done-soft); }
+  .legend .k-fail { border-color: var(--fail); background: var(--fail-soft); }
 
   /* Diagram */
-  .diagram .edge { stroke: var(--line); stroke-width: 2; fill: none; transition: stroke .25s; }
+  .diagram .edge { stroke: var(--line-strong); stroke-width: 2; fill: none; transition: stroke .25s; }
   .diagram .edge.lit { stroke: var(--archie); stroke-width: 3; }
-  .diagram .node rect { fill: var(--panel); stroke: var(--line); stroke-width: 2; transition: fill .25s, stroke .25s; }
+  .diagram .node rect { fill: var(--panel); stroke: var(--line-strong); stroke-width: 1.5; transition: fill .25s, stroke .25s; }
   .diagram .node.added rect { stroke-dasharray: 5 4; }
-  .diagram .node text { fill: var(--ink); font: 600 15px system-ui, sans-serif; }
-  .diagram .node text.type { fill: var(--muted); font: 11px system-ui, sans-serif; }
-  .diagram .node.page rect { stroke: var(--archie); }
-  .diagram .node.active rect { fill: var(--archie-soft); stroke: var(--archie); stroke-width: 4; }
-  .diagram .node.done rect { fill: var(--done-soft); stroke: var(--done); }
-  .diagram .node.fail rect { fill: var(--fail-soft); stroke: var(--fail); }
-  .diagram .node.idle { opacity: .5; }
-  .diagram marker path { fill: var(--line); }
-  .diagram marker.lit path { fill: var(--archie); }
+  .diagram .node text { fill: var(--ink); font: 600 14px system-ui, sans-serif; }
+  .diagram .node text.type { fill: var(--muted); font: 12px system-ui, sans-serif; }
+  .diagram .node.page rect { stroke: var(--archie); stroke-width: 2; }
+  .diagram .node.active rect { fill: var(--archie-soft); stroke: var(--archie); stroke-width: 3; }
+  .diagram .node.done rect { fill: var(--done-soft); stroke: var(--done); stroke-width: 2; }
+  .diagram .node.fail rect { fill: var(--fail-soft); stroke: var(--fail); stroke-width: 2; }
+  .diagram .node.idle { opacity: .45; }
+  .diagram marker path { fill: var(--line-strong); }
 
-  /* What happened */
-  .steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 13px; overflow-y: auto; }
-  .steps li.current { font-weight: 600; }
-  .steps .fail { color: var(--fail); }
-  .steps code { font-family: var(--mono); font-size: 12px; }
-
-  /* Archie, beside the diagram */
+  /* Archie, under the diagram */
   .archie { display: flex; align-items: flex-start; gap: 10px; }
-  .archie-face { width: 64px; height: 52px; flex-shrink: 0; border: 0; padding: 0; background: none; cursor: pointer; margin-top: 4px; }
-  .archie-face img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .2)); }
+  .archie-face { flex: none; width: 52px; height: 44px; min-height: 0; margin-top: 2px; padding: 0; border: 0; background: none; }
+  .archie-face:hover:not(:disabled) { background: none; }
+  .archie-face img { width: 100%; height: 100%; object-fit: contain; }
   .archie-face.talking img { animation: bob .6s ease-in-out infinite alternate; }
-  @keyframes bob { to { transform: translateY(-4px); } }
-  .bubble { position: relative; flex: 1; min-width: 0; min-height: 76px; background: var(--archie-soft); border: 2px solid var(--archie); border-radius: 14px; padding: 10px 12px; font-size: 14px; }
-  .bubble::after { content: ""; position: absolute; left: -9px; top: 18px; border: 8px solid transparent; border-right-color: var(--archie); border-left: 0; }
+  @keyframes bob { to { transform: translateY(-3px); } }
+  .bubble { flex: 1; min-width: 0; min-height: 68px; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid var(--archie); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
+  .bubble-head { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; font-size: 12px; }
+  .bubble .who-says { font-weight: 700; color: var(--archie); }
+  .step-count { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bubble-head .controls { display: flex; gap: 12px; margin-left: auto; }
   .bubble p { margin: 0; }
-  .bubble .who-says { display: block; font-size: 12px; font-weight: 700; color: var(--archie); margin-bottom: 2px; }
-  .bubble .controls { display: flex; gap: 12px; margin-top: 6px; font-size: 12px; }
-  .archie-off { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
+  .archie-off { align-self: center; margin: 0; color: var(--muted); font-size: 13px; }
+
+  /* Requests, newest first, and the steps of the one picked */
+  .trace-body { display: grid; grid-template-columns: minmax(170px, 38%) minmax(0, 1fr); flex: 1 1 auto; min-height: 0; }
+  .requests { margin: 0; padding: 6px; overflow-y: auto; border-right: 1px solid var(--line); list-style: none; }
+  .requests button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; width: 100%; min-height: 0; padding: 6px 8px; border: 0; background: none; text-align: left; }
+  .requests button[aria-current="true"] { background: var(--soft); box-shadow: inset 2px 0 var(--archie); }
+  .requests .r-label { overflow: hidden; font-size: 13px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+  .requests .r-meta { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
+  .status { align-self: center; padding: 0 6px; border-radius: 4px; background: var(--done-soft); color: var(--done); font: 600 11px/18px var(--mono); }
+  .status.bad { background: var(--fail-soft); color: var(--fail); }
+  .empty-note { margin: 0; padding: 10px 8px; color: var(--muted); font-size: 13px; }
+  .steps { display: grid; align-content: start; gap: 2px; margin: 0; padding: 6px 10px 10px; overflow-y: auto; list-style: none; counter-reset: step; font-size: 13px; }
+  .steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; padding: 4px 6px; border-radius: 6px; counter-increment: step; }
+  .steps li::before { content: counter(step); color: var(--subtle); font: 12px/20px var(--mono); text-align: right; }
+  .steps li.current { background: var(--archie-soft); }
+  .steps li.fail { color: var(--fail); }
+  .steps .s-node { font-weight: 600; }
+  .steps .ms { color: var(--subtle); font: 11px/20px var(--mono); white-space: nowrap; }
+
+  /* ---- Right: the app itself ---- */
+  .app-pane { min-height: 0; overflow-y: auto; }
+  .app-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(6px); }
+  .app-bar .app-name { flex: 1; min-width: 0; overflow: hidden; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+  main { max-width: 640px; margin: 0 auto; padding: 20px 16px 48px; }
+  .card { margin-bottom: 16px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
+  .card h2 { margin: 0 0 12px; font-size: 15px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .card-head h2 { margin: 0; }
+  .count { color: var(--muted); font-weight: 400; }
+  .stack { display: grid; gap: 6px; }
+  .stack label:not(:first-child) { margin-top: 6px; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .actions { margin-top: 8px; }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 14px; padding: 3px; border-radius: var(--control); background: var(--soft); }
+  .tabs button { min-height: 30px; border: 0; background: none; color: var(--muted); font-weight: 500; }
+  .tabs button[aria-selected="true"] { background: var(--panel); color: var(--ink); box-shadow: var(--shadow); }
+  .error { margin: 0; color: var(--fail); font-size: 13px; }
+  .error:empty { display: none; }
+  .note { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+  #empty { margin: 0; }
+  .search { display: flex; gap: 8px; margin-bottom: 12px; }
+  .search input { flex: 1; width: auto; }
+  .items { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .item { padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+  .item-head { display: flex; align-items: flex-start; gap: 8px; }
+  .item h3 { flex: 1; min-width: 0; margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+  .item p { margin: 4px 0 0; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .item .row { margin-top: 8px; }
+  .item-actions { display: flex; flex: none; gap: 2px; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); font-size: 12px; }
+  .badge.queued { background: var(--warn-soft); color: var(--warn); }
+  .badge.processed { background: var(--done-soft); color: var(--done); }
+  .meta { color: var(--muted); font-size: 12px; }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .shell { height: auto; min-height: 100dvh; }
+    .split { grid-template-columns: minmax(0, 1fr); }
+    .demo { grid-template-columns: minmax(0, 1fr); grid-template-rows: 220px auto 200px; border-right: 0; border-bottom: 1px solid var(--line); }
+    .map-now { display: none; }
+    .app-pane { overflow: visible; }
+    .topbar .who { display: none; }
+  }
+  @media (max-width: 520px) {
+    .topbar { gap: 8px; padding-inline: 12px 8px; }
+    .brand { font-size: 0; gap: 0; }
+    .live { padding: 2px 8px; }
+    .back .long { display: none; }
+    .trace-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+    .requests { display: flex; gap: 4px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    .requests button { width: max-content; max-width: 220px; }
+  }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
-<div class="split">
-  <!-- Left: Archie shows what each part of your design does -->
-  <aside class="demo" aria-label="How it works">
-    <div class="demo-head">
-      <h2>How it works</h2>
-      <span class="map-now" id="map-now"></span>
-    </div>
-    <div class="stage"><svg class="diagram" id="big-svg" role="img" aria-label="Your design, with the request's path lit up"></svg></div>
-    <div class="archie" id="archie">
-      <button class="archie-face" id="face" aria-label="Archie: show or hide explanations"><img src="/archie.svg" alt=""></button>
-      <div class="bubble" id="bubble" aria-live="polite">
-        <span class="who-says">Archie</span>
-        <p id="say"></p>
-        <div class="controls">
-          <button class="link" id="skip" hidden>Skip</button>
-          <button class="link" id="quiet">Hide</button>
+<div class="shell">
+  <header class="topbar">
+    <a class="brand" id="brand" href="/dashboard" hidden><img src="/archie.svg" alt="">ARCHITECH</a>
+    <span class="divider" id="brand-divider" hidden></span>
+    <h1 id="title">App</h1>
+    <span class="live" title="Every part of the design is running">Running</span>
+    <span class="grow"></span>
+    <a class="back" id="back" hidden aria-label="Back to the design">←<span class="long"> Back to the design</span></a>
+  </header>
+
+  <div class="split">
+    <!-- Left: Archie shows what each part of your design does -->
+    <aside class="demo" aria-label="How it works">
+      <section class="pane">
+        <div class="pane-head">
+          <h2>Your design, live</h2>
+          <span class="map-now" id="map-now">Use the app and watch each request travel through it.</span>
         </div>
-      </div>
-      <p class="archie-off" id="archie-off" hidden>Archie is resting. Click him to turn explanations back on.</p>
-    </div>
-    <details class="what" id="what">
-      <summary>What happened, step by step</summary>
-      <div class="stack">
-        <select id="history" aria-label="Pick a request"></select>
-        <ol class="steps" id="steps"></ol>
-        <div class="row"><button id="replay">Replay with Archie</button></div>
-      </div>
-    </details>
-  </aside>
+        <div class="stage"><svg class="diagram" id="big-svg" role="img" aria-label="Your design, with the request's path lit up"></svg></div>
+        <ul class="legend" aria-label="Key">
+          <li><i class="k-page"></i>Serves this page</li>
+          <li><i class="k-active"></i>Working now</li>
+          <li><i class="k-done"></i>Done</li>
+          <li><i class="k-fail"></i>Failed</li>
+        </ul>
+      </section>
 
-  <!-- Right: the app itself -->
-  <div class="app-pane">
-<header>
-  <h1 id="title">App</h1>
-  <span class="who" id="who" hidden></span>
-  <button id="signout" hidden>Sign out</button>
-</header>
-
-<main>
-  <section class="card" id="auth" hidden>
-    <div class="tabs" role="tablist">
-      <button role="tab" id="tab-signin" aria-selected="true">Sign in</button>
-      <button role="tab" id="tab-signup" aria-selected="false">Create account</button>
-    </div>
-    <form id="auth-form" class="stack">
-      <label for="email">Email</label>
-      <input id="email" type="email" autocomplete="username" required maxlength="254">
-      <label for="password">Password (8+ characters)</label>
-      <input id="password" type="password" autocomplete="current-password" required minlength="8" maxlength="200">
-      <button class="primary" id="auth-go" type="submit">Sign in</button>
-      <p class="error" id="auth-error" role="alert"></p>
-    </form>
-  </section>
-
-  <section id="app" hidden>
-    <p class="note" id="shared-note" hidden>This design has no authentication, so everyone using this app shares the same items.</p>
-    <div class="card">
-      <h2>New item</h2>
-      <form id="new" class="stack">
-        <label for="new-title">Title</label>
-        <input id="new-title" required maxlength="200">
-        <label for="new-body">Text</label>
-        <textarea id="new-body" maxlength="10000"></textarea>
-        <div id="new-file-row" class="stack" hidden>
-          <label for="new-file">Attach a file (optional, up to 5 MB)</label>
-          <input id="new-file" type="file">
+      <div class="archie" id="archie">
+        <button class="archie-face" id="face" aria-label="Archie: show or hide explanations"><img src="/archie.svg" alt=""></button>
+        <div class="bubble" id="bubble" aria-live="polite">
+          <div class="bubble-head">
+            <span class="who-says">Archie</span>
+            <span class="step-count" id="step-count"></span>
+            <span class="controls">
+              <button class="link" id="skip" hidden>Skip</button>
+              <button class="link" id="quiet">Hide</button>
+            </span>
+          </div>
+          <p id="say"></p>
         </div>
-        <div class="row"><button class="primary" type="submit" id="new-go">Add</button></div>
-        <p class="error" id="new-error" role="alert"></p>
-      </form>
-    </div>
-    <div class="card">
-      <div class="row" style="justify-content: space-between; margin-bottom: 12px;">
-        <h2 style="margin: 0;">Your items</h2>
-        <button id="refresh">Refresh</button>
+        <p class="archie-off" id="archie-off" hidden>Archie is resting. Click him to turn explanations back on.</p>
       </div>
-      <form id="search" class="row" hidden style="margin-bottom: 12px;">
-        <input id="q" type="search" placeholder="Search your items" aria-label="Search your items" style="flex: 1; width: auto;">
-        <button type="submit">Search</button>
-      </form>
-      <ul class="items" id="items"></ul>
-      <p class="note" id="empty" style="margin: 0;">Nothing yet. Add your first item above.</p>
+
+      <section class="pane" id="what">
+        <div class="pane-head">
+          <h2>Requests</h2>
+          <button class="ghost small" id="replay" disabled>Replay with Archie</button>
+        </div>
+        <div class="trace-body">
+          <ol class="requests" id="history" aria-label="Requests, newest first"></ol>
+          <ol class="steps" id="steps" aria-label="Steps of the selected request"></ol>
+        </div>
+      </section>
+    </aside>
+
+    <!-- Right: the app itself -->
+    <div class="app-pane">
+      <div class="app-bar">
+        <span class="app-name" id="app-name">Your app</span>
+        <span class="who" id="who" hidden></span>
+        <button class="small" id="signout" hidden>Sign out</button>
+      </div>
+
+      <main>
+        <section class="card" id="auth" hidden>
+          <div class="tabs" role="tablist">
+            <button role="tab" id="tab-signin" aria-selected="true">Sign in</button>
+            <button role="tab" id="tab-signup" aria-selected="false">Create account</button>
+          </div>
+          <form id="auth-form" class="stack">
+            <label for="email">Email</label>
+            <input id="email" type="email" autocomplete="username" required maxlength="254">
+            <label for="password">Password (8+ characters)</label>
+            <input id="password" type="password" autocomplete="current-password" required minlength="8" maxlength="200">
+            <div class="actions"><button class="primary" id="auth-go" type="submit">Sign in</button></div>
+            <p class="error" id="auth-error" role="alert"></p>
+          </form>
+        </section>
+
+        <section id="app" hidden>
+          <p class="note" id="shared-note" hidden>This design has no authentication, so everyone using this app shares the same items.</p>
+          <div class="card">
+            <h2>New item</h2>
+            <form id="new" class="stack">
+              <label for="new-title">Title</label>
+              <input id="new-title" required maxlength="200">
+              <label for="new-body">Text</label>
+              <textarea id="new-body" maxlength="10000"></textarea>
+              <div id="new-file-row" class="stack" hidden>
+                <label for="new-file">Attach a file (optional, up to 5 MB)</label>
+                <input id="new-file" type="file">
+              </div>
+              <div class="actions"><button class="primary" type="submit" id="new-go">Add item</button></div>
+              <p class="error" id="new-error" role="alert"></p>
+            </form>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <h2>Your items <span class="count" id="count"></span></h2>
+              <button class="ghost small" id="refresh">Refresh</button>
+            </div>
+            <form id="search" class="search" hidden>
+              <input id="q" type="search" placeholder="Search your items" aria-label="Search your items">
+              <button type="submit">Search</button>
+            </form>
+            <ul class="items" id="items"></ul>
+            <p class="note" id="empty">Nothing yet. Add your first item above.</p>
+            <p class="error" id="items-error" role="alert"></p>
+          </div>
+        </section>
+      </main>
     </div>
-  </section>
-</main>
   </div>
 </div>
 
@@ -245,13 +342,14 @@
     if (background) return;
     history.unshift(trace);
     history.length = Math.min(history.length, 25);
+    selected = 0;
     renderHistory();
     play(trace, stepsFor(trace), { background: then });
   }
 
   // ---- The diagram (the canvas layout of the design) ----
   function drawDiagram(svg) {
-    const W = 124, H = 40;
+    const W = 156, H = 50;
     // Same layout as the canvas, scaled so the boxes are as close as they can be without overlapping:
     // pulled together when the canvas is spread out (bigger labels), pushed apart when parts sit close.
     // Two boxes are clear of each other when they are far enough apart side to side OR top to bottom.
@@ -289,8 +387,9 @@
       .join("");
     const boxes = nodes
       .map((n) => `<g class="node${n.added ? " added" : ""}" data-node="${html(n.id)}" transform="translate(${n.x},${n.y})">
-          <rect width="${W}" height="${H}" rx="10"/>
-          <text x="10" y="26">${html(n.label.length > 12 ? `${n.label.slice(0, 11)}…` : n.label)}</text>
+          <rect width="${W}" height="${H}" rx="8"/>
+          <text x="12" y="22">${html(n.label.length > 17 ? `${n.label.slice(0, 16)}…` : n.label)}</text>
+          <text class="type" x="12" y="39">${html(typeName(n))}</text>
           <title>${html(`${n.label} (${n.type}${n.added ? ", added by the app" : ""})`)}</title>
         </g>`)
       .join("");
@@ -298,6 +397,8 @@
         <marker id="${id}-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker>
       </defs>${edges}${boxes}`;
   }
+  // The kind of part under its name: "load balancer", "web server (added by the app)".
+  const typeName = (n) => (n.added ? "added by the app" : String(n.type ?? "").replace(/-/g, " "));
   const diagramNodes = (node) => document.querySelectorAll(`.diagram .node[data-node="${CSS.escape(node)}"]`);
   // Parts added by the app (the page's web server) are drawn; the browser stands for the client.
   const drawn = (node) => (config.design.nodes.some((n) => n.id === node) ? node : null);
@@ -455,7 +556,7 @@
     clearDiagram();
     for (const el of document.querySelectorAll(".diagram .node")) el.classList.add("idle");
     $("steps").innerHTML = steps
-      .map((s) => `<li data-step class="${s.ok === false ? "fail" : ""}"><b>${html(label(s.node))}.</b> ${s.text}${s.ms !== undefined ? ` <span class="meta">${s.ms} ms</span>` : ""}</li>`)
+      .map((s) => `<li data-step class="${s.ok === false ? "fail" : ""}"><span><span class="s-node">${html(label(s.node))}</span> ${s.text}</span><span class="ms">${s.ms !== undefined ? `${s.ms} ms` : ""}</span></li>`)
       .join("");
     $("skip").hidden = quiet;
     let previous = null;
@@ -464,6 +565,8 @@
       const node = drawn(s.node) ?? previous;
       setState(s.node, "active");
       $("map-now").innerHTML = `Now: <b>${html(label(s.node))}</b>`;
+      $("step-count").textContent = `Step ${index + 1} of ${steps.length}`;
+      $("steps").children[index]?.scrollIntoView({ block: "nearest" });
       lightEdge(previous, drawn(s.node));
       $("steps").children[index]?.classList.add("current");
       if (!quiet) say(explain(s, trace), true);
@@ -475,6 +578,7 @@
     }
     $("skip").hidden = true;
     $("map-now").textContent = "";
+    $("step-count").textContent = `${steps.length} step${steps.length === 1 ? "" : "s"}`;
     busy = false;
     const failed = steps.find((s) => s.ok === false);
     if (!quiet) {
@@ -555,26 +659,42 @@
   }
 
   // ---- Items ----
+  // The item being edited in place, if any.
+  let editing = null;
   function renderItems() {
     $("empty").hidden = items.length > 0;
+    $("count").textContent = items.length ? `· ${items.length}` : "";
     $("items").innerHTML = items
-      .map(
-        (item) => `<li class="item" data-id="${item.id}">
-          <h3>${html(item.title)}</h3>
-          ${item.body ? `<p>${html(item.body)}</p>` : ""}
-          <div class="row">
-            <span class="badge ${html(item.status)}">${html(item.status)}</span>
-            ${item.status === "processed" ? `<span class="meta">${item.wordCount} words · by ${html(item.processedBy)}</span>` : ""}
-            ${item.hasFile ? `<a href="${BASE}/api/items/${item.id}/file" class="meta">📎 ${html(item.fileName)}</a>` : ""}
-          </div>
-          <div class="row" style="margin-top: 8px;">
-            ${config.features.queue ? `<button data-act="process" ${item.status === "queued" ? "disabled" : ""}>Process</button>` : ""}
-            <button data-act="edit">Edit</button>
-            <button data-act="delete">Delete</button>
-          </div>
-        </li>`,
+      .map((item) =>
+        item.id === editing
+          ? `<li class="item" data-id="${item.id}">
+              <form class="stack" data-edit>
+                <label for="edit-title-${item.id}">Title</label>
+                <input id="edit-title-${item.id}" name="title" required maxlength="200" value="${html(item.title)}">
+                <label for="edit-body-${item.id}">Text</label>
+                <textarea id="edit-body-${item.id}" name="body" maxlength="10000">${html(item.body ?? "")}</textarea>
+                <div class="row actions"><button class="primary small" type="submit">Save</button><button class="ghost small" type="button" data-act="cancel">Cancel</button></div>
+              </form>
+            </li>`
+          : `<li class="item" data-id="${item.id}">
+              <div class="item-head">
+                <h3>${html(item.title)}</h3>
+                <div class="item-actions">
+                  ${config.features.queue ? `<button class="ghost small" data-act="process" ${item.status === "queued" ? "disabled" : ""}>Process</button>` : ""}
+                  <button class="ghost small" data-act="edit">Edit</button>
+                  <button class="ghost small danger" data-act="delete">Delete</button>
+                </div>
+              </div>
+              ${item.body ? `<p>${html(item.body)}</p>` : ""}
+              <div class="row">
+                <span class="badge ${html(item.status)}">${html(item.status)}</span>
+                ${item.status === "processed" ? `<span class="meta">${item.wordCount} words · by ${html(item.processedBy)}</span>` : ""}
+                ${item.hasFile ? `<a href="${BASE}/api/items/${item.id}/file" class="meta">📎 ${html(item.fileName)}</a>` : ""}
+              </div>
+            </li>`,
       )
       .join("");
+    if (editing !== null) $("items").querySelector("[data-edit] input")?.focus();
   }
   let pollTimer = null;
   async function loadItems({ quiet: background = false } = {}) {
@@ -594,6 +714,8 @@
           ...(config.data.database ? [{ node: config.data.database.node, text: "Saved item #" + done.id + " as processed." }] : []),
         ];
         history.unshift(trace);
+        if (!busy) selected = 0;
+        else selected += 1;
         renderHistory();
         play(trace, trace.fixed, { background: true });
       }
@@ -604,21 +726,40 @@
     if (items.some((item) => item.status === "queued")) pollTimer = setTimeout(() => loadItems({ quiet: true }), 1500);
   }
 
+  // The request whose steps are listed; a new request is picked as it arrives.
+  let selected = 0;
   function renderHistory() {
+    $("replay").disabled = history.length === 0;
+    if (history.length === 0) {
+      $("history").innerHTML = `<li><p class="empty-note">No requests yet.</p></li>`;
+      return;
+    }
     $("history").innerHTML = history
-      .map((trace, index) => `<option value="${index}">${html(trace.time.toLocaleTimeString())} · ${html(trace.label)}${trace.status ? ` · ${trace.status}` : ""}</option>`)
+      .map((trace, index) => {
+        const ok = trace.status >= 200 && trace.status < 400;
+        const status = trace.fixed ? "bg" : trace.status || "—";
+        return `<li><button type="button" data-index="${index}" aria-current="${index === selected}">
+            <span class="r-label">${html(trace.label)}</span>
+            <span class="status${ok || trace.fixed ? "" : " bad"}" title="${trace.fixed ? "Background work" : `HTTP ${html(trace.status)}`}">${html(status)}</span>
+            <span class="r-meta">${html(trace.time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }))}${trace.fixed ? " · background" : ` · ${html(trace.method)}`}</span>
+          </button></li>`;
+      })
       .join("");
+  }
+  function pick(index) {
+    const trace = history[index];
+    if (!trace) return;
+    selected = index;
+    renderHistory();
+    play(trace, trace.fixed ?? stepsFor(trace));
   }
 
   // ---- Wiring ----
-  $("history").addEventListener("change", (event) => {
-    const trace = history[Number(event.target.value)];
-    if (trace) play(trace, trace.fixed ?? stepsFor(trace));
+  $("history").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-index]");
+    if (button) pick(Number(button.dataset.index));
   });
-  $("replay").addEventListener("click", () => {
-    const trace = history[Number($("history").value) || 0];
-    if (trace) play(trace, trace.fixed ?? stepsFor(trace));
-  });
+  $("replay").addEventListener("click", () => pick(selected));
   $("skip").addEventListener("click", () => {
     fast = true;
   });
@@ -681,22 +822,49 @@
     if (!button) return;
     const id = Number(button.closest("[data-id]").dataset.id);
     const item = items.find((candidate) => candidate.id === id);
+    $("items-error").textContent = "";
+    if (button.dataset.act === "edit") {
+      editing = id;
+      return renderItems();
+    }
+    if (button.dataset.act === "cancel") {
+      editing = null;
+      return renderItems();
+    }
     try {
       if (button.dataset.act === "delete") {
-        if (!confirm(`Delete “${item.title}”?`)) return;
+        if (!confirm(`Delete “${item.title}”? This cannot be undone.`)) return;
         await api("DELETE", `/api/items/${id}`, { label: `Delete “${item.title}”` });
-      } else if (button.dataset.act === "edit") {
-        const title = prompt("Title", item.title);
-        if (title === null) return;
-        const body = prompt("Text", item.body ?? "");
-        if (body === null) return;
-        await api("PATCH", `/api/items/${id}`, { body: { title, body }, label: `Edit “${item.title}”` });
       } else if (button.dataset.act === "process") {
         await api("POST", `/api/items/${id}/process`, { label: `Process “${item.title}”` });
       }
       await loadItems({ quiet: true });
     } catch (error) {
-      alert(error.message);
+      $("items-error").textContent = error.message;
+    }
+  });
+  $("items").addEventListener("submit", async (event) => {
+    const form = event.target.closest("form[data-edit]");
+    if (!form) return;
+    event.preventDefault();
+    const id = Number(form.closest("[data-id]").dataset.id);
+    const item = items.find((candidate) => candidate.id === id);
+    const save = form.querySelector('button[type="submit"]');
+    save.disabled = true;
+    $("items-error").textContent = "";
+    try {
+      await api("PATCH", `/api/items/${id}`, { body: { title: form.elements.title.value, body: form.elements.body.value }, label: `Edit “${item.title}”` });
+      editing = null;
+      await loadItems({ quiet: true });
+    } catch (error) {
+      $("items-error").textContent = error.message;
+      save.disabled = false;
+    }
+  });
+  $("items").addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && editing !== null) {
+      editing = null;
+      renderItems();
     }
   });
 
@@ -704,6 +872,16 @@
     config = await (await fetch(`${BASE}/app.config.json`, { cache: "no-store" })).json();
     document.title = config.title;
     $("title").textContent = config.title;
+    $("app-name").textContent = config.title;
+    // Inside ARCHITECH the page can go back to the design it was built from.
+    const project = BASE.match(/^\/api\/projects\/([^/]+)\/run$/)?.[1];
+    if (project) {
+      $("brand").hidden = false;
+      $("brand-divider").hidden = false;
+      $("back").href = `/workspace/${project}`;
+      $("back").hidden = false;
+    }
+    renderHistory();
     config.labels = Object.fromEntries([...config.components.map((part) => [part.node, part.label]), ...config.design.nodes.map((n) => [n.id, n.label])]);
     $("search").hidden = !config.features.search;
     $("new-file-row").hidden = !config.features.files;
@@ -711,8 +889,6 @@
     $("bubble").hidden = quiet;
     $("archie-off").hidden = !quiet;
     drawDiagram($("big-svg"));
-    // The step list starts open where there is room for it.
-    $("what").open = matchMedia("(min-width: 901px)").matches;
     if (config.features.auth) {
       try {
         const result = await api("GET", "/api/auth/me", { label: "Check if you're signed in", quiet: true });
