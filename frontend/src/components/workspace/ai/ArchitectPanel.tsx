@@ -4,7 +4,7 @@ import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } 
 
 import type { Edge } from "@xyflow/react";
 import { useOnSelectionChange, useReactFlow, useStore } from "@xyflow/react";
-import { MessageSquarePlus, Send, Square, X } from "lucide-react";
+import { ArrowDown, ChevronDown, MessageSquarePlus, Send, Square, X } from "lucide-react";
 
 import type { MetricsSnapshot, SuggestionEvent } from "../../../lib/ai/architectChat";
 import { applyChanges } from "../../../lib/ai/changes";
@@ -148,41 +148,85 @@ function SuggestionCard({ suggestion, status, onApply, streaming }: {
 
 const clock = (at: number) => new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-// A notice from Archie about the last edit: one sentence, then what changed, the numbers that
-// moved, and the problems it found or resolved. The first look at a design lists every open
-// problem, most serious first. A problem opens in place, with its fix.
-function NoticeMessage({ notice, onOpenFinding }: { notice: PostedNotice; onOpenFinding?: (findingId: string) => void }) {
+// A notice from Archie about an edit. Folded, it is one line: what happened and when. Open, it
+// adds the other edits, the numbers that moved (on one line), the problems it found (each opens
+// in place with its fix) and the ones it resolved. Only the newest notice starts open, so a
+// session of edits reads as a list of lines rather than pages of rows.
+function NoticeMessage({ notice, open, onToggle, onOpenFinding }: {
+  notice: PostedNotice;
+  open: boolean;
+  onToggle: () => void;
+  onOpenFinding?: (findingId: string) => void;
+}) {
   const tone = notice.kind === "check" ? undefined :
     notice.added.some((finding) => finding.severity !== "low") ? "worse"
       : notice.resolved.length > 0 && notice.added.length === 0 ? "better"
         : undefined;
+  const headline = noticeHeadline(notice);
   return (
     <div className="axp-notice" data-tone={tone} role="status">
-      <p className="axp-message">
-        <strong>{noticeHeadline(notice)}</strong> <time dateTime={new Date(notice.at).toISOString()}>{clock(notice.at)}</time>
-      </p>
-      {/* The headline already names the first edit. */}
-      {notice.edits.length > 1 && <p className="axp-notice-edits">{notice.edits.slice(1).join(" · ")}</p>}
-      {notice.metrics.map((metric) => (
-        <PanelRow key={metric.label} label={metric.label} value={<>{metric.before} → <PanelDelta better={metric.better}>{metric.after}</PanelDelta></>} />
-      ))}
-      {notice.added.map((finding) => (
-        <PanelLink
-          key={`added-${finding.id}`}
-          item
-          label={finding.title}
-          value={notice.kind === "check" ? SEVERITY_WORD[finding.severity] : `New · ${SEVERITY_WORD[finding.severity]}`}
-          title={finding.title}
-          disabled={!onOpenFinding}
-          onClick={() => onOpenFinding?.(finding.id)}
-        />
-      ))}
-      {notice.resolved.map((finding) => (
-        <PanelRow key={`resolved-${finding.id}`} item label={finding.title} value={<PanelDelta better>Resolved</PanelDelta>} />
-      ))}
+      <button type="button" className="axp-notice-head" aria-expanded={open} title={headline} onClick={onToggle}>
+        <span className="axp-notice-title">{headline}</span>
+        <time className="axp-small" dateTime={new Date(notice.at).toISOString()}>{clock(notice.at)}</time>
+        <ChevronDown size={14} aria-hidden="true" className="axp-go" />
+      </button>
+      {open && (
+        <>
+          {/* The headline already names the first edit. */}
+          {notice.edits.length > 1 && <p className="axp-notice-line axp-small">{notice.edits.slice(1).join(" · ")}</p>}
+          {notice.metrics.length > 0 && (
+            <p className="axp-notice-line axp-small">
+              {notice.metrics.map((metric, index) => (
+                <span key={metric.label}>
+                  {index > 0 && " · "}
+                  {metric.label} {metric.before} → <PanelDelta better={metric.better}>{metric.after}</PanelDelta>
+                </span>
+              ))}
+            </p>
+          )}
+          {notice.added.map((finding) => (
+            <PanelLink
+              key={`added-${finding.id}`}
+              item
+              label={finding.title}
+              value={notice.kind === "check" ? SEVERITY_WORD[finding.severity] : `New · ${SEVERITY_WORD[finding.severity]}`}
+              title={finding.title}
+              disabled={!onOpenFinding}
+              onClick={() => onOpenFinding?.(finding.id)}
+            />
+          ))}
+          {notice.resolved.length > 0 && (
+            <p className="axp-notice-line axp-small">
+              <PanelDelta better>Resolved</PanelDelta> {notice.resolved.map((finding) => finding.title).join(" · ")}
+            </p>
+          )}
+        </>
+      )}
     </div>
   );
 }
+
+// The conversation in order: questions and answers one by one, and notices that came in one
+// after another (with no question between them) kept together, so they can fold as one.
+type FeedEntry = { key: string; turn: Turn } | { key: string; notices: PostedNotice[] };
+function buildFeed(turns: readonly Turn[], notices: readonly PostedNotice[]): FeedEntry[] {
+  const ordered = [
+    ...turns.map((turn) => ({ at: turn.at, turn, notice: null })),
+    ...notices.map((notice) => ({ at: notice.at, turn: null, notice })),
+  ].sort((a, b) => a.at - b.at);
+  const feed: FeedEntry[] = [];
+  for (const item of ordered) {
+    const last = feed.at(-1);
+    if (item.notice && last && "notices" in last) last.notices.push(item.notice);
+    else if (item.notice) feed.push({ key: `notices-${item.notice.id}`, notices: [item.notice] });
+    else if (item.turn) feed.push({ key: `turn-${item.turn.id}`, turn: item.turn });
+  }
+  return feed;
+}
+
+// Within this distance of the end, the conversation counts as read to the end and follows new
+// messages; further up, it stays put and offers a way back down.
+const FOLLOW_SLACK_PX = 32;
 
 export default function ArchitectPanel({
   projectId,
@@ -238,9 +282,18 @@ export default function ArchitectPanel({
   const nextId = useRef(1);
   const list = useRef<HTMLDivElement | null>(null);
 
+  // The conversation follows new messages only while it is read to the end. Scrolled up to read
+  // something earlier, it stays put, and "Jump to latest" takes it back down.
+  const following = useRef(true);
+  const [scrolledUp, setScrolledUp] = useState(false);
+  const toEnd = () => {
+    following.current = true;
+    setScrolledUp(false);
+    list.current?.scrollTo({ top: list.current.scrollHeight });
+  };
   const noticeCount = notices.length;
   useEffect(() => {
-    if (turns.length > 0 || noticeCount > 0) list.current?.scrollTo({ top: list.current.scrollHeight });
+    if (following.current) list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [turns, noticeCount]);
   useEffect(() => () => abort.current?.abort(), []);
 
@@ -281,10 +334,27 @@ export default function ArchitectPanel({
   };
   const shownNotices = notices;
   // Answers and notices in the order they happened.
-  const feed = [
-    ...turns.map((turn) => ({ at: turn.at, turn, notice: null })),
-    ...shownNotices.map((notice) => ({ at: notice.at, turn: null, notice })),
-  ].sort((a, b) => a.at - b.at);
+  const feed = buildFeed(turns, shownNotices);
+  // Which notices are open: the newest starts open and every other starts folded; a click flips
+  // one from where it started. Runs of notices show their older ones behind one row.
+  const newestNotice = shownNotices.at(-1)?.id;
+  const [flipped, setFlipped] = useState<ReadonlySet<string>>(() => new Set());
+  const [openRuns, setOpenRuns] = useState<ReadonlySet<string>>(() => new Set());
+  const flip = (set: ReadonlySet<string>, key: string) => {
+    const next = new Set(set);
+    if (!next.delete(key)) next.add(key);
+    return next;
+  };
+  const noticeOpen = (notice: PostedNotice) => (notice.id === newestNotice) !== flipped.has(String(notice.id));
+  const notice = (item: PostedNotice) => (
+    <NoticeMessage
+      key={`notice-${item.id}`}
+      notice={item}
+      open={noticeOpen(item)}
+      onToggle={() => setFlipped((set) => flip(set, String(item.id)))}
+      onOpenFinding={onOpenFinding}
+    />
+  );
   // Questions left today: read when the panel opens, then from each answer's headers.
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   useEffect(() => {
@@ -311,6 +381,8 @@ export default function ArchitectPanel({
       { id: answerId, role: "assistant", text: "", suggestions: [], notes: [], done: false, applied: {}, at },
     ]);
     setDraft("");
+    // Asking something brings the conversation back to its end, where the answer arrives.
+    toEnd();
     setBusy(true);
     const controller = new AbortController();
     abort.current = controller;
@@ -391,7 +463,18 @@ export default function ArchitectPanel({
       onClose={onClose}
     >
       {review && <div className="axp-review">{review}</div>}
-      <div className="axp-messages" ref={list} aria-live="polite" hidden={reviewDetail}>
+      <div
+        className="axp-messages"
+        ref={list}
+        aria-live="polite"
+        hidden={reviewDetail}
+        onScroll={(event) => {
+          const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
+          const atEnd = scrollHeight - scrollTop - clientHeight <= FOLLOW_SLACK_PX;
+          following.current = atEnd;
+          setScrolledUp(!atEnd);
+        }}
+      >
         {turns.length === 0 && shownNotices.length === 0 && (
           <PanelGroup title={scoped ? `Ask about ${scope}` : "Ask about the whole design"} meta={scoped ? clearScope : undefined}>
             {(scoped ? FOCUS_STARTERS : STARTERS).map((question) => (
@@ -399,10 +482,25 @@ export default function ArchitectPanel({
             ))}
           </PanelGroup>
         )}
-        {feed.map(({ turn, notice }) =>
-          notice ? (
-            <NoticeMessage key={`notice-${notice.id}`} notice={notice} onOpenFinding={onOpenFinding} />
-          ) : !turn ? null : turn.role === "user" ? (
+        {feed.map((entry) => {
+          if ("notices" in entry) {
+            const older = entry.notices.slice(0, -1);
+            const runOpen = openRuns.has(entry.key);
+            return (
+              <div key={entry.key} className="axp-notice-run">
+                {older.length > 0 && (
+                  <button type="button" className="axp-notice-more" aria-expanded={runOpen} onClick={() => setOpenRuns((set) => flip(set, entry.key))}>
+                    <span>{older.length} earlier change{older.length === 1 ? "" : "s"}</span>
+                    <ChevronDown size={14} aria-hidden="true" className="axp-go" />
+                  </button>
+                )}
+                {runOpen && older.map(notice)}
+                {notice(entry.notices.at(-1)!)}
+              </div>
+            );
+          }
+          const { turn } = entry;
+          return turn.role === "user" ? (
             <p key={turn.id} className="axp-message" data-role="user">
               {turn.focusCount > 0 && <small>About {components(turn.focusCount)}</small>}
               {turn.text}
@@ -425,7 +523,12 @@ export default function ArchitectPanel({
               ))}
               {turn.error && <p role="alert" className="axp-message" data-tone="danger">{turn.error}</p>}
             </div>
-          ),
+          );
+        })}
+        {scrolledUp && (
+          <button type="button" className="axp-jump" onClick={toEnd}>
+            <ArrowDown size={13} aria-hidden="true" /> Jump to latest
+          </button>
         )}
       </div>
       {scoped && turns.length > 0 && !reviewDetail && (

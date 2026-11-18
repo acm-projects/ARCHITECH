@@ -471,15 +471,58 @@
 .axp-stats .axp-small { display: block; }
 .axp-stats .axp-value { display: block; overflow: hidden; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Archie's notices: what an edit changed, posted into the conversation. */
+/* Archie's notices: what an edit changed, posted into the conversation. Folded, a notice is one
+   line; a run of notices one after another keeps its older ones behind one row. */
+.axp-notice-run { display: grid; gap: 2px; }
 .axp-notice {
   display: grid;
   gap: 2px;
-  margin: 4px 0;
   border-left: 2px solid var(--ax-line-strong);
 }
 .axp-notice[data-tone="worse"] { border-left-color: var(--ax-danger); }
 .axp-notice[data-tone="better"] { border-left-color: var(--axp-good); }
-.axp-notice-edits { padding: 0 var(--axp-inset); }
-.axp-notice time { margin-left: 4px; white-space: nowrap; }
 .axp-notice > * { min-width: 0; }
+.axp-notice-head,
+.axp-notice-more {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--axp-row);
+  padding: 4px var(--axp-inset);
+  border: 0;
+  background: transparent;
+  color: var(--ax-ink);
+  text-align: left;
+}
+.axp-notice-head:hover, .axp-notice-more:hover { background: var(--ax-hover-fill); }
+.axp-notice-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axp-notice-head[aria-expanded="true"] .axp-notice-title { font-weight: 500; white-space: normal; }
+.axp-notice-head time { flex: none; white-space: nowrap; }
+.axp-notice-head .axp-go, .axp-notice-more .axp-go { transition: transform 120ms ease-out; }
+:is(.axp-notice-head, .axp-notice-more)[aria-expanded="true"] .axp-go { transform: rotate(180deg); }
+.axp-notice-more { color: var(--ax-muted); }
+.axp-notice-more > span { flex: 1 1 auto; }
+.axp-notice-line { padding: 0 var(--axp-inset) 2px; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .axp-notice-head .axp-go, .axp-notice-more .axp-go { transition: none; } }
+
+/* Scrolled up to read something earlier: the way back to the newest message. */
+.axp .axp-jump {
+  position: sticky;
+  bottom: 0;
+  display: inline-flex;
+  flex: none;
+  align-self: center;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  margin-top: auto;
+  padding: 0 12px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 14px;
+  background: var(--ax-surface);
+  color: var(--ax-ink);
+}
+/* Opaque on hover too: messages scroll underneath it. */
+.axp .axp-jump:hover { border-color: var(--ax-ink-soft); }

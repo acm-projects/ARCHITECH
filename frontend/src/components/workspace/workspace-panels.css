@@ -131,7 +131,9 @@
   }
   /* The narrowed canvas only steers fitting and panning. Components past its edge keep drawing
      and pass under the panels, rather than being cut off at an invisible line beside them. */
-  .ax-workspace .ax-workspace-canvas { overflow: hidden; }
+  /* clip, not hidden: a hidden box can still be scrolled sideways when a control inside it takes
+     focus, which slid the whole column off the right edge. */
+  .ax-workspace .ax-workspace-canvas { overflow: clip; }
   /* React Flow sets overflow: hidden inline on its wrapper, so only !important outranks it. */
   .ax-workspace .ax-workspace-canvas .ax-diagram-viewport .react-flow { overflow: visible !important; }
 }

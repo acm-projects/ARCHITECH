@@ -305,8 +305,9 @@ export function PanelMeter({ label, fraction, caption }: {
   label: string;
   // Demand as a fraction of the limit: 1 is exactly at the limit.
   fraction: number;
-  // One line under the bar, which also reads the bar out.
-  caption: string;
+  // One line under the bar, which also reads the bar out. Without one, the bar stands alone and
+  // the row above it says what it measures.
+  caption?: string;
 }) {
   const over = fraction > 1;
   const filled = Math.max(0, Math.min(1, over ? 1 / fraction : fraction));
@@ -323,7 +324,7 @@ export function PanelMeter({ label, fraction, caption }: {
       >
         <span style={{ width: `${filled * 100}%` }} />
       </div>
-      <p className="axp-small">{caption}</p>
+      {caption && <p className="axp-small">{caption}</p>}
     </div>
   );
 }
