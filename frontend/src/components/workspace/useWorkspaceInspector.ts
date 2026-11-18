@@ -6,7 +6,7 @@ import { INITIAL_INSPECTOR_STATE, inspectorReducer, type InspectorSectionId } fr
 export function useWorkspaceInspector({ selectedNodeIds }: { selectedNodeIds: readonly string[] }) {
   const [state, dispatch] = useReducer(inspectorReducer, INITIAL_INSPECTOR_STATE);
   const selectionKey = selectedNodeIds.join("\0");
-  // Selection closes configuration; only an explicit Configure action opens it.
+  // A new single selection opens configuration; clearing or multi-selecting closes it.
   // Adjust before rendering children so a new selection never flashes the old form.
   if (state.selectionKey !== selectionKey) dispatch({ type: "selection-changed", selectionKey });
   const inspectComponent = useCallback(() => dispatch({ type: "open-configure" }), []);

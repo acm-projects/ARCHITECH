@@ -44,7 +44,7 @@ export function inspectorReducer(state: InspectorState, action: InspectorAction)
       return { ...state, historyOpen: false };
     case "selection-changed":
       if (state.selectionKey === action.selectionKey) return state;
-      return { ...state, selectionKey: action.selectionKey, configuring: false };
+      return { ...state, selectionKey: action.selectionKey, configuring: Boolean(action.selectionKey) && !action.selectionKey.includes("\0") };
     case "open-configure":
       if (!state.selectionKey) return state;
       return { ...state, configuring: true };

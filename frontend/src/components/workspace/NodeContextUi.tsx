@@ -49,20 +49,23 @@ export function NodeActionBar({
         onClick={onAskAi}
         disabled={!archieEnabled}
         hidden={!archieEnabled}
-        title={!archieEnabled ? "Available after Continue exploring." : undefined}
+        title={!archieEnabled ? "Available after Continue exploring." : "Ask Archie"}
+        aria-label="Ask Archie"
         aria-pressed={panel === "ai"}
         className="ax-nodebar-ai"
       >
-        <MessageCircle size={14} aria-hidden="true" /> Ask Archie
+        <MessageCircle size={14} aria-hidden="true" /><span>Ask Archie</span>
       </button>
       <span className="ax-nodebar-sep" aria-hidden="true" hidden={!archieEnabled} />
       <button
         type="button"
         onClick={onConfigure}
+        title="Configure component"
+        aria-label="Configure component"
         aria-pressed={panel === "configure"}
         className="ax-nodebar-config"
       >
-        <Settings2 size={14} aria-hidden="true" /> Configure
+        <Settings2 size={14} aria-hidden="true" /><span>Configure</span>
       </button>
       {failure && (
         <>
@@ -72,16 +75,17 @@ export function NodeActionBar({
             onClick={failure.onToggle}
             aria-pressed={failure.down}
             title={failure.down ? "Bring this component back up" : "Take this component down and see what still works"}
+            aria-label={failure.down ? "Restore component" : "Test component failure"}
             className="ax-nodebar-fail"
           >
             {failure.down ? <RotateCcw size={14} aria-hidden="true" /> : <ZapOff size={14} aria-hidden="true" />}
-            {failure.down ? "Restore" : "Fail"}
+            <span>{failure.down ? "Restore" : "Fail"}</span>
           </button>
         </>
       )}
       <span className="ax-nodebar-sep" aria-hidden="true" />
-      <button type="button" onClick={onDelete} className="ax-nodebar-delete">
-        <Trash2 size={14} aria-hidden="true" /> Delete
+      <button type="button" onClick={onDelete} className="ax-nodebar-delete" aria-label="Delete component" title="Delete component">
+        <Trash2 size={14} aria-hidden="true" /><span>Delete</span>
       </button>
     </div>
   );

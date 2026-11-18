@@ -77,9 +77,10 @@
 
   /* The bar on a selected component is the way into these panels, so it reads at their size. */
   .ax-workspace .ax-nodebar { height: 36px; padding: 3px; border-color: var(--ax-line-strong); border-radius: 3px; box-shadow: none; }
-  .ax-workspace .ax-nodebar button { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 8px; border-radius: 2px; font-size: 12px; }
+  .ax-workspace .ax-nodebar button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; padding: 0; border-radius: 2px; font-size: 12px; }
+  .ax-workspace .ax-nodebar button span { display: none; }
   .ax-workspace .ax-nodebar button[hidden] { display: none; }
-  .ax-workspace .ax-nodebar .ax-nodebar-sep { margin-inline: 3px; }
+  .ax-workspace .ax-nodebar .ax-nodebar-sep { display: none; }
   .ax-workspace .ax-nodebar .ax-nodebar-delete { color: var(--ax-muted); }
 }
 
