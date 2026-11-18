@@ -21,8 +21,6 @@ type StressTestPanelProps = {
   onRateChange: (requestsPerSecond: number) => void;
   // Runs the design at the current load.
   onRun: () => void;
-  // Sets the load and runs the design at it.
-  onRunAtRate: (requestsPerSecond: number) => void;
 };
 
 const format = (value: number) => Math.round(value).toLocaleString("en-US");
@@ -36,7 +34,6 @@ export default function StressTestPanel({
   running,
   onRateChange,
   onRun,
-  onRunAtRate,
 }: StressTestPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const rate = traffic.requestsPerSecond;
@@ -92,14 +89,14 @@ export default function StressTestPanel({
                 <button
                   key={multiplier}
                   type="button"
-                  aria-label={`Run ${multiplier}× traffic test`}
+                  aria-label={`Select ${multiplier}× traffic`}
                   aria-pressed={rate === target}
                   aria-disabled={running}
                   title={`${format(target)} req/s`}
                   onClick={() => {
                     if (running) return;
                     setError(null);
-                    onRunAtRate(target);
+                    onRateChange(target);
                   }}
                 >
                   {multiplier}×

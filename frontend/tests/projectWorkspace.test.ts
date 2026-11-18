@@ -589,11 +589,12 @@ test("Run owns traffic, metrics and reviews after Continue exploring", () => {
   // Challenge keeps the button's place in the top bar as Submit; Learn gets Run once exploring.
   assert.match(workspace, /runControl=\{mode === "challenge" \? \(\s*<ChallengeSubmitButton\s+onSubmit=\{challenge\.submit\}/);
   assert.match(workspace, /\) : canRunDesign && <SimulationControl/);
-  assert.match(inspector, /runs\.runAtRate\(rate\)/);
+  assert.match(control, /onRateChange\(target\)/);
+  assert.doesNotMatch(control, /onRunAtRate/);
   assert.doesNotMatch(inspector, /title="Metrics"/);
-  assert.match(inspector, /"Run simulation"/);
-  // A run that finished behind another panel: the button opens its results instead of running again.
-  assert.match(inspector, /onClick=\{\(\) => \(unseen \? onToggle\(\) : onShowResults\(runs\.run\)\)\}/);
+  assert.match(inspector, /"Open simulation"/);
+  // Opening the panel does not start a run, so a rate can be chosen first.
+  assert.match(inspector, /onClick=\{onToggle\}/);
   assert.match(inspector, /"Results ready"/);
   assert.doesNotMatch(inspector, /title="Stress test"|title="Live estimates"|title="System review"|<StressTestPanel|role="tab"/);
   assert.match(control, /aria-controls="ax-run-panel"/);

@@ -13,7 +13,6 @@ type RunPanelProps = {
   traffic: TrafficProfile
   onRateChange: (rate: number) => void
   onRun: () => void
-  onRunAtRate: (rate: number) => void
   // Live estimates, under the run controls. Hidden while a run is going.
   live?: ReactNode
   // The run in progress, for its progress bar.
@@ -50,7 +49,6 @@ export default function RunPanel(props: RunPanelProps) {
         running={view.isRunning}
         onRateChange={props.onRateChange}
         onRun={props.onRun}
-        onRunAtRate={props.onRunAtRate}
       />
       {props.simulation && <SimulationProgress {...props.simulation} />}
       {/* The estimates wait while a run is going; kept mounted so they pick up where they were. */}

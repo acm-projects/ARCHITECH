@@ -18,16 +18,10 @@ const graph = {
   edges: [{ id: "e", source: "client-1", target: "server-1" }],
 };
 
-test("a run lasts between five and ten seconds", () => {
-  assert.equal(SIMULATION_DURATION_MS.min, 5_000);
-  assert.equal(SIMULATION_DURATION_MS.max, 10_000);
-  assert.equal(simulationDuration(() => 0), 5_000);
-  assert.equal(simulationDuration(() => 0.5), 7_500);
-  assert.equal(simulationDuration(() => 0.9999), 10_000);
-  for (let i = 0; i < 50; i += 1) {
-    const ms = simulationDuration();
-    assert.ok(ms >= 5_000 && ms <= 10_000, `${ms} is in range`);
-  }
+test("each simulation uses a three-second delay", () => {
+  assert.equal(SIMULATION_DURATION_MS.min, 3_000);
+  assert.equal(SIMULATION_DURATION_MS.max, 3_000);
+  for (const random of [0, 0.5, 0.9999]) assert.equal(simulationDuration(() => random), 3_000);
 });
 
 test("the delayed run returns the same evaluation, after waiting the chosen time", async () => {

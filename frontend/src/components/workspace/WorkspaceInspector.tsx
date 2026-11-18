@@ -32,7 +32,7 @@ type WorkspaceInspectorProps = {
   notices?: ComponentProps<typeof ArchitectPanel>["notices"];
   onOpenFinding?: (findingId: string) => void;
   onClearNotices?: () => void;
-  runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "runAtRate" | "setRequestRate" | "simulation">;
+  runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "setRequestRate" | "simulation">;
 };
 
 export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowResults, live }: {
@@ -67,10 +67,10 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowR
       anchor.current?.querySelector<HTMLButtonElement>("button")?.focus();
     }
   }}>
-    <button type="button" className="ax-run-button" aria-label={unseen ? "Show the new run results" : "Run simulation"}
+    <button type="button" className="ax-run-button" aria-label={unseen ? "Show the new run results" : "Open simulation"}
       aria-controls="ax-run-panel" aria-expanded={expanded} aria-busy={runs.view.isRunning}
       data-results={unseen || undefined}
-      disabled={runs.view.isRunning} onClick={() => (unseen ? onToggle() : onShowResults(runs.run))}>
+      onClick={onToggle}>
       {runs.view.isRunning ? <LoaderCircle size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
       {unseen ? "Results ready" : "Run"}
       {unseen && <span className="ax-run-ready" aria-hidden="true" />}
@@ -90,7 +90,6 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowR
       >
         <RunPanel view={runs.view} traffic={runs.traffic}
           onRateChange={runs.setRequestRate} onRun={() => onShowResults(runs.run)}
-          onRunAtRate={(rate) => onShowResults(() => runs.runAtRate(rate))}
           live={live} simulation={runs.simulation} />
       </Panel>,
       panelHost,
