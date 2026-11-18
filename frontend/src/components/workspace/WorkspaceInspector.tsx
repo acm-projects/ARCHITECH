@@ -103,7 +103,7 @@ export default function WorkspaceInspector({
   guidance,
   review, reviewDetail, asked, notices, onOpenFinding, onClearNotices,
 }: Omit<WorkspaceInspectorProps, "runs">) {
-  const { archieOpen, archieRequest, historyOpen, configuring, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory } = controller;
+  const { archieOpen, archieRequest, configureRequest, historyOpen, configuring, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory } = controller;
   const selectionCollapse = usePanelCollapse();
   const selected = nodes.filter((node) => node.selected);
   const component = selected.length === 1 ? selected[0] : null;
@@ -123,6 +123,7 @@ export default function WorkspaceInspector({
           title={component.data.label}
           status={component.data.label !== COMPONENT_CATALOG[component.data.type].label ? COMPONENT_CATALOG[component.data.type].label : undefined}
           collapse={componentCollapse}
+          revealKey={configureRequest}
           transient={!configuring}
           closeLabel="Clear component selection"
           onClose={onClearSelection}

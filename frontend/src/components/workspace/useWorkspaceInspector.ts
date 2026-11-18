@@ -9,7 +9,11 @@ export function useWorkspaceInspector({ selectedNodeIds }: { selectedNodeIds: re
   // A new single selection opens configuration; clearing or multi-selecting closes it.
   // Adjust before rendering children so a new selection never flashes the old form.
   if (state.selectionKey !== selectionKey) dispatch({ type: "selection-changed", selectionKey });
-  const inspectComponent = useCallback(() => dispatch({ type: "open-configure" }), []);
+  const [configureRequest, setConfigureRequest] = useState(0);
+  const inspectComponent = useCallback(() => {
+    dispatch({ type: "open-configure" });
+    setConfigureRequest((count) => count + 1);
+  }, []);
   const closeConfiguration = useCallback(() => dispatch({ type: "close-configure" }), []);
   // Counts requests, so asking again reaches a panel that is already open but folded.
   const [archieRequest, setArchieRequest] = useState(0);
@@ -37,6 +41,7 @@ export function useWorkspaceInspector({ selectedNodeIds }: { selectedNodeIds: re
   return {
     ...state,
     archieRequest,
+    configureRequest,
     inspectComponent,
     closeConfiguration,
     askArchie,

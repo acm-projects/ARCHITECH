@@ -199,8 +199,8 @@ export default function ArchitectureNode({
           onAskAi={inspector ? inspector.askArchie : () => togglePanel("ai")}
           onConfigure={inspector ? inspector.inspectComponent : () => togglePanel("configure")}
           onDelete={deleteThisNode}
-          failure={failureTest && canFail(data.type)
-            ? { down, onToggle: () => failureTest.toggle(id) }
+          failure={failureTest
+            ? { down, available: canFail(data.type), onToggle: () => failureTest.toggle(id) }
             : undefined}
         />
       </NodeToolbar>}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useState, type ReactNode } from "react";
-import { MessageCircle, RotateCcw, Settings2, Trash2, ZapOff } from "lucide-react";
+import { MessageCircle, Power, RotateCcw, Settings2, Trash2 } from "lucide-react";
 
 import { STALE_NOTICE, explainNodeInView } from "../../lib/architecture/archie/view";
 import type { PropertyView } from "../../lib/architecture/componentConfigView";
@@ -30,7 +30,7 @@ type NodeActionBarProps = {
   onConfigure: () => void;
   onDelete: () => void;
   // Failure test switch: absent where failure tests are not offered.
-  failure?: { down: boolean; onToggle: () => void };
+  failure?: { down: boolean; available: boolean; onToggle: () => void };
 };
 
 // `nodrag nopan` keep clicks on the bar from dragging the node or panning the canvas.
@@ -72,14 +72,15 @@ export function NodeActionBar({
           <span className="ax-nodebar-sep" aria-hidden="true" />
           <button
             type="button"
-            onClick={failure.onToggle}
+            onClick={() => { if (failure.available) failure.onToggle(); }}
+            aria-disabled={!failure.available}
             aria-pressed={failure.down}
-            title={failure.down ? "Bring this component back up" : "Take this component down and see what still works"}
-            aria-label={failure.down ? "Restore component" : "Test component failure"}
+            title={!failure.available ? "Failure testing is unavailable for traffic sources" : failure.down ? "Turn on component" : "Turn off component and test failure"}
+            aria-label={!failure.available ? "Failure testing unavailable for traffic sources" : failure.down ? "Turn on component" : "Turn off component and test failure"}
             className="ax-nodebar-fail"
           >
-            {failure.down ? <RotateCcw size={14} aria-hidden="true" /> : <ZapOff size={14} aria-hidden="true" />}
-            <span>{failure.down ? "Restore" : "Fail"}</span>
+            <Power size={14} aria-hidden="true" />
+            <span>{failure.down ? "Turn on" : "Turn off"}</span>
           </button>
         </>
       )}

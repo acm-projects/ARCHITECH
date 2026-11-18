@@ -1084,7 +1084,7 @@
     background-color var(--ax-fast) var(--ax-ease),
     color var(--ax-fast) var(--ax-ease);
 }
-.ax-workspace .ax-nodebar button:hover:not(:disabled),
+.ax-workspace .ax-nodebar button:hover:not(:disabled, [aria-disabled="true"]),
 .ax-workspace .ax-nodebar button[aria-pressed="true"] {
   background: var(--ax-hover-fill);
   color: var(--ax-ink);
@@ -1095,6 +1095,7 @@
 }
 .ax-workspace .ax-nodebar .ax-nodebar-fail[aria-pressed="true"] { color: var(--ax-danger); }
 .ax-workspace .ax-nodebar .ax-nodebar-ai:disabled { color: var(--ax-subtle); cursor: default; }
+.ax-workspace .ax-nodebar button[aria-disabled="true"] { color: var(--ax-subtle); cursor: default; }
 .ax-workspace .ax-nodebar .ax-nodebar-sep {
   width: 1px;
   height: 14px;
