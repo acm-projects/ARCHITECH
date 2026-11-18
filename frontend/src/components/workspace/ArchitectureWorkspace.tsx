@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { Gauge } from "lucide-react";
+import { Gauge, GraduationCap } from "lucide-react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -536,6 +536,27 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
     resetInspector,
   ]);
 
+  // Replays the tutorial from the menu: Learn mode, an empty canvas and the first step. The
+  // lesson follows the canvas, so it needs the canvas empty; a design there is asked about
+  // first (undo still brings it back until the page is left).
+  const startTutorial = useCallback(() => {
+    if (
+      nodes.length > 0 &&
+      !window.confirm("Start the tutorial? It clears the canvas. You can undo this until you leave the page.")
+    ) {
+      return;
+    }
+    if (!learn.prepareReset()) return;
+    if (mode !== "learn") switchMode("learn");
+    resetInspector();
+    replaceGraph(emptyGraph());
+    requestAnimationFrame(() => {
+      fitView(fitViewOptions);
+    });
+    learn.clearAnalysis();
+    learn.restartLesson();
+  }, [nodes.length, learn, mode, switchMode, resetInspector, replaceGraph, fitView, fitViewOptions]);
+
   // Copy/paste/duplicate work on the graph itself and use the same ID allocator
   // so pasted nodes can never collide with existing ones.
   const { copy, paste, duplicate } = useGraphClipboard({
@@ -652,6 +673,12 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
               {savedProjectId && <HistoryToggle open={false} onToggle={inspector.openHistory} popoverTarget={menuId} />}
               <ExportButton title={title} popoverTarget={menuId} />
               {savedProjectId && <RunnableAppButton projectId={savedProjectId} popoverTarget={menuId} />}
+              {savedProjectId && (
+                <button type="button" className="ax-ai-toggle" onClick={startTutorial} popoverTarget={menuId} popoverTargetAction="hide">
+                  <GraduationCap size={15} aria-hidden="true" />
+                  Tutorial
+                </button>
+              )}
             </div>
           )}
         />
@@ -775,6 +802,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                       />
                     ) : undefined}
                     reviewDetail={canRunDesign && liveReady && designCheckInDetail(designCheck)}
+                    reviewActive={canRunDesign && liveReady && designCheck.enabled}
                     asked={archieQuestion}
                     guidance={mode === "challenge" ? (
                       <ChallengeCard

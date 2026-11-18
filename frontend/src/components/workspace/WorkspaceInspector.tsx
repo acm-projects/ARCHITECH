@@ -28,6 +28,8 @@ type WorkspaceInspectorProps = {
   // The design check, shown inside Archie's panel (see ArchitectPanel).
   review?: ReactNode;
   reviewDetail?: boolean;
+  // The design check is switched on.
+  reviewActive?: boolean;
   asked?: { key: number; text: string } | null;
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate">;
 };
@@ -87,7 +89,7 @@ export default function WorkspaceInspector({
   projectId,
   nodes, controller, onClearSelection, onApply, customTechnologies,
   guidance,
-  review, reviewDetail, asked,
+  review, reviewDetail, reviewActive, asked,
 }: Omit<WorkspaceInspectorProps, "runs">) {
   const { archieOpen, archieRequest, historyOpen, configuring, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory } = controller;
   const selectionCollapse = usePanelCollapse();
@@ -153,6 +155,7 @@ export default function WorkspaceInspector({
           customTechnologies={customTechnologies}
           review={review}
           reviewDetail={reviewDetail}
+          reviewActive={reviewActive}
           asked={asked}
         />
       )}

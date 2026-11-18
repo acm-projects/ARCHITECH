@@ -147,12 +147,16 @@ export default function ArchitectPanel({
   customTechnologies,
   review,
   reviewDetail = false,
+  reviewActive = false,
   asked = null,
 }: {
+  // The design check is on and listing findings, which already say what to ask about, so the
+  // generic starter questions for the whole design are left out.
   // The design check, above the conversation. While one of its findings is open it takes the
   // whole panel (`reviewDetail`), and the conversation waits underneath.
   review?: ReactNode;
   reviewDetail?: boolean;
+  reviewActive?: boolean;
   // A question handed over from elsewhere (a design check finding), asked once per new key.
   asked?: { key: number; text: string } | null;
   // The conversation is saved with this project and restored when the panel opens.
@@ -329,7 +333,7 @@ export default function ArchitectPanel({
     >
       {review && <div className="axp-review">{review}</div>}
       <div className="axp-messages" ref={list} aria-live="polite" hidden={reviewDetail}>
-        {turns.length === 0 && (
+        {turns.length === 0 && (scoped || !reviewActive) && (
           <PanelGroup title={scoped ? `Ask about ${scope}` : "Ask about the whole design"} meta={scoped ? clearScope : undefined}>
             {(scoped ? FOCUS_STARTERS : STARTERS).map((question) => (
               <PanelLink key={question} item label={question} title={question} onClick={() => void ask(question)} />

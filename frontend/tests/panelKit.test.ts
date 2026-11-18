@@ -32,12 +32,13 @@ test("right panels are built from the panel kit, with no layout of their own", (
   }
 });
 
-test("panels keep to four text styles: the title, a row, a row's value, and small text", () => {
+test("panels keep to five text styles: the title, a row, a row's value, small text, and a widget figure", () => {
   const styles = new Set(read("src/components/workspace/panel/panel.css").match(/\bfont: \d{3} [^;]+;/g));
   assert.deepEqual([...styles].sort(), [
     "font: 400 12px/18px var(--font-sans);",
     "font: 400 14px/20px var(--font-sans);",
     "font: 500 14px/20px var(--font-sans);",
     "font: 600 17px/24px var(--font-sans);",
+    "font: 600 24px/30px var(--font-sans);",
   ]);
 });

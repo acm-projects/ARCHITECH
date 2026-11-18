@@ -237,6 +237,77 @@ export function PanelMeter({ label, fraction, caption }: {
   );
 }
 
+// Widget tiles: a measurement read at a glance, its name small above a large figure. Two to a
+// row; a `wide` tile spans the row. Used where a panel is a dashboard of a few numbers.
+export function PanelTiles({ label, children }: { label?: string; children: ReactNode }) {
+  return <div className="axp-tiles" role="group" aria-label={label}>{children}</div>;
+}
+
+export function PanelTile({ label, value, unit, caption, change, gauge, wide = false, tone, title }: {
+  label: ReactNode;
+  value: ReactNode;
+  // Small after the figure: "ms", "/mo".
+  unit?: ReactNode;
+  caption?: ReactNode;
+  // The ▲/▼ for the last change (PanelChange).
+  change?: ReactNode;
+  // A ring beside the figure, for demand against a limit.
+  gauge?: { label: string; fraction: number; caption: string };
+  wide?: boolean;
+  // Danger is the only tone: the measurement is past its limit. Said in the caption too.
+  tone?: "danger";
+  title?: string;
+}) {
+  return (
+    <div className="axp-tile" data-wide={wide || undefined} data-tone={tone} title={title}>
+      <div className="axp-tile-text">
+        <span className="axp-tile-label">{label}</span>
+        <span className="axp-tile-figure">
+          {value}
+          {unit && <span className="axp-tile-unit">{unit}</span>}
+          {change}
+        </span>
+        {caption && <span className="axp-tile-caption">{caption}</span>}
+      </div>
+      {gauge && <PanelRing {...gauge} />}
+    </div>
+  );
+}
+
+const RING_RADIUS = 22;
+const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
+
+// Demand against a limit as a ring: the arc is the share used. Past the limit the whole ring
+// is the danger color, and the caption says by how much.
+function PanelRing({ label, fraction, caption }: { label: string; fraction: number; caption: string }) {
+  const over = fraction > 1;
+  const filled = Math.max(0, Math.min(1, fraction));
+  return (
+    <svg
+      className="axp-ring"
+      data-over={over || undefined}
+      viewBox="0 0 56 56"
+      role="meter"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(filled * 100)}
+      aria-valuetext={caption}
+    >
+      <circle className="axp-ring-track" cx="28" cy="28" r={RING_RADIUS} />
+      <circle
+        className="axp-ring-fill"
+        cx="28"
+        cy="28"
+        r={RING_RADIUS}
+        strokeDasharray={RING_LENGTH}
+        strokeDashoffset={RING_LENGTH * (1 - (over ? 1 : filled))}
+        transform="rotate(-90 28 28)"
+      />
+    </svg>
+  );
+}
+
 export function PanelLink({ label, value, lead, item, title, ...button }: RowContent & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "value" | "title">) {
   return (
     <button type="button" className="axp-row axp-link" data-item={item || undefined} title={title} {...button}>
