@@ -355,6 +355,21 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
   // The right column: it folds older panels instead of running past the bottom of the page.
   const widgetStack = useRef<HTMLDivElement>(null);
   useStackFit(widgetStack);
+  // Panel visibility is owned by the stack, including panels restored after another closes.
+  const [activeNodePanel, setActiveNodePanel] = useState<"ai" | "configure" | "none">("none");
+  useEffect(() => {
+    const stack = widgetStack.current;
+    if (!stack) return;
+    const update = () => {
+      const visible = stack.querySelector<HTMLElement>('.axp[data-tool]:not([data-behind]):not([data-folded]):not([hidden])');
+      const tool = visible?.dataset.tool;
+      setActiveNodePanel(tool === "archie" ? "ai" : tool === "component" ? "configure" : "none");
+    };
+    const observer = new MutationObserver(update);
+    observer.observe(stack, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-behind", "data-folded", "hidden"] });
+    update();
+    return () => observer.disconnect();
+  }, []);
 
   // Check a connection before React Flow lets the user create it.
   // We read the current graph directly from React Flow so this never validates
@@ -734,7 +749,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                 The actual project rules live in the helpers/hooks above. */}
             <div className="ax-diagram-viewport">
               <FailureContext.Provider value={failure.context}>
-              <InspectorContext.Provider value={showInspector ? inspector.nodeActions : null}>
+              <InspectorContext.Provider value={showInspector ? { ...inspector.nodeActions, activePanel: activeNodePanel } : null}>
                 <ReactFlow
                   proOptions={HIDE_ATTRIBUTION}
                   nodes={nodes}

@@ -119,6 +119,7 @@ export default function WorkspaceInspector({
         <Panel
           key={component.id}
           label="Component"
+          toolKey="component"
           icon={<ComponentGlyph type={component.data.type} />}
           title={component.data.label}
           status={component.data.label !== COMPONENT_CATALOG[component.data.type].label ? COMPONENT_CATALOG[component.data.type].label : undefined}

@@ -105,7 +105,7 @@ export default function ArchitectureNode({
     ? getNodes().find((node) => node.id === id)
     : undefined;
   const activePanel = inspector
-    ? (inspector.archieOpen ? "ai" : inspector.configuring ? "configure" : "none")
+    ? inspector.activePanel
     : panel;
 
   // Read-only view of React Flow's connection state, used only for styling: the id of

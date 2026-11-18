@@ -2,8 +2,7 @@ import { createContext } from "react";
 
 // Canvas actions change the inspector's presentation, never the design itself.
 export const InspectorContext = createContext<{
-  archieOpen: boolean;
-  configuring: boolean;
+  activePanel: "ai" | "configure" | "none";
   inspectComponent: () => void;
   askArchie: () => void;
 } | null>(null);
