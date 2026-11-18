@@ -5,6 +5,9 @@ import { useReactFlow } from "@xyflow/react";
 import { Download, ExternalLink, FileCode2, Play } from "lucide-react";
 
 import { toDockerCompose } from "../../lib/architecture/export/dockerCompose";
+import { waitForProjectSaved } from "../projects/projectSaved";
+import { projectStore } from "../projects/projectStore";
+import { readSyncState } from "../projects/projectSyncEngine";
 import type { ArchitectureFlowNode } from "./nodes/ArchitectureNode";
 
 // Downloads the design on the canvas as a starter docker-compose.yml (generated in the browser,
@@ -32,25 +35,64 @@ export function ExportButton({ title, popoverTarget }: { title: string; popoverT
 //   Run as app            opens it inside ARCHITECH (/workspace/[id]/run), nothing to install;
 //   Download app (Docker) a .zip with a docker-compose project, every part of the design as its
 //                         own container.
-// Both are built on the server from the saved project, so they reflect the last saved version.
-export function RunnableAppButton({ projectId, popoverTarget }: { projectId: string; popoverTarget?: string }) {
+// Both are built on the server from the saved project. Run as app first saves the design and
+// waits for the server to have it, so it opens what is on the canvas; if the save does not get
+// through in time, it opens the last saved version and the page says so.
+export function RunnableAppButton({ projectId, popoverTarget, onBeforeOpen }: {
+  projectId: string;
+  popoverTarget?: string;
+  // Writes any edit still waiting for autosave.
+  onBeforeOpen?: () => void;
+}) {
   const closeMenu = (element: HTMLElement) => {
     const target = element.ownerDocument.getElementById(popoverTarget ?? "");
     if (target && "hidePopover" in target) (target as HTMLElement & { hidePopover: () => void }).hidePopover();
   };
   const id = encodeURIComponent(projectId);
+  const runUrl = `/workspace/${id}/run`;
+  const runLatest = () => {
+    onBeforeOpen?.();
+    // Opened now, while the click still counts, so the browser does not block it.
+    const tab = window.open("", "_blank");
+    if (tab) {
+      tab.opener = null;
+      tab.document.title = "Saving your design…";
+      tab.document.body.style.font = "15px system-ui, sans-serif";
+      tab.document.body.style.padding = "32px";
+      tab.document.body.textContent = "Saving your latest changes, then starting the app…";
+    }
+    void waitForProjectSaved(() => {
+      let synced: Record<string, string> | undefined;
+      try {
+        synced = readSyncState(window.localStorage)?.synced;
+      } catch {
+        synced = undefined;
+      }
+      return { project: projectStore.getProject(projectId), synced };
+    }).then((saved) => {
+      const url = saved ? runUrl : `${runUrl}?unsaved=1`;
+      if (tab && !tab.closed) tab.location.replace(url);
+      else if (!tab) window.location.assign(url);
+    });
+  };
   return (
     <>
       <a
         className="ax-project-menu-item"
-        href={`/workspace/${id}/run`}
+        href={runUrl}
         target="_blank"
         rel="noopener"
-        onClick={(event) => closeMenu(event.currentTarget)}
+        onClick={(event) => {
+          // A plain click saves first; Ctrl/Cmd/middle-click keep the browser's own behavior.
+          if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          event.preventDefault();
+          closeMenu(event.currentTarget);
+          runLatest();
+        }}
         title="Use this design as a working app, while Archie shows what each part does"
       >
         <Play size={15} aria-hidden="true" />
-        <span>Run as app<small>The saved design, live, in a new tab</small></span>
+        <span>Run as app<small>Saves, then runs the design in a new tab</small></span>
         <ExternalLink size={13} aria-hidden="true" className="ax-project-menu-trail" />
       </a>
       <a

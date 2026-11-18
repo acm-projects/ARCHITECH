@@ -97,3 +97,60 @@ test("Archie's conversation carries the notices and the bar counts unread ones",
   // Notices and answers read in the order they happened.
   assert.match(panel, /\.sort\(\(a, b\) => a\.at - b\.at\)/);
 });
+
+// ---- Kept across reloads ----
+
+import { noticeLogKey, readNoticeLog, writeNoticeLog } from "../src/lib/architecture/archie/noticeStore.ts";
+
+function memory() {
+  const data = new Map<string, string>();
+  return {
+    data,
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem: (key: string, value: string) => void data.set(key, value),
+    removeItem: (key: string) => void data.delete(key),
+  };
+}
+
+test("notices and the design they described come back after a reload", () => {
+  const store = memory();
+  const first = buildNotice(null, base())!;
+  const log = { notices: [{ ...first, id: 1, at: 1_000 }], last: base() };
+  assert.equal(writeNoticeLog(store, "p1", log), true);
+  const read = readNoticeLog(store, "p1");
+  assert.deepEqual(read, JSON.parse(JSON.stringify(log)));
+  // The same design after the reload says nothing new.
+  assert.equal(buildNotice(read.last, base()), null);
+  // Each project keeps its own.
+  assert.deepEqual(readNoticeLog(store, "p2"), { notices: [], last: null });
+});
+
+test("a damaged or tampered log starts empty, and bad entries are dropped", () => {
+  const store = memory();
+  store.setItem(noticeLogKey("p1"), "{not json");
+  assert.deepEqual(readNoticeLog(store, "p1"), { notices: [], last: null });
+  store.setItem(noticeLogKey("p1"), JSON.stringify({ version: 1, notices: [{ id: 1, at: 1, kind: "change", edits: ["<b>x</b>"], metrics: [], added: [], resolved: [], open: [] }, { id: "2", kind: "evil" }], last: { graph: 5 } }));
+  const read = readNoticeLog(store, "p1");
+  assert.equal(read.notices.length, 1);
+  assert.equal(read.last, null);
+  assert.deepEqual(readNoticeLog(null, "p1"), { notices: [], last: null });
+});
+
+test("Challenge notices leave out problems, and switching modes does not resolve them all", () => {
+  const hook = read("src/components/workspace/useArchieNotices.ts");
+  assert.match(hook, /findings: includeFindings \? noticeFindings\(result\.evaluation\.findings\) : \[\]/);
+  assert.match(hook, /!includeFindings \? \{ \.\.\.last\.current, findings: \[\] \}/);
+  assert.match(read("src/components/workspace/ArchitectureWorkspace.tsx"), /includeFindings: mode !== "challenge"/);
+});
+
+test("a change in traffic is named, and a notice without problems reads on its own", async () => {
+  const { withoutFindings } = await import("../src/lib/architecture/archie/notices.ts");
+  const before = { ...base(), requestsPerSecond: 1_000 };
+  const after = { ...base(), requestsPerSecond: 11_500, summary: { ...base().summary, score: 35 } };
+  const notice = buildNotice(before, after)!;
+  assert.deepEqual(notice.edits, ["Traffic 1,000 → 12k req/s"]);
+  assert.equal(noticeHeadline({ ...notice, edits: [] }), "Score 80 → 35.");
+  const challenge = withoutFindings({ ...notice, added: before.findings });
+  assert.deepEqual(challenge?.added, []);
+  assert.equal(withoutFindings(buildNotice(null, base())!), null, "the first look is all problems");
+});

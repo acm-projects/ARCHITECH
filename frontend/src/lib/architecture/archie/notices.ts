@@ -7,6 +7,14 @@ import { formatLatency, formatMonthlyCost, formatRate } from "../implementationS
 // and connections changed, which numbers moved, which problems appeared or were resolved.
 // Pure, so the same two designs always produce the same notice.
 
+// The same notice without its problems, for Challenge, where they would be hints. Null when
+// nothing is left to say.
+export function withoutFindings<T extends ArchieNotice>(notice: T): T | null {
+  if (notice.kind === "check") return null;
+  if (notice.edits.length === 0 && notice.metrics.length === 0) return null;
+  return { ...notice, added: [], resolved: [], open: [] };
+}
+
 export type NoticeFinding = { id: string; title: string; severity: Severity };
 
 // The parts of a design a notice compares. Positions and selection are not part of it.
@@ -15,6 +23,8 @@ export type NoticeGraph = { nodes: readonly NoticeComponent[]; edges: readonly {
 
 export type NoticeSnapshot = {
   graph: NoticeGraph;
+  // The traffic the numbers were measured at; a change in load moves them without an edit.
+  requestsPerSecond?: number;
   summary: Pick<LiveSummary, "score" | "capacityRps" | "p95LatencyMs" | "monthlyCost" | "uptimePercent">;
   findings: NoticeFinding[];
 };
@@ -104,6 +114,9 @@ export function buildNotice(before: NoticeSnapshot | null, after: NoticeSnapshot
   const added = open.filter((finding) => !had.has(finding.id));
   const resolved = [...before.findings].filter((finding) => !has.has(finding.id)).sort(bySeverity);
   const edits = graphEdits(before.graph, after.graph);
+  if (before.requestsPerSecond !== undefined && after.requestsPerSecond !== undefined && before.requestsPerSecond !== after.requestsPerSecond) {
+    edits.unshift(`Traffic ${formatRate(before.requestsPerSecond)} → ${formatRate(after.requestsPerSecond)} req/s`);
+  }
   const metrics = metricMoves(before.summary, after.summary);
   if (edits.length === 0 && metrics.length === 0 && added.length === 0 && resolved.length === 0) return null;
   return { kind: "change", edits, metrics, added, resolved, open };
@@ -121,6 +134,6 @@ export function noticeHeadline(notice: ArchieNotice): string {
   const lead = notice.edits[0];
   const score = notice.metrics.find((metric) => metric.label === "Score");
   if (parts.length > 0) return `${lead ? `${lead}: ` : ""}${parts.join(", ")}.`;
-  if (score) return `${lead ? `${lead}: ` : ""}score ${score.before} → ${score.after}.`;
+  if (score) return lead ? `${lead}: score ${score.before} → ${score.after}.` : `Score ${score.before} → ${score.after}.`;
   return `${lead ?? "Design updated"}.`;
 }

@@ -384,7 +384,7 @@ function DesignStats({ summary }: { summary: LiveSummary }) {
         { label: "Score", value: summary.score },
         { label: "p95", value: formatLatency(summary.p95LatencyMs) },
         { label: "Uptime", value: `${summary.uptimePercent}%` },
-        { label: "Cost", value: formatMonthlyCost(summary.monthlyCost) },
+        { label: "Cost /mo", value: `$${Math.round(summary.monthlyCost).toLocaleString("en-US")}` },
       ]}
     />
   );

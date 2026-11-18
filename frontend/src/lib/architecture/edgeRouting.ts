@@ -141,7 +141,14 @@ export function getOrthogonalEdgePath({
   // the right. Step routing would run back through both components, so go out by the stub,
   // turn into the gap between the rows (or below both when they share a row), cross over, and
   // enter the target from its own side.
-  if (sourcePosition === Position.Right && targetPosition === Position.Left && targetX < sourceX + 2 * EDGE_STUB) {
+  // Two components side by side with only a narrow gap: the target is still to the right, so
+  // the line steps across the gap at its middle instead of looping back round both.
+  if (sourcePosition === Position.Right && targetPosition === Position.Left && targetX >= sourceX && targetX < sourceX + 2 * EDGE_STUB) {
+    const midX = (sourceX + targetX) / 2;
+    const path = targetY === sourceY ? `M${sourceX} ${sourceY}H${targetX}` : `M${sourceX} ${sourceY}H${midX}V${targetY}H${targetX}`;
+    return [path, midX, (sourceY + targetY) / 2, Math.abs(midX - sourceX), Math.abs(targetY - sourceY) / 2];
+  }
+  if (sourcePosition === Position.Right && targetPosition === Position.Left && targetX < sourceX) {
     const outX = sourceX + EDGE_STUB;
     const inX = targetX - EDGE_STUB;
     const gap = Math.abs(targetY - sourceY);

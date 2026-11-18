@@ -481,5 +481,5 @@
 .axp-notice[data-tone="worse"] { border-left-color: var(--ax-danger); }
 .axp-notice[data-tone="better"] { border-left-color: var(--axp-good); }
 .axp-notice-edits { padding: 0 var(--axp-inset); }
-.axp-notice time { margin-left: 4px; }
+.axp-notice time { margin-left: 4px; white-space: nowrap; }
 .axp-notice > * { min-width: 0; }

@@ -329,11 +329,15 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
   const liveReady = Boolean(live.result?.summary.ready);
   // Archie posts what each edit did to the design into its conversation, from the same live
   // evaluation as the design check, and counts the ones that came in while it was closed.
+  // In Challenge the notices say what changed and which numbers moved, never which problems
+  // there are: those would be hints.
   const archieNotices = useArchieNotices({
+    scopeKey: savedProjectId,
     result: live.result,
     nodes,
     edges,
-    enabled: canRunDesign && designCheck.enabled,
+    enabled: (canRunDesign && designCheck.enabled) || mode === "challenge",
+    includeFindings: mode !== "challenge",
     archieOpen: inspector.archieOpen,
   });
   const openFinding = useCallback((findingId: string) => {
@@ -694,7 +698,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
             <div hidden={!showInspector}>
               <div className="ax-project-menu-group" role="group" aria-label="Run and export">
                 <p className="ax-project-menu-label" aria-hidden="true">Run and export</p>
-                {savedProjectId && <RunnableAppButton projectId={savedProjectId} popoverTarget={menuId} />}
+                {savedProjectId && <RunnableAppButton projectId={savedProjectId} popoverTarget={menuId} onBeforeOpen={saveNow} />}
                 <ExportButton title={title} popoverTarget={menuId} />
               </div>
               {savedProjectId && (
@@ -818,6 +822,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                     reviewActive={canRunDesign && liveReady && designCheck.enabled}
                     asked={archieQuestion}
                     notices={archieNotices.notices}
+                    onClearNotices={archieNotices.clear}
                     onOpenFinding={openFinding}
                     guidance={mode === "challenge" ? (
                       <ChallengeCard

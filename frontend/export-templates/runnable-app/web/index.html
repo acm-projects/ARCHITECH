@@ -52,7 +52,7 @@
   code { font-family: var(--mono); font-size: 12px; }
 
   /* ---- Frame: one bar across the top, the design on the left, the app on the right ---- */
-  .shell { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100dvh; }
+  .shell { display: flex; flex-direction: column; height: 100dvh; }
   .topbar { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 12px 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
   .brand { display: inline-flex; align-items: center; gap: 8px; flex: none; text-decoration: none; font-weight: 800; letter-spacing: .02em; }
   .brand img { width: 26px; height: 22px; object-fit: contain; }
@@ -65,7 +65,8 @@
   .back { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 32px; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: var(--control); font-size: 13px; font-weight: 500; text-decoration: none; }
   .back:hover { background: var(--soft); }
 
-  .split { display: grid; grid-template-columns: minmax(420px, 52%) minmax(0, 1fr); min-height: 0; }
+  .stale { margin: 0; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--warn-soft); color: var(--warn); font-size: 13px; }
+  .split { display: grid; flex: 1 1 auto; grid-template-columns: minmax(420px, 52%) minmax(0, 1fr); min-height: 0; }
 
   /* ---- Left: the design, Archie, and every request ---- */
   .demo { display: grid; grid-template-rows: minmax(240px, 1fr) auto minmax(170px, 32%); gap: 12px; min-height: 0; padding: 12px; overflow: hidden; border-right: 1px solid var(--line); }
@@ -197,6 +198,7 @@
     <span class="grow"></span>
     <a class="back" id="back" hidden aria-label="Back to the design">←<span class="long"> Back to the design</span></a>
   </header>
+  <p class="stale" id="stale" role="status" hidden>Your newest changes had not reached the server yet, so this is the last saved version of the design. Go back and run it again in a moment to see them.</p>
 
   <div class="split">
     <!-- Left: Archie shows what each part of your design does -->
@@ -880,6 +882,7 @@
       $("brand-divider").hidden = false;
       $("back").href = `/workspace/${project}`;
       $("back").hidden = false;
+      $("stale").hidden = !new URLSearchParams(location.search).has("unsaved");
     }
     renderHistory();
     config.labels = Object.fromEntries([...config.components.map((part) => [part.node, part.label]), ...config.design.nodes.map((n) => [n.id, n.label])]);

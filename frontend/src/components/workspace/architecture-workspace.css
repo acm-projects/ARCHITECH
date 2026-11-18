@@ -1598,3 +1598,10 @@
 }
 .ax-workspace .ax-snap-guide[data-axis="x"] { border-left: 1px dashed var(--ax-accent); }
 .ax-workspace .ax-snap-guide[data-axis="y"] { border-top: 1px dashed var(--ax-accent); }
+
+/* A run finished while its panel was closed: the button opens its results instead of running. */
+.ax-workspace .ax-header .ax-run-button[data-results] { position: relative; }
+.ax-workspace .ax-run-ready {
+  position: absolute; top: -4px; right: -4px; width: 10px; height: 10px;
+  border: 2px solid var(--ax-surface); border-radius: 50%; background: #16a34a;
+}

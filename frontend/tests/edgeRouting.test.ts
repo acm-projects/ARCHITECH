@@ -81,6 +81,16 @@ test("a back-edge goes around both components instead of through them", () => {
   assert.equal(p[1].x - p[0].x, EDGE_STUB, "leaves by one stub before turning");
 });
 
+test("components side by side with a narrow gap are joined across it, not by a loop", () => {
+  const [straight] = getOrthogonalEdgePath({ sourceX: 100, sourceY: 50, sourcePosition: Position.Right, targetX: 114, targetY: 50, targetPosition: Position.Left });
+  assert.equal(straight, "M100 50H114");
+  const [step] = getOrthogonalEdgePath({ sourceX: 100, sourceY: 50, sourcePosition: Position.Right, targetX: 114, targetY: 70, targetPosition: Position.Left });
+  assert.equal(step, "M100 50H107V70H114");
+  // A target that is really behind the source still goes round.
+  const [around] = getOrthogonalEdgePath({ sourceX: 100, sourceY: 50, sourcePosition: Position.Right, targetX: 90, targetY: 50, targetPosition: Position.Left });
+  assert.match(around, /^M100 50H112V/);
+});
+
 test("the arrowhead's tip sits on the target handle and points into it", () => {
   assert.equal(arrowHeadPath(10, 20, Position.Left), "M10 20L2 16L2 24Z");
   assert.equal(arrowHeadPath(10, 20, Position.Top), "M10 20L6 12L14 12Z");

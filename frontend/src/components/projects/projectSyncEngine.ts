@@ -55,7 +55,7 @@ function stringRecord(value: unknown): Record<string, string> {
   return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
 }
 
-function readSyncState(storage: Storage): SyncState | null {
+export function readSyncState(storage: Pick<Storage, "getItem">): Pick<SyncState, "owner" | "synced" | "revisions" | "pending"> | null {
   try {
     const parsed: unknown = JSON.parse(storage.getItem(SYNC_STATE_KEY) ?? "null");
     if (

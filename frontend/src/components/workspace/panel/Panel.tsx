@@ -140,14 +140,30 @@ export default function Panel({
     column.addEventListener(EXCLUSIVE_EVENT, makeWay);
     return () => column.removeEventListener(EXCLUSIVE_EVENT, makeWay);
   }, []);
+  // A panel shown again (Simulation from its Run button) opens unfolded.
+  const wasHidden = useRef(hidden);
+  useEffect(() => {
+    if (wasHidden.current && !hidden && collapsed && !collapse) toggle();
+    wasHidden.current = hidden;
+  }, [hidden, collapsed, collapse, toggle]);
   // The column folds this panel when the open panels no longer fit, and opens it again when
   // they do (see stackFit.ts).
   useEffect(() => {
     const panel = root.current;
     if (!panel) return;
-    const fold = () => { if (!collapsed) toggle(); };
+    // Read from `latest`, which a fold for another panel (see EXCLUSIVE_EVENT) updates at once:
+    // two folds in the same moment must not toggle the panel open again. A panel already making
+    // way for another (closing) is left alone.
+    const fold = () => {
+      const self = latest.current;
+      if (self.collapsed || self.hidden) return;
+      latest.current = { ...self, collapsed: true };
+      toggle();
+    };
     const reopen = () => {
-      if (!collapsed) return;
+      const self = latest.current;
+      if (!self.collapsed) return;
+      latest.current = { ...self, collapsed: false };
       reopenedByColumn.current = true;
       toggle();
     };

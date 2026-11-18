@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ComponentProps, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { BoxSelect, LoaderCircle, Play } from "lucide-react";
 
@@ -33,6 +33,7 @@ type WorkspaceInspectorProps = {
   asked?: { key: number; text: string } | null;
   notices?: ComponentProps<typeof ArchitectPanel>["notices"];
   onOpenFinding?: (findingId: string) => void;
+  onClearNotices?: () => void;
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate" | "simulation">;
 };
 
@@ -49,6 +50,15 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, compone
 }) {
   const anchor = useRef<HTMLDivElement>(null);
   const running = runs.view.isRunning;
+  // A run that finished while its panel was closed (another panel took its place) waits here,
+  // and the button says so until the panel is opened again.
+  const [wasRunning, setWasRunning] = useState(running);
+  const [unseen, setUnseen] = useState(false);
+  if (running !== wasRunning) {
+    setWasRunning(running);
+    if (!running && !expanded && runs.view.result) setUnseen(true);
+  }
+  if (unseen && (expanded || running)) setUnseen(false);
   // Simulation heads the column, which may be scrolled down to a panel further along it.
   useEffect(() => {
     if (expanded) panelHost?.closest(".ax-widget-stack")?.scrollTo({ top: 0 });
@@ -60,11 +70,13 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, compone
       anchor.current?.querySelector<HTMLButtonElement>("button")?.focus();
     }
   }}>
-    <button type="button" className="ax-run-button" aria-label="Run simulation"
+    <button type="button" className="ax-run-button" aria-label={unseen ? "Show the new run results" : "Run simulation"}
       aria-controls="ax-run-panel" aria-expanded={expanded} aria-busy={runs.view.isRunning}
-      disabled={runs.view.isRunning} onClick={() => onShowResults(runs.run)}>
+      data-results={unseen || undefined}
+      disabled={runs.view.isRunning} onClick={() => (unseen ? onToggle() : onShowResults(runs.run))}>
       {runs.view.isRunning ? <LoaderCircle size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
-      Run
+      {unseen ? "Results ready" : "Run"}
+      {unseen && <span className="ax-run-ready" aria-hidden="true" />}
     </button>
     {panelHost && createPortal(
       <Panel
@@ -93,7 +105,7 @@ export default function WorkspaceInspector({
   projectId,
   nodes, controller, onClearSelection, onApply, customTechnologies,
   guidance,
-  review, reviewDetail, reviewActive, asked, notices, onOpenFinding,
+  review, reviewDetail, reviewActive, asked, notices, onOpenFinding, onClearNotices,
 }: Omit<WorkspaceInspectorProps, "runs">) {
   const { archieOpen, archieRequest, historyOpen, configuring, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory } = controller;
   const selectionCollapse = usePanelCollapse();
@@ -163,6 +175,7 @@ export default function WorkspaceInspector({
           asked={asked}
           notices={notices}
           onOpenFinding={onOpenFinding}
+          onClearNotices={onClearNotices}
         />
       )}
     </>

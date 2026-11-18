@@ -593,8 +593,10 @@ test("Run owns traffic, metrics and reviews after Continue exploring", () => {
   assert.match(workspace, /\) : canRunDesign && <SimulationControl/);
   assert.match(inspector, /runs\.runAtRate\(rate\)/);
   assert.doesNotMatch(inspector, /title="Metrics"/);
-  assert.match(inspector, /aria-label="Run simulation"/);
-  assert.match(inspector, /onClick=\{\(\) => onShowResults\(runs\.run\)\}/);
+  assert.match(inspector, /"Run simulation"/);
+  // A run that finished behind another panel: the button opens its results instead of running again.
+  assert.match(inspector, /onClick=\{\(\) => \(unseen \? onToggle\(\) : onShowResults\(runs\.run\)\)\}/);
+  assert.match(inspector, /"Results ready"/);
   assert.doesNotMatch(inspector, /title="Stress test"|title="Live estimates"|title="System review"|<StressTestPanel|role="tab"/);
   assert.match(control, /aria-controls="ax-run-panel"/);
   assert.doesNotMatch(control, /popover=|ResizeObserver/);

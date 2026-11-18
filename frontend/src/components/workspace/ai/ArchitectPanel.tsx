@@ -163,7 +163,8 @@ function NoticeMessage({ notice, onOpenFinding }: { notice: PostedNotice; onOpen
       <p className="axp-message">
         <strong>{noticeHeadline(notice)}</strong> <time dateTime={new Date(notice.at).toISOString()}>{clock(notice.at)}</time>
       </p>
-      {notice.edits.length > 0 && <p className="axp-notice-edits">{notice.edits.join(" · ")}</p>}
+      {/* The headline already names the first edit. */}
+      {notice.edits.length > 1 && <p className="axp-notice-edits">{notice.edits.slice(1).join(" · ")}</p>}
       {notice.metrics.map((metric) => (
         <PanelRow key={metric.label} label={metric.label} value={<>{metric.before} → <PanelDelta better={metric.better}>{metric.after}</PanelDelta></>} />
       ))}
@@ -197,7 +198,10 @@ export default function ArchitectPanel({
   asked = null,
   notices = [],
   onOpenFinding,
+  onClearNotices,
 }: {
+  // A new chat starts without the earlier notices.
+  onClearNotices?: () => void;
   // What each edit did to the design, posted among the answers (see useArchieNotices).
   notices?: readonly PostedNotice[];
   // Opens a finding from a notice in the design check above.
@@ -276,14 +280,12 @@ export default function ArchitectPanel({
     }, SAVE_DELAY_MS);
     return () => clearTimeout(timer);
   }, [turns, busy, restored, projectId]);
-  // Notices from before a new chat stay out of it.
-  const [clearedAt, setClearedAt] = useState(0);
   const newChat = () => {
     abort.current?.abort();
     setTurns([]);
-    setClearedAt(Date.now());
+    onClearNotices?.();
   };
-  const shownNotices = notices.filter((notice) => notice.at > clearedAt);
+  const shownNotices = notices;
   // Answers and notices in the order they happened.
   const feed = [
     ...turns.map((turn) => ({ at: turn.at, turn, notice: null })),
@@ -386,7 +388,7 @@ export default function ArchitectPanel({
       icon={<ArchiePortrait />}
       title="Archie"
       revealKey={revealKey}
-      actions={turns.length > 0 && (
+      actions={(turns.length > 0 || notices.length > 0) && (
         <button type="button" className="axp-icon-btn" aria-label="Start a new conversation" title="New chat" onClick={newChat} disabled={busy}>
           <MessageSquarePlus size={15} aria-hidden="true" />
         </button>

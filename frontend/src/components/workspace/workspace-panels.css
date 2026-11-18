@@ -233,3 +233,19 @@
 .ax-workspace .ax-panel-content .ax-panel-action:is(:disabled, [aria-disabled="true"]) { opacity: .45; cursor: default; }
 .ax-workspace .ax-new-project-dialog .ax-challenge-intro-start { min-height: 44px; font-size: 15px; }
 
+
+/* ---- Phones ----
+   The top bar keeps every control but shows them as icons (their names stay for screen
+   readers and tooltips), and the right column stops above the bottom bar, which spans the
+   width there. */
+@media (max-width: 600px) {
+  .ax-workspace .ax-header { gap: 6px; padding-inline: 10px 6px; }
+  .ax-workspace .ax-header-project { min-width: 0; gap: 8px; }
+  .ax-workspace .ax-header .ax-title { min-width: 0; max-width: 34vw; font-size: 14px; }
+  .ax-workspace .ax-header-divider { display: none; }
+  .ax-workspace .ax-mode-switch button,
+  .ax-workspace .ax-header-actions .ax-header-menu-trigger,
+  .ax-workspace .ax-header .ax-run-button { gap: 0; padding-inline: 9px; font-size: 0; }
+  .ax-workspace .ax-header-menu-trigger > svg:last-child { display: none; }
+  .ax-workspace .ax-widget-stack { bottom: 64px; }
+}
