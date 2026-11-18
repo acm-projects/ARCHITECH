@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useState, type ReactNode } from "react";
-import { RotateCcw } from "lucide-react";
+import { MessageCircle, RotateCcw, Settings2, Trash2, ZapOff } from "lucide-react";
 
 import { STALE_NOTICE, explainNodeInView } from "../../lib/architecture/archie/view";
 import type { PropertyView } from "../../lib/architecture/componentConfigView";
@@ -53,7 +53,7 @@ export function NodeActionBar({
         aria-pressed={panel === "ai"}
         className="ax-nodebar-ai"
       >
-        Ask Archie
+        <MessageCircle size={14} aria-hidden="true" /> Ask Archie
       </button>
       <span className="ax-nodebar-sep" aria-hidden="true" hidden={!archieEnabled} />
       <button
@@ -62,7 +62,7 @@ export function NodeActionBar({
         aria-pressed={panel === "configure"}
         className="ax-nodebar-config"
       >
-        Configure
+        <Settings2 size={14} aria-hidden="true" /> Configure
       </button>
       {failure && (
         <>
@@ -74,13 +74,14 @@ export function NodeActionBar({
             title={failure.down ? "Bring this component back up" : "Take this component down and see what still works"}
             className="ax-nodebar-fail"
           >
+            {failure.down ? <RotateCcw size={14} aria-hidden="true" /> : <ZapOff size={14} aria-hidden="true" />}
             {failure.down ? "Restore" : "Fail"}
           </button>
         </>
       )}
       <span className="ax-nodebar-sep" aria-hidden="true" />
       <button type="button" onClick={onDelete} className="ax-nodebar-delete">
-        Delete
+        <Trash2 size={14} aria-hidden="true" /> Delete
       </button>
     </div>
   );

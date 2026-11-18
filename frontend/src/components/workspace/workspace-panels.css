@@ -13,6 +13,9 @@
 
    Panel contents keep their own rules and are zoomed as a whole, so their proportions hold and
    nothing inside falls behind. Lengths set on a zoomed element are divided by the zoom. */
+@media (max-width: 767px) {
+  .ax-workspace .ax-nodebar button svg { display: none; }
+}
 @media (min-width: 768px) {
   .ax-workspace {
     --ax-panel-zoom: 1;
@@ -73,8 +76,11 @@
   .ax-workspace .ax-project-menu :is(.ax-project-menu-item, .ax-ai-toggle) svg { width: 15px; height: 15px; flex-shrink: 0; }
 
   /* The bar on a selected component is the way into these panels, so it reads at their size. */
-  .ax-workspace .ax-nodebar { height: 34px; padding: 3px; border-color: var(--ax-line-strong); border-radius: 10px; box-shadow: var(--ax-shadow-float); }
-  .ax-workspace .ax-nodebar button { height: 26px; padding: 0 10px; border-radius: 7px; font-size: 12px; }
+  .ax-workspace .ax-nodebar { height: 36px; padding: 3px; border-color: var(--ax-line-strong); border-radius: 3px; box-shadow: none; }
+  .ax-workspace .ax-nodebar button { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 8px; border-radius: 2px; font-size: 12px; }
+  .ax-workspace .ax-nodebar button[hidden] { display: none; }
+  .ax-workspace .ax-nodebar .ax-nodebar-sep { margin-inline: 3px; }
+  .ax-workspace .ax-nodebar .ax-nodebar-delete { color: var(--ax-muted); }
 }
 
 /* ---- Right panels ----

@@ -324,6 +324,13 @@
 .axp-turn { display: flex; flex-direction: column; min-width: 0; }
 .axp-turn-label { display: none; }
 .axp-notice-author { display: none; }
+.axp-review-label, .axp-notice-section { padding: 4px var(--axp-inset); color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+.axp-service-status { display: grid; gap: 2px; padding: 9px var(--axp-inset); border-bottom: 1px solid var(--ax-line); color: var(--ax-ink); }
+.axp-service-status strong { font-weight: 500; }
+.axp-service-status span { color: var(--ax-muted); }
+.axp-notice-metrics { padding-block: 4px; border-bottom: 1px solid var(--ax-line); }
+.axp-notice-metrics .axp-row { min-height: 26px; }
+.axp-notice-metrics .axp-value { max-width: 75%; }
 
 /* Archie reads as a design activity log on desktop, with the composer anchored below it. */
 @media (min-width: 769px) {
@@ -331,7 +338,6 @@
   .axp[data-tool="archie"] .axp-messages { gap: 0; padding: 4px 0 12px; }
   .axp[data-tool="archie"] .axp-turn { gap: 5px; padding: 12px var(--axp-inset); border-bottom: 1px solid var(--ax-line); }
   .axp[data-tool="archie"] .axp-turn-label, .axp[data-tool="archie"] .axp-notice-author { display: flex; align-items: center; gap: 8px; color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
-  .ax-workspace .axp[data-tool="archie"] :is(.axp-turn-label, .axp-notice-author) .ax-ai-portrait { width: 22px; height: 22px; border-width: 1px; }
   .axp[data-tool="archie"] .axp-turn .axp-message { padding: 0; line-height: 1.5; }
   .axp[data-tool="archie"] .axp-turn .axp-message[data-role="user"] { align-self: stretch; max-width: none; margin: 0; border-radius: 0; background: transparent; }
   .axp[data-tool="archie"] .axp-turn .axp-message[data-tone="danger"] { padding-left: 9px; border-left: 2px solid var(--ax-danger); }

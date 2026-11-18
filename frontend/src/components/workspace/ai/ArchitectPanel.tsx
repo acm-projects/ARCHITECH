@@ -22,7 +22,7 @@ import { graphFromCanvas } from "../../../lib/projects/projectPayload";
 import { DesignTrafficContext } from "../DesignTrafficContext";
 import { ArchieEnabledContext } from "../ArchieContext";
 import type { ArchitectureFlowNode } from "../nodes/ArchitectureNode";
-import Panel, { PanelAction, PanelActions, PanelChange, PanelDelta, PanelGroup, PanelLink, PanelRow, PanelStats, PanelText } from "../panel/Panel";
+import Panel, { PanelAction, PanelActions, PanelDelta, PanelGroup, PanelLink, PanelRow, PanelText } from "../panel/Panel";
 import { ArchiePortrait } from "./ArchiePanel";
 import { noticeHeadline, noticeOutcome, noticeTitle } from "../../../lib/architecture/archie/notices";
 import { SEVERITY_WORD } from "../../../lib/architecture/designCheck";
@@ -175,19 +175,15 @@ function NoticeMessage({ notice, open, onToggle, onOpenFinding }: {
       </button>
       {open && (
         <>
-          {/* The numbers that moved, as they are now; the arrow says which way, and hovering
-              shows what each was before. */}
           {notice.metrics.length > 0 && (
-            <PanelStats
-              label="What moved"
-              stats={notice.metrics.slice(0, MAX_NOTICE_STATS).map((metric) => ({
-                label: STAT_LABEL[metric.label] ?? metric.label,
-                // "Cost /mo" already says per month.
-                value: <>{metric.after.replace(/\/mo$/, "")}<PanelChange direction={metric.better ? "improved" : "regressed"} /></>,
-                title: `${metric.label}: ${metric.before} → ${metric.after}`,
-              }))}
-            />
+            <div className="axp-notice-metrics" role="group" aria-label="Metric changes">
+              {notice.metrics.map((metric) => (
+                <PanelRow key={metric.label} label={STAT_LABEL[metric.label] ?? metric.label}
+                  value={<>{metric.before} → <PanelDelta better={metric.better}>{metric.after}</PanelDelta></>} />
+              ))}
+            </div>
           )}
+          {notice.added.length > 0 && <div className="axp-notice-section">New</div>}
           {notice.added.map((finding) => (
             <PanelLink
               key={`added-${finding.id}`}
@@ -201,13 +197,10 @@ function NoticeMessage({ notice, open, onToggle, onOpenFinding }: {
           ))}
           {resolved.length > 0 && (
             <div className="axp-notice-resolved">
-              <PanelRow
-                item
+              <div className="axp-notice-section">Resolved</div>
+              {resolved.map((title, index) => <PanelRow key={`${index}-${title}`} item
                 lead={<PanelDelta better><Check size={14} aria-hidden="true" /></PanelDelta>}
-                label={resolved.join(", ")}
-                value={`${resolved.length} resolved`}
-                title={`Resolved:\n${resolved.join("\n")}`}
-              />
+                label={title} title={title} />)}
             </div>
           )}
         </>
@@ -218,8 +211,7 @@ function NoticeMessage({ notice, open, onToggle, onOpenFinding }: {
 
 // The same short names as the numbers at the top of the panel, so a notice reads against them.
 const STAT_LABEL: Record<string, string> = { "p95 latency": "p95", Availability: "Uptime", "Monthly cost": "Cost /mo" };
-// Four fit the panel's width side by side.
-const MAX_NOTICE_STATS = 4;
+const NOT_CONFIGURED = "The AI Architect isn't set up on this server yet (it needs an API key).";
 
 // The conversation in order: questions and answers one by one, and notices that came in one
 // after another (with no question between them) kept together, so they can fold as one.
@@ -350,6 +342,8 @@ export default function ArchitectPanel({
   const shownNotices = notices;
   // Answers and notices in the order they happened.
   const feed = buildFeed(turns, shownNotices);
+  const latestAnswer = [...turns].reverse().find((turn): turn is AssistantTurn => turn.role === "assistant");
+  const unavailable = latestAnswer?.error === NOT_CONFIGURED;
   // Which notices are open: the newest starts open and every other starts folded; a click flips
   // one from where it started. Runs of notices show their older ones behind one row.
   const newestNotice = shownNotices.at(-1)?.id;
@@ -477,7 +471,8 @@ export default function ArchitectPanel({
       closeLabel="Close Archie"
       onClose={onClose}
     >
-      {review && <div className="axp-review">{review}</div>}
+      {review && <div className="axp-review">{!reviewDetail && <div className="axp-review-label">Current design</div>}{review}</div>}
+      {unavailable && !reviewDetail && <div className="axp-service-status" role="status"><strong>Archie is unavailable</strong><span>This server needs an API key.</span></div>}
       <div
         className="axp-messages"
         ref={list}
@@ -503,7 +498,8 @@ export default function ArchitectPanel({
             const runOpen = openRuns.has(entry.key);
             return (
               <div key={entry.key} className="axp-notice-run">
-                <div className="axp-notice-author"><ArchiePortrait /><span>Archie · Design changes</span></div>
+                <div className="axp-notice-author">Archie · Design changes</div>
+                {notice(entry.notices.at(-1)!)}
                 {older.length > 0 && (
                   <button type="button" className="axp-notice-more" aria-expanded={runOpen} onClick={() => setOpenRuns((set) => flip(set, entry.key))}>
                     <span>{older.length} earlier change{older.length === 1 ? "" : "s"}</span>
@@ -511,7 +507,6 @@ export default function ArchitectPanel({
                   </button>
                 )}
                 {runOpen && older.map(notice)}
-                {notice(entry.notices.at(-1)!)}
               </div>
             );
           }
@@ -523,7 +518,7 @@ export default function ArchitectPanel({
             </div>
           ) : (
             <div key={turn.id} className="axp-turn" data-role="assistant">
-              <span className="axp-turn-label"><ArchiePortrait />Archie</span>
+              <span className="axp-turn-label">Archie</span>
               {turn.text && <p className="axp-message">{turn.text}</p>}
               {!turn.text && !turn.done && !turn.error && <p className="axp-message" data-tone="soft">Looking at your design…</p>}
               {turn.suggestions.map((suggestion) => (
@@ -538,7 +533,7 @@ export default function ArchitectPanel({
               {turn.notes.map((note, index) => (
                 <p key={index} className="axp-message" data-tone="soft">{note}</p>
               ))}
-              {turn.error && <p role="alert" className="axp-message" data-tone="danger">{turn.error}</p>}
+              {turn.error && <p role="alert" className="axp-message" data-tone="danger">{unavailable && turn.error === NOT_CONFIGURED ? "Not answered · Archie unavailable" : turn.error}</p>}
             </div>
           );
         })}
