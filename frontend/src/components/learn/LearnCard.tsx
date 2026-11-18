@@ -25,6 +25,8 @@ type LearnCardProps = {
   // A hint worked out from the design, shown when the learner is stuck.
   hint?: string | null;
   onDismissFeedback?: () => void;
+  // Leaves the tutorial for the full workspace. Absent once the tutorial is over.
+  onSkip?: () => void;
 };
 
 function DialogueText({ text }: { text: string }) {
@@ -69,7 +71,7 @@ function lessonComponents(lesson: Lesson) {
 }
 
 // Archie's first words, with the system the lesson builds.
-function LessonIntro({ lesson, onStart }: { lesson: Lesson; onStart: () => void }) {
+function LessonIntro({ lesson, onStart, onSkip }: { lesson: Lesson; onStart: () => void; onSkip?: () => void }) {
   return (
     <div className="axl-intro">
       <div className="axl-hello">
@@ -88,6 +90,7 @@ function LessonIntro({ lesson, onStart }: { lesson: Lesson; onStart: () => void 
         ))}
       </ul>
       <PanelActions>
+        {onSkip && <PanelAction onClick={onSkip}>Skip tutorial</PanelAction>}
         <PanelAction variant="primary" onClick={onStart}>Start lesson</PanelAction>
       </PanelActions>
     </div>
@@ -106,6 +109,7 @@ export default function LearnCard({
   feedback,
   hint,
   onDismissFeedback,
+  onSkip,
 }: LearnCardProps) {
   // Local on purpose: an empty canvas is a fair moment for him to say hello again.
   const [started, setStarted] = useState(false);
@@ -133,7 +137,7 @@ export default function LearnCard({
   return (
     <Panel label="Lesson guidance" title={lesson.title} icon={null} bare>
       <div aria-live="polite">
-        {intro ? <LessonIntro lesson={lesson} onStart={() => setStarted(true)} /> : (
+        {intro ? <LessonIntro lesson={lesson} onStart={() => setStarted(true)} onSkip={onSkip} /> : (
           <>
             <div className="axl-step">
               <p className="axl-step-title">
@@ -186,6 +190,11 @@ export default function LearnCard({
               </ol>
             )}
             {guided && hint && <PanelReveal label="Hint">{hint}</PanelReveal>}
+            {guided && onSkip && (
+              <PanelActions>
+                <PanelAction onClick={onSkip}>Skip tutorial</PanelAction>
+              </PanelActions>
+            )}
 
             {(freePlay || succeeded) && (
               <PanelActions>

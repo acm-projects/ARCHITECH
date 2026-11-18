@@ -101,6 +101,10 @@ export function useLearnMode({
       if (freePlay) setExplorationStarted(true);
     },
     runs,
+    // Skipping goes straight to the full workspace; Reset brings the tutorial back.
+    skipTutorial: () => {
+      if (setTutorialSkipped(true)) setExplorationStarted(true);
+    },
     restartLesson: () => {
       setExplorationStarted(false);
       engine.reset();

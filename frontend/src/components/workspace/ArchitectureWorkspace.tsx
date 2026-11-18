@@ -804,6 +804,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                     feedback={learn.engine.feedback}
                     hint={learn.engine.hintVisible ? learn.engine.hint?.text : null}
                     onDismissFeedback={learn.engine.dismissFeedback}
+                    onSkip={learn.freePlay ? undefined : learn.skipTutorial}
                   />
                 )}
               </div>
