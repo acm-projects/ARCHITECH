@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Target } from "lucide-react";
 
 import type { OfficialResult } from "../../lib/architecture/challenge/challengeClient";
+import type { LiveTarget } from "../../lib/architecture/challenge/targets";
 import Panel, {
   PanelAction,
   PanelActions,
+  PanelDelta,
   PanelDetail,
   PanelGroup,
   PanelLink,
@@ -33,7 +35,25 @@ type ChallengeCardProps = {
   error?: string | null;
   official: OfficialResult | null;
   leaderboardVersion: number;
+  // The measurable targets against the design as it is now; null before anything serves.
+  targets?: LiveTarget[] | null;
 };
+
+// Live targets: each one states what is asked, what the design measures now, and Met or
+// Missed in words, so the state does not rest on color.
+function TargetRows({ targets }: { targets: LiveTarget[] }) {
+  return (
+    <PanelGroup title="Targets" meta={`${targets.filter((target) => target.met).length} of ${targets.length} met`}>
+      {targets.map((target) => (
+        <PanelRow
+          key={target.id}
+          label={target.label}
+          value={<>{target.value} · <PanelDelta better={target.met}>{target.met ? "Met" : "Missed"}</PanelDelta></>}
+        />
+      ))}
+    </PanelGroup>
+  );
+}
 
 const MAX_FINDINGS = 4;
 
@@ -70,6 +90,7 @@ export default function ChallengeCard({
   error = null,
   official,
   leaderboardVersion,
+  targets = null,
 }: ChallengeCardProps) {
   const [detail, setDetail] = useState<string | null>(null);
   const back = () => setDetail(null);
@@ -98,6 +119,7 @@ export default function ChallengeCard({
                 ),
               )}
             </PanelGroup>
+            {targets && <TargetRows targets={targets} />}
             <PanelActions>
               <PanelAction onClick={onBack}>Requirements</PanelAction>
               <PanelAction variant="primary" onClick={onRun}>Submit again</PanelAction>
@@ -111,6 +133,7 @@ export default function ChallengeCard({
             <PanelGroup title="Requirements">
               {challenge.highlights.map((line) => <PanelRow key={line} item label={line} />)}
             </PanelGroup>
+            {targets && <TargetRows targets={targets} />}
             <PanelActions>
               <PanelAction variant="primary" onClick={onRun}>Submit design</PanelAction>
             </PanelActions>

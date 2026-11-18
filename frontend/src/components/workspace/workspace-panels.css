@@ -117,12 +117,8 @@
   /* The narrowed canvas only steers fitting and panning. Components past its edge keep drawing
      and pass under the panels, rather than being cut off at an invisible line beside them. */
   .ax-workspace .ax-workspace-canvas { overflow: hidden; }
-<<<<<<< HEAD
   /* React Flow sets overflow: hidden inline on its wrapper, so only !important outranks it. */
   .ax-workspace .ax-workspace-canvas .ax-diagram-viewport .react-flow { overflow: visible !important; }
-=======
-  .ax-workspace .ax-workspace-canvas .ax-diagram-viewport .react-flow { overflow: visible; }
->>>>>>> 64fe0b66ac335ce59916a62f54a7071b733286c7
 }
 /* A popup keeps clear of the column: it fits the space beside it and slides left of the bar's
    center just far enough. The bar itself stays put, so nothing moves under the pointer. A phone

@@ -21,6 +21,8 @@ import { FORWARD_SIDES, connectionSides, hasReverseEdge, isMirroredPair } from "
 import { removeFromGraph } from "../../../lib/architecture/nodeOperations";
 import ComponentGlyph from "../ComponentGlyph";
 import { InspectorContext } from "../InspectorContext";
+import { FailureContext } from "../FailureContext";
+import { canFail } from "../../../lib/architecture/evaluation/failure";
 import ComponentInspector from "../ComponentInspector";
 import { resolveImplementation } from "../../../lib/architecture/componentLibrary";
 import {
@@ -80,6 +82,8 @@ export default function ArchitectureNode({
     Edge
   >();
   const inspector = useContext(InspectorContext);
+  const failureTest = useContext(FailureContext);
+  const down = failureTest?.downId === id;
   const [panel, setPanel] = useState<NodePanel>("none");
   if ((!selected || inspector) && panel !== "none") setPanel("none");
 
@@ -133,6 +137,7 @@ export default function ArchitectureNode({
     connectingFrom !== null ? "is-connecting" : "",
     connectingFrom === id ? "is-connect-source" : "",
     connectingFrom !== null && connectingFrom !== id ? `accepts-${connectingEnd}` : "",
+    down ? "is-down" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -176,6 +181,7 @@ export default function ArchitectureNode({
         <span className="ax-node-name">{data.label}</span>
         <span className="ax-node-meta">{meta}</span>
       </span>
+      {down && <span className="ax-node-down" role="status">Down</span>}
 
       <Handle
         type="source"
@@ -193,6 +199,9 @@ export default function ArchitectureNode({
           onAskAi={inspector ? inspector.askArchie : () => togglePanel("ai")}
           onConfigure={inspector ? inspector.inspectComponent : () => togglePanel("configure")}
           onDelete={deleteThisNode}
+          failure={failureTest && canFail(data.type)
+            ? { down, onToggle: () => failureTest.toggle(id) }
+            : undefined}
         />
       </NodeToolbar>}
       {!readOnly && <NodeToolbar isVisible={selected && !inspector && panel !== "none"} position={Position.Bottom} offset={10}>

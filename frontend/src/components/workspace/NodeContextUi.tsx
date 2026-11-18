@@ -29,6 +29,8 @@ type NodeActionBarProps = {
   onAskAi: () => void;
   onConfigure: () => void;
   onDelete: () => void;
+  // Failure test switch: absent where failure tests are not offered.
+  failure?: { down: boolean; onToggle: () => void };
 };
 
 // `nodrag nopan` keep clicks on the bar from dragging the node or panning the canvas.
@@ -37,6 +39,7 @@ export function NodeActionBar({
   onAskAi,
   onConfigure,
   onDelete,
+  failure,
 }: NodeActionBarProps) {
   const archieEnabled = useContext(ArchieEnabledContext);
   return (
@@ -61,6 +64,20 @@ export function NodeActionBar({
       >
         Configure
       </button>
+      {failure && (
+        <>
+          <span className="ax-nodebar-sep" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={failure.onToggle}
+            aria-pressed={failure.down}
+            title={failure.down ? "Bring this component back up" : "Take this component down and see what still works"}
+            className="ax-nodebar-fail"
+          >
+            {failure.down ? "Restore" : "Fail"}
+          </button>
+        </>
+      )}
       <span className="ax-nodebar-sep" aria-hidden="true" />
       <button type="button" onClick={onDelete} className="ax-nodebar-delete">
         Delete

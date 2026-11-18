@@ -893,6 +893,28 @@
   outline: 2px solid var(--ax-accent);
   outline-offset: 2px;
 }
+/* Taken down by a failure test: dashed and greyed out, with "Down" in words, so the state
+   reads without color. Selection still draws its ring around it. */
+.ax-workspace .ax-node.is-down {
+  border-style: dashed;
+  border-color: var(--ax-danger);
+  background: var(--ax-canvas);
+}
+.ax-workspace .ax-node.is-down .ax-node-icon,
+.ax-workspace .ax-node.is-down .ax-node-text { opacity: 0.45; }
+.ax-workspace .ax-node .ax-node-down {
+  position: absolute;
+  top: -9px;
+  right: 8px;
+  padding: 0 5px;
+  border: 1px solid var(--ax-danger);
+  border-radius: 2px;
+  background: var(--ax-surface);
+  font: 600 10px/16px var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ax-danger);
+}
 .ax-workspace .react-flow__node:focus-visible .ax-node { outline: 2px dashed var(--ax-accent); outline-offset: 2px; }
 /* Picked up: it lifts off the paper. */
 .ax-workspace .react-flow__node.dragging .ax-node {
@@ -1063,6 +1085,7 @@
   background: color-mix(in srgb, var(--ax-danger) 10%, transparent);
   color: var(--ax-danger);
 }
+.ax-workspace .ax-nodebar .ax-nodebar-fail[aria-pressed="true"] { color: var(--ax-danger); }
 .ax-workspace .ax-nodebar .ax-nodebar-ai:disabled { color: var(--ax-subtle); cursor: default; }
 .ax-workspace .ax-nodebar .ax-nodebar-sep {
   width: 1px;

@@ -113,10 +113,20 @@ type Groups = {
   stores: string[];
 };
 
-export function simulate(input: GraphInput, traffic: TrafficProfile): Simulation {
+// `down` runs a failure test: those components never answer and every other one always does,
+// so the uptime that comes out is the share of requests still served while they are down.
+export function simulate(
+  input: GraphInput,
+  traffic: TrafficProfile,
+  options: { down?: ReadonlySet<string> } = {},
+): Simulation {
   const graph = createDirectedGraph(input);
   const configs = new Map<string, NodeSimulationConfig>();
-  for (const [id, node] of graph.nodes) configs.set(id, configureNode(node));
+  const { down } = options;
+  for (const [id, node] of graph.nodes) {
+    const config = configureNode(node);
+    configs.set(id, down ? { ...config, availability: down.has(id) ? 0 : 1 } : config);
+  }
   const roleOf = (id: string): NodeRole => (configs.get(id) as NodeSimulationConfig).role;
 
   const requestedRps = traffic.requestsPerSecond;

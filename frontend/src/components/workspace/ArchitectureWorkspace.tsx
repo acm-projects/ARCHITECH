@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { Gauge } from "lucide-react";
 import {
   ReactFlow,
@@ -59,6 +59,10 @@ import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
 import { DesignCheckBadges, DesignCheckSection, designCheckInDetail, useDesignCheck } from "./DesignCheck";
 import { LiveEstimatesPanel } from "./LiveMetricsBar";
+import { FailureContext } from "./FailureContext";
+import { FailureTestPanel } from "./FailureTestPanel";
+import { useFailureTest } from "./useFailureTest";
+import { liveTargets } from "../../lib/architecture/challenge/targets";
 import { useProjectAutosave } from "./useProjectAutosave";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import WorkspaceHeader from "./WorkspaceHeader";
@@ -308,8 +312,16 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
   const canRunDesign = mode === "learn" && learn.exploring;
   const archieEnabled = mode !== "learn" || learn.exploring;
   const showInspector = mode === "challenge" || learn.exploring;
-  // Live metrics wherever Run Design is available: re-evaluated shortly after each edit.
-  const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign });
+  // Live metrics wherever Run Design is available, and in Challenge for its live targets:
+  // re-evaluated shortly after each edit.
+  const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign || mode === "challenge" });
+  const challengeDefinition = challenge.challenge.definition;
+  const challengeTargets = useMemo(
+    () => mode === "challenge" && live.result?.summary.ready ? liveTargets(challengeDefinition, live.result.evaluation) : null,
+    [mode, live.result, challengeDefinition],
+  );
+  // Take one component down and see what still works, wherever the design tools are open.
+  const failure = useFailureTest({ nodes, edges, traffic: activeRuns.traffic, enabled: showInspector });
   // Problems marked on the canvas, listed with one-click fixes inside Archie's panel. A mark
   // on the canvas opens Archie at its finding.
   const designCheck = useDesignCheck({ onReveal: inspector.askArchie });
@@ -668,6 +680,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
             {/* React Flow is only responsible for displaying/interacting with the graph.
                 The actual project rules live in the helpers/hooks above. */}
             <div className="ax-diagram-viewport">
+              <FailureContext.Provider value={failure.context}>
               <InspectorContext.Provider value={showInspector ? inspector.nodeActions : null}>
                 <ReactFlow
                   proOptions={HIDE_ATTRIBUTION}
@@ -708,6 +721,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                   </ViewportPortal>
                 </ReactFlow>
               </InspectorContext.Provider>
+              </FailureContext.Provider>
             </div>
 
             {/* Keep floating tools below the header while the graph extends behind it. */}
@@ -723,6 +737,14 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
               <div className="ax-widget-stack" ref={widgetStack}>
                 {/* Simulation always heads the column. */}
                 <div ref={setSimulationHost} className="contents" />
+                {failure.downId !== null && (
+                  <FailureTestPanel
+                    impact={failure.impact}
+                    requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                    componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+                    onRestore={failure.restore}
+                  />
+                )}
                 {canRunDesign && liveOpen && (
                   <LiveEstimatesPanel
                     result={live.result}
@@ -765,6 +787,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                         error={challenge.view?.error}
                         official={challenge.official}
                         leaderboardVersion={challenge.leaderboardVersion}
+                        targets={challengeTargets}
                       />
                     ) : null}
                   />
