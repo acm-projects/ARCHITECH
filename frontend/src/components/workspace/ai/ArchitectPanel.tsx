@@ -4,7 +4,7 @@ import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } 
 
 import type { Edge } from "@xyflow/react";
 import { useOnSelectionChange, useReactFlow, useStore } from "@xyflow/react";
-import { ArrowDown, ChevronDown, MessageSquarePlus, Send, Square, X } from "lucide-react";
+import { ArrowDown, Check, ChevronDown, MessageSquarePlus, Send, Square, X } from "lucide-react";
 
 import type { MetricsSnapshot, SuggestionEvent } from "../../../lib/ai/architectChat";
 import { applyChanges } from "../../../lib/ai/changes";
@@ -22,9 +22,9 @@ import { graphFromCanvas } from "../../../lib/projects/projectPayload";
 import { DesignTrafficContext } from "../DesignTrafficContext";
 import { ArchieEnabledContext } from "../ArchieContext";
 import type { ArchitectureFlowNode } from "../nodes/ArchitectureNode";
-import Panel, { PanelAction, PanelActions, PanelDelta, PanelGroup, PanelLink, PanelRow, PanelText } from "../panel/Panel";
+import Panel, { PanelAction, PanelActions, PanelChange, PanelDelta, PanelGroup, PanelLink, PanelRow, PanelStats, PanelText } from "../panel/Panel";
 import { ArchiePortrait } from "./ArchiePanel";
-import { noticeHeadline } from "../../../lib/architecture/archie/notices";
+import { noticeHeadline, noticeOutcome, noticeTitle } from "../../../lib/architecture/archie/notices";
 import { SEVERITY_WORD } from "../../../lib/architecture/designCheck";
 import type { PostedNotice } from "../useArchieNotices";
 
@@ -162,49 +162,62 @@ function NoticeMessage({ notice, open, onToggle, onOpenFinding }: {
     notice.added.some((finding) => finding.severity !== "low") ? "worse"
       : notice.resolved.length > 0 && notice.added.length === 0 ? "better"
         : undefined;
-  const headline = noticeHeadline(notice);
+  const outcome = noticeOutcome(notice);
+  // Shown in full on hover: the sentence, every edit, and when.
+  const detail = [noticeHeadline(notice), ...notice.edits.slice(1), clock(notice.at)].join("\n");
+  const resolved = notice.resolved.map((finding) => finding.title);
   return (
-    <div className="axp-notice" data-tone={tone} role="status">
-      <button type="button" className="axp-notice-head" aria-expanded={open} title={headline} onClick={onToggle}>
-        <span className="axp-notice-title">{headline}</span>
-        <time className="axp-small" dateTime={new Date(notice.at).toISOString()}>{clock(notice.at)}</time>
+    <div className="axp-notice" data-tone={tone} role="status" aria-label={noticeHeadline(notice)}>
+      <button type="button" className="axp-notice-head" aria-expanded={open} title={detail} onClick={onToggle}>
+        <span className="axp-notice-title">{noticeTitle(notice)}</span>
+        {outcome && <span className="axp-small">{outcome}</span>}
         <ChevronDown size={14} aria-hidden="true" className="axp-go" />
       </button>
       {open && (
         <>
-          {/* The headline already names the first edit. */}
-          {notice.edits.length > 1 && <p className="axp-notice-line axp-small">{notice.edits.slice(1).join(" · ")}</p>}
+          {/* The numbers that moved, as they are now; the arrow says which way, and hovering
+              shows what each was before. */}
           {notice.metrics.length > 0 && (
-            <p className="axp-notice-line axp-small">
-              {notice.metrics.map((metric, index) => (
-                <span key={metric.label}>
-                  {index > 0 && " · "}
-                  {metric.label} {metric.before} → <PanelDelta better={metric.better}>{metric.after}</PanelDelta>
-                </span>
-              ))}
-            </p>
+            <PanelStats
+              label="What moved"
+              stats={notice.metrics.slice(0, MAX_NOTICE_STATS).map((metric) => ({
+                label: STAT_LABEL[metric.label] ?? metric.label,
+                // "Cost /mo" already says per month.
+                value: <>{metric.after.replace(/\/mo$/, "")}<PanelChange direction={metric.better ? "improved" : "regressed"} /></>,
+                title: `${metric.label}: ${metric.before} → ${metric.after}`,
+              }))}
+            />
           )}
           {notice.added.map((finding) => (
             <PanelLink
               key={`added-${finding.id}`}
               item
               label={finding.title}
-              value={notice.kind === "check" ? SEVERITY_WORD[finding.severity] : `New · ${SEVERITY_WORD[finding.severity]}`}
-              title={finding.title}
+              value={SEVERITY_WORD[finding.severity]}
+              title={notice.kind === "check" ? finding.title : `New: ${finding.title}`}
               disabled={!onOpenFinding}
               onClick={() => onOpenFinding?.(finding.id)}
             />
           ))}
-          {notice.resolved.length > 0 && (
-            <p className="axp-notice-line axp-small">
-              <PanelDelta better>Resolved</PanelDelta> {notice.resolved.map((finding) => finding.title).join(" · ")}
-            </p>
+          {resolved.length > 0 && (
+            <PanelRow
+              item
+              lead={<PanelDelta better><Check size={14} aria-hidden="true" /></PanelDelta>}
+              label={resolved.join(", ")}
+              value={`${resolved.length} resolved`}
+              title={`Resolved:\n${resolved.join("\n")}`}
+            />
           )}
         </>
       )}
     </div>
   );
 }
+
+// The same short names as the numbers at the top of the panel, so a notice reads against them.
+const STAT_LABEL: Record<string, string> = { "p95 latency": "p95", Availability: "Uptime", "Monthly cost": "Cost /mo" };
+// Four fit the panel's width side by side.
+const MAX_NOTICE_STATS = 4;
 
 // The conversation in order: questions and answers one by one, and notices that came in one
 // after another (with no question between them) kept together, so they can fold as one.

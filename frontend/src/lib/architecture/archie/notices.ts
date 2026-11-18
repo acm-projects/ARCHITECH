@@ -122,6 +122,25 @@ export function buildNotice(before: NoticeSnapshot | null, after: NoticeSnapshot
   return { kind: "change", edits, metrics, added, resolved, open };
 }
 
+// The notice folded to one line: what happened ("Added Cache") and, apart from it, how it came
+// out ("1 new · 3 resolved", or "Score 88 → 87"). The full sentence is noticeHeadline.
+export function noticeTitle(notice: ArchieNotice): string {
+  if (notice.kind === "check") return "Design check";
+  return notice.edits[0] ?? "Design updated";
+}
+export function noticeOutcome(notice: ArchieNotice): string {
+  if (notice.kind === "check") {
+    const count = notice.open.length;
+    return count === 0 ? "No problems" : `${count} problem${count === 1 ? "" : "s"}`;
+  }
+  const parts: string[] = [];
+  if (notice.added.length > 0) parts.push(`${notice.added.length} new`);
+  if (notice.resolved.length > 0) parts.push(`${notice.resolved.length} resolved`);
+  if (parts.length > 0) return parts.join(" · ");
+  const score = notice.metrics.find((metric) => metric.label === "Score");
+  return score ? `Score ${score.before} → ${score.after}` : "";
+}
+
 // One sentence for the notice, read first and announced to screen readers.
 export function noticeHeadline(notice: ArchieNotice): string {
   const problems = (count: number) => `${count} problem${count === 1 ? "" : "s"}`;

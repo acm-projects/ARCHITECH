@@ -498,13 +498,22 @@
 }
 .axp-notice-head:hover, .axp-notice-more:hover { background: var(--ax-hover-fill); }
 .axp-notice-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.axp-notice-head[aria-expanded="true"] .axp-notice-title { font-weight: 500; white-space: normal; }
-.axp-notice-head time { flex: none; white-space: nowrap; }
+.axp-notice-head[aria-expanded="true"] .axp-notice-title { font-weight: 500; }
+.axp-notice-head > .axp-small { flex: none; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* The numbers that moved sit inside the notice, without the rule under the panel's own. */
+.axp-notice .axp-stats {
+  /* Each column as wide as its number, so none is cut off; the space left goes between them. */
+  grid-template-columns: repeat(var(--axp-stats-count, 4), max-content);
+  justify-content: space-between;
+  column-gap: 8px;
+  padding-block: 0 6px;
+  border-bottom: 0;
+}
+.axp-notice .axp-stats .axp-value { max-width: none; }
 .axp-notice-head .axp-go, .axp-notice-more .axp-go { transition: transform 120ms ease-out; }
 :is(.axp-notice-head, .axp-notice-more)[aria-expanded="true"] .axp-go { transform: rotate(180deg); }
 .axp-notice-more { color: var(--ax-muted); }
 .axp-notice-more > span { flex: 1 1 auto; }
-.axp-notice-line { padding: 0 var(--axp-inset) 2px; font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) { .axp-notice-head .axp-go, .axp-notice-more .axp-go { transition: none; } }
 
 /* Scrolled up to read something earlier: the way back to the newest message. */

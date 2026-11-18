@@ -8,6 +8,8 @@ import {
   graphEdits,
   metricMoves,
   noticeHeadline,
+  noticeOutcome,
+  noticeTitle,
   type NoticeSnapshot,
 } from "../src/lib/architecture/archie/notices.ts";
 
@@ -153,4 +155,28 @@ test("a change in traffic is named, and a notice without problems reads on its o
   const challenge = withoutFindings({ ...notice, added: before.findings });
   assert.deepEqual(challenge?.added, []);
   assert.equal(withoutFindings(buildNotice(null, base())!), null, "the first look is all problems");
+});
+
+test("a folded notice reads as what happened and how it came out, each kept short", () => {
+  const check = buildNotice(null, base());
+  assert.ok(check);
+  assert.equal(noticeTitle(check), "Design check");
+  assert.equal(noticeOutcome(check), "2 problems");
+
+  const before = base();
+  const after = base();
+  after.graph = { ...before.graph, nodes: [...before.graph.nodes, { id: "cache-1", label: "Cache", type: "cache" }] };
+  after.summary = { ...before.summary, score: 79 };
+  after.findings = [...before.findings.slice(1), { id: "static-server-1", title: "API Server serves static files", severity: "low" }];
+  const change = buildNotice(before, after);
+  assert.ok(change);
+  assert.equal(noticeTitle(change), "Added Cache");
+  assert.equal(noticeOutcome(change), "1 new · 1 resolved");
+
+  const quiet = base();
+  quiet.graph = { ...before.graph, nodes: [...before.graph.nodes, { id: "cache-1", label: "Cache", type: "cache" }] };
+  quiet.summary = { ...before.summary, score: 79 };
+  const scoreOnly = buildNotice(before, quiet);
+  assert.ok(scoreOnly);
+  assert.equal(noticeOutcome(scoreOnly), "Score 80 → 79");
 });

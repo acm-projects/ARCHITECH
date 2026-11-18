@@ -287,11 +287,11 @@ export function PanelRow({ label, value, lead, item, title }: RowContent) {
 // bar is the limit and the fill is the demand. Past it the bar is the demand: the fill is what
 // the limit covers and the rest, in the danger color, is what it does not.
 // A few numbers side by side, read at a glance: "Score 91 · p95 73 ms · …".
-export function PanelStats({ label, stats }: { label: string; stats: readonly { label: string; value: ReactNode }[] }) {
+export function PanelStats({ label, stats }: { label: string; stats: readonly { label: string; value: ReactNode; title?: string }[] }) {
   return (
     <div className="axp-stats" role="group" aria-label={label} style={{ "--axp-stats-count": stats.length } as CSSProperties}>
       {stats.map((stat) => (
-        <div key={stat.label}>
+        <div key={stat.label} title={stat.title}>
           <span className="axp-small">{stat.label}</span>
           <span className="axp-value">{stat.value}</span>
         </div>
