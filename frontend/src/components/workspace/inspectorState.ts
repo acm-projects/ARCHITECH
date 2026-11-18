@@ -1,5 +1,3 @@
-import type { RunResult } from "../../lib/architecture/evaluation/runSession.ts";
-
 export type InspectorSectionId = "run";
 // Each right panel opens and closes on its own, so any combination can show at once.
 export type InspectorState = {
@@ -55,12 +53,4 @@ export function inspectorReducer(state: InspectorState, action: InspectorAction)
     case "reset":
       return INITIAL_INSPECTOR_STATE;
   }
-}
-
-export type ReviewView = "overview" | "settings" | "metrics" | "findings" | "comparison";
-export type ReviewSelection = { run: RunResult | null; view: ReviewView };
-
-// Stale projections and failed retries still belong to the same completed run.
-export function reviewViewForRun(selection: ReviewSelection, run: RunResult | null): ReviewView {
-  return selection.run === run ? selection.view : run ? "overview" : "settings";
 }

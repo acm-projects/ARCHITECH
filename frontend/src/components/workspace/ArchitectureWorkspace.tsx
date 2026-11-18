@@ -679,7 +679,6 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
           ) : canRunDesign && <SimulationControl
             panelHost={simulationHost}
             runs={activeRuns}
-            componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
             onShowResults={inspector.showResults}
             expanded={inspector.section === "run"}
             onToggle={() => inspector.toggleSection("run")}

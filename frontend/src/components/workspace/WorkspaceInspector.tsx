@@ -32,16 +32,15 @@ type WorkspaceInspectorProps = {
   notices?: ComponentProps<typeof ArchitectPanel>["notices"];
   onOpenFinding?: (findingId: string) => void;
   onClearNotices?: () => void;
-  runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "state" | "runAtRate" | "setRequestRate" | "simulation">;
+  runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "runAtRate" | "setRequestRate" | "simulation">;
 };
 
-export function SimulationControl({ panelHost, expanded, onToggle, runs, componentName, onShowResults, live }: {
+export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowResults, live }: {
   // The Run button stays in the header; its panel joins the right panels.
   panelHost: HTMLElement | null;
   expanded: boolean;
   onToggle: () => void;
   runs: WorkspaceInspectorProps["runs"];
-  componentName: (id: string) => string;
   onShowResults: (action: () => void) => void;
   // Live estimates, at the top of the panel.
   live?: ReactNode;
@@ -89,10 +88,10 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, compone
           anchor.current?.querySelector<HTMLButtonElement>("button")?.focus();
         }}
       >
-        <RunPanel view={runs.view} completedRun={runs.state.current} traffic={runs.traffic}
+        <RunPanel view={runs.view} traffic={runs.traffic}
           onRateChange={runs.setRequestRate} onRun={() => onShowResults(runs.run)}
           onRunAtRate={(rate) => onShowResults(() => runs.runAtRate(rate))}
-          componentName={componentName} live={live} simulation={runs.simulation} />
+          live={live} simulation={runs.simulation} />
       </Panel>,
       panelHost,
     )}

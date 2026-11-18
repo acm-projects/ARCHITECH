@@ -38,8 +38,6 @@ import type { ArchitectureNodeType } from "../src/lib/architecture/types.ts";
 import {
   INITIAL_INSPECTOR_STATE,
   inspectorReducer,
-  reviewViewForRun,
-  type ReviewSelection,
 } from "../src/components/workspace/inspectorState.ts";
 
 // ---- Helpers ----
@@ -601,9 +599,8 @@ test("Run owns traffic, metrics and reviews after Continue exploring", () => {
   assert.match(control, /aria-controls="ax-run-panel"/);
   assert.doesNotMatch(control, /popover=|ResizeObserver/);
   assert.match(runPanel, /<StressTestPanel/);
-  assert.match(runPanel, /Last run/);
-  assert.match(runPanel, /Compare runs/);
-  assert.match(runPanel, /<RunMetrics/);
+  // The run's numbers are the ones Live estimates show, so the panel does not repeat them.
+  assert.doesNotMatch(runPanel, /Last run|<RunSummary|<RunMetrics/);
 });
 
 test("both Archie entry points use the explicit tutorial availability rule", () => {
@@ -676,26 +673,24 @@ test("the inspector keeps the current project for Archie and History", () => {
   assert.match(inspector, /<HistoryPanel projectId=\{projectId\}/);
 });
 
-test("review selection survives stale traffic and resets only for a new completed run", async () => {
+test("a result stays current through stale traffic and a run in progress, until the new run completes", async () => {
   const graph = clientServerDb();
   const session = createRunSession(evaluateDesign);
   const input = { projectId: "p", ...graph, traffic: DEFAULT_TRAFFIC };
   await session.run(input);
   const completed = session.getState().current;
-  const selection: ReviewSelection = { run: completed, view: "metrics" };
   const staleFingerprint = fingerprintEvaluationInput({ graph, traffic: withRequestRate(DEFAULT_TRAFFIC, 10_000) });
   const stale = buildResultsView(session.getState(), staleFingerprint);
   assert.equal(stale.isStale, true);
-  assert.equal(reviewViewForRun(selection, session.getState().current), "metrics");
+  assert.equal(session.getState().current, completed);
   const nextRun = session.run(input);
-  assert.equal(reviewViewForRun(selection, session.getState().current), "metrics");
+  assert.equal(session.getState().current, completed);
   await nextRun;
   assert.notEqual(session.getState().current, completed);
-  assert.equal(reviewViewForRun(selection, session.getState().current), "overview");
   assert.ok(buildResultsView(session.getState(), staleFingerprint).comparison);
 });
 
-test("a failed retry preserves the previous result and its selected review view", async () => {
+test("a failed retry preserves the previous result", async () => {
   let fail = false;
   const session = createRunSession((request, options) => {
     if (fail) throw new Error("Test failure");
@@ -704,15 +699,15 @@ test("a failed retry preserves the previous result and its selected review view"
   const graph = clientServerDb();
   const input = { projectId: "p", ...graph, traffic: DEFAULT_TRAFFIC };
   await session.run(input);
-  const selection: ReviewSelection = { run: session.getState().current, view: "comparison" };
+  const previous = session.getState().current;
   fail = true;
   await session.run(input);
   const view = buildResultsView(session.getState(), fingerprintEvaluationInput({ graph, traffic: DEFAULT_TRAFFIC }));
   assert.equal(view.error, "Test failure");
   assert.equal(view.hasResult, true);
-  assert.equal(reviewViewForRun(selection, session.getState().current), "comparison");
+  assert.equal(session.getState().current, previous);
   session.reset();
-  assert.equal(reviewViewForRun(selection, session.getState().current), "settings");
+  assert.equal(session.getState().current, null);
 });
 
 // ---- 11. Cycle finding ----
