@@ -422,18 +422,28 @@ function PanelRing({ label, fraction, caption }: { label: string; fraction: numb
   );
 }
 
-// Work in progress whose end is not shown: a ring with an arc turning around it.
-export function PanelSpinner({ label }: { label: string }) {
+// Progress through a task, as a ring that fills clockwise. No number: only the fill.
+export function PanelProgressRing({ label, fraction }: { label: string; fraction: number }) {
+  const filled = Math.max(0, Math.min(1, fraction));
   return (
-    <div className="axp-spinner" role="status" aria-label={label}>
-      <svg viewBox="0 0 56 56" aria-hidden="true">
-        <circle className="axp-spinner-track" cx="28" cy="28" r={RING_RADIUS} />
+    <div className="axp-progress-ring">
+      <svg
+        viewBox="0 0 56 56"
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(filled * 100)}
+      >
+        <circle className="axp-progress-ring-track" cx="28" cy="28" r={RING_RADIUS} />
         <circle
-          className="axp-spinner-arc"
+          className="axp-progress-ring-fill"
           cx="28"
           cy="28"
           r={RING_RADIUS}
-          strokeDasharray={`${RING_LENGTH * 0.28} ${RING_LENGTH}`}
+          strokeDasharray={RING_LENGTH}
+          strokeDashoffset={RING_LENGTH * (1 - filled)}
+          transform="rotate(-90 28 28)"
         />
       </svg>
     </div>
