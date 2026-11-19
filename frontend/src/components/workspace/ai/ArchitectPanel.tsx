@@ -1,5 +1,6 @@
 "use client";
 
+import { waitFor } from "../../../lib/architecture/evaluation/evaluationService";
 import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { Edge } from "@xyflow/react";
@@ -122,6 +123,10 @@ function SuggestionCard({ suggestion, status, onApply, streaming }: {
   const { before, after }: { before: MetricsSnapshot; after: MetricsSnapshot } = suggestion.preview;
   return (
     <PanelGroup>
+      <div className="axp-fix-head">
+        <span className="axp-fix-face"><ArchiePortrait /></span>
+        <span className="axp-small">Archie&apos;s fix</span>
+      </div>
       <p className="axp-message"><strong>{suggestion.title}</strong></p>
       {suggestion.reason && <PanelText>{suggestion.reason}</PanelText>}
       <div aria-label="What this change does to the design">
@@ -132,14 +137,33 @@ function SuggestionCard({ suggestion, status, onApply, streaming }: {
         <PreviewRow label="Availability" before={before.uptimePercent} after={after.uptimePercent} format={(v) => `${v}%`} higherIsBetter />
       </div>
       {status === "applied" ? (
-        <PanelText role="status">Applied · undo with Ctrl/Cmd+Z</PanelText>
+        <PanelText role="status">Added to your design · undo with Ctrl/Cmd+Z</PanelText>
       ) : (
         <PanelActions>
-          <PanelAction onClick={onApply} disabled={streaming}>Apply</PanelAction>
+          <PanelAction variant="primary" onClick={onApply} disabled={streaming}>Apply change</PanelAction>
         </PanelActions>
       )}
       {status && status !== "applied" && <PanelText role="alert" tone="danger">{status}</PanelText>}
     </PanelGroup>
+  );
+}
+
+// Archie takes a moment before answering, like the simulation does: long enough to read as
+// thought, short enough not to wait on. Random, so it does not feel mechanical.
+const THINKING_MS = { min: 1_200, max: 2_200 } as const;
+const thinkingTime = () => Math.round(THINKING_MS.min + Math.random() * (THINKING_MS.max - THINKING_MS.min));
+
+// While Archie works out an answer: his face bobbing and three dots, the state in words for
+// screen readers. Still under reduced motion.
+function ArchieThinking() {
+  return (
+    <div className="axp-thinking" role="status" aria-label="Archie is thinking">
+      <span className="axp-thinking-face"><ArchiePortrait /></span>
+      <span className="axp-thinking-text">
+        Archie is thinking
+        <span className="axp-dots" aria-hidden="true"><i /><i /><i /></span>
+      </span>
+    </div>
   );
 }
 
@@ -276,6 +300,7 @@ export default function ArchitectPanel({
     const controller = new AbortController();
     abort.current = controller;
     try {
+      await waitFor(thinkingTime(), controller.signal);
       await askArchitect({
         graph: graphFromCanvas(getNodes(), getEdges(), customTechnologies ? [...customTechnologies] : undefined),
         traffic,
@@ -382,7 +407,7 @@ export default function ArchitectPanel({
             <div key={turn.id} className="axp-turn" data-role="assistant">
               <span className="axp-turn-label">Archie</span>
               {turn.text && <p className="axp-message">{turn.text}</p>}
-              {!turn.text && !turn.done && !turn.error && <p className="axp-message" data-tone="soft">Looking at your design…</p>}
+              {!turn.text && !turn.done && !turn.error && <ArchieThinking />}
               {turn.suggestions.map((suggestion) => (
                 <SuggestionCard
                   key={suggestion.id}

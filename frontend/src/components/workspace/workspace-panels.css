@@ -269,3 +269,28 @@
   .ax-workspace .ax-header-menu-trigger > svg:last-child { display: none; }
   .ax-workspace .ax-widget-stack { bottom: 64px; }
 }
+
+/* ---- A component's settings ----
+   Clicking a component opens its settings, the panel people work in most, so it reads larger:
+   the column widens while it is open (the canvas narrows to match), and the header, rows and
+   fields grow. */
+@media (min-width: 1024px) {
+  .ax-workspace:has(.ax-widget-stack .axp[data-tool="component"]:not([hidden])) { --ax-panel-side-width: 420px; }
+}
+.ax-workspace .axp[data-tool="component"] {
+  --axp-inset: 18px;
+  --axp-row: 42px;
+  --axp-control: 40px;
+  font-size: 15px;
+}
+.ax-workspace .axp[data-tool="component"] > .axp-head { min-height: 64px; gap: 12px; }
+.ax-workspace .axp[data-tool="component"] > .axp-head .axp-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--ax-hover-fill);
+}
+.ax-workspace .axp[data-tool="component"] > .axp-head .axp-icon svg { width: 22px; height: 22px; }
+.ax-workspace .axp[data-tool="component"] > .axp-head h2 { font-size: 19px; line-height: 26px; }
+.ax-workspace .axp[data-tool="component"] :is(.axp-input, .axp-textarea, select) { min-height: 40px; font-size: 15px; }
+.ax-workspace .axp[data-tool="component"] .axp-small { font-size: 13px; }

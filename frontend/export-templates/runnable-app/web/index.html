@@ -167,7 +167,18 @@
   .badge.processed { background: var(--done-soft); color: var(--done); }
   .meta { color: var(--muted); font-size: 12px; }
 
+  /* One screen, nothing scrolls the page: down to tablet width the two halves sit side by side
+     and only the panes inside scroll. Only a phone stacks them and scrolls the page. */
   @media (max-width: 900px) {
+    .split { grid-template-columns: minmax(300px, 46%) minmax(0, 1fr); }
+    .demo { grid-template-rows: minmax(160px, 1fr) auto minmax(140px, 30%); padding: 8px; gap: 8px; }
+    .map-now, .topbar .who { display: none; }
+  }
+  @media (max-height: 640px) and (min-width: 641px) {
+    .demo { grid-template-rows: minmax(140px, 1fr) auto minmax(120px, 28%); }
+    .archie .bubble { min-height: 0; }
+  }
+  @media (max-width: 640px) {
     body { overflow: auto; }
     .shell { height: auto; min-height: 100dvh; }
     .split { grid-template-columns: minmax(0, 1fr); }

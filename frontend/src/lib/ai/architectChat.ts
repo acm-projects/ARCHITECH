@@ -1,4 +1,5 @@
 import type { ArchitectureEvaluation } from "../architecture/evaluation/contract.ts";
+import { asksForFix, bestFix, suggestionsFromText } from "./textSuggestions.ts";
 import { evaluateArchitecture } from "../architecture/evaluation/evaluate.ts";
 import { validateGraph, type GraphDocument } from "../projects/projectPayload.ts";
 import type { ExperienceLevel } from "../../types.ts";
@@ -56,6 +57,9 @@ export const MAX_MESSAGE_LENGTH = 4_000;
 // One sentence plus at most one proposed change.
 export const MAX_REPLY_TOKENS = 800;
 export const MAX_SUGGESTIONS = 2;
+// Fixes named only in the answer's words, turned into changes (textSuggestions.ts). An answer
+// can name a few at once ("a load balancer, a read replica and a cache"), each applied alone.
+export const MAX_TEXT_SUGGESTIONS = 3;
 
 export type ChatRequest = {
   graph: GraphDocument;
@@ -183,8 +187,10 @@ export function runArchitectChat(input: {
 
   return (async function* () {
     let suggestions = 0;
+    let answer = "";
     for await (const event of stream) {
       if (event.type === "text") {
+        answer += event.text ?? "";
         if (event.text) yield { type: "text", text: event.text };
       } else if (event.name === PROPOSE_CHANGES_TOOL.name) {
         if (suggestions >= MAX_SUGGESTIONS) continue;
@@ -195,6 +201,26 @@ export function runArchitectChat(input: {
         } else {
           yield { type: "note", text: `A suggested change could not be used: ${prepared.error}` };
         }
+      }
+    }
+    // The answer named fixes but sent none to apply: build them from the design, so what Archie
+    // recommends can still be applied with one click. Checked and previewed like any other.
+    if (suggestions === 0) {
+      let made = 0;
+      for (const suggestion of suggestionsFromText(answer, graph)) {
+        if (made >= MAX_TEXT_SUGGESTIONS) break;
+        const prepared = prepareSuggestion(suggestion, graph, traffic, before, `t${made + 1}`, focus);
+        if (!prepared.ok) continue;
+        made += 1;
+        yield prepared.event;
+      }
+      // Asked how to fix it, and still nothing to apply: offer the design's best fix anyway.
+      const question = messages.at(-1)?.content ?? "";
+      if (made === 0 && asksForFix(question)) {
+        const limiting = evaluation.nodes.find((node) => node.nodeId === evaluation.limitingNodeId)?.type ?? null;
+        const fix = bestFix(graph, limiting);
+        const prepared = fix && prepareSuggestion(fix, graph, traffic, before, "t1", focus);
+        if (prepared && prepared.ok) yield prepared.event;
       }
     }
     yield { type: "done" };
