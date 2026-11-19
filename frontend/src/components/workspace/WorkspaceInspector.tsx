@@ -29,7 +29,7 @@ type WorkspaceInspectorProps = {
   review?: ReactNode;
   reviewDetail?: boolean;
   asked?: { key: number; text: string } | null;
-  runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "runAtRate" | "setRequestRate" | "simulation">;
+  runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "runAtRate" | "setRequestRate">;
 };
 
 export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowResults, onBeforeRun, live }: {
@@ -104,7 +104,7 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowR
             onShowResults(() => runs.runAtRate(rate));
           }}
           onRun={() => onShowResults(runs.run)}
-          live={live} simulation={runs.simulation} />
+          live={live} />
       </Panel>,
       panelHost,
     )}

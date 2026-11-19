@@ -422,40 +422,20 @@ function PanelRing({ label, fraction, caption }: { label: string; fraction: numb
   );
 }
 
-// Progress through a task of known length, as a ring that fills clockwise with a short reading
-// in its middle ("2 s").
-export function PanelProgressRing({ label, fraction, caption, children }: {
-  label: string;
-  // 0 to 1.
-  fraction: number;
-  // Reads the ring out for screen readers: "2 seconds left".
-  caption: string;
-  children?: ReactNode;
-}) {
-  const filled = Math.max(0, Math.min(1, fraction));
+// Work in progress whose end is not shown: a ring with an arc turning around it.
+export function PanelSpinner({ label }: { label: string }) {
   return (
-    <div className="axp-progress-ring">
-      <svg
-        viewBox="0 0 56 56"
-        role="progressbar"
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(filled * 100)}
-        aria-valuetext={caption}
-      >
-        <circle className="axp-progress-ring-track" cx="28" cy="28" r={RING_RADIUS} />
+    <div className="axp-spinner" role="status" aria-label={label}>
+      <svg viewBox="0 0 56 56" aria-hidden="true">
+        <circle className="axp-spinner-track" cx="28" cy="28" r={RING_RADIUS} />
         <circle
-          className="axp-progress-ring-fill"
+          className="axp-spinner-arc"
           cx="28"
           cy="28"
           r={RING_RADIUS}
-          strokeDasharray={RING_LENGTH}
-          strokeDashoffset={RING_LENGTH * (1 - filled)}
-          transform="rotate(-90 28 28)"
+          strokeDasharray={`${RING_LENGTH * 0.28} ${RING_LENGTH}`}
         />
       </svg>
-      {children && <span className="axp-progress-ring-text" aria-hidden="true">{children}</span>}
     </div>
   );
 }
