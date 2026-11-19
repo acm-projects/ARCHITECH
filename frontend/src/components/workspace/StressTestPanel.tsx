@@ -19,8 +19,9 @@ type StressTestPanelProps = {
   running: boolean;
   // Changes the load without running (the result on screen then reads as out of date).
   onRateChange: (requestsPerSecond: number) => void;
-  // Runs the design at the current load.
-  onRun: () => void;
+  // Runs the design at the current load. Absent where the run starts elsewhere (the header's
+  // Run button), so the panel only sets the load.
+  onRun?: () => void;
 };
 
 const format = (value: number) => Math.round(value).toLocaleString("en-US");
@@ -104,15 +105,17 @@ export default function StressTestPanel({
               );
             })}
           </div>
-          <PanelAction
-            variant="primary"
-            aria-disabled={running}
-            onClick={() => {
-              if (!running) onRun();
-            }}
-          >
-            {runLabel ?? `Run at ${format(rate)} req/s`}
-          </PanelAction>
+          {onRun && (
+            <PanelAction
+              variant="primary"
+              aria-disabled={running}
+              onClick={() => {
+                if (!running) onRun();
+              }}
+            >
+              {runLabel ?? `Run at ${format(rate)} req/s`}
+            </PanelAction>
+          )}
         </PanelActions>
       </PanelGroup>
     </section>

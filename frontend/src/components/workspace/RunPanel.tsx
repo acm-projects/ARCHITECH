@@ -43,12 +43,11 @@ export default function RunPanel(props: RunPanelProps) {
 
   return (
     <div aria-live="polite" data-run-state={view.runButtonState}>
+      {/* The header's Run button starts each run; the panel only sets the traffic for it. */}
       <StressTestPanel
         traffic={traffic}
-        runLabel={view.isRunning ? "Running…" : "Run simulation"}
         running={view.isRunning}
         onRateChange={props.onRateChange}
-        onRun={props.onRun}
       />
       {props.simulation && <SimulationProgress {...props.simulation} />}
       {/* The estimates wait while a run is going; kept mounted so they pick up where they were. */}

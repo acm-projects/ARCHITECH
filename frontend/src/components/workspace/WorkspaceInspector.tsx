@@ -67,10 +67,18 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowR
       anchor.current?.querySelector<HTMLButtonElement>("button")?.focus();
     }
   }}>
-    <button type="button" className="ax-run-button" aria-label={unseen ? "Show the new run results" : "Open simulation"}
+    <button type="button" className="ax-run-button" aria-label={unseen ? "Show the new run results" : running ? "Show the simulation in progress" : "Run simulation"}
       aria-controls="ax-run-panel" aria-expanded={expanded} aria-busy={runs.view.isRunning}
       data-results={unseen || undefined}
-      onClick={onToggle}>
+      onClick={() => {
+        // Results that finished out of sight are shown, not run again; a run in progress
+        // only opens or closes its panel. Otherwise Run opens the panel and starts a run.
+        if (unseen || running) {
+          onToggle();
+          return;
+        }
+        onShowResults(runs.run);
+      }}>
       {runs.view.isRunning ? <LoaderCircle size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
       {unseen ? "Results ready" : "Run"}
       {unseen && <span className="ax-run-ready" aria-hidden="true" />}

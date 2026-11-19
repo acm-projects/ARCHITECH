@@ -592,9 +592,13 @@ test("Run owns traffic, metrics and reviews after Continue exploring", () => {
   assert.match(control, /onRateChange\(target\)/);
   assert.doesNotMatch(control, /onRunAtRate/);
   assert.doesNotMatch(inspector, /title="Metrics"/);
-  assert.match(inspector, /"Open simulation"/);
-  // Opening the panel does not start a run, so a rate can be chosen first.
-  assert.match(inspector, /onClick=\{onToggle\}/);
+  // Run starts a run (with its simulated delay) and opens the panel; the panel itself only sets
+  // the traffic, which the next Run uses. Results that finished out of sight are shown, not rerun.
+  assert.match(inspector, /"Run simulation"/);
+  assert.match(inspector, /onShowResults\(runs\.run\)/);
+  assert.match(inspector, /if \(unseen \|\| running\) \{\s*onToggle\(\);/);
+  assert.doesNotMatch(runPanel, /onRun=\{props\.onRun\}\s*\/>\s*\{props\.simulation/);
+  assert.doesNotMatch(runPanel, /"Run simulation"/);
   assert.match(inspector, /"Results ready"/);
   assert.doesNotMatch(inspector, /title="Stress test"|title="Live estimates"|title="System review"|<StressTestPanel|role="tab"/);
   assert.match(control, /aria-controls="ax-run-panel"/);
