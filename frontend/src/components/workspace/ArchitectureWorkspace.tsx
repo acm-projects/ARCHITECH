@@ -121,6 +121,10 @@ const emptyGraph = (): {
   edges: [],
 });
 
+// The design check's marks on components ("!" or a count of problems). Hidden for now; set to
+// true to bring them back.
+const SHOW_CHECK_MARKS = false;
+
 // What the editor needs from a project. A system breakdown supplies the same fields without a
 // saved project behind them.
 export type WorkspaceProject = Pick<Project, "id" | "title" | "nodes" | "edges" | "mode" | "learnSkipped" | "customTechnologies">;
@@ -770,7 +774,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                   selectionMode={SelectionMode.Partial}
                   elevateEdgesOnSelect
                 >
-                  {canRunDesign && <DesignCheckBadges result={live.result} nodes={nodes} check={designCheck} />}
+                  {SHOW_CHECK_MARKS && canRunDesign && <DesignCheckBadges result={live.result} nodes={nodes} check={designCheck} />}
                   <ViewportPortal>
                     {snapGuides.map((guide) => (
                       <div key={guide.axis} className="ax-snap-guide" data-axis={guide.axis} aria-hidden="true" style={guide.axis === "x"

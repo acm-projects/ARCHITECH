@@ -18,10 +18,12 @@ const graph = {
   edges: [{ id: "e", source: "client-1", target: "server-1" }],
 };
 
-test("each simulation uses a three-second delay", () => {
-  assert.equal(SIMULATION_DURATION_MS.min, 3_000);
-  assert.equal(SIMULATION_DURATION_MS.max, 3_000);
-  for (const random of [0, 0.5, 0.9999]) assert.equal(simulationDuration(() => random), 3_000);
+test("each simulation picks a random delay between 1.5 and 2.5 seconds", () => {
+  assert.equal(SIMULATION_DURATION_MS.min, 1_500);
+  assert.equal(SIMULATION_DURATION_MS.max, 2_500);
+  assert.equal(simulationDuration(() => 0), 1_500);
+  assert.equal(simulationDuration(() => 0.5), 2_000);
+  assert.equal(simulationDuration(() => 0.9999), 2_500);
 });
 
 test("the delayed run returns the same evaluation, after waiting the chosen time", async () => {

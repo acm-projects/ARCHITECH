@@ -29,7 +29,7 @@ type WorkspaceInspectorProps = {
   review?: ReactNode;
   reviewDetail?: boolean;
   asked?: { key: number; text: string } | null;
-  runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "setRequestRate" | "simulation">;
+  runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "runAtRate" | "setRequestRate" | "simulation">;
 };
 
 export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowResults, onBeforeRun, live }: {
@@ -97,7 +97,13 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowR
         }}
       >
         <RunPanel view={runs.view} traffic={runs.traffic}
-          onRateChange={runs.setRequestRate} onRun={() => onShowResults(runs.run)}
+          // A new traffic level runs the design again at it, like pressing Run.
+          onRateChange={(rate) => {
+            if (running) return;
+            onBeforeRun?.();
+            onShowResults(() => runs.runAtRate(rate));
+          }}
+          onRun={() => onShowResults(runs.run)}
           live={live} simulation={runs.simulation} />
       </Panel>,
       panelHost,

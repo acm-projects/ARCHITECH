@@ -422,6 +422,44 @@ function PanelRing({ label, fraction, caption }: { label: string; fraction: numb
   );
 }
 
+// Progress through a task of known length, as a ring that fills clockwise with a short reading
+// in its middle ("2 s").
+export function PanelProgressRing({ label, fraction, caption, children }: {
+  label: string;
+  // 0 to 1.
+  fraction: number;
+  // Reads the ring out for screen readers: "2 seconds left".
+  caption: string;
+  children?: ReactNode;
+}) {
+  const filled = Math.max(0, Math.min(1, fraction));
+  return (
+    <div className="axp-progress-ring">
+      <svg
+        viewBox="0 0 56 56"
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(filled * 100)}
+        aria-valuetext={caption}
+      >
+        <circle className="axp-progress-ring-track" cx="28" cy="28" r={RING_RADIUS} />
+        <circle
+          className="axp-progress-ring-fill"
+          cx="28"
+          cy="28"
+          r={RING_RADIUS}
+          strokeDasharray={RING_LENGTH}
+          strokeDashoffset={RING_LENGTH * (1 - filled)}
+          transform="rotate(-90 28 28)"
+        />
+      </svg>
+      {children && <span className="axp-progress-ring-text" aria-hidden="true">{children}</span>}
+    </div>
+  );
+}
+
 export function PanelLink({ label, value, lead, item, title, ...button }: RowContent & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "value" | "title">) {
   return (
     <button type="button" className="axp-row axp-link" data-item={item || undefined} title={title} {...button}>

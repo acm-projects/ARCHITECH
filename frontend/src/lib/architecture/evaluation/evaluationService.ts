@@ -63,7 +63,8 @@ export const evaluateDesign: EvaluateDesign = async (
 // ---- Simulated run time ----
 // Run reads as a simulation, not an instant recalculation: each run takes a few seconds before
 // its result arrives. The numbers come from the same evaluator; only their arrival is delayed.
-export const SIMULATION_DURATION_MS = { min: 3_000, max: 3_000 } as const;
+// Each run picks its own length in this range, so runs do not all feel identical.
+export const SIMULATION_DURATION_MS = { min: 1_500, max: 2_500 } as const;
 
 // A run's length, somewhere in the range. `random` returns [0, 1), like Math.random.
 export function simulationDuration(random: () => number = Math.random): number {
