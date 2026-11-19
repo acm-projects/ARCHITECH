@@ -58,8 +58,7 @@ import { useGraphHistory } from "./useGraphHistory";
 import { useKeepNodesInView, useShowNewNode } from "./useKeepNodesInView";
 import { useLearnMode } from "./useLearnMode";
 import { useLiveMetrics } from "./useLiveMetrics";
-import { DesignCheckBadges, DesignCheckSection, designCheckInDetail, useDesignCheck } from "./DesignCheck";
-import { useArchieNotices } from "./useArchieNotices";
+import { DesignCheckBadges, useDesignCheck } from "./DesignCheck";
 import { LiveEstimates } from "./LiveMetricsBar";
 import { FailureContext } from "./FailureContext";
 import { FailureTestPanel } from "./FailureTestPanel";
@@ -324,30 +323,20 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
   );
   // Take one component down and see what still works, wherever the design tools are open.
   const failure = useFailureTest({ nodes, edges, traffic: activeRuns.traffic, enabled: showInspector });
-  // Problems marked on the canvas, listed with one-click fixes inside Archie's panel. A mark
-  // on the canvas opens Archie at its finding.
-  const designCheck = useDesignCheck({ onReveal: inspector.askArchie });
-  const liveReady = Boolean(live.result?.summary.ready);
-  // Archie posts what each edit did to the design into its conversation, from the same live
-  // evaluation as the design check, and counts the ones that came in while it was closed.
-  // In Challenge the notices say what changed and which numbers moved, never which problems
-  // there are: those would be hints.
-  const archieNotices = useArchieNotices({
-    scopeKey: savedProjectId,
-    result: live.result,
-    nodes,
-    edges,
-    enabled: canRunDesign || mode === "challenge",
-    includeFindings: mode !== "challenge",
-    archieOpen: inspector.archieOpen,
-  });
-  const { setFocus: openFinding } = designCheck;
   // A design check finding handed to Archie as a question.
   const [archieQuestion, setArchieQuestion] = useState<{ key: number; text: string } | null>(null);
   const askArchieAbout = useCallback((text: string) => {
     setArchieQuestion((previous) => ({ key: (previous?.key ?? 0) + 1, text }));
     inspector.askArchie();
   }, [inspector]);
+  // Problems marked on the canvas. A mark hands its problem to Archie as a question.
+  const liveFindings = live.result?.evaluation.findings;
+  const designCheck = useDesignCheck({
+    onReveal: (findingId) => {
+      const finding = liveFindings?.find((candidate) => candidate.id === findingId);
+      if (finding) askArchieAbout(`Explain "${finding.title}" in my design: why it matters and what to change.`);
+    },
+  });
   // Where Simulation renders from the header, so it joins the other right panels.
   const [simulationHost, setSimulationHost] = useState<HTMLDivElement | null>(null);
   // Where the project menu opens, as one of the right panels.
@@ -695,6 +684,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
             panelHost={simulationHost}
             runs={activeRuns}
             onShowResults={inspector.showResults}
+            onBeforeRun={nodes.length > 1 ? alignDesign : undefined}
             expanded={inspector.section === "run"}
             onToggle={() => inspector.toggleSection("run")}
             live={
@@ -738,7 +728,6 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                 label: "Ask Archie",
                 icon: <ArchiePortrait />,
                 open: inspector.archieOpen,
-                ...(archieNotices.unread > 0 ? { badge: String(archieNotices.unread) } : {}),
                 // Open but behind another panel: the button brings Archie forward.
                 onToggle: inspector.archieOpen && !isPanelBehind("archie") ? inspector.closeArchie : inspector.askArchie,
               }] : []),
@@ -767,7 +756,9 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                   deleteKeyCode={null}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
-                  fitView
+                  // Fit a design that opens with components. An empty canvas is left as it is,
+                  // or React Flow would fit (center and zoom to) the first component added.
+                  fitView={initialNodes.length > 0}
                   fitViewOptions={fitViewOptions}
                   defaultViewport={{ x: 0, y: 0, zoom: WORKSPACE_ZOOM }}
                   minZoom={MIN_ZOOM}
@@ -823,23 +814,7 @@ function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdow
                     onClearSelection={clearCanvasSelection}
                     onApply={replaceGraph}
                     customTechnologies={project.customTechnologies}
-                    review={canRunDesign && liveReady ? (
-                      <DesignCheckSection
-                        result={live.result}
-                        nodes={nodes}
-                        edges={edges}
-                        traffic={activeRuns.traffic}
-                        check={designCheck}
-                        onApply={replaceGraph}
-                        onUndo={undo}
-                        onAsk={askArchieAbout}
-                      />
-                    ) : undefined}
-                    reviewDetail={canRunDesign && liveReady && designCheckInDetail(designCheck)}
                     asked={archieQuestion}
-                    notices={archieNotices.notices}
-                    onClearNotices={archieNotices.clear}
-                    onOpenFinding={openFinding}
                     guidance={mode === "challenge" ? (
                       <ChallengeCard
                         challenge={challenge.challenge}

@@ -29,19 +29,18 @@ type WorkspaceInspectorProps = {
   review?: ReactNode;
   reviewDetail?: boolean;
   asked?: { key: number; text: string } | null;
-  notices?: ComponentProps<typeof ArchitectPanel>["notices"];
-  onOpenFinding?: (findingId: string) => void;
-  onClearNotices?: () => void;
   runs: Pick<ReturnType<typeof useRunSession>, "traffic" | "view" | "run" | "setRequestRate" | "simulation">;
 };
 
-export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowResults, live }: {
+export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowResults, onBeforeRun, live }: {
   // The Run button stays in the header; its panel joins the right panels.
   panelHost: HTMLElement | null;
   expanded: boolean;
   onToggle: () => void;
   runs: WorkspaceInspectorProps["runs"];
   onShowResults: (action: () => void) => void;
+  // Tidies the design (Auto align) as a run starts.
+  onBeforeRun?: () => void;
   // Live estimates, at the top of the panel.
   live?: ReactNode;
 }) {
@@ -77,6 +76,7 @@ export function SimulationControl({ panelHost, expanded, onToggle, runs, onShowR
           onToggle();
           return;
         }
+        onBeforeRun?.();
         onShowResults(runs.run);
       }}>
       {runs.view.isRunning ? <LoaderCircle size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
@@ -109,7 +109,7 @@ export default function WorkspaceInspector({
   projectId,
   nodes, controller, onClearSelection, onApply, customTechnologies,
   guidance,
-  review, reviewDetail, asked, notices, onOpenFinding, onClearNotices,
+  review, reviewDetail, asked,
 }: Omit<WorkspaceInspectorProps, "runs">) {
   const { archieOpen, archieRequest, configureRequest, historyOpen, configuring, inspectComponent, closeConfiguration, askArchie, closeArchie, closeHistory } = controller;
   const selectionCollapse = usePanelCollapse();
@@ -178,9 +178,6 @@ export default function WorkspaceInspector({
           review={review}
           reviewDetail={reviewDetail}
           asked={asked}
-          notices={notices}
-          onOpenFinding={onOpenFinding}
-          onClearNotices={onClearNotices}
         />
       )}
     </>

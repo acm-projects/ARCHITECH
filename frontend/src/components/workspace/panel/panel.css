@@ -323,35 +323,20 @@
 .axp-message strong { font-weight: 500; }
 .axp-turn { display: flex; flex-direction: column; min-width: 0; }
 .axp-turn-label { display: none; }
-.axp-notice-author { display: none; }
-.axp-review-label, .axp-notice-section { padding: 4px var(--axp-inset); color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+.axp-review-label { padding: 4px var(--axp-inset); color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
 .axp-service-status { display: grid; gap: 2px; padding: 9px var(--axp-inset); border-bottom: 1px solid var(--ax-line); color: var(--ax-ink); }
 .axp-service-status strong { font-weight: 500; }
 .axp-service-status span { color: var(--ax-muted); }
-.axp-notice-metrics { padding-block: 4px; border-bottom: 1px solid var(--ax-line); }
-.axp-notice-metrics .axp-row { min-height: 26px; }
-.axp-notice-metrics .axp-value { max-width: 75%; }
 
 /* Archie reads as a design activity log on desktop, with the composer anchored below it. */
 @media (min-width: 769px) {
   .axp[data-tool="archie"] .axp-review { margin-bottom: 0; padding-bottom: 2px; }
   .axp[data-tool="archie"] .axp-messages { gap: 0; padding: 4px 0 12px; }
   .axp[data-tool="archie"] .axp-turn { gap: 5px; padding: 12px var(--axp-inset); border-bottom: 1px solid var(--ax-line); }
-  .axp[data-tool="archie"] .axp-turn-label, .axp[data-tool="archie"] .axp-notice-author { display: flex; align-items: center; gap: 8px; color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+  .axp[data-tool="archie"] .axp-turn-label { display: flex; align-items: center; gap: 8px; color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
   .axp[data-tool="archie"] .axp-turn .axp-message { padding: 0; line-height: 1.5; }
   .axp[data-tool="archie"] .axp-turn .axp-message[data-role="user"] { align-self: stretch; max-width: none; margin: 0; border-radius: 0; background: transparent; }
   .axp[data-tool="archie"] .axp-turn .axp-message[data-tone="danger"] { padding-left: 9px; border-left: 2px solid var(--ax-danger); }
-  .axp[data-tool="archie"] .axp-notice-run { gap: 4px; padding-block: 12px; border-bottom: 1px solid var(--ax-line); }
-  .axp[data-tool="archie"] .axp-notice-author { padding-inline: var(--axp-inset); }
-  .axp[data-tool="archie"] .axp-notice { margin-inline: var(--axp-inset); }
-  .axp[data-tool="archie"] .axp-notice-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; padding-block: 6px; }
-  .axp[data-tool="archie"] .axp-notice-head .axp-notice-title { white-space: normal; }
-  .axp[data-tool="archie"] .axp-notice-head > .axp-small { grid-column: 1; grid-row: 2; }
-  .axp[data-tool="archie"] .axp-notice-head > .axp-go { grid-column: 2; grid-row: 1; }
-  .axp[data-tool="archie"] .axp-notice-more { min-height: 34px; }
-  .axp[data-tool="archie"] .axp-notice .axp-stats { grid-template-columns: repeat(var(--axp-stats-count, 4), minmax(0, 1fr)); padding-block: 6px 10px; border-bottom: 1px solid var(--ax-line); }
-  .axp[data-tool="archie"] .axp-notice-resolved .axp-row { align-items: flex-start; }
-  .axp[data-tool="archie"] .axp-notice-resolved .axp-label { overflow: visible; white-space: normal; }
   .axp[data-tool="archie"] .axp-compose-scope { border-top: 1px solid var(--ax-line); }
   .axp[data-tool="archie"] .axp-compose-scope .axp-group { padding-top: 6px; }
   .axp[data-tool="archie"] .axp-compose { padding-block: 8px 4px; }
@@ -506,50 +491,6 @@
 .axp-stats .axp-small { display: block; }
 .axp-stats .axp-value { display: block; overflow: hidden; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Archie's notices: what an edit changed, posted into the conversation. Folded, a notice is one
-   line; a run of notices one after another keeps its older ones behind one row. */
-.axp-notice-run { display: grid; gap: 2px; }
-.axp-notice {
-  display: grid;
-  gap: 2px;
-  border-left: 2px solid var(--ax-line-strong);
-}
-.axp-notice[data-tone="worse"] { border-left-color: var(--ax-danger); }
-.axp-notice[data-tone="better"] { border-left-color: var(--axp-good); }
-.axp-notice > * { min-width: 0; }
-.axp-notice-head,
-.axp-notice-more {
-  display: flex;
-  box-sizing: border-box;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: var(--axp-row);
-  padding: 4px var(--axp-inset);
-  border: 0;
-  background: transparent;
-  color: var(--ax-ink);
-  text-align: left;
-}
-.axp-notice-head:hover, .axp-notice-more:hover { background: var(--ax-hover-fill); }
-.axp-notice-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.axp-notice-head[aria-expanded="true"] .axp-notice-title { font-weight: 500; }
-.axp-notice-head > .axp-small { flex: none; font-variant-numeric: tabular-nums; white-space: nowrap; }
-/* The numbers that moved sit inside the notice, without the rule under the panel's own. */
-.axp-notice .axp-stats {
-  /* Each column as wide as its number, so none is cut off; the space left goes between them. */
-  grid-template-columns: repeat(var(--axp-stats-count, 4), max-content);
-  justify-content: space-between;
-  column-gap: 8px;
-  padding-block: 0 6px;
-  border-bottom: 0;
-}
-.axp-notice .axp-stats .axp-value { max-width: none; }
-.axp-notice-head .axp-go, .axp-notice-more .axp-go { transition: transform 120ms ease-out; }
-:is(.axp-notice-head, .axp-notice-more)[aria-expanded="true"] .axp-go { transform: rotate(180deg); }
-.axp-notice-more { color: var(--ax-muted); }
-.axp-notice-more > span { flex: 1 1 auto; }
-@media (prefers-reduced-motion: reduce) { .axp-notice-head .axp-go, .axp-notice-more .axp-go { transition: none; } }
 
 /* Scrolled up to read something earlier: the way back to the newest message. */
 .axp .axp-jump {

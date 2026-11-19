@@ -23,15 +23,11 @@ import "./design-check.css";
 type Graph = { nodes: ArchitectureFlowNode[]; edges: Edge[] };
 export type DesignCheckState = ReturnType<typeof useDesignCheck>;
 
-// `onReveal` brings Archie's panel forward, where problems open.
-export function useDesignCheck({ onReveal }: { onReveal: () => void }) {
+// `onReveal` takes a problem from a mark on the canvas to Archie.
+export function useDesignCheck({ onReveal }: { onReveal: (findingId: string) => void }) {
   // The finding open in Archie's panel, whose components are outlined on the canvas.
   const [focus, setFocus] = useState<string | null>(null);
-  // A mark on the canvas opens its finding in Archie.
-  const reveal = (findingId: string) => {
-    setFocus(findingId);
-    onReveal();
-  };
+  const reveal = (findingId: string) => onReveal(findingId);
   return { focus, setFocus, reveal };
 }
 

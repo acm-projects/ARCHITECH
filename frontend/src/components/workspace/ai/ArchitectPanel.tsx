@@ -4,7 +4,7 @@ import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } 
 
 import type { Edge } from "@xyflow/react";
 import { useOnSelectionChange, useReactFlow, useStore } from "@xyflow/react";
-import { ArrowDown, Check, ChevronDown, MessageSquarePlus, Send, Square, X } from "lucide-react";
+import { ArrowDown, MessageSquarePlus, Send, Square, X } from "lucide-react";
 
 import type { MetricsSnapshot, SuggestionEvent } from "../../../lib/ai/architectChat";
 import { applyChanges } from "../../../lib/ai/changes";
@@ -24,9 +24,6 @@ import { ArchieEnabledContext } from "../ArchieContext";
 import type { ArchitectureFlowNode } from "../nodes/ArchitectureNode";
 import Panel, { PanelAction, PanelActions, PanelDelta, PanelGroup, PanelLink, PanelRow, PanelText } from "../panel/Panel";
 import { ArchiePortrait } from "./ArchiePanel";
-import { noticeHeadline, noticeOutcome, noticeTitle } from "../../../lib/architecture/archie/notices";
-import { SEVERITY_WORD } from "../../../lib/architecture/designCheck";
-import type { PostedNotice } from "../useArchieNotices";
 
 // The AI Architect: a chat docked to the right of the canvas. It sends the current design,
 // traffic and conversation to POST /api/ai/chat, shows the answer as it streams in, and shows
@@ -50,7 +47,7 @@ type AssistantTurn = {
   at: number;
 };
 type Turn = ({ id: number; role: "user"; text: string; focusCount: number } | AssistantTurn) & {
-  // When the turn was asked, to place it among the design notices. Restored turns come first.
+  // When the turn was asked. Restored turns come first.
   at: number;
 };
 
@@ -146,90 +143,7 @@ function SuggestionCard({ suggestion, status, onApply, streaming }: {
   );
 }
 
-const clock = (at: number) => new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-
-// A notice from Archie about an edit. Folded, it is one line: what happened and when. Open, it
-// adds the other edits, the numbers that moved (on one line), the problems it found (each opens
-// in place with its fix) and the ones it resolved. Only the newest notice starts open, so a
-// session of edits reads as a list of lines rather than pages of rows.
-function NoticeMessage({ notice, open, onToggle, onOpenFinding }: {
-  notice: PostedNotice;
-  open: boolean;
-  onToggle: () => void;
-  onOpenFinding?: (findingId: string) => void;
-}) {
-  const tone = notice.kind === "check" ? undefined :
-    notice.added.some((finding) => finding.severity !== "low") ? "worse"
-      : notice.resolved.length > 0 && notice.added.length === 0 ? "better"
-        : undefined;
-  const outcome = noticeOutcome(notice);
-  // Shown in full on hover: the sentence, every edit, and when.
-  const detail = [noticeHeadline(notice), ...notice.edits.slice(1), clock(notice.at)].join("\n");
-  const resolved = notice.resolved.map((finding) => finding.title);
-  return (
-    <div className="axp-notice" data-tone={tone} role="status" aria-label={noticeHeadline(notice)}>
-      <button type="button" className="axp-notice-head" aria-expanded={open} title={detail} onClick={onToggle}>
-        <span className="axp-notice-title">{noticeTitle(notice)}</span>
-        {outcome && <span className="axp-small">{outcome}</span>}
-        <ChevronDown size={14} aria-hidden="true" className="axp-go" />
-      </button>
-      {open && (
-        <>
-          {notice.metrics.length > 0 && (
-            <div className="axp-notice-metrics" role="group" aria-label="Metric changes">
-              {notice.metrics.map((metric) => (
-                <PanelRow key={metric.label} label={STAT_LABEL[metric.label] ?? metric.label}
-                  value={<>{metric.before} → <PanelDelta better={metric.better}>{metric.after}</PanelDelta></>} />
-              ))}
-            </div>
-          )}
-          {notice.added.length > 0 && <div className="axp-notice-section">New</div>}
-          {notice.added.map((finding) => (
-            <PanelLink
-              key={`added-${finding.id}`}
-              item
-              label={finding.title}
-              value={SEVERITY_WORD[finding.severity]}
-              title={notice.kind === "check" ? finding.title : `New: ${finding.title}`}
-              disabled={!onOpenFinding}
-              onClick={() => onOpenFinding?.(finding.id)}
-            />
-          ))}
-          {resolved.length > 0 && (
-            <div className="axp-notice-resolved">
-              <div className="axp-notice-section">Resolved</div>
-              {resolved.map((title, index) => <PanelRow key={`${index}-${title}`} item
-                lead={<PanelDelta better><Check size={14} aria-hidden="true" /></PanelDelta>}
-                label={title} title={title} />)}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-// The same short names as the numbers at the top of the panel, so a notice reads against them.
-const STAT_LABEL: Record<string, string> = { "p95 latency": "p95", Availability: "Uptime", "Monthly cost": "Cost /mo" };
 const NOT_CONFIGURED = "The AI Architect isn't set up on this server yet (it needs an API key).";
-
-// The conversation in order: questions and answers one by one, and notices that came in one
-// after another (with no question between them) kept together, so they can fold as one.
-type FeedEntry = { key: string; turn: Turn } | { key: string; notices: PostedNotice[] };
-function buildFeed(turns: readonly Turn[], notices: readonly PostedNotice[]): FeedEntry[] {
-  const ordered = [
-    ...turns.map((turn) => ({ at: turn.at, turn, notice: null })),
-    ...notices.map((notice) => ({ at: notice.at, turn: null, notice })),
-  ].sort((a, b) => a.at - b.at);
-  const feed: FeedEntry[] = [];
-  for (const item of ordered) {
-    const last = feed.at(-1);
-    if (item.notice && last && "notices" in last) last.notices.push(item.notice);
-    else if (item.notice) feed.push({ key: `notices-${item.notice.id}`, notices: [item.notice] });
-    else if (item.turn) feed.push({ key: `turn-${item.turn.id}`, turn: item.turn });
-  }
-  return feed;
-}
 
 // Within this distance of the end, the conversation counts as read to the end and follows new
 // messages; further up, it stays put and offers a way back down.
@@ -244,16 +158,7 @@ export default function ArchitectPanel({
   review,
   reviewDetail = false,
   asked = null,
-  notices = [],
-  onOpenFinding,
-  onClearNotices,
 }: {
-  // A new chat starts without the earlier notices.
-  onClearNotices?: () => void;
-  // What each edit did to the design, posted among the answers (see useArchieNotices).
-  notices?: readonly PostedNotice[];
-  // Opens a problem from a notice: what it is, its fix, and a question for Archie about it.
-  onOpenFinding?: (findingId: string) => void;
   // The design's numbers and an applied fix, above the conversation. While a problem is open
   // it takes the whole panel (`reviewDetail`), and the conversation waits underneath.
   review?: ReactNode;
@@ -298,10 +203,9 @@ export default function ArchitectPanel({
     setScrolledUp(false);
     list.current?.scrollTo({ top: list.current.scrollHeight });
   };
-  const noticeCount = notices.length;
   useEffect(() => {
     if (following.current) list.current?.scrollTo({ top: list.current.scrollHeight });
-  }, [turns, noticeCount]);
+  }, [turns]);
   useEffect(() => () => abort.current?.abort(), []);
 
   // Restore the saved conversation once, then save after each finished answer or applied
@@ -337,33 +241,9 @@ export default function ArchitectPanel({
   const newChat = () => {
     abort.current?.abort();
     setTurns([]);
-    onClearNotices?.();
   };
-  const shownNotices = notices;
-  // Answers and notices in the order they happened.
-  const feed = buildFeed(turns, shownNotices);
   const latestAnswer = [...turns].reverse().find((turn): turn is AssistantTurn => turn.role === "assistant");
   const unavailable = latestAnswer?.error === NOT_CONFIGURED;
-  // Which notices are open: the newest starts open and every other starts folded; a click flips
-  // one from where it started. Runs of notices show their older ones behind one row.
-  const newestNotice = shownNotices.at(-1)?.id;
-  const [flipped, setFlipped] = useState<ReadonlySet<string>>(() => new Set());
-  const [openRuns, setOpenRuns] = useState<ReadonlySet<string>>(() => new Set());
-  const flip = (set: ReadonlySet<string>, key: string) => {
-    const next = new Set(set);
-    if (!next.delete(key)) next.add(key);
-    return next;
-  };
-  const noticeOpen = (notice: PostedNotice) => (notice.id === newestNotice) !== flipped.has(String(notice.id));
-  const notice = (item: PostedNotice) => (
-    <NoticeMessage
-      key={`notice-${item.id}`}
-      notice={item}
-      open={noticeOpen(item)}
-      onToggle={() => setFlipped((set) => flip(set, String(item.id)))}
-      onOpenFinding={onOpenFinding}
-    />
-  );
   // Questions left today: read when the panel opens, then from each answer's headers.
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   useEffect(() => {
@@ -463,7 +343,7 @@ export default function ArchitectPanel({
       icon={<ArchiePortrait />}
       title="Archie"
       revealKey={revealKey}
-      actions={(turns.length > 0 || notices.length > 0) && (
+      actions={turns.length > 0 && (
         <button type="button" className="axp-icon-btn" aria-label="Start a new conversation" title="New chat" onClick={newChat} disabled={busy}>
           <MessageSquarePlus size={15} aria-hidden="true" />
         </button>
@@ -485,33 +365,15 @@ export default function ArchitectPanel({
           setScrolledUp(!atEnd);
         }}
       >
-        {turns.length === 0 && shownNotices.length === 0 && (
+        {turns.length === 0 && (
           <PanelGroup title={scoped ? `Ask about ${scope}` : "Ask about the whole design"} meta={scoped ? clearScope : undefined}>
             {(scoped ? FOCUS_STARTERS : STARTERS).map((question) => (
               <PanelLink key={question} item label={question} title={question} onClick={() => void ask(question)} />
             ))}
           </PanelGroup>
         )}
-        {feed.map((entry) => {
-          if ("notices" in entry) {
-            const older = entry.notices.slice(0, -1);
-            const runOpen = openRuns.has(entry.key);
-            return (
-              <div key={entry.key} className="axp-notice-run">
-                <div className="axp-notice-author">Archie · Design changes</div>
-                {notice(entry.notices.at(-1)!)}
-                {older.length > 0 && (
-                  <button type="button" className="axp-notice-more" aria-expanded={runOpen} onClick={() => setOpenRuns((set) => flip(set, entry.key))}>
-                    <span>{older.length} earlier change{older.length === 1 ? "" : "s"}</span>
-                    <ChevronDown size={14} aria-hidden="true" className="axp-go" />
-                  </button>
-                )}
-                {runOpen && older.map(notice)}
-              </div>
-            );
-          }
-          const { turn } = entry;
-          return turn.role === "user" ? (
+        {turns.map((turn) =>
+          turn.role === "user" ? (
             <div key={turn.id} className="axp-turn" data-role="user">
               <span className="axp-turn-label">You{turn.focusCount > 0 && ` · ${components(turn.focusCount)}`}</span>
               <p className="axp-message" data-role="user">{turn.text}</p>
@@ -535,8 +397,8 @@ export default function ArchitectPanel({
               ))}
               {turn.error && <p role="alert" className="axp-message" data-tone="danger">{unavailable && turn.error === NOT_CONFIGURED ? "Not answered · Archie unavailable" : turn.error}</p>}
             </div>
-          );
-        })}
+          ),
+        )}
         {scrolledUp && (
           <button type="button" className="axp-jump" onClick={toEnd}>
             <ArrowDown size={13} aria-hidden="true" /> Jump to latest
