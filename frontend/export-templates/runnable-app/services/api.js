@@ -328,7 +328,7 @@ const http_server = http.createServer(async (request, response) => {
   } catch (error) {
     console.error(`${SELF}:`, error.message);
     if (!response.headersSent) {
-      sendJson(response, error.status ?? 500, { error: error.status === 413 ? "That is too large." : error.status ? "Invalid request." : "The API server failed." }, [...steps, step(server, "Failed.", { ok: false })], { "X-Trace-Api": SELF });
+      sendJson(response, error.status ?? 500, { error: error.status === 413 ? "That is too large." : error.status ? "Invalid request." : "That request could not be completed. Try it again." }, [...steps, step(server, error.status ? "Refused the request." : "Could not complete the request.", { ok: false })], { "X-Trace-Api": SELF });
     }
   }
 });

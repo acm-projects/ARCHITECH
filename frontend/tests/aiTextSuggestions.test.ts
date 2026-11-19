@@ -43,21 +43,47 @@ const request = () => {
   return parsed.value;
 };
 
-test("a load balancer named in words is added for real, with a second server behind it", () => {
-  const [suggestion] = suggestionsFromText("Put a load balancer in front of the API server.", graph());
+// The same design with a web app in front of the API server.
+const withWebApp = (): GraphDocument =>
+  ({
+    schemaVersion: 1,
+    nodes: [...graph().nodes, node("web-app-1", "web-app", "Web App")],
+    edges: [
+      { id: "e0", source: "client-1", target: "web-app-1" },
+      { id: "e1", source: "web-app-1", target: "server-1" },
+      { id: "e2", source: "server-1", target: "database-1" },
+    ],
+  }) as GraphDocument;
+const linked = (applied: { edges: { source: string; target: string }[] }) => (from: string, to: string) =>
+  applied.edges.some((e) => e.source === from && e.target === to);
+
+test("a load balancer named in words is added for real, behind the web app, never wired to the client", () => {
+  const [suggestion] = suggestionsFromText("Put a load balancer in front of the API server.", withWebApp());
   assert.ok(suggestion);
-  const applied = applyChanges(graph(), suggestion.changes);
+  const applied = applyChanges(withWebApp(), suggestion.changes);
   assert.ok(applied.ok, applied.ok ? "" : applied.error);
   const types = applied.nodes.map((n) => n.data.type).sort();
-  assert.deepEqual(types, ["client", "database", "load-balancer", "server", "server"]);
+  assert.deepEqual(types, ["client", "database", "load-balancer", "server", "server", "web-app"]);
   const balancer = applied.nodes.find((n) => n.data.type === "load-balancer")!;
   const second = applied.nodes.find((n) => n.data.type === "server" && n.id !== "server-1")!;
-  const has = (from: string, to: string) => applied.edges.some((e) => e.source === from && e.target === to);
-  assert.ok(has("client-1", balancer.id), "the client now goes through the load balancer");
-  assert.ok(!has("client-1", "server-1"), "and no longer straight to the server");
+  const has = linked(applied);
+  assert.ok(has("web-app-1", balancer.id) && !has("web-app-1", "server-1"), "the web app now goes through the load balancer");
+  assert.ok(!applied.edges.some((e) => e.source === "client-1" && e.target === balancer.id), "the client is not wired to it");
   assert.ok(has(balancer.id, "server-1") && has(balancer.id, second.id), "the balancer feeds both servers");
   assert.ok(has(second.id, "database-1"), "the second server does the same work");
   assert.equal(second.data.implementation, "nodejs-express");
+});
+
+test("with only a client in front, the fix is a second server the client also reaches, with no load balancer", () => {
+  const [suggestion] = suggestionsFromText("Put a load balancer in front of two API servers.", graph());
+  assert.equal(suggestion?.title, "Add a second API Server");
+  const applied = applyChanges(graph(), suggestion!.changes);
+  assert.ok(applied.ok);
+  assert.equal(applied.nodes.some((n) => n.data.type === "load-balancer"), false);
+  const second = applied.nodes.find((n) => n.data.type === "server" && n.id !== "server-1")!;
+  const has = linked(applied);
+  assert.ok(has("client-1", "server-1") && has("client-1", second.id), "the client reaches both servers");
+  assert.ok(has(second.id, "database-1"));
 });
 
 test("each fix named is offered in the order named, and nothing is offered twice", () => {
@@ -68,7 +94,7 @@ test("each fix named is offered in the order named, and nothing is offered twice
   assert.deepEqual(titles, [
     "Put a cache in front of Database",
     "Add a read replica of Database",
-    "Load-balance API Server across two servers",
+    "Add a second API Server",
   ]);
   assert.deepEqual(suggestionsFromText("This design looks fine as it is.", graph()), []);
 });
@@ -77,7 +103,7 @@ test("Archie's answer without a tool call still ends with changes to apply", asy
   const model = textModel("Database is a single point of failure: add a read replica, and put a load balancer in front of two API servers.");
   const events = await collect(runArchitectChat({ request: request(), level: "Beginner", model }));
   const suggestions = events.filter((e): e is Extract<ChatEvent, { type: "suggestion" }> => e.type === "suggestion");
-  assert.deepEqual(suggestions.map((s) => s.title), ["Add a read replica of Database", "Load-balance API Server across two servers"]);
+  assert.deepEqual(suggestions.map((s) => s.title), ["Add a read replica of Database", "Add a second API Server"]);
   assert.ok(suggestions.every((s) => s.preview.after.monthlyCost > s.preview.before.monthlyCost), "each adds cost, previewed");
   assert.equal(events.at(-1)?.type, "done");
 });

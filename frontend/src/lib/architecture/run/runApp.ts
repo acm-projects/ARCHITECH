@@ -98,6 +98,9 @@ type Memory = {
   cache: Map<string, { value: string; expires: number }>;
   turns: Map<string, number>; // round-robin position of each part that spreads requests
   index: Map<number, { title: string; body: string; owner: number }>; // the search index of a design without a database
+  // ARCHITECH's own database could not be used (unreachable, or its run tables are missing), so
+  // this run keeps everything in memory instead of failing every request.
+  databaseDown?: boolean;
 };
 const memories = new Map<string, Memory>();
 function memoryOf(projectId: string): Memory {
@@ -250,17 +253,29 @@ const fromRow = (row: ItemRow) => ({
 });
 const ITEM_FIELDS = { number: true, title: true, body: true, status: true, wordCount: true, processedBy: true, processedAt: true, fileName: true, createdAt: true } as const;
 
+// The database parts are played by ARCHITECH's own database. When it cannot be used, the run
+// carries on with the same parts kept in memory, as a design without a database would.
+function withoutDatabase(config: RunConfig): RunConfig {
+  return { ...config, data: { ...config.data, database: null }, auth: { ...config.auth, database: null } };
+}
+const isDatabaseError = (error: unknown) =>
+  error instanceof Error &&
+  (error.constructor.name.startsWith("PrismaClient") || /^P\d{4}$/.test(String((error as { code?: unknown }).code ?? "")));
+
 export class RunApp {
   private readonly memory: Memory;
   private readonly accounts: Accounts;
   private readonly addressOf: Map<string, string>;
+  private readonly config: RunConfig;
 
   constructor(
     private readonly projectId: string,
-    private readonly config: RunConfig,
-    basePath: string,
+    designConfig: RunConfig,
+    private readonly basePath: string,
   ) {
     this.memory = memoryOf(projectId);
+    this.config = this.memory.databaseDown ? withoutDatabase(designConfig) : designConfig;
+    const config = this.config;
     this.accounts = new Accounts(projectId, this.memory, config.auth.database, basePath);
     this.addressOf = new Map(Object.entries(config.addresses).map(([address, container]) => [container, address]));
   }
@@ -306,9 +321,21 @@ export class RunApp {
       const result = await this.api(request, instance, steps, user);
       return this.answer(result.status, result.json, [...before, ...steps], { ...headers, ...result.headers, "X-Trace-Api": instance }, result.bytes);
     } catch (error) {
+      // The database is out of reach: say so in the server log once, then serve this request and
+      // the rest of the run from memory rather than failing each one.
+      if (isDatabaseError(error) && !this.memory.databaseDown) {
+        console.error(`run ${this.projectId}: the database could not be used, so this run keeps its data in memory.`, error);
+        this.memory.databaseDown = true;
+        return new RunApp(this.projectId, this.config, this.basePath).handle(request);
+      }
       const status = error instanceof HttpError ? error.status : 500;
       if (status === 500) console.error(`run ${this.projectId}:`, error);
-      return this.answer(status, { error: status === 413 ? "That is too large." : status === 500 ? "The API server failed." : error instanceof Error ? error.message : "Invalid request." }, [...before, ...steps, step(this.config.server.node, "Failed.", { ok: false })], { ...headers, "X-Trace-Api": instance });
+      const message = status === 413
+        ? "That is too large."
+        : status === 500
+          ? "That request could not be completed. Try it again."
+          : error instanceof Error ? error.message : "Invalid request.";
+      return this.answer(status, { error: message }, [...before, ...steps, step(this.config.server.node, status === 500 ? "Could not complete the request." : "Refused the request.", { ok: false })], { ...headers, "X-Trace-Api": instance });
     }
   }
 

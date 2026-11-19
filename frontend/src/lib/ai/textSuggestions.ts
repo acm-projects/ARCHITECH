@@ -55,12 +55,24 @@ function scaleOutServers(graph: Graph): Suggestion | null {
   const server = servers.find((candidate) => upstreamOf(graph, candidate.id).length > 0) ?? servers[0];
   if (!server) return null;
   const upstream = upstreamOf(graph, server.id);
+  const isClient = (id: string) => graph.nodes.find((node) => node.id === id)?.data.type === "client";
+  // A load balancer is never wired to a client. It goes behind whatever else sits in front of
+  // the server (a web app, gateway, CDN or DNS); a client keeps its own link.
+  const fronts = upstream.filter((id) => !isClient(id));
+  if (fronts.length === 0) {
+    // Only clients in front: they connect to both servers and spread requests between them.
+    return {
+      title: `Add a second ${nameOf(server)}`,
+      reason: "Requests are then shared between two servers, and either can fail or fill up without taking the app down. Costs a second server.",
+      changes: secondServer(graph, server, upstream),
+    };
+  }
   return {
     title: `Load-balance ${nameOf(server)} across two servers`,
     reason: "A load balancer shares requests between two servers, so either can fail or fill up without taking the app down. Costs the balancer and a second server.",
     changes: [
       { op: "add_component", ref: "new-load-balancer", type: "load-balancer" as never },
-      ...upstream.flatMap((source): Change[] => [
+      ...fronts.flatMap((source): Change[] => [
         { op: "disconnect", from: source, to: server.id },
         { op: "connect", from: source, to: "new-load-balancer" },
       ]),
