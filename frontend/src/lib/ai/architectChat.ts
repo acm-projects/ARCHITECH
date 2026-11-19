@@ -20,7 +20,7 @@ import { applyChanges, parseSuggestion, type Change } from "./changes.ts";
 //   { type: "text", text }                 part of the answer, in order
 //   { type: "suggestion", ... }            a change the user can apply, already checked against
 //                                          the design and previewed with the engine
-//   { type: "note", text }                 a proposed change that could not be used, and why
+//   { type: "note", text }                 a short remark beside the answer (none are sent today)
 //   { type: "done" }
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -195,11 +195,11 @@ export function runArchitectChat(input: {
       } else if (event.name === PROPOSE_CHANGES_TOOL.name) {
         if (suggestions >= MAX_SUGGESTIONS) continue;
         const prepared = prepareSuggestion(event.input, graph, traffic, before, `s${suggestions + 1}`, focus);
+        // A change that does not fit the design is left out quietly: the answer still stands, and
+        // the fallback below can offer one that does.
         if (prepared.ok) {
           suggestions += 1;
           yield prepared.event;
-        } else {
-          yield { type: "note", text: `A suggested change could not be used: ${prepared.error}` };
         }
       }
     }

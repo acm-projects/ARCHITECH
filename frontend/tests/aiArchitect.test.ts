@@ -222,8 +222,8 @@ test("a suggestion that does not fit becomes a note; at most two suggestions per
     { type: "tool", name: "propose_changes", input: null },
   ]);
   const events = await collect(runArchitectChat({ request: request(), level: "Beginner", model }));
-  assert.deepEqual(events.map((event) => event.type), ["note", "suggestion", "suggestion", "done"]);
-  assert.match((events[0] as { text: string }).text, /does not exist/);
+  // The broken one is dropped without a note to the user.
+  assert.deepEqual(events.map((event) => event.type), ["suggestion", "suggestion", "done"]);
   assert.deepEqual(events.filter((e) => e.type === "suggestion").map((e) => (e as { id: string }).id), ["s1", "s2"]);
 });
 

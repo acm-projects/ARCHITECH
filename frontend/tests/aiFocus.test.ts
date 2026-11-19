@@ -111,15 +111,16 @@ async function run(focus: string[] | undefined, events: ModelEvent[]) {
   return { out, calls };
 }
 
-test("a turn with a focus sends the focus block and turns out-of-selection suggestions into notes", async () => {
+test("a turn with a focus sends the focus block and leaves out suggestions outside the selection", async () => {
   const outside = { title: "Scale the emailer", reason: "", changes: [{ op: "set_setting", node: "worker-1", key: "replicas", value: 3 }] };
   const inside = { title: "More API servers", reason: "", changes: [{ op: "set_setting", node: "server-1", key: "replicas", value: 3 }] };
   const tool = (input: unknown): ModelEvent => ({ type: "tool", name: "propose_changes", input });
 
   const focused = await run(SELECTION, [{ type: "text", text: "This part…" }, tool(outside), tool(inside)]);
   assert.match(focused.calls[0].system, /<focus>/);
-  assert.deepEqual(focused.out.map((e) => e.type), ["text", "note", "suggestion", "done"]);
-  assert.match((focused.out[1] as { text: string }).text, /outside your selection \(set_setting on worker-1\)/);
+  // The one outside the selection is dropped without a note; the one inside is offered.
+  assert.deepEqual(focused.out.map((e) => e.type), ["text", "suggestion", "done"]);
+  assert.equal((focused.out[1] as { title: string }).title, "More API servers");
 
   // The same suggestion is fine without a focus.
   const whole = await run(undefined, [tool(outside)]);
