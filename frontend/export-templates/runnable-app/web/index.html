@@ -51,35 +51,36 @@
   label { font-size: 13px; font-weight: 500; color: var(--muted); }
   code { font-family: var(--mono); font-size: 12px; }
 
-  /* ---- Frame: one bar across the top, the design on the left, the app on the right ---- */
+  /* ---- Frame: one bar across the top, the design on the left, the app on the right, and
+     Archie docked in the bottom-right corner ---- */
   .shell { display: flex; flex-direction: column; height: 100dvh; }
-  .topbar { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 12px 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
-  .brand { display: inline-flex; align-items: center; gap: 8px; flex: none; text-decoration: none; font-weight: 800; letter-spacing: .02em; }
-  .brand img { width: 26px; height: 22px; object-fit: contain; }
-  .topbar .divider { width: 1px; height: 22px; background: var(--line-strong); flex: none; }
-  .topbar h1 { margin: 0; min-width: 0; overflow: hidden; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-  .live { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 2px 10px; border-radius: 999px; background: var(--done-soft); color: var(--done); font-size: 12px; font-weight: 600; }
+  .topbar { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 10px 16px 10px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .brand { display: inline-flex; align-items: center; flex: none; text-decoration: none; }
+  .brand img { display: block; width: auto; height: 30px; }
+  .topbar .divider { width: 1px; height: 26px; background: var(--line-strong); flex: none; }
+  .topbar h1 { margin: 0; min-width: 0; overflow: hidden; font-size: 17px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .live { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 3px 11px; border-radius: 999px; background: var(--done-soft); color: var(--done); font-size: 13px; font-weight: 600; }
   .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
   .topbar .grow { flex: 1; }
   .who { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .back { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 32px; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: var(--control); font-size: 13px; font-weight: 500; text-decoration: none; }
+  .back { display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 36px; padding: 6px 14px; border: 1px solid var(--line-strong); border-radius: var(--control); background: var(--panel); font-size: 14px; font-weight: 500; text-decoration: none; }
   .back:hover { background: var(--soft); }
 
-  .stale { margin: 0; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--warn-soft); color: var(--warn); font-size: 13px; }
-  .split { display: grid; flex: 1 1 auto; grid-template-columns: minmax(420px, 52%) minmax(0, 1fr); min-height: 0; }
+  .stale { margin: 0; padding: 8px 20px; border-bottom: 1px solid var(--line); background: var(--warn-soft); color: var(--warn); font-size: 13px; }
+  .split { display: grid; flex: 1 1 auto; grid-template-columns: minmax(0, 1.3fr) minmax(380px, 1fr); min-height: 0; }
 
-  /* ---- Left: the design, Archie, and every request ---- */
-  .demo { display: grid; grid-template-rows: minmax(240px, 1fr) auto minmax(170px, 32%); gap: 12px; min-height: 0; padding: 12px; overflow: hidden; border-right: 1px solid var(--line); }
+  /* ---- Left: the design, live, and every request under it ---- */
+  .demo { display: grid; grid-template-rows: minmax(0, 1.5fr) minmax(200px, 1fr); gap: 16px; min-height: 0; padding: 16px; overflow: hidden; border-right: 1px solid var(--line); }
   .pane { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
-  .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 6px 8px 6px 14px; border-bottom: 1px solid var(--line); }
-  .pane-head h2 { margin: 0; font-size: 13px; font-weight: 600; white-space: nowrap; }
-  .map-now { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+  .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 8px 10px 8px 16px; border-bottom: 1px solid var(--line); }
+  .pane-head h2 { margin: 0; font-size: 15px; font-weight: 650; white-space: nowrap; }
+  .map-now { overflow: hidden; color: var(--muted); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
   .map-now b { color: var(--archie); }
-  .stage { flex: 1 1 auto; min-height: 0; background-image: radial-gradient(var(--line-strong) 1px, transparent 1px); background-size: 16px 16px; }
+  .stage { flex: 1 1 auto; min-height: 0; padding: 8px; background-image: radial-gradient(var(--line-strong) 1px, transparent 1px); background-size: 18px 18px; }
   .stage svg { display: block; width: 100%; height: 100%; }
-  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; padding: 8px 14px; border-top: 1px solid var(--line); list-style: none; color: var(--muted); font-size: 12px; }
-  .legend li { display: inline-flex; align-items: center; gap: 6px; }
-  .legend i { width: 14px; height: 10px; border: 2px solid var(--line-strong); border-radius: 3px; background: var(--panel); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 10px 16px; border-top: 1px solid var(--line); list-style: none; color: var(--muted); font-size: 13px; }
+  .legend li { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i { width: 16px; height: 11px; border: 2px solid var(--line-strong); border-radius: 3px; background: var(--panel); }
   .legend .k-page { border-color: var(--archie); }
   .legend .k-active { border-color: var(--archie); background: var(--archie-soft); }
   .legend .k-done { border-color: var(--done); background: var(--done-soft); }
@@ -99,66 +100,77 @@
   .diagram .node.idle { opacity: .45; }
   .diagram marker path { fill: var(--line-strong); }
 
-  /* Archie, under the diagram */
-  .archie { display: flex; align-items: flex-start; gap: 10px; }
-  .archie-face { flex: none; width: 52px; height: 44px; min-height: 0; margin-top: 2px; padding: 0; border: 0; background: none; }
-  .archie-face:hover:not(:disabled) { background: none; }
+  /* Archie, docked in the bottom-right corner: his speech bubble beside him, pointing at him. */
+  .archie { position: fixed; right: 20px; bottom: 20px; z-index: 20; display: flex; align-items: flex-end; gap: 10px; max-width: min(440px, calc(100vw - 40px)); pointer-events: none; }
+  .archie > * { pointer-events: auto; }
+  .archie-face { order: 2; flex: none; width: 76px; height: 64px; min-height: 0; padding: 0; border: 0; background: none; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .15)); transition: transform .15s; }
+  .archie-face:hover:not(:disabled) { background: none; transform: translateY(-2px); }
   .archie-face img { width: 100%; height: 100%; object-fit: contain; }
   .archie-face.talking img { animation: bob .6s ease-in-out infinite alternate; }
-  @keyframes bob { to { transform: translateY(-3px); } }
-  .bubble { flex: 1; min-width: 0; min-height: 68px; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid var(--archie); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
-  .bubble-head { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; font-size: 12px; }
+  @keyframes bob { to { transform: translateY(-4px); } }
+  .bubble { position: relative; flex: 1; min-width: 0; margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px 16px 4px 16px; background: var(--panel); box-shadow: 0 10px 30px rgba(0, 0, 0, .14); }
+  .bubble-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; font-size: 13px; }
   .bubble .who-says { font-weight: 700; color: var(--archie); }
   .step-count { color: var(--muted); font-variant-numeric: tabular-nums; }
   .bubble-head .controls { display: flex; gap: 12px; margin-left: auto; }
-  .bubble p { margin: 0; }
-  .archie-off { align-self: center; margin: 0; color: var(--muted); font-size: 13px; }
+  .bubble p { margin: 0; font-size: 14px; line-height: 1.5; }
+  .bubble p:empty::before { content: "Use the app and I'll walk you through every request."; color: var(--muted); }
+  .archie-off { margin: 0 0 18px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); box-shadow: var(--shadow); color: var(--muted); font-size: 13px; }
 
   /* Requests, newest first, and the steps of the one picked */
-  .trace-body { display: grid; grid-template-columns: minmax(170px, 38%) minmax(0, 1fr); flex: 1 1 auto; min-height: 0; }
-  .requests { margin: 0; padding: 6px; overflow-y: auto; border-right: 1px solid var(--line); list-style: none; }
-  .requests button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; width: 100%; min-height: 0; padding: 6px 8px; border: 0; background: none; text-align: left; }
-  .requests button[aria-current="true"] { background: var(--soft); box-shadow: inset 2px 0 var(--archie); }
-  .requests .r-label { overflow: hidden; font-size: 13px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-  .requests .r-meta { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
-  .status { align-self: center; padding: 0 6px; border-radius: 4px; background: var(--done-soft); color: var(--done); font: 600 11px/18px var(--mono); }
+  .trace-body { display: grid; grid-template-columns: minmax(190px, 34%) minmax(0, 1fr); flex: 1 1 auto; min-height: 0; }
+  .requests { margin: 0; padding: 8px; overflow-y: auto; border-right: 1px solid var(--line); list-style: none; }
+  .requests button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; width: 100%; min-height: 0; padding: 8px 10px; border: 0; background: none; text-align: left; }
+  .requests button[aria-current="true"] { background: var(--soft); box-shadow: inset 3px 0 var(--archie); }
+  .requests .r-label { overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .requests .r-meta { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .status { align-self: center; padding: 0 7px; border-radius: 4px; background: var(--done-soft); color: var(--done); font: 600 12px/20px var(--mono); }
   .status.bad { background: var(--fail-soft); color: var(--fail); }
   .empty-note { margin: 0; padding: 10px 8px; color: var(--muted); font-size: 13px; }
-  .steps { display: grid; align-content: start; gap: 2px; margin: 0; padding: 6px 10px 10px; overflow-y: auto; list-style: none; counter-reset: step; font-size: 13px; }
-  .steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; padding: 4px 6px; border-radius: 6px; counter-increment: step; }
-  .steps li::before { content: counter(step); color: var(--subtle); font: 12px/20px var(--mono); text-align: right; }
+  .steps { display: grid; align-content: start; gap: 2px; margin: 0; padding: 8px 12px 12px; overflow-y: auto; list-style: none; counter-reset: step; font-size: 14px; }
+  .steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; padding: 6px 8px; border-radius: 6px; counter-increment: step; }
+  .steps li::before { content: counter(step); color: var(--subtle); font: 12px/22px var(--mono); text-align: right; }
   .steps li.current { background: var(--archie-soft); }
-  .steps li.fail { color: var(--fail); }
-  .steps .s-node { font-weight: 600; }
-  .steps .ms { color: var(--subtle); font: 11px/20px var(--mono); white-space: nowrap; }
+  .steps li.fail { background: var(--fail-soft); color: var(--fail); }
+  .steps .s-node { font-weight: 650; }
+  .steps .ms { color: var(--subtle); font: 11px/22px var(--mono); white-space: nowrap; }
 
-  /* ---- Right: the app itself ---- */
-  .app-pane { min-height: 0; overflow-y: auto; }
-  .app-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(6px); }
-  .app-bar .app-name { flex: 1; min-width: 0; overflow: hidden; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
-  main { max-width: 640px; margin: 0 auto; padding: 20px 16px 48px; }
-  .card { margin-bottom: 16px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
-  .card h2 { margin: 0 0 12px; font-size: 15px; }
-  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  /* ---- Right: the app itself, filling its column ---- */
+  .app-pane { min-height: 0; overflow-y: auto; container-type: inline-size; }
+  .app-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 24px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(6px); }
+  .app-bar .app-name { flex: 1; min-width: 0; overflow: hidden; font-size: 15px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+  /* Room at the bottom so Archie never covers the last card. */
+  main { padding: 20px 24px 150px; }
+  #app { display: grid; gap: 16px; align-items: start; }
+  #app > .note { margin: 0; }
+  @container (min-width: 600px) {
+    #app { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    #app > .note { grid-column: 1 / -1; }
+  }
+  #auth { max-width: 460px; margin-inline: auto; }
+  .card { margin: 0; padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
+  .card h2 { margin: 0 0 14px; font-size: 17px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
   .card-head h2 { margin: 0; }
   .count { color: var(--muted); font-weight: 400; }
   .stack { display: grid; gap: 6px; }
-  .stack label:not(:first-child) { margin-top: 6px; }
+  .stack label:not(:first-child) { margin-top: 8px; }
   .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-  .actions { margin-top: 8px; }
+  .actions { margin-top: 10px; }
+  .actions button { min-height: 38px; padding-inline: 18px; }
   .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 14px; padding: 3px; border-radius: var(--control); background: var(--soft); }
-  .tabs button { min-height: 30px; border: 0; background: none; color: var(--muted); font-weight: 500; }
+  .tabs button { min-height: 32px; border: 0; background: none; color: var(--muted); font-weight: 500; }
   .tabs button[aria-selected="true"] { background: var(--panel); color: var(--ink); box-shadow: var(--shadow); }
-  .error { margin: 0; color: var(--fail); font-size: 13px; }
+  .error { margin: 6px 0 0; padding: 8px 10px; border-radius: var(--control); background: var(--fail-soft); color: var(--fail); font-size: 13px; }
   .error:empty { display: none; }
-  .note { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+  .note { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
   #empty { margin: 0; }
   .search { display: flex; gap: 8px; margin-bottom: 12px; }
   .search input { flex: 1; width: auto; }
   .items { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-  .item { padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+  .item { padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
   .item-head { display: flex; align-items: flex-start; gap: 8px; }
-  .item h3 { flex: 1; min-width: 0; margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+  .item h3 { flex: 1; min-width: 0; margin: 0; font-size: 15px; overflow-wrap: anywhere; }
   .item p { margin: 4px 0 0; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
   .item .row { margin-top: 8px; }
   .item-actions { display: flex; flex: none; gap: 2px; }
@@ -169,27 +181,30 @@
 
   /* One screen, nothing scrolls the page: down to tablet width the two halves sit side by side
      and only the panes inside scroll. Only a phone stacks them and scrolls the page. */
+  @media (max-width: 1100px) {
+    .split { grid-template-columns: minmax(0, 1.1fr) minmax(340px, 1fr); }
+    .map-now { display: none; }
+  }
   @media (max-width: 900px) {
     .split { grid-template-columns: minmax(300px, 46%) minmax(0, 1fr); }
-    .demo { grid-template-rows: minmax(160px, 1fr) auto minmax(140px, 30%); padding: 8px; gap: 8px; }
-    .map-now, .topbar .who { display: none; }
-  }
-  @media (max-height: 640px) and (min-width: 641px) {
-    .demo { grid-template-rows: minmax(140px, 1fr) auto minmax(120px, 28%); }
-    .archie .bubble { min-height: 0; }
+    .demo { grid-template-rows: minmax(160px, 1.3fr) minmax(150px, 1fr); padding: 10px; gap: 10px; }
+    .topbar .who { display: none; }
+    .trace-body { grid-template-columns: minmax(150px, 40%) minmax(0, 1fr); }
   }
   @media (max-width: 640px) {
     body { overflow: auto; }
     .shell { height: auto; min-height: 100dvh; }
     .split { grid-template-columns: minmax(0, 1fr); }
-    .demo { grid-template-columns: minmax(0, 1fr); grid-template-rows: 220px auto 200px; border-right: 0; border-bottom: 1px solid var(--line); }
-    .map-now { display: none; }
+    .demo { grid-template-rows: 240px 220px; border-right: 0; border-bottom: 1px solid var(--line); }
     .app-pane { overflow: visible; }
-    .topbar .who { display: none; }
+    .archie { right: 10px; bottom: 10px; }
+    .archie-face { width: 56px; height: 48px; }
+    .bubble { max-width: 70vw; }
   }
   @media (max-width: 520px) {
     .topbar { gap: 8px; padding-inline: 12px 8px; }
-    .brand { font-size: 0; gap: 0; }
+    .brand img { height: 24px; }
+    .topbar .divider { display: none; }
     .live { padding: 2px 8px; }
     .back .long { display: none; }
     .trace-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
@@ -202,7 +217,7 @@
 <body>
 <div class="shell">
   <header class="topbar">
-    <a class="brand" id="brand" href="/dashboard" hidden><img src="/archie.svg" alt="">ARCHITECH</a>
+    <a class="brand" id="brand" href="/dashboard" hidden><picture><source srcset="/logo-with-archie-dark.svg" media="(prefers-color-scheme: dark)"><img src="/logo-with-archie.svg" alt="ARCHITECH" width="134" height="30"></picture></a>
     <span class="divider" id="brand-divider" hidden></span>
     <h1 id="title">App</h1>
     <span class="live" title="Every part of the design is running">Running</span>
@@ -227,22 +242,6 @@
           <li><i class="k-fail"></i>Failed</li>
         </ul>
       </section>
-
-      <div class="archie" id="archie">
-        <button class="archie-face" id="face" aria-label="Archie: show or hide explanations"><img src="/archie.svg" alt=""></button>
-        <div class="bubble" id="bubble" aria-live="polite">
-          <div class="bubble-head">
-            <span class="who-says">Archie</span>
-            <span class="step-count" id="step-count"></span>
-            <span class="controls">
-              <button class="link" id="skip" hidden>Skip</button>
-              <button class="link" id="quiet">Hide</button>
-            </span>
-          </div>
-          <p id="say"></p>
-        </div>
-        <p class="archie-off" id="archie-off" hidden>Archie is resting. Click him to turn explanations back on.</p>
-      </div>
 
       <section class="pane" id="what">
         <div class="pane-head">
@@ -316,6 +315,23 @@
   </div>
 </div>
 
+  <!-- Archie, docked in the bottom-right corner, explains each request as it happens -->
+  <div class="archie" id="archie">
+    <button class="archie-face" id="face" aria-label="Archie: show or hide explanations"><img src="/archie.svg" alt=""></button>
+    <div class="bubble" id="bubble" aria-live="polite">
+      <div class="bubble-head">
+        <span class="who-says">Archie</span>
+        <span class="step-count" id="step-count"></span>
+        <span class="controls">
+          <button class="link" id="skip" hidden>Skip</button>
+          <button class="link" id="quiet">Hide</button>
+        </span>
+      </div>
+      <p id="say"></p>
+    </div>
+    <p class="archie-off" id="archie-off" hidden>Archie is resting. Click him to turn explanations back on.</p>
+  </div>
+
 <script>
   const $ = (id) => document.getElementById(id);
   const BASE = document.querySelector('meta[name="app-base"]')?.content ?? "";
@@ -367,13 +383,13 @@
     // pulled together when the canvas is spread out (bigger labels), pushed apart when parts sit close.
     // Two boxes are clear of each other when they are far enough apart side to side OR top to bottom.
     let squeeze = 0.4;
-    for (const a of config.design.nodes) for (const b of config.design.nodes) {
+    for (const a of shownNodes()) for (const b of shownNodes()) {
       if (a === b) continue;
       const dx = Math.abs(a.x - b.x), dy = Math.abs(a.y - b.y);
       squeeze = Math.max(squeeze, Math.min(dx > 0 ? (W + 26) / dx : Infinity, dy > 0 ? (H + 14) / dy : Infinity));
     }
     squeeze = Math.min(3, squeeze);
-    const nodes = config.design.nodes.map((n) => ({ ...n, x: n.x * squeeze, y: n.y * squeeze }));
+    const nodes = shownNodes().map((n) => ({ ...n, x: n.x * squeeze, y: n.y * squeeze }));
     const xs = nodes.map((n) => n.x), ys = nodes.map((n) => n.y);
     const pad = 20;
     const minX = Math.min(...xs) - pad, minY = Math.min(...ys) - pad;
@@ -390,7 +406,7 @@
       const scale = 1 / Math.max(Math.abs(dx) / (W / 2) || 1e-9, Math.abs(dy) / (H / 2) || 1e-9);
       return { x: c.x + dx * scale, y: c.y + dy * scale };
     };
-    const edges = config.design.edges
+    const edges = shownEdges()
       .map((e) => {
         const a = byId.get(e.source), b = byId.get(e.target);
         if (!a || !b) return "";
@@ -413,8 +429,22 @@
   // The kind of part under its name: "load balancer", "web server (added by the app)".
   const typeName = (n) => (n.added ? "added by the app" : String(n.type ?? "").replace(/-/g, " "));
   const diagramNodes = (node) => document.querySelectorAll(`.diagram .node[data-node="${CSS.escape(node)}"]`);
-  // Parts added by the app (the page's web server) are drawn; the browser stands for the client.
-  const drawn = (node) => (config.design.nodes.some((n) => n.id === node) ? node : null);
+  // Parts the app adds itself (the page's web server) are left out of the drawing and the steps;
+  // the design's own parts are what the user built.
+  const isAdded = (node) => config.design.nodes.some((n) => n.id === node && n.added);
+  const shownNodes = () => config.design.nodes.filter((n) => !n.added);
+  function shownEdges() {
+    const out = [];
+    for (const e of config.design.edges) {
+      if (isAdded(e.source)) continue;
+      if (!isAdded(e.target)) { out.push(e); continue; }
+      for (const next of config.design.edges) {
+        if (next.source === e.target && !isAdded(next.target)) out.push({ source: e.source, target: next.target });
+      }
+    }
+    return out.filter((e, i) => out.findIndex((o) => o.source === e.source && o.target === e.target) === i);
+  }
+  const drawn = (node) => (config.design.nodes.some((n) => n.id === node && !n.added) ? node : null);
   function setState(node, state) {
     const id = drawn(node);
     if (!id) return;
@@ -466,7 +496,7 @@
         out.push(...serverSteps.map((s) => ({ ...s, instance, text: html(s.text) })));
       }
     }
-    return out.filter((s) => s.node);
+    return out.filter((s) => s.node && !isAdded(s.node));
   }
 
   // ---- Archie: the same steps, in plain words ----
@@ -597,8 +627,8 @@
     if (!quiet) {
       say(
         failed
-          ? `That one stopped at <b>${html(label(failed.node))}</b>, shown in red. Every step is listed under “What happened”.`
-          : `Done! “${html(trace.label)}” went through ${steps.length} step${steps.length === 1 ? "" : "s"}. They're all listed under “What happened”, and you can replay them.`,
+          ? `That one stopped at <b>${html(label(failed.node))}</b>, shown in red. Every step is listed under “Requests”.`
+          : `Done! “${html(trace.label)}” went through ${steps.length} step${steps.length === 1 ? "" : "s"}. They're all listed under “Requests”, and you can replay them.`,
       );
     }
     showPage();
