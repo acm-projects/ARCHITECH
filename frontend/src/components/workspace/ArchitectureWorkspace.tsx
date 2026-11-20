@@ -1,0 +1,894 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { GraduationCap } from "lucide-react";
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
+  SelectionMode,
+  ViewportPortal,
+  type Connection,
+  type FinalConnectionState,
+  type Edge,
+  type NodeChange,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import "./architecture-workspace.css";
+
+import { addConnection, validateConnection } from "../../lib/architecture/connections";
+import { createNodeIdAllocator } from "../../lib/architecture/nodeIds";
+import {
+  addNode as addNodeToGraph,
+  removeSelected,
+} from "../../lib/architecture/nodeOperations";
+import { applyReset, planReset } from "../../lib/architecture/reset";
+import { ARCHITECTURE_NODE_SIZE, spreadOverlappingNodes } from "../../lib/architecture/nodeLayout";
+import { snapNode, type SnapGuide } from "../../lib/architecture/nodeSnap";
+import { clearSelection, getSelection } from "../../lib/architecture/selection";
+import ChallengeCard from "../challenge/ChallengeCard";
+import ChallengeSubmitButton from "../challenge/ChallengeSubmitButton";
+import { useStackFit } from "./panel/stackFit";
+import { isPanelBehind } from "./panel/Panel";
+import { autoAlign } from "../../lib/architecture/autoLayout";
+import type { Challenge } from "../challenge/challenges";
+import ChallengeIntroduction from "../challenge/ChallengeIntroduction";
+import LearnCard from "../learn/LearnCard";
+import { projectActions } from "../projects/projectActions";
+import type { Project, ProjectMode } from "../projects/projectStore";
+import ComponentToolbox from "./toolbox/ComponentToolbox";
+import {
+  hasComponentDragData,
+  readComponentDragData,
+} from "./componentCatalog";
+import { ArchieContext, ArchieEnabledContext } from "./ArchieContext";
+import { DesignTrafficContext } from "./DesignTrafficContext";
+import { InspectorContext } from "./InspectorContext";
+import { useWorkspaceInspector } from "./useWorkspaceInspector";
+import WorkspaceInspector, { SimulationControl } from "./WorkspaceInspector";
+import { ArchitectToggle } from "./ai/ArchitectPanel";
+import { ArchiePortrait } from "./ai/ArchiePanel";
+import { ExportButton, RunnableAppButton } from "./ExportButton";
+import HistoryPanel, { HistoryToggle } from "./history/HistoryPanel";
+import { useChallengeMode } from "./useChallengeMode";
+import { useGraphClipboard } from "./useGraphClipboard";
+import { useGraphHistory } from "./useGraphHistory";
+import { useKeepNodesInView, useShowNewNode } from "./useKeepNodesInView";
+import { useLearnMode } from "./useLearnMode";
+import { useLiveMetrics } from "./useLiveMetrics";
+import { DesignCheckBadges, useDesignCheck } from "./DesignCheck";
+import { LiveEstimates } from "./LiveMetricsBar";
+import { FailureContext } from "./FailureContext";
+import { FailureTestPanel } from "./FailureTestPanel";
+import { useFailureTest } from "./useFailureTest";
+import { liveTargets } from "../../lib/architecture/challenge/targets";
+import { useProjectAutosave } from "./useProjectAutosave";
+import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
+import WorkspaceHeader from "./WorkspaceHeader";
+import OrthogonalEdge, { ConnectionPreview } from "./OrthogonalEdge";
+import ArchitectureNode, {
+  type ArchitectureFlowNode,
+  type ArchitectureNodeData,
+} from "./nodes/ArchitectureNode";
+// After every component's own styles: this is the shared panel system they all sit in.
+import "./workspace-panels.css";
+
+// The canvas is the product, so no library credit sits on it.
+const HIDE_ATTRIBUTION = { hideAttribution: true };
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 2;
+// How close a dragged component gets, on screen, before it lines up with another.
+const SNAP_REACH_PX = 8;
+
+// Keep this outside the component so React Flow gets the same node type reference
+// instead of creating a new one every time the workspace rerenders.
+const nodeTypes = {
+  architecture: ArchitectureNode,
+};
+
+// Components open at their own size (100%), whether the view is fitted or starts empty.
+const WORKSPACE_ZOOM = 1;
+const DESKTOP_FIT_VIEW_OPTIONS = {
+  padding: 0.2,
+  maxZoom: WORKSPACE_ZOOM,
+};
+// The same fit the breakdown uses on small screens, so labels stay readable.
+const MOBILE_FIT_VIEW_OPTIONS = {
+  padding: 0.15,
+  maxZoom: 1.1,
+};
+const fitViewOptionsForScreen = () =>
+  window.matchMedia("(max-width: 900px)").matches ? MOBILE_FIT_VIEW_OPTIONS : DESKTOP_FIT_VIEW_OPTIONS;
+
+// Every edge draws as a right-angle route with its own arrowhead, including saved edges
+// without a type ("default") and those saved as "orthogonal".
+const edgeTypes = {
+  default: OrthogonalEdge,
+  orthogonal: OrthogonalEdge,
+};
+
+// A refused connection explains itself for this long, then clears.
+const CONNECTION_NOTICE_MS = 4000;
+
+// Learn and Challenge both reset to an empty architecture so the user builds it themselves.
+const emptyGraph = (): {
+  nodes: ArchitectureFlowNode[];
+  edges: Edge[];
+} => ({
+  nodes: [],
+  edges: [],
+});
+
+// The design check's marks on components ("!" or a count of problems). Hidden for now; set to
+// true to bring them back.
+const SHOW_CHECK_MARKS = false;
+
+// What the editor needs from a project. A system breakdown supplies the same fields without a
+// saved project behind them.
+export type WorkspaceProject = Pick<Project, "id" | "title" | "nodes" | "edges" | "mode" | "learnSkipped" | "customTechnologies">;
+
+// A system breakdown's Challenge: the same editor in Challenge mode, outside any project.
+// Nothing goes to the project store or the server's project records; the breakdown keeps the
+// design itself through `onGraphChange`, and Learn returns to its walkthrough.
+export type BreakdownChallenge = {
+  challenge: Challenge;
+  onLearn: () => void;
+  // Returns false when the design could not be kept; the header then says so.
+  onGraphChange: (nodes: ArchitectureFlowNode[], edges: Edge[]) => boolean;
+};
+
+// How long the canvas stays still before a breakdown keeps its design.
+const BREAKDOWN_SAVE_DELAY_MS = 400;
+
+// This is the main controller for one project's editor.
+//
+// The actual architecture belongs to the project, so nodes, edges, history,
+// autosave, clipboard, and keyboard behavior are shared between Learn and Challenge.
+// Each mode only adds its own lesson/evaluation state around that same canvas.
+function Workspace({ project, breakdown }: { project: WorkspaceProject; breakdown?: BreakdownChallenge }) {
+  // The saved project behind the editor; null in a breakdown. `project.id` still scopes undo
+  // history, run results and the challenge introduction.
+  const savedProjectId = breakdown ? null : project.id;
+  // React Flow owns the live node/edge state while this project is open.
+  // Spread once here rather than in the store: the saved layout only changes with the
+  // user's next edit, so opening a project does not count as editing it.
+  const [initialNodes] = useState(() => spreadOverlappingNodes(project.nodes));
+  const [fitViewOptions] = useState(fitViewOptionsForScreen);
+  useKeepNodesInView(MIN_ZOOM);
+  const showNewNode = useShowNewNode();
+  const [nodes, setNodes, onNodesChange] =
+    useNodesState<ArchitectureFlowNode>(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(project.edges);
+
+  const {
+    screenToFlowPosition,
+    fitView,
+    getNodes,
+    getEdges,
+    getZoom,
+  } = useReactFlow<ArchitectureFlowNode, Edge>();
+
+  // One component dragged alone lines up with the others; a group keeps its own arrangement.
+  const [snapGuides, setSnapGuides] = useState<readonly SnapGuide[]>([]);
+  // React Flow tracks the drag from the pointer, and its last event carries that raw position.
+  const lastSnap = useRef<{ id: string; x: number; y: number } | null>(null);
+  const handleNodesChange = useCallback((changes: NodeChange<ArchitectureFlowNode>[]) => {
+    const moves = changes.filter((change) => change.type === "position");
+    const move = moves.length === 1 ? moves[0] : undefined;
+    const moving = move?.dragging && move.position ? getNodes().find((node) => node.id === move.id) : undefined;
+    if (!move?.position || !moving) {
+      const landed = lastSnap.current;
+      lastSnap.current = null;
+      if (moves.length > 0) setSnapGuides((guides) => (guides.length > 0 ? [] : guides));
+      const land = move?.position && move.id === landed?.id ? { ...move, position: { x: landed.x, y: landed.y } } : undefined;
+      onNodesChange(land ? changes.map((change) => (change === move ? land : change)) : changes);
+      return;
+    }
+    const boxOf = (node: ArchitectureFlowNode) => ({
+      x: node.position.x,
+      y: node.position.y,
+      width: node.measured?.width ?? ARCHITECTURE_NODE_SIZE.width,
+      height: node.measured?.height ?? ARCHITECTURE_NODE_SIZE.height,
+    });
+    const connected = new Set(getEdges().flatMap((edge) =>
+      edge.source === move.id ? [edge.target] : edge.target === move.id ? [edge.source] : []));
+    const snapped = snapNode(
+      { ...boxOf(moving), ...move.position },
+      getNodes().filter((node) => node.id !== move.id).map((node) => ({ box: boxOf(node), connected: connected.has(node.id) })),
+      SNAP_REACH_PX / getZoom(),
+    );
+    lastSnap.current = { id: move.id, x: snapped.x, y: snapped.y };
+    setSnapGuides(snapped.guides);
+    onNodesChange(changes.map((change) => (change === move ? { ...move, position: { x: snapped.x, y: snapped.y } } : change)));
+  }, [getNodes, getEdges, getZoom, onNodesChange]);
+
+  // Give every new node a unique ID for this editing session.
+  // Deleted IDs are not reused, which keeps history and connections predictable.
+  const [allocateNodeId] = useState(() =>
+    createNodeIdAllocator(project.nodes.map((node) => node.id)),
+  );
+
+  const [title, setTitle] = useState(project.title);
+  const [connectionNotice, setConnectionNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (!connectionNotice) return;
+    const timer = window.setTimeout(() => setConnectionNotice(null), CONNECTION_NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [connectionNotice]);
+  // Clear node/edge selection without changing the architecture itself.
+  const clearCanvasSelection = useCallback(() => {
+    const next = clearSelection({
+      nodes,
+      edges,
+    });
+
+    if (next.nodes === nodes && next.edges === edges) {
+      return false;
+    }
+
+    setNodes(next.nodes);
+    setEdges(next.edges);
+
+    return true;
+  }, [nodes, edges, setNodes, setEdges]);
+
+  const inspector = useWorkspaceInspector({
+    selectedNodeIds: nodes.filter((node) => node.selected).map((node) => node.id),
+  });
+  const { askArchie, reset: resetInspector } = inspector;
+
+  // Autosave watches the real project content and saves changes in the background.
+  // Ctrl+S uses saveNow to force any pending save immediately.
+  //
+  // BACKEND: useProjectAutosave is one of the places that will eventually send
+  // project updates through the backend project API instead of browser storage.
+  const { status: saveStatus, flush: saveNow } = useProjectAutosave(
+    savedProjectId,
+    title,
+    nodes,
+    edges,
+  );
+
+  // The mode is saved on the project, so reopening it brings the user back
+  // to whichever mode they were using last.
+  const [mode, setMode] = useState<ProjectMode>(breakdown ? "challenge" : project.mode);
+  const [modeError, setModeError] = useState<string | null>(null);
+
+  const onLearnBreakdown = breakdown?.onLearn;
+  const switchMode = useCallback(
+    (next: ProjectMode) => {
+      // A breakdown's Learn is its walkthrough, outside this editor.
+      if (onLearnBreakdown) {
+        if (next === "learn") onLearnBreakdown();
+        return;
+      }
+      // Switch the UI right away, then persist that choice on the project.
+      setMode(next);
+      resetInspector();
+
+      const result = projectActions.setMode(project.id, next);
+      setModeError(result.ok ? null : result.message);
+    },
+    [project.id, resetInspector, onLearnBreakdown],
+  );
+
+  // A breakdown keeps its design once the canvas settles, like autosave does for a project.
+  const onBreakdownGraphChange = breakdown?.onGraphChange;
+  const [breakdownSaveFailed, setBreakdownSaveFailed] = useState(false);
+  useEffect(() => {
+    if (!onBreakdownGraphChange) return;
+    const timer = window.setTimeout(() => setBreakdownSaveFailed(!onBreakdownGraphChange(nodes, edges)), BREAKDOWN_SAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [nodes, edges, onBreakdownGraphChange]);
+  // Leaving for Learn straight after an edit still keeps it.
+  const latestGraph = useRef({ nodes, edges });
+  useEffect(() => {
+    latestGraph.current = { nodes, edges };
+  }, [nodes, edges]);
+  useEffect(() => () => {
+    onBreakdownGraphChange?.(latestGraph.current.nodes, latestGraph.current.edges);
+  }, [onBreakdownGraphChange]);
+
+  // Learn and Challenge each manage their own mode-specific state,
+  // but both receive the same live architecture from this project.
+  const learn = useLearnMode({
+    enabled: mode === "learn",
+    scopeKey: savedProjectId,
+    initiallySkipped: project.learnSkipped,
+    nodes,
+    edges,
+  });
+
+  const challenge = useChallengeMode({
+    enabled: mode === "challenge",
+    scopeKey: savedProjectId,
+    nodes,
+    edges,
+    challenge: breakdown?.challenge,
+  });
+
+  const { reportConnection } = learn.engine;
+
+  // Learn gets the normal Run Design tools after the guided tutorial is finished.
+  // Challenge has its own Submit flow instead.
+  const activeRuns = mode === "learn" ? learn.runs : challenge.runs;
+  const canRunDesign = mode === "learn" && learn.exploring;
+  const archieEnabled = mode !== "learn" || learn.exploring;
+  const showInspector = mode === "challenge" || learn.exploring;
+  // Live metrics wherever Run Design is available, and in Challenge for its live targets:
+  // re-evaluated shortly after each edit.
+  const live = useLiveMetrics({ nodes, edges, traffic: activeRuns.traffic, enabled: canRunDesign || mode === "challenge" });
+  const challengeDefinition = challenge.challenge.definition;
+  const challengeTargets = useMemo(
+    () => mode === "challenge" && live.result?.summary.ready ? liveTargets(challengeDefinition, live.result.evaluation) : null,
+    [mode, live.result, challengeDefinition],
+  );
+  // Take one component down and see what still works, wherever the design tools are open.
+  const failure = useFailureTest({ nodes, edges, traffic: activeRuns.traffic, enabled: showInspector });
+  // A design check finding handed to Archie as a question.
+  const [archieQuestion, setArchieQuestion] = useState<{ key: number; text: string } | null>(null);
+  const askArchieAbout = useCallback((text: string) => {
+    setArchieQuestion((previous) => ({ key: (previous?.key ?? 0) + 1, text }));
+    inspector.askArchie();
+  }, [inspector]);
+  // Problems marked on the canvas. A mark hands its problem to Archie as a question.
+  const liveFindings = live.result?.evaluation.findings;
+  const designCheck = useDesignCheck({
+    onReveal: (findingId) => {
+      const finding = liveFindings?.find((candidate) => candidate.id === findingId);
+      if (finding) askArchieAbout(`Explain "${finding.title}" in my design: why it matters and what to change.`);
+    },
+  });
+  // Where Simulation renders from the header, so it joins the other right panels.
+  const [simulationHost, setSimulationHost] = useState<HTMLDivElement | null>(null);
+  // Where the project menu opens, as one of the right panels.
+  const [menuHost, setMenuHost] = useState<HTMLDivElement | null>(null);
+  // The right column: it folds older panels instead of running past the bottom of the page.
+  const widgetStack = useRef<HTMLDivElement>(null);
+  useStackFit(widgetStack);
+  // Panel visibility is owned by the stack, including panels restored after another closes.
+  const [activeNodePanel, setActiveNodePanel] = useState<"ai" | "configure" | "none">("none");
+  useEffect(() => {
+    const stack = widgetStack.current;
+    if (!stack) return;
+    const update = () => {
+      const visible = stack.querySelector<HTMLElement>('.axp[data-tool]:not([data-behind]):not([data-folded]):not([hidden])');
+      const tool = visible?.dataset.tool;
+      setActiveNodePanel(tool === "archie" ? "ai" : tool === "component" ? "configure" : "none");
+    };
+    const observer = new MutationObserver(update);
+    observer.observe(stack, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-behind", "data-folded", "hidden"] });
+    update();
+    return () => observer.disconnect();
+  }, []);
+
+  // Check a connection before React Flow lets the user create it.
+  // We read the current graph directly from React Flow so this never validates
+  // against an older copy of the nodes or edges.
+  const isValidConnection = useCallback(
+    (connection: Connection | Edge) =>
+      validateConnection(
+        {
+          nodes: getNodes(),
+          edges: getEdges(),
+        },
+        connection,
+        mode,
+      ).ok,
+    [getNodes, getEdges, mode],
+  );
+
+  // Add a connection only after it passes our graph rules.
+  // Learn also gets told about the attempt so it can react during the lesson.
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      const result = addConnection(
+        {
+          nodes: getNodes(),
+          edges: getEdges(),
+        },
+        connection,
+        mode,
+      );
+
+      if (!result.ok) {
+        setConnectionNotice(result.message);
+        return;
+      }
+
+      setConnectionNotice(null);
+      setEdges(result.edges);
+
+      // Learn uses this to react to what the student connected during the tutorial.
+      reportConnection(connection);
+    },
+    [getNodes, getEdges, mode, setEdges, reportConnection],
+  );
+
+  // React Flow skips onConnect when the drop target fails isValidConnection, so explain the
+  // refusal here: the same rule that blocked the drop supplies the message.
+  const handleConnectEnd = useCallback(
+    (_event: MouseEvent | TouchEvent, state: FinalConnectionState) => {
+      if (state.isValid === true || !state.fromNode || !state.toNode) return;
+      // A drag can start from an input handle; the connection still runs into it.
+      const reversed = state.fromHandle?.type === "target";
+      const [source, target] = reversed ? [state.toNode, state.fromNode] : [state.fromNode, state.toNode];
+      const [sourceHandle, targetHandle] = reversed ? [state.toHandle, state.fromHandle] : [state.fromHandle, state.toHandle];
+      const verdict = validateConnection(
+        { nodes: getNodes(), edges: getEdges() },
+        {
+          source: source.id,
+          target: target.id,
+          sourceHandle: sourceHandle?.id ?? null,
+          targetHandle: targetHandle?.id ?? null,
+        },
+        mode,
+      );
+      if (!verdict.ok) setConnectionNotice(verdict.message);
+    },
+    [getNodes, getEdges, mode],
+  );
+
+  // This is the one place new canvas nodes are created.
+  // `center` is where the middle of the node should land, not its top-left corner.
+  const addNode = useCallback(
+    (
+      component: ArchitectureNodeData,
+      center: { x: number; y: number },
+    ) => {
+      const { nodes: next } = addNodeToGraph<ArchitectureFlowNode>(
+        getNodes(),
+        component.type,
+        (id) => ({
+          id,
+          type: "architecture",
+          position: {
+            x: center.x - ARCHITECTURE_NODE_SIZE.width / 2,
+            y: center.y - ARCHITECTURE_NODE_SIZE.height / 2,
+          },
+          data: component,
+        }),
+        allocateNodeId,
+      );
+
+      setNodes(next);
+      showNewNode({
+        x: center.x - ARCHITECTURE_NODE_SIZE.width / 2,
+        y: center.y - ARCHITECTURE_NODE_SIZE.height / 2,
+        width: ARCHITECTURE_NODE_SIZE.width,
+        height: ARCHITECTURE_NODE_SIZE.height,
+      });
+    },
+    [getNodes, setNodes, allocateNodeId, showNewNode],
+  );
+
+  // Delete whatever is currently selected.
+  // Removing a node also removes connections attached to that node.
+  const deleteSelection = useCallback(() => {
+    if (getSelection(nodes, edges).kind === "none") {
+      return false;
+    }
+
+    const next = removeSelected({
+      nodes,
+      edges,
+    });
+
+    setNodes(next.nodes);
+    setEdges(next.edges);
+
+    return true;
+  }, [nodes, edges, setNodes, setEdges]);
+
+  // Keep undo/redo history for the project's architecture.
+  // The scope key makes sure history from one project can never leak into another.
+  const { undo, redo, replaceGraph } = useGraphHistory({
+    scopeKey: project.id,
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+  });
+
+  // Auto align is one history step too: Ctrl/Cmd+Z puts every component back where it was.
+  const alignDesign = useCallback(() => {
+    replaceGraph({ nodes: autoAlign(getNodes(), getEdges()), edges: getEdges() });
+    requestAnimationFrame(() => {
+      void fitView({ ...fitViewOptions, duration: 320 });
+    });
+  }, [replaceGraph, getNodes, getEdges, fitView, fitViewOptions]);
+
+  // Reset is treated as one real history action, so the whole reset can be undone once.
+  // It also clears old analysis/results so we never show feedback for a design that is gone.
+  const handleReset = useCallback(() => {
+    const plan = planReset(
+      mode,
+      { nodes, edges },
+      emptyGraph(),
+    );
+
+    if (
+      plan.needsConfirmation &&
+      !window.confirm(
+        "Reset to the starter architecture? Your current design will be replaced. You can undo this until you leave the page.",
+      )
+    ) {
+      return;
+    }
+
+    // Save the return to guidance before resetting the canvas; failed storage leaves it intact.
+    if (mode === "learn" && !learn.prepareReset()) return;
+    resetInspector();
+
+    applyReset(mode, plan, {
+      replaceGraph: () => {
+        replaceGraph(emptyGraph());
+
+        // Wait until React Flow renders the reset graph before adjusting the viewport.
+        requestAnimationFrame(() => {
+          fitView(fitViewOptions);
+        });
+      },
+
+      clearSelection: () => {
+        void clearCanvasSelection();
+      },
+
+      // Learn clears old Run Design analysis; Challenge clears its previous submission.
+      clearAnalysis:
+        mode === "learn"
+          ? learn.clearAnalysis
+          : challenge.clearSubmission,
+
+      // Resetting Learn starts the tutorial over.
+      restartLesson: learn.restartLesson,
+
+      // Resetting Challenge takes the user back to the challenge brief.
+      showBrief: challenge.backToBrief,
+    });
+  }, [
+    mode,
+    nodes,
+    edges,
+    replaceGraph,
+    fitView,
+    fitViewOptions,
+    clearCanvasSelection,
+    learn,
+    challenge,
+    resetInspector,
+  ]);
+
+  // Replays the tutorial from the menu: Learn mode, an empty canvas and the first step. The
+  // lesson follows the canvas, so it needs the canvas empty; a design there is asked about
+  // first (undo still brings it back until the page is left).
+  const startTutorial = useCallback(() => {
+    if (
+      nodes.length > 0 &&
+      !window.confirm("Start the tutorial? It clears the canvas. You can undo this until you leave the page.")
+    ) {
+      return;
+    }
+    if (!learn.prepareReset()) return;
+    if (mode !== "learn") switchMode("learn");
+    resetInspector();
+    replaceGraph(emptyGraph());
+    requestAnimationFrame(() => {
+      fitView(fitViewOptions);
+    });
+    learn.clearAnalysis();
+    learn.restartLesson();
+  }, [nodes.length, learn, mode, switchMode, resetInspector, replaceGraph, fitView, fitViewOptions]);
+
+  // Copy/paste/duplicate work on the graph itself and use the same ID allocator
+  // so pasted nodes can never collide with existing ones.
+  const { copy, paste, duplicate } = useGraphClipboard({
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+    allocate: allocateNodeId,
+  });
+
+  // Keep all workspace shortcuts in one hook instead of spreading keyboard
+  // listeners throughout the editor.
+  useWorkspaceKeyboard({
+    onDeleteSelection: deleteSelection,
+    onClearSelection: clearCanvasSelection,
+    onUndo: undo,
+    onRedo: redo,
+    onCopy: copy,
+    onPaste: paste,
+    onDuplicate: duplicate,
+    onSave: saveNow,
+  });
+
+  // Only allow the browser's drag/drop behavior when the thing being dragged
+  // actually came from our component toolbox.
+  const handleDragOver = useCallback((event: DragEvent) => {
+    if (!hasComponentDragData(event.dataTransfer)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }, []);
+
+  // Convert the mouse position on the screen into React Flow coordinates,
+  // then create the dropped component centered under the pointer.
+  const handleDrop = useCallback(
+    (event: DragEvent) => {
+      const component = readComponentDragData(event.dataTransfer);
+
+      if (!component) {
+        return;
+      }
+
+      event.preventDefault();
+
+      addNode(
+        component,
+        screenToFlowPosition({
+          x: event.clientX,
+          y: event.clientY,
+        }),
+      );
+    },
+    [screenToFlowPosition, addNode],
+  );
+
+  // Archie is intentionally unavailable while Learn is still teaching the answer.
+  // In Learn it unlocks after the tutorial; in Challenge it unlocks after submission.
+  const archie =
+    mode === "learn"
+      ? learn.exploring
+        ? learn.runs.archie
+        : null
+      : challenge.view?.hasResult
+        ? challenge.runs.archie
+        : null;
+
+  return (
+    <ArchieEnabledContext.Provider value={archieEnabled}>
+    <ArchieContext.Provider value={archie}>
+      <DesignTrafficContext.Provider value={activeRuns.traffic}>
+      <div className="ax-workspace flex h-screen flex-col overflow-hidden">
+        <ChallengeIntroduction
+          key={`${project.id}:${challenge.challenge.id}`}
+          enabled={mode === "challenge"}
+          projectId={project.id}
+          challengeId={challenge.challenge.id}
+          title={challenge.challenge.title}
+        />
+        {/* The header owns project-level controls like title, mode, reset, Run Design,
+            and save status. It does not own the graph itself. */}
+        <WorkspaceHeader
+          title={title}
+          onTitleChange={breakdown ? undefined : setTitle}
+          onReset={handleReset}
+          mode={mode}
+          onModeChange={switchMode}
+          modeStatus={
+            mode === "learn"
+              ? learn.freePlay
+                ? learn.skipped ? "Free play" : "Tutorial complete"
+                : undefined
+              : challenge.challenge.title
+          }
+          saveStatus={savedProjectId ? saveStatus : breakdownSaveFailed ? "error" : undefined}
+          runControl={mode === "challenge" ? (
+            <ChallengeSubmitButton
+              onSubmit={challenge.submit}
+              running={Boolean(challenge.view?.isRunning)}
+              submitted={challenge.cardResult !== null}
+            />
+          ) : canRunDesign && <SimulationControl
+            panelHost={simulationHost}
+            runs={activeRuns}
+            onShowResults={inspector.showResults}
+            onBeforeRun={nodes.length > 1 ? alignDesign : undefined}
+            expanded={inspector.section === "run"}
+            onToggle={() => inspector.toggleSection("run")}
+            live={
+              <LiveEstimates
+                result={live.result}
+                changes={live.changes}
+                requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+              />
+            }
+          />}
+          onAutoAlign={nodes.length > 1 ? alignDesign : undefined}
+          menuHost={menuHost}
+          projectActions={(closeMenu) => (
+            <div hidden={!showInspector}>
+              <div className="ax-project-menu-group" role="group" aria-label="Run and export">
+                <p className="ax-project-menu-label" aria-hidden="true">Run and export</p>
+                {savedProjectId && <RunnableAppButton projectId={savedProjectId} onDone={closeMenu} onBeforeOpen={saveNow} />}
+                <ExportButton title={title} onDone={closeMenu} />
+              </div>
+              {savedProjectId && (
+                <div className="ax-project-menu-group" role="group" aria-label="Project">
+                  <p className="ax-project-menu-label" aria-hidden="true">Project</p>
+                  <HistoryToggle open={false} onToggle={inspector.openHistory} onDone={closeMenu} />
+                  <button type="button" className="ax-project-menu-item" onClick={() => { closeMenu(); startTutorial(); }}>
+                    <GraduationCap size={15} aria-hidden="true" />
+                    <span>Tutorial</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        />
+
+        <div className="relative flex min-h-0 flex-1 flex-row bg-(--ax-canvas)">
+          {/* Components are dragged from here onto the shared project canvas. */}
+          <ComponentToolbox customTechnologies={project.customTechnologies}
+            tools={[
+              ...(showInspector ? [{
+                key: "archie",
+                label: "Ask Archie",
+                icon: <ArchiePortrait />,
+                open: inspector.archieOpen,
+                // Open but behind another panel: the button brings Archie forward.
+                onToggle: inspector.archieOpen && !isPanelBehind("archie") ? inspector.closeArchie : inspector.askArchie,
+              }] : []),
+            ]} />
+
+          <main className="ax-workspace-canvas relative min-h-0 min-w-0 flex-1 bg-(--ax-canvas)" data-inspector={showInspector}>
+            {/* React Flow is only responsible for displaying/interacting with the graph.
+                The actual project rules live in the helpers/hooks above. */}
+            <div className="ax-diagram-viewport">
+              <FailureContext.Provider value={failure.context}>
+              <InspectorContext.Provider value={showInspector ? { ...inspector.nodeActions, activePanel: activeNodePanel } : null}>
+                <ReactFlow
+                  proOptions={HIDE_ATTRIBUTION}
+                  nodes={nodes}
+                  edges={edges}
+                  nodeTypes={nodeTypes}
+                  edgeTypes={edgeTypes}
+                  onNodesChange={handleNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={handleConnect}
+                  onConnectEnd={handleConnectEnd}
+                  isValidConnection={isValidConnection}
+                  connectionLineComponent={ConnectionPreview}
+                  // Delete and Backspace are handled by useWorkspaceKeyboard so all
+                  // keyboard behavior goes through the same history-aware path.
+                  deleteKeyCode={null}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  // Fit a design that opens with components. An empty canvas is left as it is,
+                  // or React Flow would fit (center and zoom to) the first component added.
+                  fitView={initialNodes.length > 0}
+                  fitViewOptions={fitViewOptions}
+                  defaultViewport={{ x: 0, y: 0, zoom: WORKSPACE_ZOOM }}
+                  minZoom={MIN_ZOOM}
+                  maxZoom={MAX_ZOOM}
+                  // Drag empty canvas to pan; dragging a component still moves it.
+                  // Shift+drag draws a selection box that picks every component it touches.
+                  panOnDrag
+                  panOnScroll
+                  selectionMode={SelectionMode.Partial}
+                  elevateEdgesOnSelect
+                >
+                  {SHOW_CHECK_MARKS && canRunDesign && <DesignCheckBadges result={live.result} nodes={nodes} check={designCheck} />}
+                  <ViewportPortal>
+                    {snapGuides.map((guide) => (
+                      <div key={guide.axis} className="ax-snap-guide" data-axis={guide.axis} aria-hidden="true" style={guide.axis === "x"
+                        ? { transform: `translate(${guide.at}px, ${guide.from}px)`, height: guide.to - guide.from }
+                        : { transform: `translate(${guide.from}px, ${guide.at}px)`, width: guide.to - guide.from }} />
+                    ))}
+                  </ViewportPortal>
+                </ReactFlow>
+              </InspectorContext.Provider>
+              </FailureContext.Provider>
+            </div>
+
+            {/* Keep floating tools below the header while the graph extends behind it. */}
+            <div className="ax-canvas-overlays">
+              <div className="ax-canvas-notices">
+                {connectionNotice && <p role="status" className="ax-canvas-notice">{connectionNotice}</p>}
+                {/* If saving the selected mode fails, show the error without breaking the editor. */}
+                {modeError && <p role="alert" className="ax-canvas-notice">{modeError}</p>}
+              </div>
+
+              {/* Every right panel stacks here, so opening one never hides another. When they
+                  stop fitting, the ones used longest ago fold (useStackFit). */}
+              <div className="ax-widget-stack" ref={widgetStack}>
+                {/* Simulation always heads the column. */}
+                <div ref={setSimulationHost} className="contents" />
+                {/* The project menu opens here, as a right panel of its own. */}
+                <div ref={setMenuHost} className="contents" />
+                {failure.downId !== null && (
+                  <FailureTestPanel
+                    impact={failure.impact}
+                    requestsPerSecond={activeRuns.traffic.requestsPerSecond}
+                    componentName={(id) => nodes.find((node) => node.id === id)?.data.label ?? id}
+                    onRestore={failure.restore}
+                  />
+                )}
+                {showInspector && (
+                  <WorkspaceInspector
+                    projectId={savedProjectId}
+                    nodes={nodes}
+                    controller={inspector}
+                    onClearSelection={clearCanvasSelection}
+                    onApply={replaceGraph}
+                    customTechnologies={project.customTechnologies}
+                    asked={archieQuestion}
+                    guidance={mode === "challenge" ? (
+                      <ChallengeCard
+                        challenge={challenge.challenge}
+                        result={challenge.cardResult}
+                        onRun={challenge.submit}
+                        onBack={challenge.backToBrief}
+                        stale={challenge.view?.isStale}
+                        running={challenge.view?.isRunning}
+                        error={challenge.view?.error}
+                        official={challenge.official}
+                        leaderboardVersion={challenge.leaderboardVersion}
+                        targets={challengeTargets}
+                      />
+                    ) : null}
+                  />
+                )}
+                {!showInspector && !inspector.historyOpen && (
+                  <LearnCard
+                    lesson={learn.lesson}
+                    stepIndex={learn.engine.stepIndex}
+                    status={learn.engine.status}
+                    freePlay={learn.freePlay}
+                    skipped={learn.skipped}
+                    onContinue={learn.freePlay ? learn.continueExploring : learn.engine.continueStep}
+                    error={learn.tutorialError}
+                    feedback={learn.engine.feedback}
+                    hint={learn.engine.hintVisible ? learn.engine.hint?.text : null}
+                    onDismissFeedback={learn.engine.dismissFeedback}
+                    onSkip={learn.freePlay ? undefined : learn.skipTutorial}
+                  />
+                )}
+              </div>
+
+              {!showInspector && inspector.historyOpen && (
+                <aside className="ax-canvas-panel" data-side="right" aria-label="Guidance">
+                  <div className="ax-panel-content" data-architect>
+                    <HistoryPanel projectId={project.id} onClose={inspector.closeHistory} onRestore={replaceGraph} />
+                  </div>
+                </aside>
+              )}
+              {/* Keep Archie mounted, but out of the guided tutorial. */}
+              {!showInspector && (
+                <div hidden>
+                  <ArchitectToggle open={false} onToggle={askArchie} />
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
+      </div>
+      </DesignTrafficContext.Provider>
+    </ArchieContext.Provider>
+    </ArchieEnabledContext.Provider>
+  );
+}
+
+// A canvas lives inside a saved project, or inside a system breakdown's Challenge.
+// ReactFlowProvider gives the editor access to React Flow helpers like fitView/getNodes.
+export default function ArchitectureWorkspace({
+  project,
+  breakdown,
+}: {
+  project: WorkspaceProject;
+  breakdown?: BreakdownChallenge;
+}) {
+  return (
+    <ReactFlowProvider>
+      {/* Starting a different project creates a fresh Workspace, so graph/history/
+          lesson/submission state from the previous project cannot carry over. */}
+      <Workspace key={project.id} project={project} breakdown={breakdown} />
+    </ReactFlowProvider>
+  );
+}

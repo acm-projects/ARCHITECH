@@ -1,0 +1,183 @@
+/* Shared Archie panel. Uses the workspace's tokens (--ax-*). */
+
+.ax-workspace .ax-ai-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 0;
+  border-top: 1px solid var(--ax-line);
+  background: var(--ax-surface);
+  color: var(--ax-ink);
+  font-size: 13px;
+}
+.ax-workspace .ax-ai-toggle:hover:not(:disabled) { background: #fff; }
+.ax-workspace .ax-ai-toggle:disabled { opacity: .5; cursor: default; }
+.ax-workspace .ax-ai-toggle:focus-visible { outline: 2px solid var(--ax-accent); outline-offset: -3px; }
+.ax-workspace .ax-ai-portrait { flex-shrink: 0; }
+.ax-workspace .ax-ai-toggle .ax-ai-portrait { width: 26px; height: 26px; border-width: 1px; }
+
+/* Keep the original guidance dock's sizing; the inspector owns its own frame. */
+.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content[data-architect] {
+  height: min(560px, calc(100dvh - 120px));
+  max-height: calc(100dvh - 120px);
+  overflow: hidden;
+}
+.ax-workspace .ax-canvas-panel[data-side="right"] .ax-panel-content[data-architect]:has(.ax-ai-panel[data-empty="true"]) {
+  height: min(450px, calc(100dvh - 120px));
+}
+
+.ax-workspace .ax-ai-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: var(--ax-surface);
+  color: var(--ax-ink);
+  font-size: 13px;
+}
+.ax-workspace .ax-ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--ax-line);
+}
+.ax-workspace .ax-ai-title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 15px; font-weight: 500; }
+.ax-workspace .ax-ai-messages {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 12px;
+  overflow-wrap: anywhere;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.ax-workspace .ax-ai-starters { display: grid; margin: 12px 0 0 35px; }
+.ax-workspace .ax-ai-starter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 12px;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 8px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--ax-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ax-ink-soft);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+}
+.ax-workspace .ax-ai-starter:last-child { border-bottom: 0; }
+.ax-workspace .ax-ai-starter svg { color: var(--ax-subtle); }
+.ax-workspace .ax-ai-starter:focus-visible { outline-offset: -1px; }
+.ax-workspace .ax-ai-starter:hover { background: rgba(17, 17, 17, 0.035); color: var(--ax-ink); }
+.ax-workspace .ax-ai-starter[data-dismissed] { pointer-events: none; animation: ax-ai-prompt-dismiss 160ms ease-out forwards; }
+@keyframes ax-ai-prompt-dismiss { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ax-workspace .ax-ai-starter[data-dismissed] { animation-duration: 1ms; }
+}
+.ax-workspace .ax-ai-user {
+  justify-self: end;
+  max-width: 85%;
+  padding: 8px 11px;
+  border: 1px solid var(--ax-line);
+  border-radius: 3px;
+  background: var(--ax-canvas);
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+.ax-workspace .ax-ai-answer { white-space: pre-wrap; line-height: 1.6; color: var(--ax-ink); }
+.ax-workspace .ax-ai-assistant { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: start; gap: 9px; min-width: 0; }
+.ax-workspace .ax-ai-assistant > .ax-ai-portrait { width: 26px; height: 26px; border-width: 1px; }
+.ax-workspace .ax-ai-assistant-content { display: grid; gap: 5px; min-width: 0; }
+.ax-workspace .ax-ai-message-box { display: grid; gap: 8px; min-width: 0; padding: 0; border: 0; background: transparent; }
+.ax-workspace .ax-ai-speaker { font-size: 12px; font-weight: 500; color: var(--ax-ink-soft); }
+
+.ax-workspace .ax-ai-composer { flex-shrink: 0; min-width: 0; padding: 10px 12px 12px; border-top: 1px solid var(--ax-line); }
+.ax-workspace .ax-ai-hint { min-width: 0; font-size: 11px; line-height: 1.4; color: var(--ax-subtle); }
+.ax-workspace .ax-ai-send {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 5px;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--ax-ink);
+  border-radius: 3px;
+  background: var(--ax-ink);
+  color: var(--ax-surface);
+  font-size: 12px;
+}
+.ax-workspace .ax-ai-send:enabled:hover { background: var(--ax-ink-soft); }
+.ax-workspace .ax-ai-send:disabled { background: var(--ax-canvas); border-color: var(--ax-line); color: var(--ax-subtle); cursor: default; }
+
+/* Focus: ask about the part of the canvas inside a selection box. */
+.ax-workspace .ax-ai-focus-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ax-line);
+}
+.ax-workspace .ax-ai-focus-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px 4px 4px 10px;
+  border: 1px solid var(--ax-line);
+  border-radius: 3px;
+  background: var(--ax-canvas);
+  color: var(--ax-ink);
+  font-size: 12px;
+  font-weight: 500;
+}
+.ax-workspace .ax-ai-focus-name { min-width: 0; overflow-wrap: anywhere; }
+.ax-workspace .ax-ai-focus-chip button {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ax-muted);
+}
+.ax-workspace .ax-ai-focus-chip button:hover { color: var(--ax-ink); }
+.ax-workspace .ax-ai-user-focus { display: block; margin-bottom: 2px; font-size: 11px; color: var(--ax-muted); }
+
+/* Shared collapse control for walkthroughs and live conversations. */
+.ax-workspace .ax-ai-panel { border-radius: 24px; overflow: hidden; }
+.ax-workspace.ax-breakdown .ax-ai-panel.ax-breakdown-guide { border-radius: 24px; }
+.ax-workspace .ax-archie-panel-actions { display:inline-flex; align-items:center; gap:8px; margin-left:auto; }
+.ax-workspace .ax-archie-collapse { display:grid; place-items:center; flex-shrink:0; width:30px; height:30px; padding:0; border:1px solid var(--ax-line); border-radius:8px; background:transparent; color:var(--ax-ink-soft); cursor:pointer; }
+.ax-workspace .ax-archie-collapse:hover { background:var(--ax-canvas); color:var(--ax-ink); }
+.ax-workspace .ax-archie-collapse:focus-visible,
+.ax-workspace .ax-archie-launcher:focus-visible { outline:2px solid var(--ax-accent); outline-offset:3px; }
+.ax-workspace .ax-ai-panel[data-collapsed="true"] { display:none; }
+.ax-workspace .ax-archie-launcher {
+  position:absolute; right:12px; bottom:12px; z-index:40;
+  display:grid; place-items:center; width:60px; height:60px; padding:7.5px;
+  border:1px solid var(--ax-line-strong); border-radius:24px;
+  background:var(--ax-surface); color:var(--ax-ink);
+  box-shadow:0 4px 14px rgb(0 0 0 / 12%); cursor:pointer;
+}
+.ax-workspace .ax-archie-launcher:hover { border-color:var(--ax-accent); }
+.ax-workspace .ax-archie-launcher .ax-ai-portrait { display:block; width:39px; height:39px; border-width:2px; }
+.ax-workspace:has(> .ax-archie-launcher) .react-flow__controls { bottom:84px; }
+@media(max-width:600px) {
+  .ax-workspace:has(> .ax-archie-launcher) .ax-canvas-panel[data-side="left"] .ax-panel-rail { max-width:calc(100vw - 96px); }
+}

@@ -1,0 +1,116 @@
+/* A guided lesson sits in a panel but is not a data panel: Archie talks in a speech bubble,
+   and numbered steps say what to do next. Text keeps to the panel styles, apart from his greeting. */
+.axl-intro { padding-top: 14px; }
+.axl-hello { display: flex; align-items: center; gap: 12px; padding: 2px var(--axp-inset) 10px; }
+.axl-mascot { flex: none; width: 92px; height: auto; }
+.axl-hello-title { font: 600 20px/26px var(--font-sans); }
+.axl-hello-text { color: var(--ax-ink-soft); }
+.axp .axl-parts {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  margin: 2px var(--axp-inset) 6px;
+  padding: 10px 8px;
+  border-radius: var(--axp-radius);
+  background: var(--ax-hover-fill);
+}
+.axl-parts li { display: grid; justify-items: center; gap: 4px; color: var(--ax-ink-soft); font: 400 12px/18px var(--font-sans); white-space: nowrap; }
+.axl-tile {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--axp-radius);
+  background: color-mix(in srgb, var(--axl-family) 16%, transparent);
+  color: var(--axl-family);
+}
+
+/* A step: its title and count, Archie's line as in his own panel but inside a bubble, then
+   the numbered actions on the panel itself. The card has no header, so it starts here. */
+.axl-step { display: flex; align-items: baseline; gap: 10px; padding: 16px var(--axp-inset) 10px; }
+.axl-step-title { display: flex; flex: 1 1 auto; align-items: center; gap: 8px; min-width: 0; font: 600 18px/24px var(--font-sans); }
+.axl-count { flex: none; color: var(--ax-ink-soft); font: 500 13px/18px var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* Progress: one segment per step. Done is Archie's blue, the current step a lighter blue, the
+   rest the line color, so how far along you are reads without counting. */
+.axl-progress { --axl-archie: #109bfd; display: flex; gap: 4px; padding: 0 var(--axp-inset) 14px; }
+.axl-progress span { flex: 1 1 0; height: 4px; border-radius: 2px; background: var(--ax-line); transition: background 240ms ease; }
+.axl-progress span[data-state="done"] { background: var(--axl-archie); }
+.axl-progress span[data-state="current"] { background: color-mix(in srgb, var(--axl-archie) 35%, var(--ax-surface)); }
+.axl-done { display: inline-grid; flex: none; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--axp-good); color: #fff; }
+
+.axl-message { padding: 0 var(--axp-inset) 12px; }
+.ax-workspace .axl-message .ax-ai-assistant { grid-template-columns: 34px minmax(0, 1fr); gap: 10px; }
+.ax-workspace .axl-message .ax-ai-assistant > .ax-ai-portrait { width: 34px; height: 34px; }
+.ax-workspace .axl-message .ax-ai-message-box {
+  --axl-archie: #109bfd;
+  position: relative;
+  padding: 10px 13px;
+  border: 1px solid color-mix(in srgb, var(--axl-archie) 30%, var(--ax-surface));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--axl-archie) 7%, var(--ax-surface));
+  font: 400 15px/22px var(--font-sans);
+  overflow-wrap: anywhere;
+}
+/* The tail points at Archie's portrait. */
+.axl-message .ax-ai-message-box::before {
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: -5px;
+  width: 8px;
+  height: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--axl-archie) 30%, var(--ax-surface));
+  border-left: 1px solid color-mix(in srgb, var(--axl-archie) 30%, var(--ax-surface));
+  background: inherit;
+  transform: rotate(45deg);
+}
+.axl-message[data-nod] .ax-ai-portrait img { transform-origin: 50% 65%; animation: axl-nod 480ms ease-in-out 1; }
+@keyframes axl-nod {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  35% { transform: translateY(2px) rotate(5deg); }
+  70% { transform: translateY(-1px) rotate(-2deg); }
+}
+
+/* Each action on its own line, divided, with its number centred against the text. */
+.axp .axl-steps { margin: 0 var(--axp-inset) 8px; font: 400 15px/22px var(--font-sans); counter-reset: axl-step; }
+.axl-steps li {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+  min-height: 42px;
+  padding: 8px 0;
+  counter-increment: axl-step;
+}
+.axl-steps li + li { border-top: 1px solid var(--ax-line); }
+/* Text and the toolbar chip share one baseline, so nothing in a row sits higher than the rest. */
+.axl-steps li > span { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px; }
+/* Each number sits in a ring, so the actions read as a checklist at a glance. */
+.axl-steps li::before {
+  content: counter(axl-step);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 50%;
+  color: var(--ax-ink);
+  font: 600 12px/1 var(--font-mono);
+}
+/* Looks like the toolbar button it names. */
+.axl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 6px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 3px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .axl-message[data-nod] .ax-ai-portrait img { animation: none; }
+}

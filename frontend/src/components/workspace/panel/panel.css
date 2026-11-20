@@ -1,0 +1,539 @@
+/* Right panels. Every rule for what a panel looks like is in this file.
+   Four text styles: the title, a row, a row's value, and small text. One row height, one
+   control height, one divider between groups. No fills behind content, and no line between
+   rows. A hover or a selection is the only thing that fills a row. */
+.axp {
+  --axp-inset: 12px;
+  --axp-row: 30px;
+  --axp-control: 32px;
+  --axp-radius: 8px;
+  --axp-good: #16a34a;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 14px;
+  background: var(--ax-surface);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 10%);
+  color: var(--ax-ink);
+  font: 400 14px/20px var(--font-sans);
+  pointer-events: auto;
+}
+.axp[hidden] { display: none; }
+.axp :where(h2, h3, p, ol, ul) { margin: 0; padding: 0; list-style: none; }
+.axp :where(button) { font: inherit; cursor: pointer; }
+.axp :where(button:disabled, button[aria-disabled="true"]) { cursor: default; }
+.axp :is(button, input, select, textarea):focus-visible { outline: 2px solid var(--ax-ink); outline-offset: -2px; }
+
+/* Header: icon, title, one status, controls. */
+.axp-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px 8px 4px var(--axp-inset);
+  cursor: pointer;
+}
+.axp-head h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font: 600 15px/22px var(--font-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axp-head h2:focus { outline: 0; }
+.axp-icon { display: inline-grid; flex: none; place-items: center; width: 24px; height: 24px; color: var(--ax-ink-soft); }
+.axp-icon svg { width: 17px; height: 17px; }
+/* Specific enough to beat the 40px portrait wherever stylesheets load in a different order. */
+.ax-workspace .axp-icon .ax-ai-portrait { width: 20px; height: 20px; border-width: 1px; }
+.axp-status {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  max-width: 45%;
+  overflow: hidden;
+  color: var(--ax-ink-soft);
+  font: 400 12px/18px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.axp-icon-btn {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--axp-radius);
+  background: transparent;
+  color: var(--ax-muted);
+}
+.axp-icon-btn:hover:not(:disabled), .axp-head:hover .axp-collapse {
+  background: var(--ax-hover-fill);
+  color: var(--ax-ink);
+}
+.axp-icon-btn:disabled { opacity: .4; }
+.axp-head .axp-icon-btn svg { width: 17px; height: 17px; }
+.axp-collapse[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+/* Body and groups. */
+.axp-body { display: flex; flex-direction: column; min-height: 0; padding-bottom: 6px; }
+.axp-body[hidden] { display: none; }
+.axp-group { padding-block: 4px; }
+.axp-group + .axp-group,
+.axp-text + .axp-group,
+.axp-messages + .axp-group,
+.axp-actions + .axp-group { margin-top: 4px; border-top: 1px solid var(--ax-line); padding-top: 8px; }
+.axp-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+  padding-inline: var(--axp-inset);
+  color: var(--ax-muted);
+  font: 400 12px/18px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.axp-group-head strong { color: var(--ax-ink); font-weight: 400; }
+.axp-group-head > span:last-child:not(:first-child) { display: inline-flex; flex: none; align-items: center; gap: 6px; }
+/* A control on the title's line keeps to the line's height. */
+.axp-group-head .axp-icon-btn { width: 24px; height: 24px; margin-right: -5px; }
+
+/* The row. */
+.axp-row {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--axp-row);
+  padding: 4px var(--axp-inset);
+  border: 0;
+  background: transparent;
+  color: var(--ax-ink);
+  text-align: left;
+}
+.axp-lead { display: inline-grid; flex: none; place-items: center; width: 16px; height: 16px; color: var(--ax-ink-soft); }
+.axp-lead svg { width: 16px; height: 16px; }
+.axp-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ax-ink-soft);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axp-value {
+  flex: none;
+  max-width: 70%;
+  overflow: hidden;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axp-row[data-item] .axp-label { color: var(--ax-ink); }
+.axp-row[data-item] .axp-value { color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+.axp-link { cursor: pointer; }
+.axp-link:hover:not(:disabled) { background: var(--ax-hover-fill); }
+.axp-link:hover:not(:disabled) .axp-go { color: var(--ax-ink); }
+.axp-link:disabled { opacity: .5; }
+.axp-go { flex: none; margin-right: -4px; color: var(--ax-muted); }
+
+/* A detail. */
+.axp-back {
+  display: flex;
+  box-sizing: border-box;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  min-height: var(--axp-row);
+  padding: 7px var(--axp-inset) 7px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ax-ink);
+  font-weight: 500;
+  text-align: left;
+}
+.axp-back svg { flex: none; margin-top: 3px; color: var(--ax-muted); }
+.axp-back:hover { background: var(--ax-hover-fill); }
+.axp-text { padding: 4px var(--axp-inset); color: var(--ax-ink-soft); }
+.axp-text[data-tone="danger"] { color: var(--ax-danger); }
+.axp-small { color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+
+.axp-reveal > summary { list-style: none; }
+.axp-reveal > summary::-webkit-details-marker { display: none; }
+.axp-reveal > summary:focus-visible { outline: 2px solid var(--ax-ink); outline-offset: -2px; }
+.axp-reveal[open] .axp-go { transform: rotate(90deg); }
+
+/* Fields sit where a row's value sits, and only look like fields when touched. */
+.axp-field label { cursor: text; }
+.axp .axp-input, .axp .axp-textarea {
+  box-sizing: border-box;
+  height: 26px;
+  min-width: 0;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ax-ink);
+  font: 500 14px/20px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.axp .axp-input-end { flex: 0 1 60%; width: 100%; margin-right: -7px; text-align: right; }
+.axp .axp-input-end:has(+ .axp-unit, + .axp-icon-btn) { margin-right: 0; }
+.axp .axp-input-number { flex: 0 0 96px; width: 96px; }
+.axp-unit { flex: none; color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+.axp .axp-input:hover { border-color: var(--ax-line-strong); }
+.axp .axp-input:focus, .axp .axp-textarea:focus { border-color: var(--ax-ink); outline: 0; background: var(--ax-surface); }
+.axp .axp-input[aria-invalid="true"] { border-color: var(--ax-danger); }
+.axp .axp-input-box {
+  flex: 1 1 auto;
+  height: var(--axp-control);
+  padding-inline: 10px;
+  border-color: var(--ax-line-strong);
+  border-radius: var(--axp-radius);
+  font-weight: 400;
+}
+
+/* A field with its button beside it. */
+.axp-compose { display: flex; align-items: flex-end; gap: 8px; padding: 4px var(--axp-inset); }
+.axp .axp-textarea {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: var(--axp-control);
+  max-height: 120px;
+  padding: 7px 10px;
+  border-color: var(--ax-line-strong);
+  border-radius: var(--axp-radius);
+  font-weight: 400;
+  field-sizing: content;
+  resize: none;
+}
+
+/* Actions. */
+.axp-actions { display: flex; gap: 8px; padding: 6px var(--axp-inset); }
+.axp .axp-action {
+  display: inline-flex;
+  box-sizing: border-box;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--axp-control);
+  padding: 0 12px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: var(--axp-radius);
+  background: var(--ax-surface);
+  color: var(--ax-ink);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.axp .axp-compose .axp-action { flex: none; }
+.axp .axp-action:hover:not(:disabled, [aria-disabled="true"]) { background: var(--ax-hover-fill); }
+.axp .axp-action[data-variant="primary"] { border-color: var(--ax-primary); background: var(--ax-primary); color: #fff; }
+.axp .axp-action[data-variant="primary"]:hover:not(:disabled, [aria-disabled="true"]) { border-color: var(--ax-primary-hover); background: var(--ax-primary-hover); }
+.axp .axp-action:is(:disabled, [aria-disabled="true"]) { opacity: .5; }
+
+/* Choices in a row, like the traffic multiples. */
+.axp-segments { display: flex; flex: none; border: 1px solid var(--ax-line-strong); border-radius: var(--axp-radius); }
+.axp .axp-segments button {
+  width: 38px;
+  height: calc(var(--axp-control) - 2px);
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ax-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.axp .axp-segments button:hover { background: var(--ax-hover-fill); }
+.axp .axp-segments button[aria-pressed="true"] { background: var(--ax-ink); color: var(--ax-surface); font-weight: 500; }
+
+.axp-switch { display: inline-flex; flex: none; padding: 0; border: 0; background: transparent; }
+.axp-switch span { display: block; width: 30px; height: 18px; border-radius: 9px; background: var(--ax-line-strong); }
+.axp-switch span::after { content: ""; display: block; width: 14px; height: 14px; margin: 2px; border-radius: 50%; background: var(--ax-surface); }
+.axp-switch[aria-checked="true"] span { background: var(--ax-ink); }
+.axp-switch[aria-checked="true"] span::after { margin-left: 14px; }
+
+/* Options. */
+.axp-option {
+  display: flex;
+  box-sizing: border-box;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7px var(--axp-inset);
+  border: 0;
+  background: transparent;
+  color: var(--ax-ink);
+  text-align: left;
+}
+.axp-option:hover { background: var(--ax-hover-fill); }
+.axp-option[aria-checked="true"] .axp-option-label { font-weight: 500; }
+.axp-option > svg { flex: none; margin-top: 3px; }
+.axp-option-text { display: grid; min-width: 0; }
+
+/* A table, for the one comparison that needs columns. The chosen row says so in weight, and
+   its fill is the same as a hover. */
+.axp-table-wrap { padding-inline: 8px; }
+.axp-table { width: 100%; border-collapse: collapse; font: 400 12px/18px var(--font-sans); font-variant-numeric: tabular-nums; }
+.axp-table th, .axp-table td { padding: 6px; font-weight: 400; text-align: right; white-space: nowrap; }
+.axp-table thead th { color: var(--ax-muted); }
+.axp-table :is(th, td):first-child { max-width: 112px; overflow: hidden; text-align: left; text-overflow: ellipsis; }
+.axp-table tbody tr { cursor: pointer; }
+.axp-table tbody tr:hover, .axp-table tbody tr[aria-current="true"] { background: var(--ax-hover-fill); }
+.axp-table tbody tr[aria-current="true"] { cursor: default; }
+.axp-table tbody tr[aria-current="true"] :is(th, td) { font-weight: 600; }
+.axp-table tbody :is(th, td):first-child { border-radius: 6px 0 0 6px; }
+.axp-table tbody :is(th, td):last-child { border-radius: 0 6px 6px 0; }
+.axp .axp-table button { padding: 0; border: 0; background: transparent; color: inherit; }
+.axp-table td[data-tone="better"] { color: var(--axp-good); }
+.axp-table td[data-tone="worse"] { color: var(--ax-danger); }
+
+/* State. */
+.axp-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ax-muted); }
+.axp-dot[data-health="healthy"] { background: var(--axp-good); }
+.axp-dot[data-health="warning"] { background: var(--ax-warning); }
+.axp-dot[data-health="critical"] { background: var(--ax-danger); }
+.axp-change { margin-left: 4px; font-size: 9px; vertical-align: 1px; }
+.axp-change[data-direction="improved"], .axp-delta[data-direction="improved"] { color: var(--axp-good); }
+.axp-change[data-direction="regressed"], .axp-delta[data-direction="regressed"] { color: var(--ax-danger); }
+
+/* A conversation scrolls inside its panel, the one exception to the column scrolling. */
+.axp[data-fill]:not([data-folded]) { flex: 1 0 380px; }
+.axp[data-fill] .axp-body { flex: 1 1 auto; padding-bottom: 8px; }
+.axp-messages { display: flex; flex: 1 1 auto; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding: 4px 0 8px; }
+.axp-message { padding-inline: var(--axp-inset); overflow-wrap: anywhere; white-space: pre-wrap; }
+.axp-message[data-role="user"] { align-self: flex-end; max-width: 85%; margin-right: var(--axp-inset); padding: 6px 10px; border-radius: var(--axp-radius); background: var(--ax-hover-fill); }
+.axp-message[data-tone="danger"] { color: var(--ax-danger); }
+.axp-message[data-tone="soft"] { color: var(--ax-muted); }
+.axp-message small { display: block; color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+
+.axp-message strong { font-weight: 500; }
+.axp-turn { display: flex; flex-direction: column; min-width: 0; }
+.axp-turn-label { display: none; }
+.axp-review-label { padding: 4px var(--axp-inset); color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+.axp-service-status { display: grid; gap: 2px; padding: 9px var(--axp-inset); border-bottom: 1px solid var(--ax-line); color: var(--ax-ink); }
+.axp-service-status strong { font-weight: 500; }
+.axp-service-status span { color: var(--ax-muted); }
+
+/* Archie reads as a design activity log on desktop, with the composer anchored below it. */
+@media (min-width: 769px) {
+  .axp[data-tool="archie"] .axp-review { margin-bottom: 0; padding-bottom: 2px; }
+  .axp[data-tool="archie"] .axp-messages { gap: 0; padding: 4px 0 12px; }
+  .axp[data-tool="archie"] .axp-turn { gap: 5px; padding: 12px var(--axp-inset); border-bottom: 1px solid var(--ax-line); }
+  .axp[data-tool="archie"] .axp-turn-label { display: flex; align-items: center; gap: 8px; color: var(--ax-muted); font: 400 12px/18px var(--font-sans); }
+  .axp[data-tool="archie"] .axp-turn .axp-message { padding: 0; line-height: 1.5; }
+  .axp[data-tool="archie"] .axp-turn .axp-message[data-role="user"] { align-self: stretch; max-width: none; margin: 0; border-radius: 0; background: transparent; }
+  .axp[data-tool="archie"] .axp-turn .axp-message[data-tone="danger"] { padding-left: 9px; border-left: 2px solid var(--ax-danger); }
+  .axp[data-tool="archie"] .axp-compose-scope { border-top: 1px solid var(--ax-line); }
+  .axp[data-tool="archie"] .axp-compose-scope .axp-group { padding-top: 6px; }
+  .axp[data-tool="archie"] .axp-compose { padding-block: 8px 4px; }
+}
+
+/* The component settings in a guided lesson, attached to the node. */
+.axp-popover { width: 320px; padding-block: 4px; }
+
+/* History opens in a frame of its own. */
+.ax-panel-content > .axp { border: 0; border-radius: 0; box-shadow: none; }
+
+/* A meter sits under the row that states its two numbers. The fill is the demand; past the
+   limit the track turns to the danger color and the fill is what the limit still covers. */
+.axp-meter { display: grid; gap: 4px; padding: 0 var(--axp-inset) 8px; }
+.axp-meter-track { display: flex; height: 6px; overflow: hidden; border-radius: 3px; background: var(--ax-line-strong); }
+.axp-meter-track span { min-width: 2px; background: var(--ax-ink); transition: width 160ms ease-out; }
+.axp-meter[data-over] .axp-meter-track { background: var(--ax-danger); }
+.axp-meter[data-over] .axp-small { color: var(--ax-danger); }
+.axp-meter .axp-small { font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .axp-meter-track span { transition: none; } }
+
+/* A detail that takes over a panel hides what sits underneath, even parts laid out with flex. */
+.axp-messages[hidden], .axp-compose[hidden] { display: none; }
+
+/* The design check at the top of Archie's panel, ruled off from the conversation below. */
+.axp-review { flex: none; margin-bottom: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--ax-line); }
+
+
+/* Widget tiles: a few numbers read at a glance, in the manner of a phone's widgets. Each tile
+   is a block tinted in its hue, with an icon and name in that hue above one large figure.
+   Status hues (good, warn, over) follow the measurement's state; the metric hues only tell
+   latency, uptime and cost apart, and always come with the label and icon, never alone.
+   The fill is the one exception to "no fills behind content": a tile is the content. */
+.axp {
+  --axp-hue-good: #1f9d4c;
+  --axp-hue-warn: #d97706;
+  --axp-hue-over: #d63a3a;
+  --axp-hue-latency: #0a6cdf;
+  --axp-hue-uptime: #0e8f9e;
+  --axp-hue-cost: #8a4bd1;
+}
+.ax-dark-app .axp {
+  --axp-hue-good: #34c759;
+  --axp-hue-warn: #ff9f0a;
+  --axp-hue-over: #ff6961;
+  --axp-hue-latency: #409cff;
+  --axp-hue-uptime: #40c8e0;
+  --axp-hue-cost: #bf8cff;
+}
+.axp-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 8px;
+  padding: 4px var(--axp-inset) 12px;
+}
+.axp-tile {
+  --axp-tile-hue: var(--ax-ink-soft);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  min-height: 84px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--axp-tile-hue) 9%, var(--ax-surface));
+  transition: border-color 120ms ease-out, background-color 120ms ease-out;
+}
+.axp-tile[data-hue="good"] { --axp-tile-hue: var(--axp-hue-good); }
+.axp-tile[data-hue="warn"] { --axp-tile-hue: var(--axp-hue-warn); }
+.axp-tile[data-hue="over"] { --axp-tile-hue: var(--axp-hue-over); }
+.axp-tile[data-hue="latency"] { --axp-tile-hue: var(--axp-hue-latency); }
+.axp-tile[data-hue="uptime"] { --axp-tile-hue: var(--axp-hue-uptime); }
+.axp-tile[data-hue="cost"] { --axp-tile-hue: var(--axp-hue-cost); }
+.axp-tile[data-wide] { grid-column: 1 / -1; }
+.axp-tile[tabindex] { cursor: default; }
+.axp-tile[tabindex]:hover,
+.axp-tile[tabindex]:focus-visible {
+  border-color: color-mix(in srgb, var(--axp-tile-hue) 35%, transparent);
+  background: color-mix(in srgb, var(--axp-tile-hue) 14%, var(--ax-surface));
+}
+.axp-tile[tabindex]:focus-visible { outline: 2px solid var(--axp-tile-hue); outline-offset: 1px; }
+.axp-tile-text { display: grid; flex: 1 1 auto; align-content: start; gap: 2px; min-width: 0; }
+.axp-tile-label,
+.axp-tile-caption {
+  overflow: hidden;
+  color: var(--ax-muted);
+  font: 400 12px/18px var(--font-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axp-tile-label { display: flex; align-items: center; gap: 5px; color: var(--axp-tile-hue); font-weight: 600; }
+.axp-tile-icon { display: inline-grid; flex: none; place-items: center; }
+.axp-tile-icon svg { width: 13px; height: 13px; stroke-width: 2.4; }
+.axp-tile-figure {
+  overflow: hidden;
+  color: var(--ax-ink);
+  font: 600 20px/26px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axp-tile-unit { margin-left: 2px; color: var(--ax-muted); font: 400 14px/20px var(--font-sans); }
+.axp-tile-figure .axp-change { font-size: 11px; vertical-align: 4px; }
+.axp-tile-caption { font-variant-numeric: tabular-nums; }
+.axp-tile[data-tone="danger"] .axp-tile-caption { color: var(--axp-hue-over); }
+
+/* Detail opens under the tile on hover or focus: the rows grow from nothing, so the tile
+   grows with it instead of covering its neighbors. */
+.axp-tile-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 160ms ease-out;
+}
+.axp-tile-detail > span {
+  min-height: 0;
+  overflow: hidden;
+  color: var(--ax-ink-soft);
+  font: 400 12px/18px var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: normal;
+}
+.axp-tile:hover .axp-tile-detail,
+.axp-tile:focus-within .axp-tile-detail { grid-template-rows: 1fr; }
+.axp-tile:hover .axp-tile-detail > span,
+.axp-tile:focus-within .axp-tile-detail > span {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--axp-tile-hue) 25%, transparent);
+}
+
+.axp-ring { flex: none; align-self: center; width: 56px; height: 56px; }
+.axp-ring circle { fill: none; stroke-width: 7; }
+.axp-ring-track { stroke: color-mix(in srgb, var(--axp-tile-hue, var(--ax-ink)) 18%, transparent); }
+.axp-ring-fill { stroke: var(--axp-tile-hue, var(--ax-ink)); stroke-linecap: round; transition: stroke-dashoffset 240ms ease-out; }
+.axp-ring[data-over] .axp-ring-fill { stroke: var(--axp-hue-over); }
+@media (prefers-reduced-motion: reduce) {
+  .axp-ring-fill, .axp-tile, .axp-tile-detail { transition: none; }
+}
+
+/* A few numbers side by side, for reading at a glance: the label small, the number as a value. */
+.axp-stats {
+  display: grid;
+  grid-template-columns: repeat(var(--axp-stats-count, 4), minmax(0, 1fr));
+  padding: 6px var(--axp-inset) 8px;
+  border-bottom: 1px solid var(--ax-line);
+}
+.axp-stats > div { min-width: 0; }
+.axp-stats .axp-small { display: block; }
+.axp-stats .axp-value { display: block; overflow: hidden; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+
+
+/* Scrolled up to read something earlier: the way back to the newest message. */
+.axp .axp-jump {
+  position: sticky;
+  bottom: 0;
+  display: inline-flex;
+  flex: none;
+  align-self: center;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  margin-top: auto;
+  padding: 0 12px;
+  border: 1px solid var(--ax-line-strong);
+  border-radius: 14px;
+  background: var(--ax-surface);
+  color: var(--ax-ink);
+}
+/* Opaque on hover too: messages scroll underneath it. */
+.axp .axp-jump:hover { border-color: var(--ax-ink-soft); }
+
+/* A run in progress: a ring that fills unevenly, in bursts and pauses, until the result arrives
+   (lib/architecture/evaluation/runProgress.ts). The short transition smooths between frames. */
+.axp-progress-ring { width: 64px; height: 64px; margin: 6px auto 12px; }
+.axp-progress-ring svg { display: block; width: 100%; height: 100%; }
+.axp-progress-ring circle { fill: none; stroke-width: 5; }
+.axp-progress-ring-track { stroke: var(--ax-line-strong); }
+.axp-progress-ring-fill { stroke: var(--ax-ink); stroke-linecap: round; transition: stroke-dashoffset 60ms linear; }
+@media (prefers-reduced-motion: reduce) { .axp-progress-ring-fill { transition: none; } }
+
+/* Archie thinking: his face bobs and three dots pulse in turn until the answer starts. */
+.axp-thinking { display: flex; align-items: center; gap: 10px; padding: 4px 0; color: var(--ax-muted); }
+.axp-thinking-face { display: inline-grid; flex: none; animation: axp-bob 1.1s ease-in-out infinite; }
+.ax-workspace .axp-thinking-face .ax-ai-portrait { width: 30px; height: 30px; }
+.axp-thinking-text { display: inline-flex; align-items: baseline; gap: 4px; }
+.axp-dots { display: inline-flex; gap: 3px; }
+.axp-dots i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; animation: axp-dot 1.2s ease-in-out infinite; }
+.axp-dots i:nth-child(2) { animation-delay: 150ms; }
+.axp-dots i:nth-child(3) { animation-delay: 300ms; }
+@keyframes axp-bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-4deg); } }
+@keyframes axp-dot { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+/* Archie's fix: a suggested change, signed by him, with Apply as the one action. */
+.axp-fix-head { display: flex; align-items: center; gap: 8px; padding: 0 var(--axp-inset) 2px; }
+.axp-fix-face { display: inline-grid; flex: none; }
+.ax-workspace .axp-fix-face .ax-ai-portrait { width: 22px; height: 22px; }
+@media (prefers-reduced-motion: reduce) { .axp-thinking-face, .axp-dots i { animation: none; } .axp-dots i { opacity: .6; } }

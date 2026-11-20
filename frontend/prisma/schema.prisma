@@ -1,0 +1,356 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//This is the schema for the account, contains fields required by GitHub and Google
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String  @map("user_id")
+  type                     String
+  provider                 String
+  providerAccountId        String  @map("provider_account_id")
+  refresh_token            String? @db.Text
+  access_token             String? @db.Text
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String? @db.Text
+  session_state            String?
+  refresh_token_expires_in Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+//Keeps session open for users until they sign out or close the program
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+//User information fields for database
+model User {
+  id              String    @id @default(cuid())
+  name            String?
+  email           String?   @unique
+  emailVerified   DateTime? @map("email_verified")
+  image           String?
+  passwordHash    String?
+  experienceLevel String?
+  accounts        Account[]
+  sessions        Session[]
+  projects        Project[]
+  aiRequests      AiRequest[]
+  challengeSubmissions ChallengeSubmission[]
+  practiceAttempts     PracticeAttempt[]
+
+  @@map("users")
+}
+
+//
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ---- Component library ----
+// The components a user can place on the canvas (types) and the technologies behind each one
+// (implementations). Filled by prisma/seed.ts; see docs/graph-spec.md for how a saved graph
+// refers to these rows.
+
+// Semantic group of a component type. Same values as ComponentFamily in
+// src/components/workspace/componentCatalog.ts.
+enum ComponentFamily {
+  general
+  frontend
+  backend
+  data
+  infrastructure
+
+  @@map("component_family")
+}
+
+// A kind of component, e.g. "database". `name` is the string the canvas stores in
+// node.data.type (ArchitectureNodeType in src/lib/architecture/types.ts); `id` is the
+// numeric primary key used by relations.
+model ComponentType {
+  id              Int                       @id @default(autoincrement())
+  name            String                    @unique
+  label           String
+  family          ComponentFamily
+  description     String
+  sortOrder       Int                       @map("sort_order")
+  implementations ComponentImplementation[]
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+
+  @@map("component_types")
+}
+
+// A concrete technology for a component type, e.g. PostgreSQL for "database". Exactly one
+// implementation per type is the default (enforced by the seed script). The numbers are the
+// per-instance baseline the metrics engine uses, with the same meaning as SimulationProfile in
+// src/lib/architecture/evaluation/capabilities.ts: educational estimates, not benchmarks.
+model ComponentImplementation {
+  id                     String        @id
+  componentTypeId        Int           @map("component_type_id")
+  name                   String
+  vendor                 String?
+  description            String
+  isDefault              Boolean       @default(false) @map("is_default")
+  sortOrder              Int           @map("sort_order")
+  // Work one instance can do per second. Null: never limits throughput (clients, frontends).
+  capacityPerInstance    Int?          @map("capacity_per_instance")
+  // Concurrent connections one instance can hold, where that is a limit.
+  connectionsPerInstance Int?          @map("connections_per_instance")
+  // Added to a request passing through, when idle.
+  latencyMs              Float         @map("latency_ms")
+  monthlyCostPerInstance Float         @map("monthly_cost_per_instance")
+  // Availability of one instance, as a fraction (0.999 = 99.9%).
+  availability           Float
+  // Share of reads answered without going further (caches and CDNs).
+  hitRate                Float?        @map("hit_rate")
+  // Short points for comparing technologies (shown when swapping, and given to the AI).
+  strengths              String[]
+  tradeoffs              String[]
+  componentType          ComponentType @relation(fields: [componentTypeId], references: [id], onDelete: Cascade)
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+
+  @@index([componentTypeId])
+  @@map("component_implementations")
+}
+
+// ---- Projects ----
+
+// One saved architecture. Mirrors the frontend's Project type
+// (src/components/projects/projectStore.ts); the diagram itself is stored whole in `graph`
+// in the format defined by docs/graph-spec.md ({ schemaVersion, nodes, edges }).
+model Project {
+  // Generated by the browser (UUID) so a project can be created offline and synced later.
+  id           String   @id
+  userId       String   @map("user_id")
+  title        String
+  // "learn" or "challenge".
+  mode         String
+  learnSkipped Boolean  @default(false) @map("learn_skipped")
+  // How it was created: "blank", "duplicate", "template" or "shared".
+  source       String?
+  graph        Json
+  // Timestamps owned by the app: updatedAt only changes when the title or diagram changes,
+  // lastOpenedAt when the project is opened. syncedAt is when the server last stored it.
+  createdAt    DateTime @map("created_at")
+  updatedAt    DateTime @map("updated_at")
+  lastOpenedAt DateTime @map("last_opened_at")
+  syncedAt     DateTime @updatedAt @map("synced_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiConversation AiConversation?
+  versions       ProjectVersion[]
+  runUsers       RunUser[]
+  runSessions    RunSession[]
+  runItems       RunItem[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+// One AI Architect request by a user, for rate limiting (cached replies are recorded too,
+// marked, and do not count toward the limits).
+model AiRequest {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  cached    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("ai_requests")
+}
+
+// A complete AI Architect reply (its events), keyed by a hash of the model, experience level,
+// design, traffic and conversation, so the same question about the same design is answered
+// from here instead of calling the model again. Entries older than a day are ignored, and deleted
+// about once an hour.
+model AiReplyCache {
+  key       String   @id
+  events    Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("ai_reply_cache")
+}
+
+// Sign-in and sign-up attempts, for throttling (src/lib/auth/attemptLimits.ts). The key is a
+// SHA-256 hash of the email or IP address, never the raw value. Rows older than a day are deleted.
+model AuthAttempt {
+  id        String   @id @default(cuid())
+  // "login-email", "login-ip" or "signup-ip".
+  kind      String
+  keyHash   String   @map("key_hash")
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([kind, keyHash, createdAt])
+  @@index([createdAt])
+  @@map("auth_attempts")
+}
+
+// The AI Architect conversation of a project (one per project), so it survives a reload.
+// turns: the panel's turns (questions, answers, suggestions and whether they were applied),
+// validated by src/lib/ai/conversation.ts. Deleted with the project.
+model AiConversation {
+  projectId String   @id @map("project_id")
+  turns     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("ai_conversations")
+}
+
+// A snapshot of a project (title and diagram) with the engine's headline numbers then, for the
+// version history (src/lib/projects/versions.ts). kind: "auto", "manual" or "before-restore".
+// fingerprint: the evaluation fingerprint, so unchanged designs are not snapshotted twice.
+model ProjectVersion {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  title       String
+  graph       Json
+  fingerprint String
+  summary     Json
+  kind        String
+  label       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("project_versions")
+}
+
+// A design submitted to a challenge, graded on the server with the app's evaluator
+// (src/lib/architecture/challenge/submissions.ts). The leaderboard uses each user's best.
+model ChallengeSubmission {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  challengeId       String   @map("challenge_id")
+  // The project it was submitted from, if any (not a foreign key: projects can be deleted).
+  projectId         String?  @map("project_id")
+  graph             Json
+  fingerprint       String
+  score             Int
+  passed            Boolean
+  requirementScore  Int      @map("requirement_score")
+  architectureScore Int      @map("architecture_score")
+  metrics           Json
+  createdAt         DateTime @default(now()) @map("created_at")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId, score])
+  @@index([userId, createdAt])
+  @@map("challenge_submissions")
+}
+
+// "Run in ARCHITECH": a design running as an app inside ARCHITECH, the same app the Docker export
+// runs. These hold what people do in it: the app's own accounts (not ARCHITECH accounts), their
+// sign-in sessions, and their items. Kept per project and deleted with it. `number` is the id the
+// app shows (user #1, item #1), counted per project.
+model RunUser {
+  id           String       @id @default(cuid())
+  projectId    String       @map("project_id")
+  number       Int
+  email        String
+  passwordHash String       @map("password_hash")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sessions     RunSession[]
+  items        RunItem[]
+
+  @@unique([projectId, email])
+  @@unique([projectId, number])
+  @@map("run_users")
+}
+
+// Only a hash of the session cookie is stored.
+model RunSession {
+  tokenHash String   @id @map("token_hash")
+  projectId String   @map("project_id")
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      RunUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("run_sessions")
+}
+
+model RunItem {
+  id          String    @id @default(cuid())
+  projectId   String    @map("project_id")
+  number      Int
+  // Null when the design has no authentication (everyone shares the items).
+  ownerId     String?   @map("owner_id")
+  title       String
+  body        String    @default("")
+  // new | queued | processed
+  status      String    @default("new")
+  queuedAt    DateTime? @map("queued_at")
+  queuedBy    String?   @map("queued_by")
+  wordCount   Int?      @map("word_count")
+  processedBy String?   @map("processed_by")
+  processedAt DateTime? @map("processed_at")
+  // The object storage stand-in: the attached file itself (up to 5 MB).
+  fileName    String?   @map("file_name")
+  fileType    String?   @map("file_type")
+  fileData    Bytes?    @map("file_data")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  owner       RunUser?  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, number])
+  @@index([projectId, ownerId])
+  @@map("run_items")
+}
+
+// Practice: each graded attempt at "Predict, then run" (kind "prediction") or the Incident Lab
+// (kind "incident"), so learners can see whether they improve. The server grades every attempt
+// itself with the metrics engine (src/lib/architecture/practice/).
+model PracticeAttempt {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  kind         String
+  // The Incident Lab scenario; null for predictions and incidents on the learner's own design.
+  scenarioId   String?  @map("scenario_id")
+  projectId    String?  @map("project_id")
+  graph        Json
+  traffic      Json
+  // EVALUATION_MODEL_VERSION that graded it: results from an older engine can be told apart.
+  modelVersion Int      @map("model_version")
+  // What the learner predicted or answered, and the graded result.
+  answer       Json
+  result       Json
+  correct      Int
+  total        Int
+  passed       Boolean
+  createdAt    DateTime @default(now()) @map("created_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind, createdAt])
+  @@map("practice_attempts")
+}

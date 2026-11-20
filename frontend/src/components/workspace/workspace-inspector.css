@@ -1,0 +1,6 @@
+.ax-workspace .ax-diagram-viewport { height: 100%; }
+@media (max-width: 767px) {
+  .ax-workspace .ax-workspace-canvas[data-inspector="true"] .ax-diagram-viewport {
+    height: 100%;
+  }
+}
